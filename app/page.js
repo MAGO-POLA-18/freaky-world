@@ -8,6 +8,7 @@ import {
   RigidBody,
   useRapier,
 } from "@react-three/rapier";
+import Museum from "../components/Museum/Museum";
 
 const mobileInput = {
   x: 0,
@@ -521,7 +522,7 @@ export default function Home() {
         }}
       >
         <Physics gravity={[0, -9.81, 0]}>
-          <Room />
+          <Museum />
           <Character />
         </Physics>
       </Canvas>
