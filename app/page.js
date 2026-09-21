@@ -9,6 +9,7 @@ import {
   useRapier,
 } from "@react-three/rapier";
 import Museum from "../components/Museum/Museum";
+import DynamicSky from "../components/World/DynamicSky";
 
 const mobileInput = {
   x: 0,
@@ -516,11 +517,9 @@ export default function Home() {
       </div>
 
       <Canvas
-        camera={{
-          position: [0, 3, 6],
-          fov: 60,
-        }}
-      >
+        camera={{position: [0, 3, 6], fov: 60,}}>
+        <DynamicSky />
+  
         <Physics gravity={[0, -9.81, 0]}>
           <Museum />
           <Character />
