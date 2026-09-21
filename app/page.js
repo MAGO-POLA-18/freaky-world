@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Physics, RigidBody } from "@react-three/rapier";
 
 function Character() {
+  const body = useRef();
   const player = useRef();
   const { gl } = useThree();
 
@@ -55,7 +56,7 @@ function Character() {
       cameraRotation.current.pitch = THREE.MathUtils.clamp(
         cameraRotation.current.pitch,
         -0.15,
-        0.9
+        0.65
       );
     };
 
@@ -74,13 +75,12 @@ function Character() {
     };
   }, [gl]);
 
-  useFrame(({ camera }, delta) => {
-    if (!player.current) return;
+  useFrame(({ camera }) => {
+    if (!body.current || !player.current) return;
 
     const yaw = cameraRotation.current.yaw;
     const pitch = cameraRotation.current.pitch;
 
-    // Dirección frontal según la cámara
     const forward = new THREE.Vector3(
       -Math.sin(yaw),
       0,
@@ -100,30 +100,22 @@ function Character() {
     if (keys.current.d) movement.add(right);
     if (keys.current.a) movement.sub(right);
 
+    const currentVelocity = body.current.linvel();
+
     if (movement.lengthSq() > 0) {
       movement.normalize();
 
       const speed = 3;
 
-      player.current.position.addScaledVector(
-        movement,
-        speed * delta
+      body.current.setLinvel(
+        {
+          x: movement.x * speed,
+          y: currentVelocity.y,
+          z: movement.z * speed,
+        },
+        true
       );
 
-      // Límites provisionales de la habitación
-      player.current.position.x = THREE.MathUtils.clamp(
-        player.current.position.x,
-        -4.4,
-        4.4
-      );
-
-      player.current.position.z = THREE.MathUtils.clamp(
-        player.current.position.z,
-        -18.4,
-        4.4
-      );
-
-      // El personaje mira hacia donde camina
       const targetRotation = Math.atan2(
         movement.x,
         movement.z
@@ -138,9 +130,20 @@ function Character() {
       );
 
       player.current.rotation.y += difference * 0.15;
+    } else {
+      body.current.setLinvel(
+        {
+          x: 0,
+          y: currentVelocity.y,
+          z: 0,
+        },
+        true
+      );
     }
 
-    // Cámara orbital alrededor del personaje
+    // Posición real del cuerpo físico
+    const position = body.current.translation();
+
     const distance = 5;
     const height = 1.5;
 
@@ -151,13 +154,9 @@ function Character() {
       Math.sin(pitch) * distance;
 
     const desiredCameraPosition = new THREE.Vector3(
-      player.current.position.x +
-        Math.sin(yaw) * horizontalDistance,
-      player.current.position.y +
-        height +
-        verticalDistance,
-      player.current.position.z +
-        Math.cos(yaw) * horizontalDistance
+      position.x + Math.sin(yaw) * horizontalDistance,
+      position.y + height + verticalDistance,
+      position.z + Math.cos(yaw) * horizontalDistance
     );
 
     camera.position.lerp(
@@ -166,40 +165,48 @@ function Character() {
     );
 
     camera.lookAt(
-      player.current.position.x,
-      player.current.position.y + 1.2,
-      player.current.position.z
+      position.x,
+      position.y + 1.2,
+      position.z
     );
   });
 
   return (
-    <group ref={player} position={[0, 0, 1]}>
+    <RigidBody
+      ref={body}
+      position={[0, 0.95, 1]}
+      colliders="cuboid"
+      enabledRotations={[false, false, false]}
+      friction={0}
+    >
+      <group ref={player} position={[0, -0.95, 0]}>
 
-      {/* Cuerpo */}
-      <mesh position={[0, 1.15, 0]}>
-        <boxGeometry args={[0.7, 1.1, 0.4]} />
-        <meshStandardMaterial color="#333333" />
-      </mesh>
+        {/* Cuerpo */}
+        <mesh position={[0, 1.15, 0]}>
+          <boxGeometry args={[0.7, 1.1, 0.4]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
 
-      {/* Cabeza */}
-      <mesh position={[0, 2, 0]}>
-        <sphereGeometry args={[0.38, 24, 24]} />
-        <meshStandardMaterial color="#d8a47f" />
-      </mesh>
+        {/* Cabeza */}
+        <mesh position={[0, 2, 0]}>
+          <sphereGeometry args={[0.38, 24, 24]} />
+          <meshStandardMaterial color="#d8a47f" />
+        </mesh>
 
-      {/* Pierna izquierda */}
-      <mesh position={[-0.2, 0.45, 0]}>
-        <boxGeometry args={[0.25, 0.9, 0.3]} />
-        <meshStandardMaterial color="#222222" />
-      </mesh>
+        {/* Pierna izquierda */}
+        <mesh position={[-0.2, 0.45, 0]}>
+          <boxGeometry args={[0.25, 0.9, 0.3]} />
+          <meshStandardMaterial color="#222222" />
+        </mesh>
 
-      {/* Pierna derecha */}
-      <mesh position={[0.2, 0.45, 0]}>
-        <boxGeometry args={[0.25, 0.9, 0.3]} />
-        <meshStandardMaterial color="#222222" />
-      </mesh>
+        {/* Pierna derecha */}
+        <mesh position={[0.2, 0.45, 0]}>
+          <boxGeometry args={[0.25, 0.9, 0.3]} />
+          <meshStandardMaterial color="#222222" />
+        </mesh>
 
-    </group>
+      </group>
+    </RigidBody>
   );
 }
 
