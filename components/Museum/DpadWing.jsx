@@ -22,6 +22,16 @@ export default function DpadWing({
           <meshStandardMaterial color="#5a5a5a" />
         </mesh>
 
+        {/* =========================
+    SEGUNDO PISO
+    Nivel superior a 7 m
+========================== */}
+
+<mesh position={[0, 7, 0]}>
+  <boxGeometry args={[60, 0.4, 70]} />
+  <meshStandardMaterial color="#777777" />
+</mesh>
+
         {/* PARED IZQUIERDA */}
         <mesh position={[-30, 7, 0]}>
           <boxGeometry args={[0.4, 14, 70]} />
