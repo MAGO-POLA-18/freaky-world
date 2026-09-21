@@ -49,14 +49,6 @@ export default function Museum() {
         <meshStandardMaterial color="#4f6049" />
       </mesh>
 
-      {/* ILUMINACIÓN PROVISIONAL */}
-      <ambientLight intensity={1.3} />
-
-      <directionalLight
-        position={[15, 20, 10]}
-        intensity={2}
-      />
-
     </group>
   );
 }
