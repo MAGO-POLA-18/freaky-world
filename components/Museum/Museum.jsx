@@ -39,13 +39,13 @@ export default function Museum() {
 
 {/* PATIO CENTRAL */}
 <mesh position={[0, 0.02, 0]}>
-  <cylinderGeometry args={[8, 8, 0.2, 48]} />
+ <cylinderGeometry args={[38, 38, 0.2, 64]} />
   <meshStandardMaterial color="#71806b" />
 </mesh>
 
       {/* CENTRO DEL JARDÍN */}
       <mesh position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[3.5, 3.5, 0.3, 48]} />
+        <cylinderGeometry args={[18, 18, 0.3, 64]} />
         <meshStandardMaterial color="#4f6049" />
       </mesh>
 
