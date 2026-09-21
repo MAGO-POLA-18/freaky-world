@@ -1,55 +1,115 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 function Character() {
   const player = useRef();
-  const keys = useRef({ w: false, s: false, a: false, d: false });
+  const { gl } = useThree();
+
+  const keys = useRef({
+    w: false,
+    s: false,
+    a: false,
+    d: false,
+  });
+
+  const cameraRotation = useRef({
+    yaw: 0,
+    pitch: 0.35,
+  });
+
+  const dragging = useRef(false);
 
   useEffect(() => {
-    const down = (e) => {
+    const keyDown = (e) => {
       if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = true;
       if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = true;
       if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = true;
       if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = true;
     };
 
-    const up = (e) => {
+    const keyUp = (e) => {
       if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = false;
       if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = false;
       if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = false;
       if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = false;
     };
 
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
+    const mouseDown = (e) => {
+      if (e.button === 0) dragging.current = true;
+    };
+
+    const mouseUp = () => {
+      dragging.current = false;
+    };
+
+    const mouseMove = (e) => {
+      if (!dragging.current) return;
+
+      cameraRotation.current.yaw -= e.movementX * 0.006;
+      cameraRotation.current.pitch += e.movementY * 0.004;
+
+      cameraRotation.current.pitch = THREE.MathUtils.clamp(
+        cameraRotation.current.pitch,
+        -0.15,
+        0.9
+      );
+    };
+
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+    gl.domElement.addEventListener("mousedown", mouseDown);
+    window.addEventListener("mouseup", mouseUp);
+    window.addEventListener("mousemove", mouseMove);
 
     return () => {
-      window.removeEventListener("keydown", down);
-      window.removeEventListener("keyup", up);
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("keyup", keyUp);
+      gl.domElement.removeEventListener("mousedown", mouseDown);
+      window.removeEventListener("mouseup", mouseUp);
+      window.removeEventListener("mousemove", mouseMove);
     };
-  }, []);
+  }, [gl]);
 
   useFrame(({ camera }, delta) => {
     if (!player.current) return;
 
-    const direction = new THREE.Vector3();
+    const yaw = cameraRotation.current.yaw;
+    const pitch = cameraRotation.current.pitch;
 
-    if (keys.current.w) direction.z -= 1;
-    if (keys.current.s) direction.z += 1;
-    if (keys.current.a) direction.x -= 1;
-    if (keys.current.d) direction.x += 1;
+    // Dirección frontal según la cámara
+    const forward = new THREE.Vector3(
+      -Math.sin(yaw),
+      0,
+      -Math.cos(yaw)
+    );
 
-    if (direction.lengthSq() > 0) {
-      direction.normalize();
+    const right = new THREE.Vector3(
+      Math.cos(yaw),
+      0,
+      -Math.sin(yaw)
+    );
+
+    const movement = new THREE.Vector3();
+
+    if (keys.current.w) movement.add(forward);
+    if (keys.current.s) movement.sub(forward);
+    if (keys.current.d) movement.add(right);
+    if (keys.current.a) movement.sub(right);
+
+    if (movement.lengthSq() > 0) {
+      movement.normalize();
 
       const speed = 3;
 
-      player.current.position.x += direction.x * speed * delta;
-      player.current.position.z += direction.z * speed * delta;
+      player.current.position.addScaledVector(
+        movement,
+        speed * delta
+      );
 
+      // Límites provisionales de la habitación
       player.current.position.x = THREE.MathUtils.clamp(
         player.current.position.x,
         -4.4,
@@ -62,27 +122,58 @@ function Character() {
         4.4
       );
 
-      player.current.rotation.y = Math.atan2(direction.x, direction.z);
+      // El personaje mira hacia donde camina
+      const targetRotation = Math.atan2(
+        movement.x,
+        movement.z
+      );
+
+      let difference =
+        targetRotation - player.current.rotation.y;
+
+      difference = Math.atan2(
+        Math.sin(difference),
+        Math.cos(difference)
+      );
+
+      player.current.rotation.y += difference * 0.15;
     }
 
-    // Cámara siguiendo al personaje
+    // Cámara orbital alrededor del personaje
+    const distance = 5;
+    const height = 1.5;
+
+    const horizontalDistance =
+      Math.cos(pitch) * distance;
+
+    const verticalDistance =
+      Math.sin(pitch) * distance;
+
     const desiredCameraPosition = new THREE.Vector3(
-      player.current.position.x,
-      player.current.position.y + 3.2,
-      player.current.position.z + 5
+      player.current.position.x +
+        Math.sin(yaw) * horizontalDistance,
+      player.current.position.y +
+        height +
+        verticalDistance,
+      player.current.position.z +
+        Math.cos(yaw) * horizontalDistance
     );
 
-    camera.position.lerp(desiredCameraPosition, 0.08);
+    camera.position.lerp(
+      desiredCameraPosition,
+      0.12
+    );
 
     camera.lookAt(
       player.current.position.x,
-      player.current.position.y + 1,
+      player.current.position.y + 1.2,
       player.current.position.z
     );
   });
 
   return (
     <group ref={player} position={[0, 0, 1]}>
+
       {/* Cuerpo */}
       <mesh position={[0, 1.15, 0]}>
         <boxGeometry args={[0.7, 1.1, 0.4]} />
@@ -106,6 +197,7 @@ function Character() {
         <boxGeometry args={[0.25, 0.9, 0.3]} />
         <meshStandardMaterial color="#222222" />
       </mesh>
+
     </group>
   );
 }
@@ -114,23 +206,31 @@ function Room() {
   return (
     <>
       <ambientLight intensity={1.5} />
-      <directionalLight position={[5, 8, 5]} intensity={2} />
 
+      <directionalLight
+        position={[5, 8, 5]}
+        intensity={2}
+      />
+
+      {/* Suelo */}
       <mesh position={[0, -0.1, 0]}>
         <boxGeometry args={[10, 0.2, 10]} />
         <meshStandardMaterial color="#777777" />
       </mesh>
 
+      {/* Pared trasera */}
       <mesh position={[0, 2, -5]}>
         <boxGeometry args={[10, 4, 0.2]} />
         <meshStandardMaterial color="#eeeeee" />
       </mesh>
 
+      {/* Pared izquierda */}
       <mesh position={[-5, 2, 0]}>
         <boxGeometry args={[0.2, 4, 10]} />
         <meshStandardMaterial color="#dddddd" />
       </mesh>
 
+      {/* Pared derecha */}
       <mesh position={[5, 2, 0]}>
         <boxGeometry args={[0.2, 4, 10]} />
         <meshStandardMaterial color="#dddddd" />
@@ -143,7 +243,7 @@ export default function Home() {
   return (
     <main>
       <div className="instructions">
-        WASD para mover el personaje
+        WASD para caminar · Mantén clic izquierdo y arrastra para mover la cámara
       </div>
 
       <Canvas camera={{ position: [0, 3, 6], fov: 60 }}>
