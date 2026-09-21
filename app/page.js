@@ -135,12 +135,18 @@ function Character() {
     mobileInput.lookX = 0;
     mobileInput.lookY = 0;
 
-    const currentVelocity = body.current.linvel();
+   const currentVelocity = body.current.linvel();
 
-    if (movement.lengthSq() > 0) {
-      movement.normalize();
+if (movement.lengthSq() > 0) {
+  const inputStrength = Math.min(movement.length(), 1);
 
-      const speed = 3;
+  movement.normalize();
+
+  const minSpeed = 2;
+  const maxSpeed = 7;
+
+  const speed =
+    minSpeed + (maxSpeed - minSpeed) * inputStrength;
 
       body.current.setLinvel(
         {
