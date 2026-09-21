@@ -1,6 +1,6 @@
 "use client";
 
-import { Sky } from "@react-three/drei";
+import { Sky, Stars } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import * as THREE from "three";
 
@@ -25,9 +25,8 @@ export default function DynamicSky() {
     return () => clearInterval(timer);
   }, []);
 
-  // Sol entre aproximadamente 06:00 y 18:00
+  // RECORRIDO DEL SOL
   const sunAngle = ((hour - 6) / 12) * Math.PI;
-
   const sunHeight = Math.sin(sunAngle);
 
   const daylight = THREE.MathUtils.clamp(
@@ -42,10 +41,22 @@ export default function DynamicSky() {
     30,
   ];
 
+  // NOCHE
   const isNight = hour < 6 || hour >= 18;
+
+  // RECORRIDO DE LA LUNA
+  // Aproximadamente opuesto al recorrido del sol
+  const moonAngle = ((hour - 18) / 12) * Math.PI;
+
+  const moonPosition = [
+    Math.cos(moonAngle) * 90,
+    Math.max(Math.sin(moonAngle) * 75, 10),
+    -35,
+  ];
 
   return (
     <>
+      {/* CIELO DIURNO */}
       {!isNight && (
         <Sky
           distance={450000}
@@ -55,20 +66,60 @@ export default function DynamicSky() {
         />
       )}
 
+      {/* CIELO NOCTURNO */}
       {isNight && (
-        <color
-          attach="background"
-          args={["#030712"]}
+        <>
+          <color
+            attach="background"
+            args={["#02040a"]}
+          />
+
+          {/* ESTRELLAS */}
+          <Stars
+            radius={180}
+            depth={80}
+            count={2500}
+            factor={3}
+            saturation={0}
+            fade
+            speed={0.15}
+          />
+
+          {/* LUNA */}
+          <mesh position={moonPosition}>
+            <sphereGeometry args={[5, 32, 32]} />
+            <meshStandardMaterial
+              color="#f2f0df"
+              emissive="#d8d6c8"
+              emissiveIntensity={0.7}
+              roughness={1}
+            />
+          </mesh>
+
+          {/* LUZ DE LUNA */}
+          <directionalLight
+            position={moonPosition}
+            intensity={0.22}
+            color="#b8c7e8"
+          />
+        </>
+      )}
+
+      {/* LUZ SOLAR */}
+      {!isNight && (
+        <directionalLight
+          position={sunPosition}
+          intensity={0.2 + daylight * 2.2}
         />
       )}
 
-      <directionalLight
-        position={sunPosition}
-        intensity={0.1 + daylight * 2.2}
-      />
-
+      {/* LUZ AMBIENTAL GLOBAL */}
       <ambientLight
-        intensity={isNight ? 0.08 : 0.35 + daylight * 0.35}
+        intensity={
+          isNight
+            ? 0.1
+            : 0.35 + daylight * 0.35
+        }
       />
     </>
   );
