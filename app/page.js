@@ -143,7 +143,7 @@ if (movement.lengthSq() > 0) {
   movement.normalize();
 
   const minSpeed = 2;
-  const maxSpeed = 7;
+  const maxSpeed = 10;
 
   const speed =
     minSpeed + (maxSpeed - minSpeed) * inputStrength;
