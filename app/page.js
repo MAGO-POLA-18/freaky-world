@@ -237,7 +237,7 @@ camera.position.lerp(
   return (
     <RigidBody
       ref={body}
-      position={[0, 0.95, 1]}
+      position={[0, 0.95, 14]}
       colliders="cuboid"
       enabledRotations={[false, false, false]}
       friction={0}
@@ -275,136 +275,88 @@ camera.position.lerp(
 
 function Room() {
   return (
-     <RigidBody type="fixed" colliders="cuboid">
-    <>
-      <ambientLight intensity={1.5} />
+    <RigidBody type="fixed" colliders="cuboid">
+      <>
+        {/* ILUMINACIÓN */}
+        <ambientLight intensity={1.3} />
 
-      <directionalLight
-        position={[5, 8, 5]}
-        intensity={2}
-      />
+        <directionalLight
+          position={[10, 14, 8]}
+          intensity={2}
+        />
 
-      {/* ===== SALA 1 ===== */}
+        {/* ===== GRAN HALL FREAKY WORLD ===== */}
 
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[10, 0.2, 10]} />
-        <meshStandardMaterial color="#777777" />
-      </mesh>
+        {/* Suelo 36 x 36 */}
+        <mesh position={[0, -0.1, 0]}>
+          <boxGeometry args={[36, 0.2, 36]} />
+          <meshStandardMaterial color="#555555" />
+        </mesh>
 
-      {/* Pared izquierda */}
-      <mesh position={[-5, 2, 0]}>
-        <boxGeometry args={[0.2, 4, 10]} />
-        <meshStandardMaterial color="#dddddd" />
-      </mesh>
+        {/* Techo - 12 metros de altura */}
+        <mesh position={[0, 12, 0]}>
+          <boxGeometry args={[36, 0.2, 36]} />
+          <meshStandardMaterial color="#dddddd" />
+        </mesh>
 
-      {/* Pared derecha */}
-      <mesh position={[5, 2, 0]}>
-        <boxGeometry args={[0.2, 4, 10]} />
-        <meshStandardMaterial color="#dddddd" />
-      </mesh>
+        {/* ===== PARED DE ENTRADA ===== */}
 
-      {/* Pared trasera con hueco para puerta */}
-      <mesh position={[-3.5, 2, -5]}>
-        <boxGeometry args={[3, 4, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
-      </mesh>
+        {/* Izquierda */}
+        <mesh position={[-11, 6, 18]}>
+          <boxGeometry args={[14, 12, 0.3]} />
+          <meshStandardMaterial color="#dddddd" />
+        </mesh>
 
-      <mesh position={[3.5, 2, -5]}>
-        <boxGeometry args={[3, 4, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
-      </mesh>
+        {/* Derecha */}
+        <mesh position={[11, 6, 18]}>
+          <boxGeometry args={[14, 12, 0.3]} />
+          <meshStandardMaterial color="#dddddd" />
+        </mesh>
 
-      <mesh position={[0, 3.5, -5]}>
-        <boxGeometry args={[4, 1, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
-      </mesh>
+        {/* Sobre la entrada */}
+        <mesh position={[0, 9, 18]}>
+          <boxGeometry args={[8, 6, 0.3]} />
+          <meshStandardMaterial color="#dddddd" />
+        </mesh>
 
-      {/* ===== PASILLO ===== */}
+        {/* ===== PARED IZQUIERDA ===== */}
 
-      <mesh position={[0, -0.1, -7]}>
-        <boxGeometry args={[4, 0.2, 4]} />
-        <meshStandardMaterial color="#666666" />
-      </mesh>
+        <mesh position={[-18, 6, 0]}>
+          <boxGeometry args={[0.3, 12, 36]} />
+          <meshStandardMaterial color="#d5d5d5" />
+        </mesh>
 
-      <mesh position={[-2, 2, -7]}>
-        <boxGeometry args={[0.2, 4, 4]} />
-        <meshStandardMaterial color="#cccccc" />
-      </mesh>
+        {/* ===== PARED DERECHA ===== */}
 
-      <mesh position={[2, 2, -7]}>
-        <boxGeometry args={[0.2, 4, 4]} />
-        <meshStandardMaterial color="#cccccc" />
-      </mesh>
+        <mesh position={[18, 6, 0]}>
+          <boxGeometry args={[0.3, 12, 36]} />
+          <meshStandardMaterial color="#d5d5d5" />
+        </mesh>
 
-      {/* ===== SALA 2 ===== */}
+        {/* ===== PARED DEL FONDO ===== */}
 
-      <mesh position={[0, -0.1, -14]}>
-        <boxGeometry args={[10, 0.2, 10]} />
-        <meshStandardMaterial color="#555555" />
-      </mesh>
+        {/* Lado izquierdo */}
+        <mesh position={[-11, 6, -18]}>
+          <boxGeometry args={[14, 12, 0.3]} />
+          <meshStandardMaterial color="#cccccc" />
+        </mesh>
 
-      <mesh position={[-5, 2, -14]}>
-        <boxGeometry args={[0.2, 4, 10]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
+        {/* Lado derecho */}
+        <mesh position={[11, 6, -18]}>
+          <boxGeometry args={[14, 12, 0.3]} />
+          <meshStandardMaterial color="#cccccc" />
+        </mesh>
 
-      <mesh position={[5, 2, -14]}>
-        <boxGeometry args={[0.2, 4, 10]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
+        {/* Sobre acceso central */}
+        <mesh position={[0, 9, -18]}>
+          <boxGeometry args={[8, 6, 0.3]} />
+          <meshStandardMaterial color="#cccccc" />
+        </mesh>
 
-      <mesh position={[0, 2, -19]}>
-        <boxGeometry args={[10, 4, 0.2]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
-              {/* ===== CIERRE DEL EDIFICIO ===== */}
-
-      {/* Techo sala 1 */}
-      <mesh position={[0, 4, 0]}>
-        <boxGeometry args={[10, 0.2, 10]} />
-        <meshStandardMaterial color="#e5e5e5" />
-      </mesh>
-
-      {/* Techo pasillo */}
-      <mesh position={[0, 4, -7]}>
-        <boxGeometry args={[4, 0.2, 4]} />
-        <meshStandardMaterial color="#d8d8d8" />
-      </mesh>
-
-      {/* Techo sala 2 */}
-      <mesh position={[0, 4, -14]}>
-        <boxGeometry args={[10, 0.2, 10]} />
-        <meshStandardMaterial color="#d0d0d0" />
-      </mesh>
-
-      {/* Pared frontal sala 1 */}
-      <mesh position={[0, 2, 5]}>
-        <boxGeometry args={[10, 4, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
-      </mesh>
-
-      {/* Frente sala 2 - lado izquierdo de entrada */}
-      <mesh position={[-3.5, 2, -9]}>
-        <boxGeometry args={[3, 4, 0.2]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
-
-      {/* Frente sala 2 - lado derecho de entrada */}
-      <mesh position={[3.5, 2, -9]}>
-        <boxGeometry args={[3, 4, 0.2]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
-
-      {/* Parte superior de entrada sala 2 */}
-      <mesh position={[0, 3.5, -9]}>
-        <boxGeometry args={[4, 1, 0.2]} />
-        <meshStandardMaterial color="#bbbbbb" />
-      </mesh>
-    </>
+      </>
     </RigidBody>
   );
 }
-
 export default function Home() {
   return (
     <main>
