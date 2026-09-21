@@ -32,7 +32,7 @@ export default function Museum() {
       {/* SUELO FÍSICO GENERAL PROVISIONAL */}
 <RigidBody type="fixed" colliders="cuboid">
   <mesh position={[0, -0.15, 0]}>
-    <boxGeometry args={[70, 0.3, 70]} />
+    <boxGeometry args={[150, 0.3, 150]} />
     <meshStandardMaterial color="#454545" />
   </mesh>
 </RigidBody>
