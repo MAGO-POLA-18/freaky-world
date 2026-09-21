@@ -344,9 +344,10 @@ export default function Home() {
 
       <Canvas camera={{ position: [0, 3, 6], fov: 60 }}>
        <Physics gravity={[0, -9.81, 0]}>
-  <Room />
-  <Character />
-      </Canvas>
+        <Room />
+         <Character />
+        </Physics>
+      </Canvas> 
     </main>
   );
 }
