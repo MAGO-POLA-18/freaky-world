@@ -112,13 +112,13 @@ function Character() {
       // Límites provisionales de la habitación
       player.current.position.x = THREE.MathUtils.clamp(
         player.current.position.x,
-        -18.4,
+        -4.4,
         4.4
       );
 
       player.current.position.z = THREE.MathUtils.clamp(
         player.current.position.z,
-        -4.4,
+        -18.4,
         4.4
       );
 
