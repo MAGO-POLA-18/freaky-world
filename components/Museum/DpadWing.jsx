@@ -6,31 +6,30 @@ export default function DpadWing({
 }) {
   return (
     <group position={position} rotation={rotation}>
-
       <RigidBody type="fixed" colliders="cuboid">
 
-        {/* =========================
-            BLOQUE PRINCIPAL
+        {/* =========================================
+            ALA MAESTRA
             60 m ancho
             70 m profundidad
-            14 m altura
-        ========================== */}
+            14 m fachada
+        ========================================== */}
 
-        {/* SUELO */}
+        {/* SUELO PLANTA BAJA */}
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[60, 0.4, 70]} />
-          <meshStandardMaterial color="#5a5a5a" />
+          <meshStandardMaterial color="#555555" />
         </mesh>
 
-        {/* =========================
-    SEGUNDO PISO
-    Nivel superior a 7 m
-========================== */}
+        {/* FORJADO SEGUNDO PISO */}
+        <mesh position={[0, 7, 0]}>
+          <boxGeometry args={[60, 0.4, 70]} />
+          <meshStandardMaterial color="#707070" />
+        </mesh>
 
-<mesh position={[0, 7, 0]}>
-  <boxGeometry args={[60, 0.4, 70]} />
-  <meshStandardMaterial color="#777777" />
-</mesh>
+        {/* =========================================
+            LATERALES EXTERIORES
+        ========================================== */}
 
         {/* PARED IZQUIERDA */}
         <mesh position={[-30, 7, 0]}>
@@ -44,37 +43,41 @@ export default function DpadWing({
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
 
-        {/* PARED EXTERIOR */}
+        {/* FONDO DEL EDIFICIO */}
         <mesh position={[0, 7, 35]}>
           <boxGeometry args={[60, 14, 0.4]} />
           <meshStandardMaterial color="#d0d0d0" />
         </mesh>
 
-        {/* =========================
-            ENTRADA HACIA EL PATIO
-        ========================== */}
+        {/* =========================================
+            FACHADA HACIA EL PATIO
 
-        {/* IZQUIERDA */}
-        <mesh position={[-21, 7, -35]}>
-          <boxGeometry args={[18, 14, 0.4]} />
-          <meshStandardMaterial color="#e2e2e2" />
+            Entrada central de 20 m.
+            La fachada ya NO es una pared continua.
+        ========================================== */}
+
+        {/* FACHADA IZQUIERDA */}
+        <mesh position={[-20, 7, -35]}>
+          <boxGeometry args={[20, 14, 0.4]} />
+          <meshStandardMaterial color="#e0e0e0" />
         </mesh>
 
-        {/* DERECHA */}
-        <mesh position={[21, 7, -35]}>
-          <boxGeometry args={[18, 14, 0.4]} />
-          <meshStandardMaterial color="#e2e2e2" />
+        {/* FACHADA DERECHA */}
+        <mesh position={[20, 7, -35]}>
+          <boxGeometry args={[20, 14, 0.4]} />
+          <meshStandardMaterial color="#e0e0e0" />
         </mesh>
 
-        {/* SOBRE LA ENTRADA */}
-        <mesh position={[0, 11, -35]}>
-          <boxGeometry args={[24, 6, 0.4]} />
-          <meshStandardMaterial color="#e2e2e2" />
+        {/* FRANJA SUPERIOR SOBRE LA ENTRADA
+            empieza a 10 m de altura */}
+        <mesh position={[0, 12, -35]}>
+          <boxGeometry args={[20, 4, 0.4]} />
+          <meshStandardMaterial color="#e0e0e0" />
         </mesh>
 
       </RigidBody>
 
-      {/* TECHO PROVISIONAL */}
+      {/* CUBIERTA PROVISIONAL */}
       <mesh position={[0, 14.2, 0]}>
         <boxGeometry args={[60.5, 0.4, 70.5]} />
         <meshStandardMaterial color="#bcbcbc" />
