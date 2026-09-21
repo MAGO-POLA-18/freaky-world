@@ -273,6 +273,22 @@ camera.position.lerp(
   );
 }
 
+function MobileControls() {
+  return (
+    <div className="mobile-controls">
+
+      <div className="mobile-joystick">
+        <div className="joystick-knob" />
+      </div>
+
+      <div className="mobile-look">
+        Desliza para mirar
+      </div>
+
+    </div>
+  );
+}
+
 function Room() {
   return (
     <RigidBody type="fixed" colliders="cuboid">
@@ -370,6 +386,8 @@ export default function Home() {
          <Character />
         </Physics>
       </Canvas> 
+  
+      <MobileControls />  
     </main>
   );
 }
