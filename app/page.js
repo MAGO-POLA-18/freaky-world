@@ -285,6 +285,49 @@ function Room() {
         <boxGeometry args={[10, 4, 0.2]} />
         <meshStandardMaterial color="#bbbbbb" />
       </mesh>
+              {/* ===== CIERRE DEL EDIFICIO ===== */}
+
+      {/* Techo sala 1 */}
+      <mesh position={[0, 4, 0]}>
+        <boxGeometry args={[10, 0.2, 10]} />
+        <meshStandardMaterial color="#e5e5e5" />
+      </mesh>
+
+      {/* Techo pasillo */}
+      <mesh position={[0, 4, -7]}>
+        <boxGeometry args={[4, 0.2, 4]} />
+        <meshStandardMaterial color="#d8d8d8" />
+      </mesh>
+
+      {/* Techo sala 2 */}
+      <mesh position={[0, 4, -14]}>
+        <boxGeometry args={[10, 0.2, 10]} />
+        <meshStandardMaterial color="#d0d0d0" />
+      </mesh>
+
+      {/* Pared frontal sala 1 */}
+      <mesh position={[0, 2, 5]}>
+        <boxGeometry args={[10, 4, 0.2]} />
+        <meshStandardMaterial color="#eeeeee" />
+      </mesh>
+
+      {/* Frente sala 2 - lado izquierdo de entrada */}
+      <mesh position={[-3.5, 2, -9]}>
+        <boxGeometry args={[3, 4, 0.2]} />
+        <meshStandardMaterial color="#bbbbbb" />
+      </mesh>
+
+      {/* Frente sala 2 - lado derecho de entrada */}
+      <mesh position={[3.5, 2, -9]}>
+        <boxGeometry args={[3, 4, 0.2]} />
+        <meshStandardMaterial color="#bbbbbb" />
+      </mesh>
+
+      {/* Parte superior de entrada sala 2 */}
+      <mesh position={[0, 3.5, -9]}>
+        <boxGeometry args={[4, 1, 0.2]} />
+        <meshStandardMaterial color="#bbbbbb" />
+      </mesh>
     </>
   );
 }
