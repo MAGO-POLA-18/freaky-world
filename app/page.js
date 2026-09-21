@@ -3,12 +3,17 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { Physics, RigidBody } from "@react-three/rapier";
+import {
+  Physics,
+  RigidBody,
+  useRapier,
+} from "@react-three/rapier";
 
 function Character() {
   const body = useRef();
   const player = useRef();
   const { gl } = useThree();
+  const { world, rapier } = useRapier();
 
   const keys = useRef({
     w: false,
