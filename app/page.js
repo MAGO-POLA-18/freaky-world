@@ -158,16 +158,74 @@ function Character() {
     const verticalDistance =
       Math.sin(pitch) * distance;
 
-    const desiredCameraPosition = new THREE.Vector3(
-      position.x + Math.sin(yaw) * horizontalDistance,
-      position.y + height + verticalDistance,
-      position.z + Math.cos(yaw) * horizontalDistance
-    );
+    const cameraTarget = new THREE.Vector3(
+  position.x,
+  position.y + 1.2,
+  position.z
+);
 
-    camera.position.lerp(
-      desiredCameraPosition,
-      0.12
+const desiredCameraPosition = new THREE.Vector3(
+  position.x + Math.sin(yaw) * horizontalDistance,
+  position.y + height + verticalDistance,
+  position.z + Math.cos(yaw) * horizontalDistance
+);
+
+// Dirección desde el personaje hacia la cámara
+const cameraDirection = desiredCameraPosition
+  .clone()
+  .sub(cameraTarget);
+
+const cameraDistance = cameraDirection.length();
+
+cameraDirection.normalize();
+
+// Rayo físico para detectar paredes
+const ray = new rapier.Ray(
+  {
+    x: cameraTarget.x,
+    y: cameraTarget.y,
+    z: cameraTarget.z,
+  },
+  {
+    x: cameraDirection.x,
+    y: cameraDirection.y,
+    z: cameraDirection.z,
+  }
+);
+
+const hit = world.castRay(
+  ray,
+  cameraDistance,
+  true,
+  undefined,
+  undefined,
+  undefined,
+  body.current
+);
+
+let finalCameraPosition = desiredCameraPosition;
+
+if (hit) {
+  // Dejamos un pequeño margen para que la cámara
+  // no quede exactamente pegada a la pared
+  const safeDistance = Math.max(
+    hit.timeOfImpact - 0.25,
+    0.6
+  );
+
+  finalCameraPosition = cameraTarget
+    .clone()
+    .add(
+      cameraDirection
+        .clone()
+        .multiplyScalar(safeDistance)
     );
+}
+
+camera.position.lerp(
+  finalCameraPosition,
+  0.2
+);
 
     camera.lookAt(
       position.x,
