@@ -5,34 +5,34 @@ export default function Museum() {
   return (
     <group>
 
-    {/* NORTE */}
+{/* NORTE */}
 <DpadWing
-  position={[0, 0, -48]}
+  position={[0, 0, -85]}
   rotation={[0, 0, 0]}
 />
 
 {/* SUR */}
 <DpadWing
-  position={[0, 0, 48]}
+  position={[0, 0, 85]}
   rotation={[0, Math.PI, 0]}
 />
 
 {/* ESTE */}
 <DpadWing
-  position={[48, 0, 0]}
+  position={[85, 0, 0]}
   rotation={[0, -Math.PI / 2, 0]}
 />
 
 {/* OESTE */}
 <DpadWing
-  position={[-48, 0, 0]}
+  position={[-85, 0, 0]}
   rotation={[0, Math.PI / 2, 0]}
 />
 
       {/* SUELO FÍSICO GENERAL PROVISIONAL */}
 <RigidBody type="fixed" colliders="cuboid">
   <mesh position={[0, -0.15, 0]}>
-    <boxGeometry args={[150, 0.3, 150]} />
+   <boxGeometry args={[220, 0.3, 220]} />
     <meshStandardMaterial color="#454545" />
   </mesh>
 </RigidBody>
