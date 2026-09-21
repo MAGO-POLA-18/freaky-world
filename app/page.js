@@ -1,104 +1,113 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { PointerLockControls } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-function Player() {
-  const { camera } = useThree();
-
-  const keys = useRef({
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-  });
+function Character() {
+  const player = useRef();
+  const keys = useRef({ w: false, s: false, a: false, d: false });
 
   useEffect(() => {
-    camera.position.set(0, 1.7, 3);
-
-    const keyDown = (event) => {
-      switch (event.code) {
-        case "KeyW":
-        case "ArrowUp":
-          keys.current.forward = true;
-          break;
-        case "KeyS":
-        case "ArrowDown":
-          keys.current.backward = true;
-          break;
-        case "KeyA":
-        case "ArrowLeft":
-          keys.current.left = true;
-          break;
-        case "KeyD":
-        case "ArrowRight":
-          keys.current.right = true;
-          break;
-      }
+    const down = (e) => {
+      if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = true;
+      if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = true;
+      if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = true;
+      if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = true;
     };
 
-    const keyUp = (event) => {
-      switch (event.code) {
-        case "KeyW":
-        case "ArrowUp":
-          keys.current.forward = false;
-          break;
-        case "KeyS":
-        case "ArrowDown":
-          keys.current.backward = false;
-          break;
-        case "KeyA":
-        case "ArrowLeft":
-          keys.current.left = false;
-          break;
-        case "KeyD":
-        case "ArrowRight":
-          keys.current.right = false;
-          break;
-      }
+    const up = (e) => {
+      if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = false;
+      if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = false;
+      if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = false;
+      if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = false;
     };
 
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
 
     return () => {
-      window.removeEventListener("keydown", keyDown);
-      window.removeEventListener("keyup", keyUp);
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
     };
-  }, [camera]);
+  }, []);
 
-  useFrame((_, delta) => {
-    const speed = 3;
+  useFrame(({ camera }, delta) => {
+    if (!player.current) return;
+
     const direction = new THREE.Vector3();
 
-    if (keys.current.forward) direction.z -= 1;
-    if (keys.current.backward) direction.z += 1;
-    if (keys.current.left) direction.x -= 1;
-    if (keys.current.right) direction.x += 1;
+    if (keys.current.w) direction.z -= 1;
+    if (keys.current.s) direction.z += 1;
+    if (keys.current.a) direction.x -= 1;
+    if (keys.current.d) direction.x += 1;
 
     if (direction.lengthSq() > 0) {
       direction.normalize();
 
-      direction.applyQuaternion(camera.quaternion);
-      direction.y = 0;
-      direction.normalize();
+      const speed = 3;
 
-      const nextPosition = camera.position
-        .clone()
-        .addScaledVector(direction, speed * delta);
+      player.current.position.x += direction.x * speed * delta;
+      player.current.position.z += direction.z * speed * delta;
 
-      // Límites provisionales de nuestra habitación
-      nextPosition.x = THREE.MathUtils.clamp(nextPosition.x, -4.6, 4.6);
-      nextPosition.z = THREE.MathUtils.clamp(nextPosition.z, -4.6, 4.6);
-      nextPosition.y = 1.7;
+      player.current.position.x = THREE.MathUtils.clamp(
+        player.current.position.x,
+        -4.4,
+        4.4
+      );
 
-      camera.position.copy(nextPosition);
+      player.current.position.z = THREE.MathUtils.clamp(
+        player.current.position.z,
+        -4.4,
+        4.4
+      );
+
+      player.current.rotation.y = Math.atan2(direction.x, direction.z);
     }
+
+    // Cámara siguiendo al personaje
+    const desiredCameraPosition = new THREE.Vector3(
+      player.current.position.x,
+      player.current.position.y + 3.2,
+      player.current.position.z + 5
+    );
+
+    camera.position.lerp(desiredCameraPosition, 0.08);
+
+    camera.lookAt(
+      player.current.position.x,
+      player.current.position.y + 1,
+      player.current.position.z
+    );
   });
 
-  return null;
+  return (
+    <group ref={player} position={[0, 0, 1]}>
+      {/* Cuerpo */}
+      <mesh position={[0, 1.15, 0]}>
+        <boxGeometry args={[0.7, 1.1, 0.4]} />
+        <meshStandardMaterial color="#333333" />
+      </mesh>
+
+      {/* Cabeza */}
+      <mesh position={[0, 2, 0]}>
+        <sphereGeometry args={[0.38, 24, 24]} />
+        <meshStandardMaterial color="#d8a47f" />
+      </mesh>
+
+      {/* Pierna izquierda */}
+      <mesh position={[-0.2, 0.45, 0]}>
+        <boxGeometry args={[0.25, 0.9, 0.3]} />
+        <meshStandardMaterial color="#222222" />
+      </mesh>
+
+      {/* Pierna derecha */}
+      <mesh position={[0.2, 0.45, 0]}>
+        <boxGeometry args={[0.25, 0.9, 0.3]} />
+        <meshStandardMaterial color="#222222" />
+      </mesh>
+    </group>
+  );
 }
 
 function Room() {
@@ -107,34 +116,24 @@ function Room() {
       <ambientLight intensity={1.5} />
       <directionalLight position={[5, 8, 5]} intensity={2} />
 
-      {/* Suelo */}
       <mesh position={[0, -0.1, 0]}>
         <boxGeometry args={[10, 0.2, 10]} />
         <meshStandardMaterial color="#777777" />
       </mesh>
 
-      {/* Pared trasera */}
       <mesh position={[0, 2, -5]}>
         <boxGeometry args={[10, 4, 0.2]} />
         <meshStandardMaterial color="#eeeeee" />
       </mesh>
 
-      {/* Pared izquierda */}
       <mesh position={[-5, 2, 0]}>
         <boxGeometry args={[0.2, 4, 10]} />
         <meshStandardMaterial color="#dddddd" />
       </mesh>
 
-      {/* Pared derecha */}
       <mesh position={[5, 2, 0]}>
         <boxGeometry args={[0.2, 4, 10]} />
         <meshStandardMaterial color="#dddddd" />
-      </mesh>
-
-      {/* Pared frontal */}
-      <mesh position={[0, 2, 5]}>
-        <boxGeometry args={[10, 4, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
       </mesh>
     </>
   );
@@ -144,13 +143,12 @@ export default function Home() {
   return (
     <main>
       <div className="instructions">
-        Haz clic para entrar · WASD para caminar · Ratón para mirar
+        WASD para mover el personaje
       </div>
 
-      <Canvas camera={{ position: [0, 1.7, 3], fov: 70 }}>
+      <Canvas camera={{ position: [0, 3, 6], fov: 60 }}>
         <Room />
-        <Player />
-        <PointerLockControls />
+        <Character />
       </Canvas>
     </main>
   );
