@@ -1,4 +1,5 @@
 import DpadWing from "./DpadWing";
+import { RigidBody } from "@react-three/rapier";
 
 export default function Museum() {
   return (
@@ -28,11 +29,19 @@ export default function Museum() {
         rotation={[0, Math.PI / 2, 0]}
       />
 
-      {/* PATIO CENTRAL PROVISIONAL */}
-      <mesh position={[0, -0.05, 0]}>
-        <cylinderGeometry args={[8, 8, 0.2, 48]} />
-        <meshStandardMaterial color="#71806b" />
-      </mesh>
+      {/* SUELO FÍSICO GENERAL PROVISIONAL */}
+<RigidBody type="fixed" colliders="cuboid">
+  <mesh position={[0, -0.15, 0]}>
+    <boxGeometry args={[70, 0.3, 70]} />
+    <meshStandardMaterial color="#454545" />
+  </mesh>
+</RigidBody>
+
+{/* PATIO CENTRAL */}
+<mesh position={[0, 0.02, 0]}>
+  <cylinderGeometry args={[8, 8, 0.2, 48]} />
+  <meshStandardMaterial color="#71806b" />
+</mesh>
 
       {/* CENTRO DEL JARDÍN */}
       <mesh position={[0, 0.15, 0]}>
