@@ -3,6 +3,7 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { Physics, RigidBody } from "@react-three/rapier";
 
 function Character() {
   const player = useRef();
@@ -204,6 +205,7 @@ function Character() {
 
 function Room() {
   return (
+     <RigidBody type="fixed" colliders="cuboid">
     <>
       <ambientLight intensity={1.5} />
 
@@ -329,6 +331,7 @@ function Room() {
         <meshStandardMaterial color="#bbbbbb" />
       </mesh>
     </>
+    </RigidBody>
   );
 }
 
@@ -340,8 +343,9 @@ export default function Home() {
       </div>
 
       <Canvas camera={{ position: [0, 3, 6], fov: 60 }}>
-        <Room />
-        <Character />
+       <Physics gravity={[0, -9.81, 0]}>
+  <Room />
+  <Character />
       </Canvas>
     </main>
   );
