@@ -1,70 +1,75 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { useRef } from "react";
+import { useEffect, useState } from "react";
 import * as THREE from "three";
 
 export default function DynamicSky() {
-  const sun = useRef();
-  const { scene } = useThree();
+  const [hour, setHour] = useState(12);
 
-  useFrame(() => {
-    const now = new Date();
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
 
-    const hour =
-      now.getHours() +
-      now.getMinutes() / 60 +
-      now.getSeconds() / 3600;
+      setHour(
+        now.getHours() +
+        now.getMinutes() / 60 +
+        now.getSeconds() / 3600
+      );
+    };
 
-    // Intensidad de día:
-    // amanecer aproximadamente 06:00
-    // mediodía 12:00
-    // anochecer aproximadamente 18:00
-    const daylight = Math.max(
-      0,
-      Math.sin(((hour - 6) / 12) * Math.PI)
-    );
+    updateTime();
 
-    // Movimiento del sol
-    const angle = ((hour - 6) / 12) * Math.PI;
+    const timer = setInterval(updateTime, 30000);
 
-    const sunPosition = new THREE.Vector3(
-      Math.cos(angle) * 100,
-      Math.sin(angle) * 100,
-      30
-    );
+    return () => clearInterval(timer);
+  }, []);
 
-    if (sun.current) {
-      sun.current.position.copy(sunPosition);
-      sun.current.intensity = 0.05 + daylight * 2.2;
-    }
+  // Sol entre aproximadamente 06:00 y 18:00
+  const sunAngle = ((hour - 6) / 12) * Math.PI;
 
-    // Color general del fondo según la hora
-    const dayColor = new THREE.Color("#87b8e6");
-    const nightColor = new THREE.Color("#050811");
+  const sunHeight = Math.sin(sunAngle);
 
-    scene.background = nightColor
-      .clone()
-      .lerp(dayColor, daylight);
-  });
+  const daylight = THREE.MathUtils.clamp(
+    sunHeight,
+    0,
+    1
+  );
+
+  const sunPosition = [
+    Math.cos(sunAngle) * 100,
+    sunHeight * 100,
+    30,
+  ];
+
+  const isNight = hour < 6 || hour >= 18;
 
   return (
     <>
-      <Sky
-        distance={450000}
-        sunPosition={[100, 20, 30]}
-        turbidity={8}
-        rayleigh={2}
-      />
+      {!isNight && (
+        <Sky
+          distance={450000}
+          sunPosition={sunPosition}
+          turbidity={8}
+          rayleigh={2}
+        />
+      )}
+
+      {isNight && (
+        <color
+          attach="background"
+          args={["#030712"]}
+        />
+      )}
 
       <directionalLight
-        ref={sun}
-        position={[100, 100, 30]}
-        intensity={2}
+        position={sunPosition}
+        intensity={0.1 + daylight * 2.2}
       />
 
-      <ambientLight intensity={0.35} />
+      <ambientLight
+        intensity={isNight ? 0.08 : 0.35 + daylight * 0.35}
+      />
     </>
   );
 }
