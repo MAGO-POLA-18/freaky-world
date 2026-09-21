@@ -112,7 +112,7 @@ function Character() {
       // Límites provisionales de la habitación
       player.current.position.x = THREE.MathUtils.clamp(
         player.current.position.x,
-        -4.4,
+        -18.4,
         4.4
       );
 
@@ -212,16 +212,11 @@ function Room() {
         intensity={2}
       />
 
-      {/* Suelo */}
+      {/* ===== SALA 1 ===== */}
+
       <mesh position={[0, -0.1, 0]}>
         <boxGeometry args={[10, 0.2, 10]} />
         <meshStandardMaterial color="#777777" />
-      </mesh>
-
-      {/* Pared trasera */}
-      <mesh position={[0, 2, -5]}>
-        <boxGeometry args={[10, 4, 0.2]} />
-        <meshStandardMaterial color="#eeeeee" />
       </mesh>
 
       {/* Pared izquierda */}
@@ -234,6 +229,61 @@ function Room() {
       <mesh position={[5, 2, 0]}>
         <boxGeometry args={[0.2, 4, 10]} />
         <meshStandardMaterial color="#dddddd" />
+      </mesh>
+
+      {/* Pared trasera con hueco para puerta */}
+      <mesh position={[-3.5, 2, -5]}>
+        <boxGeometry args={[3, 4, 0.2]} />
+        <meshStandardMaterial color="#eeeeee" />
+      </mesh>
+
+      <mesh position={[3.5, 2, -5]}>
+        <boxGeometry args={[3, 4, 0.2]} />
+        <meshStandardMaterial color="#eeeeee" />
+      </mesh>
+
+      <mesh position={[0, 3.5, -5]}>
+        <boxGeometry args={[4, 1, 0.2]} />
+        <meshStandardMaterial color="#eeeeee" />
+      </mesh>
+
+      {/* ===== PASILLO ===== */}
+
+      <mesh position={[0, -0.1, -7]}>
+        <boxGeometry args={[4, 0.2, 4]} />
+        <meshStandardMaterial color="#666666" />
+      </mesh>
+
+      <mesh position={[-2, 2, -7]}>
+        <boxGeometry args={[0.2, 4, 4]} />
+        <meshStandardMaterial color="#cccccc" />
+      </mesh>
+
+      <mesh position={[2, 2, -7]}>
+        <boxGeometry args={[0.2, 4, 4]} />
+        <meshStandardMaterial color="#cccccc" />
+      </mesh>
+
+      {/* ===== SALA 2 ===== */}
+
+      <mesh position={[0, -0.1, -14]}>
+        <boxGeometry args={[10, 0.2, 10]} />
+        <meshStandardMaterial color="#555555" />
+      </mesh>
+
+      <mesh position={[-5, 2, -14]}>
+        <boxGeometry args={[0.2, 4, 10]} />
+        <meshStandardMaterial color="#bbbbbb" />
+      </mesh>
+
+      <mesh position={[5, 2, -14]}>
+        <boxGeometry args={[0.2, 4, 10]} />
+        <meshStandardMaterial color="#bbbbbb" />
+      </mesh>
+
+      <mesh position={[0, 2, -19]}>
+        <boxGeometry args={[10, 4, 0.2]} />
+        <meshStandardMaterial color="#bbbbbb" />
       </mesh>
     </>
   );
