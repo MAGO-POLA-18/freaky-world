@@ -3,7 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 
-import Museum from "../Museum/Museum";
+import WorldEnvironment from "./WorldEnvironment";
 
 import DynamicSky from "./DynamicSky";
 import WorldLighting from "./WorldLighting";
@@ -79,9 +79,9 @@ export default function WorldScene() {
           gravity={[0, -9.81, 0]}
           timeStep={1 / 60}
         >
-          <Museum />
-
+          <WorldEnvironment />
           <PlayerController />
+           
         </Physics>
 
         {/* ===============================================
