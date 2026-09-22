@@ -11,7 +11,7 @@ export default function DpadWing({
       <RigidBody type="fixed" colliders="cuboid">
 
         {/* =================================================
-            PLANTA BAJA
+            SUELO
         ================================================= */}
 
         <mesh position={[0, 0, 0]} receiveShadow>
@@ -20,8 +20,10 @@ export default function DpadWing({
         </mesh>
 
         {/* =================================================
-            PAREDES LATERALES PLANTA BAJA
+            PLANTA BAJA
         ================================================= */}
+
+        {/* LATERALES */}
 
         <mesh position={[-29.8, 3.5, 0]} castShadow receiveShadow>
           <boxGeometry args={[0.4, 7, 70]} />
@@ -33,7 +35,7 @@ export default function DpadWing({
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
 
-        {/* PARED DEL FONDO */}
+        {/* FONDO */}
 
         <mesh position={[0, 7, 34.8]} castShadow receiveShadow>
           <boxGeometry args={[60, 14, 0.4]} />
@@ -42,7 +44,6 @@ export default function DpadWing({
 
         {/* =================================================
             FACHADA HACIA EL PATIO
-            Mantiene el gran acceso central
         ================================================= */}
 
         <mesh position={[-20, 3.5, -34.8]} castShadow receiveShadow>
@@ -57,91 +58,77 @@ export default function DpadWing({
 
         {/* =================================================
             TERRAZA FRONTAL
-            Segundo nivel abierto hacia el patio
+
+            Desde Z -35 hasta Z -21.
+            Profundidad: 14 metros.
         ================================================= */}
 
-        <mesh position={[0, 7, -19.5]} receiveShadow>
-          <boxGeometry args={[59.2, 0.4, 30]} />
+        <mesh position={[0, 7, -28]} receiveShadow>
+          <boxGeometry args={[59.2, 0.4, 14]} />
           <meshStandardMaterial color="#777777" roughness={0.9} />
         </mesh>
 
         {/* BARANDILLA FRONTAL */}
 
-        <mesh position={[0, 7.7, -34.1]} castShadow>
-          <boxGeometry args={[59, 1.4, 0.25]} />
+        <mesh position={[0, 7.7, -34.4]} castShadow>
+          <boxGeometry args={[59, 1.4, 0.22]} />
           <meshStandardMaterial color="#454545" />
         </mesh>
 
-        {/* BARANDILLAS LATERALES DE TERRAZA */}
+        {/* BARANDILLAS LATERALES */}
 
-        <mesh position={[-29.3, 7.7, -19.5]} castShadow>
-          <boxGeometry args={[0.25, 1.4, 29]} />
+        <mesh position={[-29.3, 7.7, -28]} castShadow>
+          <boxGeometry args={[0.22, 1.4, 13]} />
           <meshStandardMaterial color="#454545" />
         </mesh>
 
-        <mesh position={[29.3, 7.7, -19.5]} castShadow>
-          <boxGeometry args={[0.25, 1.4, 29]} />
+        <mesh position={[29.3, 7.7, -28]} castShadow>
+          <boxGeometry args={[0.22, 1.4, 13]} />
           <meshStandardMaterial color="#454545" />
         </mesh>
 
         {/* =================================================
-            VOLUMEN POSTERIOR
-            Parte alta del edificio
+            TRANSICIÓN HACIA EL VOLUMEN ALTO
+
+            Pared inclinada hacia atrás.
+            Esta vez gira sobre X, no sobre Z.
         ================================================= */}
 
-        {/* PARED IZQUIERDA SUPERIOR */}
-
-        <mesh position={[-29.8, 11, 15]} castShadow receiveShadow>
-          <boxGeometry args={[0.4, 8, 40]} />
+        <mesh
+          position={[0, 10.5, -17]}
+          rotation={[-0.52, 0, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[60, 0.45, 14]} />
           <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
-
-        {/* PARED DERECHA SUPERIOR */}
-
-        <mesh position={[29.8, 11, 15]} castShadow receiveShadow>
-          <boxGeometry args={[0.4, 8, 40]} />
-          <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
-
-        {/* FRENTE DEL VOLUMEN SUPERIOR */}
-
-        <mesh position={[0, 11, -5]} castShadow receiveShadow>
-          <boxGeometry args={[60, 8, 0.4]} />
-          <meshStandardMaterial color="#d6d6d6" />
         </mesh>
 
         {/* =================================================
-            TECHO POSTERIOR ALTO
+            VOLUMEN POSTERIOR ALTO
         ================================================= */}
 
-        <mesh position={[0, 15.2, 15]} castShadow receiveShadow>
-          <boxGeometry args={[60, 0.4, 40]} />
+        {/* LATERAL IZQUIERDO */}
+
+        <mesh position={[-29.8, 11, 8.5]} castShadow receiveShadow>
+          <boxGeometry args={[0.4, 8, 53]} />
+          <meshStandardMaterial color="#cfcfcf" />
+        </mesh>
+
+        {/* LATERAL DERECHO */}
+
+        <mesh position={[29.8, 11, 8.5]} castShadow receiveShadow>
+          <boxGeometry args={[0.4, 8, 53]} />
+          <meshStandardMaterial color="#cfcfcf" />
+        </mesh>
+
+        {/* =================================================
+            TECHO ALTO
+        ================================================= */}
+
+        <mesh position={[0, 15, 8.5]} castShadow receiveShadow>
+          <boxGeometry args={[60, 0.4, 53]} />
           <meshStandardMaterial color="#bcbcbc" />
-        </mesh>
-
-        {/* =================================================
-            TRANSICIÓN DIAGONAL
-            Marca la silueta ascendente de la cruceta
-        ================================================= */}
-
-        <mesh
-          position={[-29.9, 11, -10]}
-          rotation={[0, 0, -0.52]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[0.45, 9.2, 10]} />
-          <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
-
-        <mesh
-          position={[29.9, 11, -10]}
-          rotation={[0, 0, 0.52]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[0.45, 9.2, 10]} />
-          <meshStandardMaterial color="#cfcfcf" />
         </mesh>
 
         {/* =================================================
