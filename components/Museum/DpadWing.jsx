@@ -119,6 +119,105 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
+    FACHADA ARQUITECTÓNICA
+    Marco central + grandes paños de vidrio
+================================================= */}
+
+{/* MARCO IZQUIERDO DE LA ENTRADA */}
+<mesh
+  position={[-10.6, 3.6, 35.05]}
+  castShadow
+>
+  <boxGeometry args={[1.2, 7.2, 0.7]} />
+  <meshStandardMaterial
+    color="#24272b"
+    roughness={0.7}
+  />
+</mesh>
+
+{/* MARCO DERECHO DE LA ENTRADA */}
+<mesh
+  position={[10.6, 3.6, 35.05]}
+  castShadow
+>
+  <boxGeometry args={[1.2, 7.2, 0.7]} />
+  <meshStandardMaterial
+    color="#24272b"
+    roughness={0.7}
+  />
+</mesh>
+
+{/* DINTEL / MARCO SUPERIOR */}
+<mesh
+  position={[0, 6.65, 35.05]}
+  castShadow
+>
+  <boxGeometry args={[22.4, 1.1, 0.7]} />
+  <meshStandardMaterial
+    color="#24272b"
+    roughness={0.7}
+  />
+</mesh>
+
+{/* VIDRIO IZQUIERDO */}
+<mesh position={[-20, 3.7, 35.08]}>
+  <planeGeometry args={[15, 5]} />
+  <meshPhysicalMaterial
+    color="#6f9bab"
+    transparent
+    opacity={0.38}
+    roughness={0.12}
+    metalness={0.05}
+    transmission={0.25}
+    side={THREE.DoubleSide}
+  />
+</mesh>
+
+{/* MARCO DEL VIDRIO IZQUIERDO */}
+<mesh position={[-20, 3.7, 35.12]}>
+  <boxGeometry args={[15.6, 5.6, 0.16]} />
+  <meshStandardMaterial
+    color="#30343a"
+    wireframe
+  />
+</mesh>
+
+{/* VIDRIO DERECHO */}
+<mesh position={[20, 3.7, 35.08]}>
+  <planeGeometry args={[15, 5]} />
+  <meshPhysicalMaterial
+    color="#6f9bab"
+    transparent
+    opacity={0.38}
+    roughness={0.12}
+    metalness={0.05}
+    transmission={0.25}
+    side={THREE.DoubleSide}
+  />
+</mesh>
+
+{/* MARCO DEL VIDRIO DERECHO */}
+<mesh position={[20, 3.7, 35.12]}>
+  <boxGeometry args={[15.6, 5.6, 0.16]} />
+  <meshStandardMaterial
+    color="#30343a"
+    wireframe
+  />
+</mesh>
+
+{/* FRANJA PARA EL NOMBRE DE LA SALA */}
+<mesh
+  position={[0, 6.2, 35.45]}
+  castShadow
+>
+  <boxGeometry args={[16, 1.1, 0.22]} />
+  <meshStandardMaterial
+    color="#17191d"
+    roughness={0.55}
+  />
+</mesh>
+
+      {/* =================================================
           TERRAZA
       ================================================= */}
 
