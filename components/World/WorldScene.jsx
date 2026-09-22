@@ -1,11 +1,22 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import {
+  Canvas,
+  useFrame,
+  useThree,
+} from "@react-three/fiber";
+
+import {
+  useEffect,
+  useRef,
+} from "react";
+
 import * as THREE from "three";
+
 import {
   Physics,
   RigidBody,
+  CapsuleCollider,
   useRapier,
 } from "@react-three/rapier";
 
@@ -24,7 +35,11 @@ function Character() {
   const player = useRef();
 
   const { gl } = useThree();
-  const { world, rapier } = useRapier();
+
+  const {
+    world,
+    rapier,
+  } = useRapier();
 
   const keys = useRef({
     w: false,
@@ -42,35 +57,69 @@ function Character() {
 
   useEffect(() => {
     const keyDown = (e) => {
-      if (e.code === "KeyW" || e.code === "ArrowUp")
+      if (
+        e.code === "KeyW" ||
+        e.code === "ArrowUp"
+      ) {
         keys.current.w = true;
+      }
 
-      if (e.code === "KeyS" || e.code === "ArrowDown")
+      if (
+        e.code === "KeyS" ||
+        e.code === "ArrowDown"
+      ) {
         keys.current.s = true;
+      }
 
-      if (e.code === "KeyA" || e.code === "ArrowLeft")
+      if (
+        e.code === "KeyA" ||
+        e.code === "ArrowLeft"
+      ) {
         keys.current.a = true;
+      }
 
-      if (e.code === "KeyD" || e.code === "ArrowRight")
+      if (
+        e.code === "KeyD" ||
+        e.code === "ArrowRight"
+      ) {
         keys.current.d = true;
+      }
     };
 
     const keyUp = (e) => {
-      if (e.code === "KeyW" || e.code === "ArrowUp")
+      if (
+        e.code === "KeyW" ||
+        e.code === "ArrowUp"
+      ) {
         keys.current.w = false;
+      }
 
-      if (e.code === "KeyS" || e.code === "ArrowDown")
+      if (
+        e.code === "KeyS" ||
+        e.code === "ArrowDown"
+      ) {
         keys.current.s = false;
+      }
 
-      if (e.code === "KeyA" || e.code === "ArrowLeft")
+      if (
+        e.code === "KeyA" ||
+        e.code === "ArrowLeft"
+      ) {
         keys.current.a = false;
+      }
 
-      if (e.code === "KeyD" || e.code === "ArrowRight")
+      if (
+        e.code === "KeyD" ||
+        e.code === "ArrowRight"
+      ) {
         keys.current.d = false;
+      }
     };
 
     const mouseDown = (e) => {
-      if (e.button === 0) dragging.current = true;
+      if (e.button === 0) {
+        dragging.current = true;
+      }
     };
 
     const mouseUp = () => {
@@ -94,27 +143,52 @@ function Character() {
         );
     };
 
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+    window.addEventListener(
+      "keydown",
+      keyDown
+    );
+
+    window.addEventListener(
+      "keyup",
+      keyUp
+    );
 
     gl.domElement.addEventListener(
       "mousedown",
       mouseDown
     );
 
-    window.addEventListener("mouseup", mouseUp);
-    window.addEventListener("mousemove", mouseMove);
+    window.addEventListener(
+      "mouseup",
+      mouseUp
+    );
+
+    window.addEventListener(
+      "mousemove",
+      mouseMove
+    );
 
     return () => {
-      window.removeEventListener("keydown", keyDown);
-      window.removeEventListener("keyup", keyUp);
+      window.removeEventListener(
+        "keydown",
+        keyDown
+      );
+
+      window.removeEventListener(
+        "keyup",
+        keyUp
+      );
 
       gl.domElement.removeEventListener(
         "mousedown",
         mouseDown
       );
 
-      window.removeEventListener("mouseup", mouseUp);
+      window.removeEventListener(
+        "mouseup",
+        mouseUp
+      );
+
       window.removeEventListener(
         "mousemove",
         mouseMove
@@ -123,29 +197,51 @@ function Character() {
   }, [gl]);
 
   useFrame(({ camera }) => {
-    if (!body.current || !player.current) return;
+    if (
+      !body.current ||
+      !player.current
+    ) {
+      return;
+    }
 
-    const yaw = cameraRotation.current.yaw;
-    const pitch = cameraRotation.current.pitch;
+    const yaw =
+      cameraRotation.current.yaw;
 
-    const forward = new THREE.Vector3(
-      -Math.sin(yaw),
-      0,
-      -Math.cos(yaw)
-    );
+    const pitch =
+      cameraRotation.current.pitch;
 
-    const right = new THREE.Vector3(
-      Math.cos(yaw),
-      0,
-      -Math.sin(yaw)
-    );
+    const forward =
+      new THREE.Vector3(
+        -Math.sin(yaw),
+        0,
+        -Math.cos(yaw)
+      );
 
-    const movement = new THREE.Vector3();
+    const right =
+      new THREE.Vector3(
+        Math.cos(yaw),
+        0,
+        -Math.sin(yaw)
+      );
 
-    if (keys.current.w) movement.add(forward);
-    if (keys.current.s) movement.sub(forward);
-    if (keys.current.d) movement.add(right);
-    if (keys.current.a) movement.sub(right);
+    const movement =
+      new THREE.Vector3();
+
+    if (keys.current.w) {
+      movement.add(forward);
+    }
+
+    if (keys.current.s) {
+      movement.sub(forward);
+    }
+
+    if (keys.current.d) {
+      movement.add(right);
+    }
+
+    if (keys.current.a) {
+      movement.sub(right);
+    }
 
     if (mobileInput.y !== 0) {
       movement.addScaledVector(
@@ -181,15 +277,16 @@ function Character() {
       body.current.linvel();
 
     if (movement.lengthSq() > 0) {
-      const inputStrength = Math.min(
-        movement.length(),
-        1
-      );
+      const inputStrength =
+        Math.min(
+          movement.length(),
+          1
+        );
 
       movement.normalize();
 
       const minSpeed = 2;
-      const maxSpeed = 10;
+      const maxSpeed = 8;
 
       const speed =
         minSpeed +
@@ -205,19 +302,21 @@ function Character() {
         true
       );
 
-      const targetRotation = Math.atan2(
-        movement.x,
-        movement.z
-      );
+      const targetRotation =
+        Math.atan2(
+          movement.x,
+          movement.z
+        );
 
       let difference =
         targetRotation -
         player.current.rotation.y;
 
-      difference = Math.atan2(
-        Math.sin(difference),
-        Math.cos(difference)
-      );
+      difference =
+        Math.atan2(
+          Math.sin(difference),
+          Math.cos(difference)
+        );
 
       player.current.rotation.y +=
         difference * 0.15;
@@ -239,10 +338,12 @@ function Character() {
     const height = 1.5;
 
     const horizontalDistance =
-      Math.cos(pitch) * distance;
+      Math.cos(pitch) *
+      distance;
 
     const verticalDistance =
-      Math.sin(pitch) * distance;
+      Math.sin(pitch) *
+      distance;
 
     const cameraTarget =
       new THREE.Vector3(
@@ -276,37 +377,40 @@ function Character() {
 
     cameraDirection.normalize();
 
-    const ray = new rapier.Ray(
-      {
-        x: cameraTarget.x,
-        y: cameraTarget.y,
-        z: cameraTarget.z,
-      },
-      {
-        x: cameraDirection.x,
-        y: cameraDirection.y,
-        z: cameraDirection.z,
-      }
-    );
+    const ray =
+      new rapier.Ray(
+        {
+          x: cameraTarget.x,
+          y: cameraTarget.y,
+          z: cameraTarget.z,
+        },
+        {
+          x: cameraDirection.x,
+          y: cameraDirection.y,
+          z: cameraDirection.z,
+        }
+      );
 
-    const hit = world.castRay(
-      ray,
-      cameraDistance,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      body.current
-    );
+    const hit =
+      world.castRay(
+        ray,
+        cameraDistance,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        body.current
+      );
 
     let finalCameraPosition =
       desiredCameraPosition;
 
     if (hit) {
-      const safeDistance = Math.max(
-        hit.timeOfImpact - 0.25,
-        0.6
-      );
+      const safeDistance =
+        Math.max(
+          hit.timeOfImpact - 0.25,
+          0.6
+        );
 
       finalCameraPosition =
         cameraTarget
@@ -314,7 +418,9 @@ function Character() {
           .add(
             cameraDirection
               .clone()
-              .multiplyScalar(safeDistance)
+              .multiplyScalar(
+                safeDistance
+              )
           );
     }
 
@@ -334,47 +440,115 @@ function Character() {
     <RigidBody
       ref={body}
       position={[0, 0.95, 14]}
-      colliders="cuboid"
-      enabledRotations={[false, false, false]}
+      colliders={false}
+      enabledRotations={[
+        false,
+        false,
+        false,
+      ]}
       friction={0.9}
-      linearDamping={0.8}
+      restitution={0}
+      linearDamping={0.5}
       ccd
       canSleep={false}
     >
+      {/* ===============================================
+          COLLIDER DEL PERSONAJE
+
+          Altura total:
+          0.60 + 0.60 + radios ≈ 1.9 m
+
+          Fondo redondeado para subir pendientes.
+      =============================================== */}
+
+      <CapsuleCollider
+        args={[0.6, 0.35]}
+        friction={0.9}
+        restitution={0}
+      />
+
       <group
         ref={player}
-        position={[0, -0.95, 0]}
+        position={[
+          0,
+          -0.95,
+          0,
+        ]}
       >
         <mesh
           position={[0, 1.15, 0]}
           castShadow
         >
-          <boxGeometry args={[0.7, 1.1, 0.4]} />
-          <meshStandardMaterial color="#333333" />
+          <boxGeometry
+            args={[
+              0.7,
+              1.1,
+              0.4,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#333333"
+          />
         </mesh>
 
         <mesh
           position={[0, 2, 0]}
           castShadow
         >
-          <sphereGeometry args={[0.38, 24, 24]} />
-          <meshStandardMaterial color="#d8a47f" />
+          <sphereGeometry
+            args={[
+              0.38,
+              24,
+              24,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#d8a47f"
+          />
         </mesh>
 
         <mesh
-          position={[-0.2, 0.45, 0]}
+          position={[
+            -0.2,
+            0.45,
+            0,
+          ]}
           castShadow
         >
-          <boxGeometry args={[0.25, 0.9, 0.3]} />
-          <meshStandardMaterial color="#222222" />
+          <boxGeometry
+            args={[
+              0.25,
+              0.9,
+              0.3,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#222222"
+          />
         </mesh>
 
         <mesh
-          position={[0.2, 0.45, 0]}
+          position={[
+            0.2,
+            0.45,
+            0,
+          ]}
           castShadow
         >
-          <boxGeometry args={[0.25, 0.9, 0.3]} />
-          <meshStandardMaterial color="#222222" />
+          <boxGeometry
+            args={[
+              0.25,
+              0.9,
+              0.3,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#222222"
+          />
         </mesh>
       </group>
     </RigidBody>
@@ -385,35 +559,55 @@ function MobileControls() {
   const joystick = useRef();
   const knob = useRef();
 
-  const joystickTouch = useRef(null);
-  const lookTouch = useRef(null);
+  const joystickTouch =
+    useRef(null);
 
-  const updateJoystick = (touch) => {
-    if (!joystick.current || !knob.current)
+  const lookTouch =
+    useRef(null);
+
+  const updateJoystick = (
+    touch
+  ) => {
+    if (
+      !joystick.current ||
+      !knob.current
+    ) {
       return;
+    }
 
     const rect =
-      joystick.current.getBoundingClientRect();
+      joystick.current
+        .getBoundingClientRect();
 
     const centerX =
-      rect.left + rect.width / 2;
+      rect.left +
+      rect.width / 2;
 
     const centerY =
-      rect.top + rect.height / 2;
+      rect.top +
+      rect.height / 2;
 
     let dx =
-      touch.clientX - centerX;
+      touch.clientX -
+      centerX;
 
     let dy =
-      touch.clientY - centerY;
+      touch.clientY -
+      centerY;
 
     const maxDistance =
       rect.width * 0.34;
 
     const distance =
-      Math.sqrt(dx * dx + dy * dy);
+      Math.sqrt(
+        dx * dx +
+        dy * dy
+      );
 
-    if (distance > maxDistance) {
+    if (
+      distance >
+      maxDistance
+    ) {
       dx =
         (dx / distance) *
         maxDistance;
@@ -445,16 +639,23 @@ function MobileControls() {
     joystickTouch.current = null;
   };
 
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (
+    e
+  ) => {
     e.preventDefault();
 
-    for (const touch of e.changedTouches) {
+    for (
+      const touch
+      of e.changedTouches
+    ) {
       if (
         touch.clientX <
-        window.innerWidth * 0.45
+        window.innerWidth *
+          0.45
       ) {
         if (
-          joystickTouch.current === null
+          joystickTouch.current ===
+          null
         ) {
           joystickTouch.current =
             touch.identifier;
@@ -462,21 +663,34 @@ function MobileControls() {
           updateJoystick(touch);
         }
       } else {
-        if (lookTouch.current === null) {
+        if (
+          lookTouch.current ===
+          null
+        ) {
           lookTouch.current = {
-            id: touch.identifier,
-            x: touch.clientX,
-            y: touch.clientY,
+            id:
+              touch.identifier,
+
+            x:
+              touch.clientX,
+
+            y:
+              touch.clientY,
           };
         }
       }
     }
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (
+    e
+  ) => {
     e.preventDefault();
 
-    for (const touch of e.changedTouches) {
+    for (
+      const touch
+      of e.changedTouches
+    ) {
       if (
         touch.identifier ===
         joystickTouch.current
@@ -512,8 +726,13 @@ function MobileControls() {
     }
   };
 
-  const handleTouchEnd = (e) => {
-    for (const touch of e.changedTouches) {
+  const handleTouchEnd = (
+    e
+  ) => {
+    for (
+      const touch
+      of e.changedTouches
+    ) {
       if (
         touch.identifier ===
         joystickTouch.current
@@ -526,7 +745,8 @@ function MobileControls() {
         touch.identifier ===
           lookTouch.current.id
       ) {
-        lookTouch.current = null;
+        lookTouch.current =
+          null;
       }
     }
   };
@@ -534,10 +754,18 @@ function MobileControls() {
   return (
     <div
       className="mobile-controls"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      onTouchStart={
+        handleTouchStart
+      }
+      onTouchMove={
+        handleTouchMove
+      }
+      onTouchEnd={
+        handleTouchEnd
+      }
+      onTouchCancel={
+        handleTouchEnd
+      }
     >
       <div
         ref={joystick}
@@ -549,7 +777,9 @@ function MobileControls() {
         />
       </div>
 
-      <div className="mobile-look">
+      <div
+        className="mobile-look"
+      >
         Desliza para mirar
       </div>
     </div>
@@ -560,8 +790,7 @@ export default function WorldScene() {
   return (
     <>
       <div className="instructions">
-        WASD para caminar · Mantén clic izquierdo y
-        arrastra para mover la cámara
+        WASD para caminar · Mantén clic izquierdo y arrastra para mover la cámara
       </div>
 
       <Canvas
@@ -577,7 +806,9 @@ export default function WorldScene() {
       >
         <DynamicSky />
 
-        <Physics gravity={[0, -9.81, 0]}>
+        <Physics
+          gravity={[0, -9.81, 0]}
+        >
           <Museum />
           <Character />
         </Physics>
