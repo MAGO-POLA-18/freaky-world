@@ -361,6 +361,33 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
+    ILUMINACIÓN DE TERRAZA
+================================================= */}
+
+<pointLight
+  position={[0, 10, 27]}
+  intensity={22}
+  distance={30}
+  decay={2}
+  color="#ffe2b8"
+/>
+
+<pointLight
+  position={[-20, 9, 27]}
+  intensity={12}
+  distance={22}
+  decay={2}
+  color="#dcecff"
+/>
+
+<pointLight
+  position={[20, 9, 27]}
+  intensity={12}
+  distance={22}
+  decay={2}
+  color="#dcecff"
+/>
+      {/* =================================================
           TERRAZA
       ================================================= */}
 
