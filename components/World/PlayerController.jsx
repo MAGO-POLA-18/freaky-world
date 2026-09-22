@@ -8,6 +8,15 @@ import {
 } from "@react-three/rapier";
 import * as THREE from "three";
 
+/* =========================================================
+   INPUT GLOBAL DEL JUGADOR
+
+   Lo utiliza:
+   - teclado
+   - joystick móvil
+   - cámara móvil
+========================================================= */
+
 export const playerInput = {
   x: 0,
   y: 0,
@@ -15,16 +24,62 @@ export const playerInput = {
   lookY: 0,
 };
 
+/* =========================================================
+   RUNTIME GLOBAL DEL JUGADOR
+
+   Punto único donde otros sistemas pueden consultar:
+   - rigid body
+   - rotación de cámara
+   - spawn
+
+   IMPORTANTE:
+   spawn.y representa el CENTRO del collider.
+========================================================= */
+
 export const playerRuntime = {
   body: null,
+
   yaw: 0,
   pitch: 0.35,
-  spawn: new THREE.Vector3(0, 1.35, 14),
+
+  spawn: new THREE.Vector3(0, 1.05, 14),
 };
 
+/* =========================================================
+   CONFIGURACIÓN DEL PERSONAJE
+========================================================= */
+
+const WALK_SPEED = 2;
+const RUN_SPEED = 6.5;
+
+const FALL_LIMIT = -8;
+
+/*
+  CapsuleCollider de Rapier:
+
+  args={[
+    halfHeight,
+    radius
+  ]}
+
+  Altura total aproximada:
+  halfHeight * 2 + radius * 2
+
+  0.7 * 2 + 0.35 * 2 = 2.1 m
+*/
+
+const COLLIDER_HALF_HEIGHT = 0.7;
+const COLLIDER_RADIUS = 0.35;
+
+/* =========================================================
+   PLAYER CONTROLLER
+========================================================= */
+
 export default function PlayerController() {
-  const body = useRef();
-  const visual = useRef();
+  const body = useRef(null);
+  const visual = useRef(null);
+
+  const hasSpawned = useRef(false);
 
   const keys = useRef({
     w: false,
@@ -37,40 +92,101 @@ export default function PlayerController() {
   const forward = useRef(new THREE.Vector3());
   const right = useRef(new THREE.Vector3());
 
+  /* =======================================================
+     RESET / RESPAWN
+  ======================================================= */
+
+  const respawn = () => {
+    if (!body.current) return;
+
+    const rigidBody = body.current;
+
+    rigidBody.setTranslation(
+      {
+        x: playerRuntime.spawn.x,
+        y: playerRuntime.spawn.y,
+        z: playerRuntime.spawn.z,
+      },
+      true
+    );
+
+    rigidBody.setLinvel(
+      {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+      true
+    );
+
+    rigidBody.setAngvel(
+      {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+      true
+    );
+
+    rigidBody.wakeUp();
+  };
+
+  /* =======================================================
+     TECLADO
+  ======================================================= */
+
   useEffect(() => {
     const keyDown = (event) => {
-      if (event.code === "KeyW" || event.code === "ArrowUp") {
-        keys.current.w = true;
-      }
+      switch (event.code) {
+        case "KeyW":
+        case "ArrowUp":
+          keys.current.w = true;
+          break;
 
-      if (event.code === "KeyS" || event.code === "ArrowDown") {
-        keys.current.s = true;
-      }
+        case "KeyS":
+        case "ArrowDown":
+          keys.current.s = true;
+          break;
 
-      if (event.code === "KeyA" || event.code === "ArrowLeft") {
-        keys.current.a = true;
-      }
+        case "KeyA":
+        case "ArrowLeft":
+          keys.current.a = true;
+          break;
 
-      if (event.code === "KeyD" || event.code === "ArrowRight") {
-        keys.current.d = true;
+        case "KeyD":
+        case "ArrowRight":
+          keys.current.d = true;
+          break;
+
+        default:
+          break;
       }
     };
 
     const keyUp = (event) => {
-      if (event.code === "KeyW" || event.code === "ArrowUp") {
-        keys.current.w = false;
-      }
+      switch (event.code) {
+        case "KeyW":
+        case "ArrowUp":
+          keys.current.w = false;
+          break;
 
-      if (event.code === "KeyS" || event.code === "ArrowDown") {
-        keys.current.s = false;
-      }
+        case "KeyS":
+        case "ArrowDown":
+          keys.current.s = false;
+          break;
 
-      if (event.code === "KeyA" || event.code === "ArrowLeft") {
-        keys.current.a = false;
-      }
+        case "KeyA":
+        case "ArrowLeft":
+          keys.current.a = false;
+          break;
 
-      if (event.code === "KeyD" || event.code === "ArrowRight") {
-        keys.current.d = false;
+        case "KeyD":
+        case "ArrowRight":
+          keys.current.d = false;
+          break;
+
+        default:
+          break;
       }
     };
 
@@ -83,45 +199,55 @@ export default function PlayerController() {
     };
   }, []);
 
+  /* =======================================================
+     LOOP DEL JUGADOR
+  ======================================================= */
+
   useFrame((_, delta) => {
     if (!body.current) return;
 
-    playerRuntime.body = body.current;
-
     const rigidBody = body.current;
-    const position = rigidBody.translation();
 
-    /* FALLBACK SI CAE FUERA DEL MUNDO */
-    if (position.y < -8) {
-      rigidBody.setTranslation(
-        {
-          x: playerRuntime.spawn.x,
-          y: playerRuntime.spawn.y,
-          z: playerRuntime.spawn.z,
-        },
-        true
-      );
+    playerRuntime.body = rigidBody;
 
-      rigidBody.setLinvel(
-        {
-          x: 0,
-          y: 0,
-          z: 0,
-        },
-        true
-      );
+    /* -----------------------------------------------------
+       SPAWN INICIAL CONTROLADO
 
-      rigidBody.setAngvel(
-        {
-          x: 0,
-          y: 0,
-          z: 0,
-        },
-        true
-      );
+       No dependemos únicamente de position={} de React.
+       Una vez que Rapier ya creó el rigid body,
+       colocamos explícitamente al jugador.
+    ----------------------------------------------------- */
+
+    if (!hasSpawned.current) {
+      hasSpawned.current = true;
+
+      respawn();
 
       return;
     }
+
+    const position = rigidBody.translation();
+
+    /* -----------------------------------------------------
+       FALLBACK
+
+       Si sale del escenario, vuelve al spawn.
+    ----------------------------------------------------- */
+
+    if (
+      position.y < FALL_LIMIT ||
+      !Number.isFinite(position.x) ||
+      !Number.isFinite(position.y) ||
+      !Number.isFinite(position.z)
+    ) {
+      respawn();
+
+      return;
+    }
+
+    /* =====================================================
+       DIRECCIÓN SEGÚN CÁMARA
+    ===================================================== */
 
     const yaw = playerRuntime.yaw;
 
@@ -139,6 +265,10 @@ export default function PlayerController() {
 
     movement.current.set(0, 0, 0);
 
+    /* =====================================================
+       INPUT TECLADO
+    ===================================================== */
+
     if (keys.current.w) {
       movement.current.add(forward.current);
     }
@@ -155,6 +285,10 @@ export default function PlayerController() {
       movement.current.sub(right.current);
     }
 
+    /* =====================================================
+       INPUT MÓVIL
+    ===================================================== */
+
     if (playerInput.y !== 0) {
       movement.current.addScaledVector(
         forward.current,
@@ -169,6 +303,10 @@ export default function PlayerController() {
       );
     }
 
+    /* =====================================================
+       VELOCIDAD
+    ===================================================== */
+
     const currentVelocity = rigidBody.linvel();
 
     let targetX = 0;
@@ -182,16 +320,20 @@ export default function PlayerController() {
 
       movement.current.normalize();
 
-      const walkSpeed = 2;
-      const runSpeed = 6.5;
-
       const speed =
-        walkSpeed +
-        (runSpeed - walkSpeed) *
+        WALK_SPEED +
+        (RUN_SPEED - WALK_SPEED) *
           strength;
 
-      targetX = movement.current.x * speed;
-      targetZ = movement.current.z * speed;
+      targetX =
+        movement.current.x * speed;
+
+      targetZ =
+        movement.current.z * speed;
+
+      /* ===================================================
+         ROTACIÓN VISUAL DEL PERSONAJE
+      =================================================== */
 
       if (visual.current) {
         const targetRotation = Math.atan2(
@@ -216,20 +358,38 @@ export default function PlayerController() {
       }
     }
 
+    /* =====================================================
+       SUAVIZADO DEL MOVIMIENTO
+    ===================================================== */
+
     const movementSmoothing =
       1 - Math.exp(-10 * delta);
 
-    const velocityX = THREE.MathUtils.lerp(
-      currentVelocity.x,
-      targetX,
-      movementSmoothing
-    );
+    const velocityX =
+      THREE.MathUtils.lerp(
+        currentVelocity.x,
+        targetX,
+        movementSmoothing
+      );
 
-    const velocityZ = THREE.MathUtils.lerp(
-      currentVelocity.z,
-      targetZ,
-      movementSmoothing
-    );
+    const velocityZ =
+      THREE.MathUtils.lerp(
+        currentVelocity.z,
+        targetZ,
+        movementSmoothing
+      );
+
+    /*
+      Conservamos Y.
+
+      Rapier controla:
+      - gravedad
+      - suelo
+      - desniveles
+      - colisiones verticales
+
+      Nosotros controlamos únicamente X/Z.
+    */
 
     rigidBody.setLinvel(
       {
@@ -241,63 +401,135 @@ export default function PlayerController() {
     );
   });
 
+  /* =======================================================
+     PERSONAJE
+  ======================================================= */
+
   return (
     <RigidBody
       ref={body}
+
       position={[
         playerRuntime.spawn.x,
         playerRuntime.spawn.y,
         playerRuntime.spawn.z,
       ]}
+
       colliders={false}
-      enabledRotations={[false, false, false]}
+
+      enabledRotations={[
+        false,
+        false,
+        false,
+      ]}
+
       friction={0.45}
       restitution={0}
+
       linearDamping={1}
       angularDamping={1}
+
       ccd
       canSleep={false}
     >
+      {/* ===================================================
+          COLLIDER
+
+          El centro del collider coincide con el RigidBody.
+
+          Altura total:
+          ~2.1 m
+
+          Spawn:
+          Y = 1.05
+
+          Por lo tanto la parte inferior aparece
+          aproximadamente sobre Y = 0.
+      =================================================== */}
+
       <CapsuleCollider
-        args={[0.6, 0.35]}
+        args={[
+          COLLIDER_HALF_HEIGHT,
+          COLLIDER_RADIUS,
+        ]}
         friction={0.45}
         restitution={0}
       />
 
+      {/* ===================================================
+          MODELO VISUAL TEMPORAL
+
+          Después esto podrá sustituirse por:
+          - avatar
+          - GLTF
+          - skins
+          - personajes online
+
+          sin tocar la física.
+      =================================================== */}
+
       <group
         ref={visual}
-        position={[0, -0.95, 0]}
+        position={[0, -1.05, 0]}
       >
-        <mesh
-          position={[0, 1.15, 0]}
-          castShadow
-        >
-          <boxGeometry args={[0.7, 1.1, 0.4]} />
-          <meshStandardMaterial color="#333333" />
-        </mesh>
+        {/* CUERPO */}
 
         <mesh
-          position={[0, 2, 0]}
+          position={[0, 1.2, 0]}
           castShadow
         >
-          <sphereGeometry args={[0.38, 24, 24]} />
-          <meshStandardMaterial color="#d8a47f" />
+          <boxGeometry
+            args={[0.7, 1.1, 0.4]}
+          />
+
+          <meshStandardMaterial
+            color="#333333"
+          />
         </mesh>
+
+        {/* CABEZA */}
+
+        <mesh
+          position={[0, 1.85, 0]}
+          castShadow
+        >
+          <sphereGeometry
+            args={[0.35, 24, 24]}
+          />
+
+          <meshStandardMaterial
+            color="#d8a47f"
+          />
+        </mesh>
+
+        {/* PIERNA IZQUIERDA */}
 
         <mesh
           position={[-0.2, 0.45, 0]}
           castShadow
         >
-          <boxGeometry args={[0.25, 0.9, 0.3]} />
-          <meshStandardMaterial color="#222222" />
+          <boxGeometry
+            args={[0.25, 0.9, 0.3]}
+          />
+
+          <meshStandardMaterial
+            color="#222222"
+          />
         </mesh>
+
+        {/* PIERNA DERECHA */}
 
         <mesh
           position={[0.2, 0.45, 0]}
           castShadow
         >
-          <boxGeometry args={[0.25, 0.9, 0.3]} />
-          <meshStandardMaterial color="#222222" />
+          <boxGeometry
+            args={[0.25, 0.9, 0.3]}
+          />
+
+          <meshStandardMaterial
+            color="#222222"
+          />
         </mesh>
       </group>
     </RigidBody>
