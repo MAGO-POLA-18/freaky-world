@@ -1,593 +1,16 @@
 "use client";
 
-import {
-  Canvas,
-  useFrame,
-  useThree,
-} from "@react-three/fiber";
-
-import {
-  useEffect,
-  useRef,
-} from "react";
-
-import * as THREE from "three";
-
-import {
-  Physics,
-  RigidBody,
-  CapsuleCollider,
-  useRapier,
-} from "@react-three/rapier";
+import { Canvas } from "@react-three/fiber";
+import { Physics } from "@react-three/rapier";
+import { useRef } from "react";
 
 import Museum from "../Museum/Museum";
 import DynamicSky from "./DynamicSky";
-
-const mobileInput = {
-  x: 0,
-  y: 0,
-  lookX: 0,
-  lookY: 0,
-};
-
-function Character() {
-  const body = useRef();
-  const player = useRef();
-
-  const smoothPlayerPosition =
-    useRef(new THREE.Vector3());
-
-  const smoothCameraPosition =
-    useRef(new THREE.Vector3());
-
-  const cameraInitialized =
-    useRef(false);
-
-  const { gl } = useThree();
-
-  const {
-    world,
-    rapier,
-  } = useRapier();
-
-  const keys = useRef({
-    w: false,
-    s: false,
-    a: false,
-    d: false,
-  });
-
-  const cameraRotation = useRef({
-    yaw: 0,
-    pitch: 0.35,
-  });
-
-  const dragging = useRef(false);
-
-  useEffect(() => {
-    const keyDown = (e) => {
-      if (
-        e.code === "KeyW" ||
-        e.code === "ArrowUp"
-      ) {
-        keys.current.w = true;
-      }
-
-      if (
-        e.code === "KeyS" ||
-        e.code === "ArrowDown"
-      ) {
-        keys.current.s = true;
-      }
-
-      if (
-        e.code === "KeyA" ||
-        e.code === "ArrowLeft"
-      ) {
-        keys.current.a = true;
-      }
-
-      if (
-        e.code === "KeyD" ||
-        e.code === "ArrowRight"
-      ) {
-        keys.current.d = true;
-      }
-    };
-
-    const keyUp = (e) => {
-      if (
-        e.code === "KeyW" ||
-        e.code === "ArrowUp"
-      ) {
-        keys.current.w = false;
-      }
-
-      if (
-        e.code === "KeyS" ||
-        e.code === "ArrowDown"
-      ) {
-        keys.current.s = false;
-      }
-
-      if (
-        e.code === "KeyA" ||
-        e.code === "ArrowLeft"
-      ) {
-        keys.current.a = false;
-      }
-
-      if (
-        e.code === "KeyD" ||
-        e.code === "ArrowRight"
-      ) {
-        keys.current.d = false;
-      }
-    };
-
-    const mouseDown = (e) => {
-      if (e.button === 0) {
-        dragging.current = true;
-      }
-    };
-
-    const mouseUp = () => {
-      dragging.current = false;
-    };
-
-    const mouseMove = (e) => {
-      if (!dragging.current) return;
-
-      cameraRotation.current.yaw -=
-        e.movementX * 0.0045;
-
-      cameraRotation.current.pitch +=
-        e.movementY * 0.0035;
-
-      cameraRotation.current.pitch =
-        THREE.MathUtils.clamp(
-          cameraRotation.current.pitch,
-          -0.35,
-          1.15
-        );
-    };
-
-    window.addEventListener(
-      "keydown",
-      keyDown
-    );
-
-    window.addEventListener(
-      "keyup",
-      keyUp
-    );
-
-    gl.domElement.addEventListener(
-      "mousedown",
-      mouseDown
-    );
-
-    window.addEventListener(
-      "mouseup",
-      mouseUp
-    );
-
-    window.addEventListener(
-      "mousemove",
-      mouseMove
-    );
-
-    return () => {
-      window.removeEventListener(
-        "keydown",
-        keyDown
-      );
-
-      window.removeEventListener(
-        "keyup",
-        keyUp
-      );
-
-      gl.domElement.removeEventListener(
-        "mousedown",
-        mouseDown
-      );
-
-      window.removeEventListener(
-        "mouseup",
-        mouseUp
-      );
-
-      window.removeEventListener(
-        "mousemove",
-        mouseMove
-      );
-    };
-  }, [gl]);
-
-  useFrame(({ camera }, delta) => {
-    if (
-      !body.current ||
-      !player.current
-    ) {
-      return;
-    }
-
-    const yaw =
-      cameraRotation.current.yaw;
-
-    const pitch =
-      cameraRotation.current.pitch;
-
-    const forward =
-      new THREE.Vector3(
-        -Math.sin(yaw),
-        0,
-        -Math.cos(yaw)
-      );
-
-    const right =
-      new THREE.Vector3(
-        Math.cos(yaw),
-        0,
-        -Math.sin(yaw)
-      );
-
-    const movement =
-      new THREE.Vector3();
-
-    if (keys.current.w) {
-      movement.add(forward);
-    }
-
-    if (keys.current.s) {
-      movement.sub(forward);
-    }
-
-    if (keys.current.d) {
-      movement.add(right);
-    }
-
-    if (keys.current.a) {
-      movement.sub(right);
-    }
-
-    if (mobileInput.y !== 0) {
-      movement.addScaledVector(
-        forward,
-        mobileInput.y
-      );
-    }
-
-    if (mobileInput.x !== 0) {
-      movement.addScaledVector(
-        right,
-        mobileInput.x
-      );
-    }
-
-    cameraRotation.current.yaw -=
-      mobileInput.lookX;
-
-    cameraRotation.current.pitch +=
-      mobileInput.lookY;
-
-    cameraRotation.current.pitch =
-      THREE.MathUtils.clamp(
-        cameraRotation.current.pitch,
-        -0.35,
-        1.15
-      );
-
-    mobileInput.lookX = 0;
-    mobileInput.lookY = 0;
-
-    const currentVelocity =
-      body.current.linvel();
-
-    let targetX = 0;
-    let targetZ = 0;
-
-    if (movement.lengthSq() > 0) {
-      const inputStrength =
-        Math.min(
-          movement.length(),
-          1
-        );
-
-      movement.normalize();
-
-      const minSpeed = 1.8;
-      const maxSpeed = 7;
-
-      const speed =
-        minSpeed +
-        (maxSpeed - minSpeed) *
-          inputStrength;
-
-      targetX =
-        movement.x * speed;
-
-      targetZ =
-        movement.z * speed;
-
-      const targetRotation =
-        Math.atan2(
-          movement.x,
-          movement.z
-        );
-
-      let difference =
-        targetRotation -
-        player.current.rotation.y;
-
-      difference =
-        Math.atan2(
-          Math.sin(difference),
-          Math.cos(difference)
-        );
-
-      player.current.rotation.y +=
-        difference *
-        Math.min(1, delta * 10);
-    }
-
-    const movementSmoothing =
-      1 -
-      Math.exp(-12 * delta);
-
-    const nextX =
-      THREE.MathUtils.lerp(
-        currentVelocity.x,
-        targetX,
-        movementSmoothing
-      );
-
-    const nextZ =
-      THREE.MathUtils.lerp(
-        currentVelocity.z,
-        targetZ,
-        movementSmoothing
-      );
-
-    body.current.setLinvel(
-      {
-        x: nextX,
-        y: currentVelocity.y,
-        z: nextZ,
-      },
-      true
-    );
-
-    const rawPosition =
-      body.current.translation();
-
-    const rawVector =
-      new THREE.Vector3(
-        rawPosition.x,
-        rawPosition.y,
-        rawPosition.z
-      );
-
-    if (!cameraInitialized.current) {
-      smoothPlayerPosition.current.copy(
-        rawVector
-      );
-
-      smoothCameraPosition.current.set(
-        rawPosition.x,
-        rawPosition.y + 3,
-        rawPosition.z + 5
-      );
-
-      cameraInitialized.current = true;
-    }
-
-    const playerSmoothing =
-      1 -
-      Math.exp(-14 * delta);
-
-    smoothPlayerPosition.current.lerp(
-      rawVector,
-      playerSmoothing
-    );
-
-    const position =
-      smoothPlayerPosition.current;
-
-    const distance = 5;
-    const height = 1.55;
-
-    const horizontalDistance =
-      Math.cos(pitch) *
-      distance;
-
-    const verticalDistance =
-      Math.sin(pitch) *
-      distance;
-
-    const cameraTarget =
-      new THREE.Vector3(
-        position.x,
-        position.y + 1.25,
-        position.z
-      );
-
-    const desiredCameraPosition =
-      new THREE.Vector3(
-        position.x +
-          Math.sin(yaw) *
-            horizontalDistance,
-
-        position.y +
-          height +
-          verticalDistance,
-
-        position.z +
-          Math.cos(yaw) *
-            horizontalDistance
-      );
-
-    const cameraDirection =
-      desiredCameraPosition
-        .clone()
-        .sub(cameraTarget);
-
-    const cameraDistance =
-      cameraDirection.length();
-
-    cameraDirection.normalize();
-
-    const ray =
-      new rapier.Ray(
-        {
-          x: cameraTarget.x,
-          y: cameraTarget.y,
-          z: cameraTarget.z,
-        },
-        {
-          x: cameraDirection.x,
-          y: cameraDirection.y,
-          z: cameraDirection.z,
-        }
-      );
-
-    const hit =
-      world.castRay(
-        ray,
-        cameraDistance,
-        true,
-        undefined,
-        undefined,
-        undefined,
-        body.current
-      );
-
-    let finalCameraPosition =
-      desiredCameraPosition;
-
-    if (hit) {
-      const safeDistance =
-        Math.max(
-          hit.timeOfImpact - 0.3,
-          0.7
-        );
-
-      finalCameraPosition =
-        cameraTarget
-          .clone()
-          .add(
-            cameraDirection
-              .clone()
-              .multiplyScalar(
-                safeDistance
-              )
-          );
-    }
-
-    const cameraSmoothing =
-      1 -
-      Math.exp(-10 * delta);
-
-    smoothCameraPosition.current.lerp(
-      finalCameraPosition,
-      cameraSmoothing
-    );
-
-    camera.position.copy(
-      smoothCameraPosition.current
-    );
-
-    camera.lookAt(cameraTarget);
-  });
-
-  return (
-    <RigidBody
-      ref={body}
-      position={[0, 1.35, 14]}
-      colliders={false}
-
-      enabledRotations={[
-        false,
-        false,
-        false,
-      ]}
-
-      friction={0.45}
-      restitution={0}
-      linearDamping={1.1}
-      angularDamping={1}
-
-      ccd
-      canSleep={false}
-    >
-      <CapsuleCollider
-        args={[0.6, 0.35]}
-        friction={0.45}
-        restitution={0}
-      />
-
-      <group
-        ref={player}
-        position={[0, -0.95, 0]}
-      >
-
-        <mesh
-          position={[0, 1.15, 0]}
-          castShadow
-        >
-          <boxGeometry
-            args={[0.7, 1.1, 0.4]}
-          />
-
-          <meshStandardMaterial
-            color="#333333"
-          />
-        </mesh>
-
-        <mesh
-          position={[0, 2, 0]}
-          castShadow
-        >
-          <sphereGeometry
-            args={[0.38, 24, 24]}
-          />
-
-          <meshStandardMaterial
-            color="#d8a47f"
-          />
-        </mesh>
-
-        <mesh
-          position={[-0.2, 0.45, 0]}
-          castShadow
-        >
-          <boxGeometry
-            args={[0.25, 0.9, 0.3]}
-          />
-
-          <meshStandardMaterial
-            color="#222222"
-          />
-        </mesh>
-
-        <mesh
-          position={[0.2, 0.45, 0]}
-          castShadow
-        >
-          <boxGeometry
-            args={[0.25, 0.9, 0.3]}
-          />
-
-          <meshStandardMaterial
-            color="#222222"
-          />
-        </mesh>
-
-      </group>
-    </RigidBody>
-  );
-}
+import WorldLighting from "./WorldLighting";
+import PlayerController, {
+  playerInput,
+} from "./PlayerController";
+import CameraRig from "./CameraRig";
 
 function MobileControls() {
   const joystick = useRef();
@@ -652,16 +75,16 @@ function MobileControls() {
     knob.current.style.transform =
       `translate(${dx}px, ${dy}px)`;
 
-    mobileInput.x =
+    playerInput.x =
       dx / maxDistance;
 
-    mobileInput.y =
+    playerInput.y =
       -dy / maxDistance;
   };
 
   const resetJoystick = () => {
-    mobileInput.x = 0;
-    mobileInput.y = 0;
+    playerInput.x = 0;
+    playerInput.y = 0;
 
     if (knob.current) {
       knob.current.style.transform =
@@ -671,12 +94,12 @@ function MobileControls() {
     joystickTouch.current = null;
   };
 
-  const handleTouchStart = (e) => {
-    e.preventDefault();
+  const handleTouchStart = (event) => {
+    event.preventDefault();
 
     for (
       const touch
-      of e.changedTouches
+      of event.changedTouches
     ) {
       if (
         touch.clientX <
@@ -706,12 +129,12 @@ function MobileControls() {
     }
   };
 
-  const handleTouchMove = (e) => {
-    e.preventDefault();
+  const handleTouchMove = (event) => {
+    event.preventDefault();
 
     for (
       const touch
-      of e.changedTouches
+      of event.changedTouches
     ) {
       if (
         touch.identifier ===
@@ -733,10 +156,10 @@ function MobileControls() {
           touch.clientY -
           lookTouch.current.y;
 
-        mobileInput.lookX +=
+        playerInput.lookX +=
           dx * 0.0035;
 
-        mobileInput.lookY +=
+        playerInput.lookY +=
           dy * 0.0028;
 
         lookTouch.current.x =
@@ -748,10 +171,10 @@ function MobileControls() {
     }
   };
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEnd = (event) => {
     for (
       const touch
-      of e.changedTouches
+      of event.changedTouches
     ) {
       if (
         touch.identifier ===
@@ -808,6 +231,8 @@ export default function WorldScene() {
         camera={{
           position: [0, 3, 6],
           fov: 60,
+          near: 0.1,
+          far: 600,
         }}
         gl={{
           antialias: true,
@@ -816,13 +241,17 @@ export default function WorldScene() {
       >
         <DynamicSky />
 
+        <WorldLighting />
+
         <Physics
           gravity={[0, -9.81, 0]}
+          timeStep={1 / 60}
         >
           <Museum />
-          <Character />
+          <PlayerController />
         </Physics>
 
+        <CameraRig />
       </Canvas>
 
       <MobileControls />
