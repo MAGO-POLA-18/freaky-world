@@ -69,7 +69,6 @@ export default function DpadWing({
       position={position}
       rotation={rotation}
     >
-
       {/* =================================================
           INTERIOR
       ================================================= */}
@@ -103,7 +102,7 @@ export default function DpadWing({
           castShadow
           receiveShadow
         >
-          <boxGeometry args={[0.4, 7.02, 69.6]} />
+          <boxGeometry args={[0.4, 7.02, 70]} />
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
       </RigidBody>
@@ -114,7 +113,7 @@ export default function DpadWing({
           castShadow
           receiveShadow
         >
-          <boxGeometry args={[0.4, 7.02, 69.6]} />
+          <boxGeometry args={[0.4, 7.02, 70]} />
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
       </RigidBody>
@@ -264,8 +263,6 @@ export default function DpadWing({
 
       {/* =================================================
           LUMINARIAS VISUALES DE TERRAZA
-
-          SIN pointLight individual.
       ================================================= */}
 
       {[-22, -11, 0, 11, 22].map((x) => (
@@ -273,7 +270,6 @@ export default function DpadWing({
           key={`terrace-lamp-${x}`}
           position={[x, 7, 30]}
         >
-
           <mesh
             position={[0, 0.75, 0]}
             castShadow
@@ -313,7 +309,6 @@ export default function DpadWing({
               emissiveIntensity={6}
             />
           </mesh>
-
         </group>
       ))}
 
@@ -722,7 +717,6 @@ export default function DpadWing({
           </mesh>
         )
       )}
-
     </group>
   );
 }
