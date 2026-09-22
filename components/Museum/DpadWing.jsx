@@ -79,20 +79,6 @@ export default function DpadWing({
         </mesh>
 
         {/* =============================================
-            TRANSICIÓN TERRAZA -> VOLUMEN ALTO
-        ============================================= */}
-
-        <mesh
-          position={[0, 10.5, 17]}
-          rotation={[0.52, 0, 0]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[60, 0.45, 14]} />
-          <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
-
-        {/* =============================================
             VOLUMEN POSTERIOR ALTO
             Hacia el exterior (-Z)
         ============================================= */}
