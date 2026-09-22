@@ -8,172 +8,158 @@ export default function WingShell({
   const geometry = useMemo(() => {
     /*
       =====================================================
-      FORMA MAESTRA — DPAD
+      FORMA MAESTRA DPAD — V3
 
-      +Y = extremo EXTERIOR de la cruceta
-      -Y = extremo INTERIOR, hacia el patio
+      +Y = extremo exterior
+      -Y = extremo hacia el centro de la cruceta
 
-      Esta versión busca reproducir las proporciones
-      compactas del botón real.
-
-      Todavía es una superficie plana de comprobación.
+      Objetivo:
+      - cuerpo compacto
+      - extremo exterior ancho
+      - esquinas exteriores redondeadas
+      - laterales rectos muy cortos
+      - cierre temprano hacia el centro
+      - cuello interior estrecho
       =====================================================
     */
 
     const shape = new THREE.Shape();
 
-    /*
-      Empezamos en el pequeño borde interior.
-    */
+    // -----------------------------------------------------
+    // EXTREMO INTERIOR
+    // -----------------------------------------------------
 
-    shape.moveTo(-8.5, -27);
-
-    /*
-      ESQUINA INTERIOR IZQUIERDA
-
-      El pequeño borde inferior empieza a abrirse
-      rápidamente hacia la diagonal.
-    */
+    shape.moveTo(-6.5, -27);
 
     shape.quadraticCurveTo(
-      -12.5,
+      -10.5,
       -27,
-      -16,
+      -14,
       -23.5
     );
 
-    /*
-      DIAGONAL IZQUIERDA
+    // -----------------------------------------------------
+    // DIAGONAL IZQUIERDA
+    // Empieza antes que en V2
+    // -----------------------------------------------------
 
-      En el botón real esta diagonal ocupa una parte
-      importante de la silueta.
-    */
+    shape.lineTo(-25.5, -10);
 
-    shape.lineTo(-25.5, -13);
-
-    /*
-      TRANSICIÓN DIAGONAL -> LATERAL
-    */
+    // -----------------------------------------------------
+    // TRANSICIÓN AL LATERAL
+    // -----------------------------------------------------
 
     shape.quadraticCurveTo(
-      -29,
+      -28.5,
+      -6,
+      -28.5,
+      -1
+    );
+
+    // -----------------------------------------------------
+    // LATERAL IZQUIERDO
+    // Mucho más corto
+    // -----------------------------------------------------
+
+    shape.lineTo(-28.5, 11);
+
+    // -----------------------------------------------------
+    // GRAN ESQUINA EXTERIOR IZQUIERDA
+    // -----------------------------------------------------
+
+    shape.quadraticCurveTo(
+      -28.5,
+      20,
+      -22,
+      24.5
+    );
+
+    shape.quadraticCurveTo(
+      -17,
+      28,
       -9,
-      -29,
-      -4
-    );
-
-    /*
-      LATERAL IZQUIERDO
-
-      Mucho más corto que en nuestra primera versión.
-    */
-
-    shape.lineTo(-29, 14);
-
-    /*
-      ESQUINA EXTERIOR IZQUIERDA
-
-      Amplia y redondeada.
-    */
-
-    shape.quadraticCurveTo(
-      -29,
-      23,
-      -21,
-      26
-    );
-
-    /*
-      TRANSICIÓN HACIA EL BORDE SUPERIOR
-    */
-
-    shape.quadraticCurveTo(
-      -13,
-      28.5,
-      0,
       28.5
     );
 
-    /*
-      MITAD DERECHA DEL BORDE EXTERIOR
-    */
+    // -----------------------------------------------------
+    // BORDE EXTERIOR SUPERIOR
+    // -----------------------------------------------------
 
     shape.quadraticCurveTo(
-      13,
+      0,
+      29,
+      9,
+      28.5
+    );
+
+    shape.quadraticCurveTo(
+      17,
+      28,
+      22,
+      24.5
+    );
+
+    // -----------------------------------------------------
+    // GRAN ESQUINA EXTERIOR DERECHA
+    // -----------------------------------------------------
+
+    shape.quadraticCurveTo(
       28.5,
-      21,
-      26
+      20,
+      28.5,
+      11
     );
 
-    /*
-      ESQUINA EXTERIOR DERECHA
-    */
+    // -----------------------------------------------------
+    // LATERAL DERECHO
+    // -----------------------------------------------------
+
+    shape.lineTo(28.5, -1);
+
+    // -----------------------------------------------------
+    // TRANSICIÓN A DIAGONAL
+    // -----------------------------------------------------
 
     shape.quadraticCurveTo(
-      29,
-      23,
-      29,
-      14
-    );
-
-    /*
-      LATERAL DERECHO
-    */
-
-    shape.lineTo(29, -4);
-
-    /*
-      TRANSICIÓN HACIA LA DIAGONAL
-    */
-
-    shape.quadraticCurveTo(
-      29,
-      -9,
+      28.5,
+      -6,
       25.5,
-      -13
+      -10
     );
 
-    /*
-      DIAGONAL DERECHA
-    */
+    // -----------------------------------------------------
+    // DIAGONAL DERECHA
+    // -----------------------------------------------------
 
-    shape.lineTo(16, -23.5);
+    shape.lineTo(14, -23.5);
 
-    /*
-      ESQUINA INTERIOR DERECHA
-    */
+    // -----------------------------------------------------
+    // EXTREMO INTERIOR DERECHO
+    // -----------------------------------------------------
 
     shape.quadraticCurveTo(
-      12.5,
+      10.5,
       -27,
-      8.5,
+      6.5,
       -27
     );
 
-    /*
-      PEQUEÑO BORDE INTERIOR
-    */
+    // -----------------------------------------------------
+    // PEQUEÑO BORDE INTERIOR
+    // -----------------------------------------------------
 
-    shape.lineTo(-8.5, -27);
+    shape.lineTo(-6.5, -27);
 
     /*
       =====================================================
-      GEOMETRÍA PLANA
-
-      Todavía NO damos altura.
-      Primero aprobamos definitivamente esta silueta.
+      GEOMETRÍA PLANA DE PRUEBA
       =====================================================
     */
 
     const geo = new THREE.ShapeGeometry(
       shape,
-      40
+      48
     );
-
-    /*
-      ShapeGeometry se crea sobre XY.
-      Lo acostamos sobre el suelo XZ.
-    */
 
     geo.rotateX(-Math.PI / 2);
 
@@ -185,8 +171,6 @@ export default function WingShell({
       position={position}
       rotation={rotation}
     >
-      {/* SUPERFICIE DE PRUEBA */}
-
       <mesh geometry={geometry}>
         <meshBasicMaterial
           color="#d7dbe2"
@@ -194,8 +178,6 @@ export default function WingShell({
           depthTest={false}
         />
       </mesh>
-
-      {/* CONTORNO OSCURO */}
 
       <lineSegments>
         <edgesGeometry args={[geometry]} />
