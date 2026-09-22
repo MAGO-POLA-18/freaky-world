@@ -34,6 +34,15 @@ function Character() {
   const body = useRef();
   const player = useRef();
 
+  const smoothPlayerPosition =
+    useRef(new THREE.Vector3());
+
+  const smoothCameraPosition =
+    useRef(new THREE.Vector3());
+
+  const cameraInitialized =
+    useRef(false);
+
   const { gl } = useThree();
 
   const {
@@ -130,16 +139,16 @@ function Character() {
       if (!dragging.current) return;
 
       cameraRotation.current.yaw -=
-        e.movementX * 0.006;
+        e.movementX * 0.0045;
 
       cameraRotation.current.pitch +=
-        e.movementY * 0.004;
+        e.movementY * 0.0035;
 
       cameraRotation.current.pitch =
         THREE.MathUtils.clamp(
           cameraRotation.current.pitch,
-          -0.15,
-          0.65
+          -0.35,
+          1.15
         );
     };
 
@@ -196,7 +205,7 @@ function Character() {
     };
   }, [gl]);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera }, delta) => {
     if (
       !body.current ||
       !player.current
@@ -266,8 +275,8 @@ function Character() {
     cameraRotation.current.pitch =
       THREE.MathUtils.clamp(
         cameraRotation.current.pitch,
-        -0.15,
-        0.65
+        -0.35,
+        1.15
       );
 
     mobileInput.lookX = 0;
@@ -275,6 +284,9 @@ function Character() {
 
     const currentVelocity =
       body.current.linvel();
+
+    let targetX = 0;
+    let targetZ = 0;
 
     if (movement.lengthSq() > 0) {
       const inputStrength =
@@ -285,22 +297,19 @@ function Character() {
 
       movement.normalize();
 
-      const minSpeed = 2;
-      const maxSpeed = 8;
+      const minSpeed = 1.8;
+      const maxSpeed = 7;
 
       const speed =
         minSpeed +
         (maxSpeed - minSpeed) *
           inputStrength;
 
-      body.current.setLinvel(
-        {
-          x: movement.x * speed,
-          y: currentVelocity.y,
-          z: movement.z * speed,
-        },
-        true
-      );
+      targetX =
+        movement.x * speed;
+
+      targetZ =
+        movement.z * speed;
 
       const targetRotation =
         Math.atan2(
@@ -319,23 +328,93 @@ function Character() {
         );
 
       player.current.rotation.y +=
-        difference * 0.15;
-    } else {
-      body.current.setLinvel(
-        {
-          x: 0,
-          y: currentVelocity.y,
-          z: 0,
-        },
-        true
-      );
+        difference *
+        Math.min(1, delta * 10);
     }
 
-    const position =
+    /* =================================================
+       SUAVIZADO DE VELOCIDAD
+
+       Evita el cambio instantáneo de velocidad
+       lateral que producía sensación de vibración.
+    ================================================= */
+
+    const moveSmooth =
+      1 -
+      Math.exp(-12 * delta);
+
+    const nextX =
+      THREE.MathUtils.lerp(
+        currentVelocity.x,
+        targetX,
+        moveSmooth
+      );
+
+    const nextZ =
+      THREE.MathUtils.lerp(
+        currentVelocity.z,
+        targetZ,
+        moveSmooth
+      );
+
+    body.current.setLinvel(
+      {
+        x: nextX,
+        y: currentVelocity.y,
+        z: nextZ,
+      },
+      true
+    );
+
+    /* =================================================
+       POSICIÓN FÍSICA
+    ================================================= */
+
+    const rawPosition =
       body.current.translation();
 
+    const rawVector =
+      new THREE.Vector3(
+        rawPosition.x,
+        rawPosition.y,
+        rawPosition.z
+      );
+
+    if (!cameraInitialized.current) {
+      smoothPlayerPosition.current.copy(
+        rawVector
+      );
+
+      smoothCameraPosition.current.set(
+        rawPosition.x,
+        rawPosition.y + 3,
+        rawPosition.z + 5
+      );
+
+      cameraInitialized.current = true;
+    }
+
+    /* =================================================
+       FILTRO DE MICROVIBRACIONES FÍSICAS
+
+       La cámara ya no sigue cada pequeño ajuste
+       del collider.
+    ================================================= */
+
+    const playerSmooth =
+      1 -
+      Math.exp(-14 * delta);
+
+    smoothPlayerPosition.current.lerp(
+      rawVector,
+      playerSmooth
+    );
+
+    const position =
+      smoothPlayerPosition.current;
+
     const distance = 5;
-    const height = 1.5;
+    const height = 1.55;
 
     const horizontalDistance =
       Math.cos(pitch) *
@@ -348,7 +427,7 @@ function Character() {
     const cameraTarget =
       new THREE.Vector3(
         position.x,
-        position.y + 1.2,
+        position.y + 1.25,
         position.z
       );
 
@@ -408,8 +487,8 @@ function Character() {
     if (hit) {
       const safeDistance =
         Math.max(
-          hit.timeOfImpact - 0.25,
-          0.6
+          hit.timeOfImpact - 0.3,
+          0.7
         );
 
       finalCameraPosition =
@@ -424,56 +503,55 @@ function Character() {
           );
     }
 
-    camera.position.lerp(
+    const cameraSmooth =
+      1 -
+      Math.exp(-10 * delta);
+
+    smoothCameraPosition.current.lerp(
       finalCameraPosition,
-      0.2
+      cameraSmooth
     );
 
-    camera.lookAt(
-      position.x,
-      position.y + 1.2,
-      position.z
+    camera.position.copy(
+      smoothCameraPosition.current
     );
+
+    camera.lookAt(cameraTarget);
   });
 
   return (
     <RigidBody
       ref={body}
-      position={[0, 0.95, 14]}
+
+      /* Más alto para que nunca nazca
+         intersectando el suelo */
+      position={[0, 1.35, 14]}
+
       colliders={false}
+
       enabledRotations={[
         false,
         false,
         false,
       ]}
-      friction={0.9}
+
+      friction={0.45}
       restitution={0}
-      linearDamping={0.5}
+      linearDamping={1.1}
+      angularDamping={1}
+
       ccd
       canSleep={false}
     >
-      {/* ===============================================
-          COLLIDER DEL PERSONAJE
-
-          Altura total:
-          0.60 + 0.60 + radios ≈ 1.9 m
-
-          Fondo redondeado para subir pendientes.
-      =============================================== */}
-
       <CapsuleCollider
         args={[0.6, 0.35]}
-        friction={0.9}
+        friction={0.45}
         restitution={0}
       />
 
       <group
         ref={player}
-        position={[
-          0,
-          -0.95,
-          0,
-        ]}
+        position={[0, -0.95, 0]}
       >
         <mesh
           position={[0, 1.15, 0]}
@@ -712,10 +790,10 @@ function MobileControls() {
           lookTouch.current.y;
 
         mobileInput.lookX +=
-          dx * 0.004;
+          dx * 0.0035;
 
         mobileInput.lookY +=
-          dy * 0.003;
+          dy * 0.0028;
 
         lookTouch.current.x =
           touch.clientX;
@@ -754,15 +832,19 @@ function MobileControls() {
   return (
     <div
       className="mobile-controls"
+
       onTouchStart={
         handleTouchStart
       }
+
       onTouchMove={
         handleTouchMove
       }
+
       onTouchEnd={
         handleTouchEnd
       }
+
       onTouchCancel={
         handleTouchEnd
       }
@@ -795,19 +877,21 @@ export default function WorldScene() {
 
       <Canvas
         shadows
-        dpr={[1, 1.5]}
+        dpr={[1, 1.35]}
         camera={{
           position: [0, 3, 6],
           fov: 60,
         }}
         gl={{
           antialias: true,
+          powerPreference: "high-performance",
         }}
       >
         <DynamicSky />
 
         <Physics
           gravity={[0, -9.81, 0]}
+          timeStep="vary"
         >
           <Museum />
           <Character />
