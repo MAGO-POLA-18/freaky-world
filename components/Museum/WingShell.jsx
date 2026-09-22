@@ -7,112 +7,177 @@ export default function WingShell({
 }) {
   const geometry = useMemo(() => {
     /*
-      FORMA MAESTRA DE UNA PIEZA DE LA CRUCETA
+      =====================================================
+      FORMA MAESTRA — DPAD
 
-      +Z = parte exterior/ancha
-      -Z = punta orientada hacia el patio
+      +Y = extremo EXTERIOR de la cruceta
+      -Y = extremo INTERIOR, hacia el patio
 
-      Por ahora es SOLO una huella muy fina.
-      Cuando aprobemos esta silueta, esta misma
-      forma será la base del edificio definitivo.
+      Esta versión busca reproducir las proporciones
+      compactas del botón real.
+
+      Todavía es una superficie plana de comprobación.
+      =====================================================
     */
 
     const shape = new THREE.Shape();
 
-    // Frente corto: lado que mira al patio
-    shape.moveTo(-10, -35);
+    /*
+      Empezamos en el pequeño borde interior.
+    */
 
-    // Esquina inferior izquierda redondeada
-    shape.quadraticCurveTo(
-      -15,
-      -35,
-      -19,
-      -31
-    );
-
-    // Diagonal izquierda
-    shape.lineTo(-28, -19);
-
-    // Transición hacia lateral
-    shape.quadraticCurveTo(
-      -30,
-      -16,
-      -30,
-      -11
-    );
-
-    // Lateral izquierdo casi recto
-    shape.lineTo(-30, 22);
-
-    // Esquina superior izquierda
-    shape.quadraticCurveTo(
-      -30,
-      31,
-      -21,
-      34
-    );
-
-    // Parte superior
-    shape.quadraticCurveTo(
-      0,
-      37,
-      21,
-      34
-    );
-
-    // Esquina superior derecha
-    shape.quadraticCurveTo(
-      30,
-      31,
-      30,
-      22
-    );
-
-    // Lateral derecho
-    shape.lineTo(30, -11);
-
-    // Transición hacia diagonal
-    shape.quadraticCurveTo(
-      30,
-      -16,
-      28,
-      -19
-    );
-
-    // Diagonal derecha
-    shape.lineTo(19, -31);
-
-    // Esquina inferior derecha
-    shape.quadraticCurveTo(
-      15,
-      -35,
-      10,
-      -35
-    );
-
-    // Frente corto
-    shape.lineTo(-10, -35);
-
-    const extrudeSettings = {
-      depth: 0.12,
-      bevelEnabled: false,
-      curveSegments: 20,
-    };
-
-    const result =
-      new THREE.ExtrudeGeometry(
-        shape,
-        extrudeSettings
-      );
+    shape.moveTo(-8.5, -27);
 
     /*
-      ExtrudeGeometry extruye sobre Z.
-      Lo rotamos para que la forma quede
-      horizontal sobre el suelo.
-    */
-    result.rotateX(Math.PI / 2);
+      ESQUINA INTERIOR IZQUIERDA
 
-    return result;
+      El pequeño borde inferior empieza a abrirse
+      rápidamente hacia la diagonal.
+    */
+
+    shape.quadraticCurveTo(
+      -12.5,
+      -27,
+      -16,
+      -23.5
+    );
+
+    /*
+      DIAGONAL IZQUIERDA
+
+      En el botón real esta diagonal ocupa una parte
+      importante de la silueta.
+    */
+
+    shape.lineTo(-25.5, -13);
+
+    /*
+      TRANSICIÓN DIAGONAL -> LATERAL
+    */
+
+    shape.quadraticCurveTo(
+      -29,
+      -9,
+      -29,
+      -4
+    );
+
+    /*
+      LATERAL IZQUIERDO
+
+      Mucho más corto que en nuestra primera versión.
+    */
+
+    shape.lineTo(-29, 14);
+
+    /*
+      ESQUINA EXTERIOR IZQUIERDA
+
+      Amplia y redondeada.
+    */
+
+    shape.quadraticCurveTo(
+      -29,
+      23,
+      -21,
+      26
+    );
+
+    /*
+      TRANSICIÓN HACIA EL BORDE SUPERIOR
+    */
+
+    shape.quadraticCurveTo(
+      -13,
+      28.5,
+      0,
+      28.5
+    );
+
+    /*
+      MITAD DERECHA DEL BORDE EXTERIOR
+    */
+
+    shape.quadraticCurveTo(
+      13,
+      28.5,
+      21,
+      26
+    );
+
+    /*
+      ESQUINA EXTERIOR DERECHA
+    */
+
+    shape.quadraticCurveTo(
+      29,
+      23,
+      29,
+      14
+    );
+
+    /*
+      LATERAL DERECHO
+    */
+
+    shape.lineTo(29, -4);
+
+    /*
+      TRANSICIÓN HACIA LA DIAGONAL
+    */
+
+    shape.quadraticCurveTo(
+      29,
+      -9,
+      25.5,
+      -13
+    );
+
+    /*
+      DIAGONAL DERECHA
+    */
+
+    shape.lineTo(16, -23.5);
+
+    /*
+      ESQUINA INTERIOR DERECHA
+    */
+
+    shape.quadraticCurveTo(
+      12.5,
+      -27,
+      8.5,
+      -27
+    );
+
+    /*
+      PEQUEÑO BORDE INTERIOR
+    */
+
+    shape.lineTo(-8.5, -27);
+
+    /*
+      =====================================================
+      GEOMETRÍA PLANA
+
+      Todavía NO damos altura.
+      Primero aprobamos definitivamente esta silueta.
+      =====================================================
+    */
+
+    const geo = new THREE.ShapeGeometry(
+      shape,
+      40
+    );
+
+    /*
+      ShapeGeometry se crea sobre XY.
+      Lo acostamos sobre el suelo XZ.
+    */
+
+    geo.rotateX(-Math.PI / 2);
+
+    return geo;
   }, []);
 
   return (
@@ -120,27 +185,24 @@ export default function WingShell({
       position={position}
       rotation={rotation}
     >
-      <mesh
-        geometry={geometry}
-        position={[0, 0.07, 0]}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color="#d9dde2"
-          roughness={0.82}
-          metalness={0}
+      {/* SUPERFICIE DE PRUEBA */}
+
+      <mesh geometry={geometry}>
+        <meshBasicMaterial
+          color="#d7dbe2"
           side={THREE.DoubleSide}
+          depthTest={false}
         />
       </mesh>
 
-      {/* Línea oscura para leer mejor el contorno */}
-      <lineSegments
-        position={[0, 0.14, 0]}
-      >
+      {/* CONTORNO OSCURO */}
+
+      <lineSegments>
         <edgesGeometry args={[geometry]} />
 
         <lineBasicMaterial
-          color="#20242a"
+          color="#151922"
+          depthTest={false}
         />
       </lineSegments>
     </group>
