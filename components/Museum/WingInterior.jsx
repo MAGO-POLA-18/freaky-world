@@ -213,21 +213,37 @@ export default function WingInterior() {
           Las demás tiras son emisivas.
       ================================================= */}
 
-      <pointLight
-        position={[0, 10.5, -20]}
-        intensity={20}
-        distance={35}
-        decay={2}
-        color="#fff8e8"
-      />
+     <pointLight
+  position={[0, 10.5, -20]}
+  intensity={32}
+  distance={42}
+  decay={2}
+  color="#fff4dd"
+/>
 
-      <pointLight
-        position={[0, 5.5, 23]}
-        intensity={13}
-        distance={28}
-        decay={2}
-        color="#edf4ff"
-      />
+<pointLight
+  position={[0, 5.5, 22]}
+  intensity={24}
+  distance={34}
+  decay={2}
+  color="#e8f2ff"
+/>
+
+<pointLight
+  position={[-18, 5.5, -5]}
+  intensity={16}
+  distance={24}
+  decay={2}
+  color="#eef4ff"
+/>
+
+<pointLight
+  position={[18, 5.5, -5]}
+  intensity={16}
+  distance={24}
+  decay={2}
+  color="#eef4ff"
+/>
 
       {/* =================================================
           PILARES VISUALES CERCA DE LA ENTRADA
