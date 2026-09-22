@@ -21,7 +21,6 @@ import {
 } from "@react-three/rapier";
 
 import Museum from "../Museum/Museum";
-import DynamicSky from "./DynamicSky";
 
 const mobileInput = {
   x: 0,
