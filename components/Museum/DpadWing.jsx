@@ -1,4 +1,5 @@
 import { RigidBody } from "@react-three/rapier";
+import * as THREE from "three";
 
 export default function DpadWing({
   position = [0, 0, 0],
@@ -83,15 +84,87 @@ export default function DpadWing({
             Hacia el exterior (-Z)
         ============================================= */}
 
-        <mesh position={[-29.8, 11, -8.5]} castShadow receiveShadow>
-          <boxGeometry args={[0.4, 8, 53]} />
-          <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
+       {/* =============================================
+    LATERALES SUPERIORES CON PERFIL DE CRUCETA
 
-        <mesh position={[29.8, 11, -8.5]} castShadow receiveShadow>
-          <boxGeometry args={[0.4, 8, 53]} />
-          <meshStandardMaterial color="#cfcfcf" />
-        </mesh>
+    Exterior (-Z): altura completa.
+    Hacia patio (+Z): baja progresivamente
+    hasta encontrarse con la terraza.
+============================================= */}
+
+<mesh
+  position={[-29.8, 0, 0]}
+  rotation={[0, Math.PI / 2, 0]}
+  castShadow
+  receiveShadow
+>
+  <shapeGeometry
+    args={[
+      (() => {
+        const shape = new THREE.Shape();
+
+        // Perfil visto de costado.
+        // Z exterior -> patio
+        shape.moveTo(-35, 7);
+        shape.lineTo(-35, 15);
+
+        // Techo alto
+        shape.lineTo(5, 15);
+
+        // Diagonal descendente
+        shape.lineTo(21, 7);
+
+        // Terraza
+        shape.lineTo(35, 7);
+
+        // Parte inferior
+        shape.lineTo(35, 7);
+        shape.lineTo(-35, 7);
+
+        return shape;
+      })(),
+    ]}
+  />
+  <meshStandardMaterial
+    color="#cfcfcf"
+    side={THREE.DoubleSide}
+  />
+</mesh>
+
+<mesh
+  position={[29.8, 0, 0]}
+  rotation={[0, Math.PI / 2, 0]}
+  castShadow
+  receiveShadow
+>
+  <shapeGeometry
+    args={[
+      (() => {
+        const shape = new THREE.Shape();
+
+        shape.moveTo(-35, 7);
+        shape.lineTo(-35, 15);
+
+        // Techo alto
+        shape.lineTo(5, 15);
+
+        // Diagonal hacia la terraza
+        shape.lineTo(21, 7);
+
+        // Terraza hacia el patio
+        shape.lineTo(35, 7);
+
+        shape.lineTo(-35, 7);
+
+        return shape;
+      })(),
+    ]}
+  />
+  <meshStandardMaterial
+    color="#cfcfcf"
+    side={THREE.DoubleSide}
+  />
+</mesh>
 
         {/* TECHO ALTO */}
         <mesh position={[0, 15, -8.5]} castShadow receiveShadow>
