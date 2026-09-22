@@ -32,6 +32,9 @@ export default function DpadWing({
     bevelEnabled: false,
   };
 
+  const slopedRoofLength = Math.sqrt(18 * 18 + 8 * 8);
+  const slopedRoofAngle = Math.atan2(8, 18);
+
   return (
     <group position={position} rotation={rotation}>
 
@@ -40,11 +43,11 @@ export default function DpadWing({
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
-  <mesh position={[0, -0.2, 0]} receiveShadow>
-    <boxGeometry args={[60, 0.4, 70]} />
-    <meshStandardMaterial color="#555555" roughness={1} />
-  </mesh>
-</RigidBody>
+        <mesh position={[0, -0.2, 0]} receiveShadow>
+          <boxGeometry args={[60, 0.4, 70]} />
+          <meshStandardMaterial color="#555555" roughness={1} />
+        </mesh>
+      </RigidBody>
 
       {/* =================================================
           PAREDES LATERALES INFERIORES
@@ -89,11 +92,6 @@ export default function DpadWing({
 
       {/* =================================================
           FACHADA HACIA EL PATIO
-
-          IMPORTANTE:
-          Son dos bloques separados.
-          Entre X -10 y +10 no existe geometría
-          ni collider.
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -119,103 +117,94 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-    FACHADA ARQUITECTÓNICA
-    Marco central + grandes paños de vidrio
-================================================= */}
+          FACHADA ARQUITECTÓNICA
+      ================================================= */}
 
-{/* MARCO IZQUIERDO DE LA ENTRADA */}
-<mesh
-  position={[-10.6, 3.6, 35.05]}
-  castShadow
->
-  <boxGeometry args={[1.2, 7.2, 0.7]} />
-  <meshStandardMaterial
-    color="#24272b"
-    roughness={0.7}
-  />
-</mesh>
+      <mesh
+        position={[-10.6, 3.6, 35.05]}
+        castShadow
+      >
+        <boxGeometry args={[1.2, 7.2, 0.7]} />
+        <meshStandardMaterial
+          color="#24272b"
+          roughness={0.7}
+        />
+      </mesh>
 
-{/* MARCO DERECHO DE LA ENTRADA */}
-<mesh
-  position={[10.6, 3.6, 35.05]}
-  castShadow
->
-  <boxGeometry args={[1.2, 7.2, 0.7]} />
-  <meshStandardMaterial
-    color="#24272b"
-    roughness={0.7}
-  />
-</mesh>
+      <mesh
+        position={[10.6, 3.6, 35.05]}
+        castShadow
+      >
+        <boxGeometry args={[1.2, 7.2, 0.7]} />
+        <meshStandardMaterial
+          color="#24272b"
+          roughness={0.7}
+        />
+      </mesh>
 
-{/* DINTEL / MARCO SUPERIOR */}
-<mesh
-  position={[0, 6.65, 35.05]}
-  castShadow
->
-  <boxGeometry args={[22.4, 1.1, 0.7]} />
-  <meshStandardMaterial
-    color="#24272b"
-    roughness={0.7}
-  />
-</mesh>
+      <mesh
+        position={[0, 6.65, 35.05]}
+        castShadow
+      >
+        <boxGeometry args={[22.4, 1.1, 0.7]} />
+        <meshStandardMaterial
+          color="#24272b"
+          roughness={0.7}
+        />
+      </mesh>
 
-{/* VIDRIO IZQUIERDO */}
-<mesh position={[-20, 3.7, 35.08]}>
-  <planeGeometry args={[15, 5]} />
-  <meshPhysicalMaterial
-    color="#6f9bab"
-    transparent
-    opacity={0.38}
-    roughness={0.12}
-    metalness={0.05}
-    transmission={0.25}
-    side={THREE.DoubleSide}
-  />
-</mesh>
+      <mesh position={[-20, 3.7, 35.08]}>
+        <planeGeometry args={[15, 5]} />
+        <meshPhysicalMaterial
+          color="#6f9bab"
+          transparent
+          opacity={0.38}
+          roughness={0.12}
+          metalness={0.05}
+          transmission={0.25}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-{/* MARCO DEL VIDRIO IZQUIERDO */}
-<mesh position={[-20, 3.7, 35.12]}>
-  <boxGeometry args={[15.6, 5.6, 0.16]} />
-  <meshStandardMaterial
-    color="#30343a"
-    wireframe
-  />
-</mesh>
+      <mesh position={[-20, 3.7, 35.12]}>
+        <boxGeometry args={[15.6, 5.6, 0.16]} />
+        <meshStandardMaterial
+          color="#30343a"
+          wireframe
+        />
+      </mesh>
 
-{/* VIDRIO DERECHO */}
-<mesh position={[20, 3.7, 35.08]}>
-  <planeGeometry args={[15, 5]} />
-  <meshPhysicalMaterial
-    color="#6f9bab"
-    transparent
-    opacity={0.38}
-    roughness={0.12}
-    metalness={0.05}
-    transmission={0.25}
-    side={THREE.DoubleSide}
-  />
-</mesh>
+      <mesh position={[20, 3.7, 35.08]}>
+        <planeGeometry args={[15, 5]} />
+        <meshPhysicalMaterial
+          color="#6f9bab"
+          transparent
+          opacity={0.38}
+          roughness={0.12}
+          metalness={0.05}
+          transmission={0.25}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-{/* MARCO DEL VIDRIO DERECHO */}
-<mesh position={[20, 3.7, 35.12]}>
-  <boxGeometry args={[15.6, 5.6, 0.16]} />
-  <meshStandardMaterial
-    color="#30343a"
-    wireframe
-  />
-</mesh>
+      <mesh position={[20, 3.7, 35.12]}>
+        <boxGeometry args={[15.6, 5.6, 0.16]} />
+        <meshStandardMaterial
+          color="#30343a"
+          wireframe
+        />
+      </mesh>
 
-{/* FRANJA PARA EL NOMBRE DE LA SALA */}
-<mesh
-  position={[0, 6.2, 35.45]}
-  castShadow
->
-  <boxGeometry args={[16, 1.1, 0.22]} />
-  <meshStandardMaterial
-    color="#17191d"
-    roughness={0.55}
-  />
-</mesh>
+      <mesh
+        position={[0, 6.2, 35.45]}
+        castShadow
+      >
+        <boxGeometry args={[16, 1.1, 0.22]} />
+        <meshStandardMaterial
+          color="#17191d"
+          roughness={0.55}
+        />
+      </mesh>
 
       {/* =================================================
           TERRAZA
@@ -271,9 +260,6 @@ export default function DpadWing({
 
       {/* =================================================
           PERFIL SUPERIOR IZQUIERDO
-
-          El ExtrudeGeometry se genera en XY.
-          Rotamos para convertir X local en Z.
       ================================================= */}
 
       <mesh
@@ -293,10 +279,6 @@ export default function DpadWing({
 
       {/* =================================================
           PERFIL SUPERIOR DERECHO
-
-          MISMA rotación.
-          No lo espejamos rotando al lado contrario.
-          Eso era lo que generaba la aleta.
       ================================================= */}
 
       <mesh
@@ -333,9 +315,30 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          ESCALERAS
+          TECHO INCLINADO CENTRAL
+          Une altura 15 en Z=0
+          con altura 7 en Z=18
+      ================================================= */}
 
-          Sin cambiar todavía su diseño.
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh
+          position={[0, 11, 9]}
+          rotation={[slopedRoofAngle, 0, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[59.2, 0.4, slopedRoofLength]}
+          />
+          <meshStandardMaterial
+            color="#bcbcbc"
+            roughness={0.9}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* =================================================
+          ESCALERAS
       ================================================= */}
 
       {steps.map((_, i) => {
