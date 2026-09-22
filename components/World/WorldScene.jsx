@@ -42,17 +42,31 @@ function Character() {
 
   useEffect(() => {
     const keyDown = (e) => {
-      if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = true;
-      if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = true;
-      if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = true;
-      if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = true;
+      if (e.code === "KeyW" || e.code === "ArrowUp")
+        keys.current.w = true;
+
+      if (e.code === "KeyS" || e.code === "ArrowDown")
+        keys.current.s = true;
+
+      if (e.code === "KeyA" || e.code === "ArrowLeft")
+        keys.current.a = true;
+
+      if (e.code === "KeyD" || e.code === "ArrowRight")
+        keys.current.d = true;
     };
 
     const keyUp = (e) => {
-      if (e.code === "KeyW" || e.code === "ArrowUp") keys.current.w = false;
-      if (e.code === "KeyS" || e.code === "ArrowDown") keys.current.s = false;
-      if (e.code === "KeyA" || e.code === "ArrowLeft") keys.current.a = false;
-      if (e.code === "KeyD" || e.code === "ArrowRight") keys.current.d = false;
+      if (e.code === "KeyW" || e.code === "ArrowUp")
+        keys.current.w = false;
+
+      if (e.code === "KeyS" || e.code === "ArrowDown")
+        keys.current.s = false;
+
+      if (e.code === "KeyA" || e.code === "ArrowLeft")
+        keys.current.a = false;
+
+      if (e.code === "KeyD" || e.code === "ArrowRight")
+        keys.current.d = false;
     };
 
     const mouseDown = (e) => {
@@ -66,28 +80,45 @@ function Character() {
     const mouseMove = (e) => {
       if (!dragging.current) return;
 
-      cameraRotation.current.yaw -= e.movementX * 0.006;
-      cameraRotation.current.pitch += e.movementY * 0.004;
+      cameraRotation.current.yaw -=
+        e.movementX * 0.006;
 
-      cameraRotation.current.pitch = THREE.MathUtils.clamp(
-        cameraRotation.current.pitch,
-        -0.15,
-        0.65
-      );
+      cameraRotation.current.pitch +=
+        e.movementY * 0.004;
+
+      cameraRotation.current.pitch =
+        THREE.MathUtils.clamp(
+          cameraRotation.current.pitch,
+          -0.15,
+          0.65
+        );
     };
 
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
-    gl.domElement.addEventListener("mousedown", mouseDown);
+
+    gl.domElement.addEventListener(
+      "mousedown",
+      mouseDown
+    );
+
     window.addEventListener("mouseup", mouseUp);
     window.addEventListener("mousemove", mouseMove);
 
     return () => {
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
-      gl.domElement.removeEventListener("mousedown", mouseDown);
+
+      gl.domElement.removeEventListener(
+        "mousedown",
+        mouseDown
+      );
+
       window.removeEventListener("mouseup", mouseUp);
-      window.removeEventListener("mousemove", mouseMove);
+      window.removeEventListener(
+        "mousemove",
+        mouseMove
+      );
     };
   }, [gl]);
 
@@ -117,29 +148,43 @@ function Character() {
     if (keys.current.a) movement.sub(right);
 
     if (mobileInput.y !== 0) {
-      movement.addScaledVector(forward, mobileInput.y);
+      movement.addScaledVector(
+        forward,
+        mobileInput.y
+      );
     }
 
     if (mobileInput.x !== 0) {
-      movement.addScaledVector(right, mobileInput.x);
+      movement.addScaledVector(
+        right,
+        mobileInput.x
+      );
     }
 
-    cameraRotation.current.yaw -= mobileInput.lookX;
-    cameraRotation.current.pitch += mobileInput.lookY;
+    cameraRotation.current.yaw -=
+      mobileInput.lookX;
 
-    cameraRotation.current.pitch = THREE.MathUtils.clamp(
-      cameraRotation.current.pitch,
-      -0.15,
-      0.65
-    );
+    cameraRotation.current.pitch +=
+      mobileInput.lookY;
+
+    cameraRotation.current.pitch =
+      THREE.MathUtils.clamp(
+        cameraRotation.current.pitch,
+        -0.15,
+        0.65
+      );
 
     mobileInput.lookX = 0;
     mobileInput.lookY = 0;
 
-    const currentVelocity = body.current.linvel();
+    const currentVelocity =
+      body.current.linvel();
 
     if (movement.lengthSq() > 0) {
-      const inputStrength = Math.min(movement.length(), 1);
+      const inputStrength = Math.min(
+        movement.length(),
+        1
+      );
 
       movement.normalize();
 
@@ -147,7 +192,9 @@ function Character() {
       const maxSpeed = 10;
 
       const speed =
-        minSpeed + (maxSpeed - minSpeed) * inputStrength;
+        minSpeed +
+        (maxSpeed - minSpeed) *
+          inputStrength;
 
       body.current.setLinvel(
         {
@@ -164,14 +211,16 @@ function Character() {
       );
 
       let difference =
-        targetRotation - player.current.rotation.y;
+        targetRotation -
+        player.current.rotation.y;
 
       difference = Math.atan2(
         Math.sin(difference),
         Math.cos(difference)
       );
 
-      player.current.rotation.y += difference * 0.15;
+      player.current.rotation.y +=
+        difference * 0.15;
     } else {
       body.current.setLinvel(
         {
@@ -183,7 +232,8 @@ function Character() {
       );
     }
 
-    const position = body.current.translation();
+    const position =
+      body.current.translation();
 
     const distance = 5;
     const height = 1.5;
@@ -194,23 +244,35 @@ function Character() {
     const verticalDistance =
       Math.sin(pitch) * distance;
 
-    const cameraTarget = new THREE.Vector3(
-      position.x,
-      position.y + 1.2,
-      position.z
-    );
+    const cameraTarget =
+      new THREE.Vector3(
+        position.x,
+        position.y + 1.2,
+        position.z
+      );
 
-    const desiredCameraPosition = new THREE.Vector3(
-      position.x + Math.sin(yaw) * horizontalDistance,
-      position.y + height + verticalDistance,
-      position.z + Math.cos(yaw) * horizontalDistance
-    );
+    const desiredCameraPosition =
+      new THREE.Vector3(
+        position.x +
+          Math.sin(yaw) *
+            horizontalDistance,
 
-    const cameraDirection = desiredCameraPosition
-      .clone()
-      .sub(cameraTarget);
+        position.y +
+          height +
+          verticalDistance,
 
-    const cameraDistance = cameraDirection.length();
+        position.z +
+          Math.cos(yaw) *
+            horizontalDistance
+      );
+
+    const cameraDirection =
+      desiredCameraPosition
+        .clone()
+        .sub(cameraTarget);
+
+    const cameraDistance =
+      cameraDirection.length();
 
     cameraDirection.normalize();
 
@@ -237,7 +299,8 @@ function Character() {
       body.current
     );
 
-    let finalCameraPosition = desiredCameraPosition;
+    let finalCameraPosition =
+      desiredCameraPosition;
 
     if (hit) {
       const safeDistance = Math.max(
@@ -245,13 +308,14 @@ function Character() {
         0.6
       );
 
-      finalCameraPosition = cameraTarget
-        .clone()
-        .add(
-          cameraDirection
-            .clone()
-            .multiplyScalar(safeDistance)
-        );
+      finalCameraPosition =
+        cameraTarget
+          .clone()
+          .add(
+            cameraDirection
+              .clone()
+              .multiplyScalar(safeDistance)
+          );
     }
 
     camera.position.lerp(
@@ -272,25 +336,43 @@ function Character() {
       position={[0, 0.95, 14]}
       colliders="cuboid"
       enabledRotations={[false, false, false]}
-      friction={0}
+      friction={0.9}
+      linearDamping={0.8}
+      ccd
+      canSleep={false}
     >
-      <group ref={player} position={[0, -0.95, 0]}>
-        <mesh position={[0, 1.15, 0]} castShadow>
+      <group
+        ref={player}
+        position={[0, -0.95, 0]}
+      >
+        <mesh
+          position={[0, 1.15, 0]}
+          castShadow
+        >
           <boxGeometry args={[0.7, 1.1, 0.4]} />
           <meshStandardMaterial color="#333333" />
         </mesh>
 
-        <mesh position={[0, 2, 0]} castShadow>
+        <mesh
+          position={[0, 2, 0]}
+          castShadow
+        >
           <sphereGeometry args={[0.38, 24, 24]} />
           <meshStandardMaterial color="#d8a47f" />
         </mesh>
 
-        <mesh position={[-0.2, 0.45, 0]} castShadow>
+        <mesh
+          position={[-0.2, 0.45, 0]}
+          castShadow
+        >
           <boxGeometry args={[0.25, 0.9, 0.3]} />
           <meshStandardMaterial color="#222222" />
         </mesh>
 
-        <mesh position={[0.2, 0.45, 0]} castShadow>
+        <mesh
+          position={[0.2, 0.45, 0]}
+          castShadow
+        >
           <boxGeometry args={[0.25, 0.9, 0.3]} />
           <meshStandardMaterial color="#222222" />
         </mesh>
@@ -307,29 +389,48 @@ function MobileControls() {
   const lookTouch = useRef(null);
 
   const updateJoystick = (touch) => {
-    if (!joystick.current || !knob.current) return;
+    if (!joystick.current || !knob.current)
+      return;
 
-    const rect = joystick.current.getBoundingClientRect();
+    const rect =
+      joystick.current.getBoundingClientRect();
 
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const centerX =
+      rect.left + rect.width / 2;
 
-    let dx = touch.clientX - centerX;
-    let dy = touch.clientY - centerY;
+    const centerY =
+      rect.top + rect.height / 2;
 
-    const maxDistance = rect.width * 0.34;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    let dx =
+      touch.clientX - centerX;
+
+    let dy =
+      touch.clientY - centerY;
+
+    const maxDistance =
+      rect.width * 0.34;
+
+    const distance =
+      Math.sqrt(dx * dx + dy * dy);
 
     if (distance > maxDistance) {
-      dx = (dx / distance) * maxDistance;
-      dy = (dy / distance) * maxDistance;
+      dx =
+        (dx / distance) *
+        maxDistance;
+
+      dy =
+        (dy / distance) *
+        maxDistance;
     }
 
     knob.current.style.transform =
       `translate(${dx}px, ${dy}px)`;
 
-    mobileInput.x = dx / maxDistance;
-    mobileInput.y = -dy / maxDistance;
+    mobileInput.x =
+      dx / maxDistance;
+
+    mobileInput.y =
+      -dy / maxDistance;
   };
 
   const resetJoystick = () => {
@@ -348,9 +449,16 @@ function MobileControls() {
     e.preventDefault();
 
     for (const touch of e.changedTouches) {
-      if (touch.clientX < window.innerWidth * 0.45) {
-        if (joystickTouch.current === null) {
-          joystickTouch.current = touch.identifier;
+      if (
+        touch.clientX <
+        window.innerWidth * 0.45
+      ) {
+        if (
+          joystickTouch.current === null
+        ) {
+          joystickTouch.current =
+            touch.identifier;
+
           updateJoystick(touch);
         }
       } else {
@@ -369,38 +477,54 @@ function MobileControls() {
     e.preventDefault();
 
     for (const touch of e.changedTouches) {
-      if (touch.identifier === joystickTouch.current) {
+      if (
+        touch.identifier ===
+        joystickTouch.current
+      ) {
         updateJoystick(touch);
       }
 
       if (
         lookTouch.current &&
-        touch.identifier === lookTouch.current.id
+        touch.identifier ===
+          lookTouch.current.id
       ) {
         const dx =
-          touch.clientX - lookTouch.current.x;
+          touch.clientX -
+          lookTouch.current.x;
 
         const dy =
-          touch.clientY - lookTouch.current.y;
+          touch.clientY -
+          lookTouch.current.y;
 
-        mobileInput.lookX += dx * 0.004;
-        mobileInput.lookY += dy * 0.003;
+        mobileInput.lookX +=
+          dx * 0.004;
 
-        lookTouch.current.x = touch.clientX;
-        lookTouch.current.y = touch.clientY;
+        mobileInput.lookY +=
+          dy * 0.003;
+
+        lookTouch.current.x =
+          touch.clientX;
+
+        lookTouch.current.y =
+          touch.clientY;
       }
     }
   };
 
   const handleTouchEnd = (e) => {
     for (const touch of e.changedTouches) {
-      if (touch.identifier === joystickTouch.current) {
+      if (
+        touch.identifier ===
+        joystickTouch.current
+      ) {
         resetJoystick();
       }
 
       if (
         lookTouch.current &&
-        touch.identifier === lookTouch.current.id
+        touch.identifier ===
+          lookTouch.current.id
       ) {
         lookTouch.current = null;
       }
@@ -436,7 +560,8 @@ export default function WorldScene() {
   return (
     <>
       <div className="instructions">
-        WASD para caminar · Mantén clic izquierdo y arrastra para mover la cámara
+        WASD para caminar · Mantén clic izquierdo y
+        arrastra para mover la cámara
       </div>
 
       <Canvas
