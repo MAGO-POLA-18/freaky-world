@@ -1,192 +1,80 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import {
-  useFrame,
-  useThree,
-} from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import {
-  playerInput,
-  playerRuntime,
-} from "./PlayerController";
+/* =========================================================
+   CAMERA RIG — MODO CENITAL TEMPORAL
+
+   SOLO PARA COMPROBAR LA FORMA MAESTRA DEL DPAD.
+
+   - Cámara fija sobre el centro del mundo
+   - Vista completamente vertical
+   - Sin perspectiva oblicua
+   - No sigue al jugador
+
+   Después de aprobar la silueta volveremos al CameraRig
+   normal.
+========================================================= */
 
 export default function CameraRig() {
-  const { gl } = useThree();
+  useFrame(({ camera }) => {
+    /*
+      Centro exacto de la prueba.
 
-  const dragging = useRef(false);
-  const initialized = useRef(false);
+      WingShell está actualmente en:
+      [0, 0.25, 0]
+    */
 
-  const smoothTarget = useRef(
-    new THREE.Vector3()
-  );
+    const targetX = 0;
+    const targetZ = 0;
 
-  const smoothCamera = useRef(
-    new THREE.Vector3()
-  );
+    /*
+      Altura de cámara.
 
-  const rawTarget = useRef(
-    new THREE.Vector3()
-  );
+      90 metros nos permite ver cómodamente
+      la pieza completa.
+    */
 
-  const desiredCamera = useRef(
-    new THREE.Vector3()
-  );
+    const cameraHeight = 90;
 
-  useEffect(() => {
-    const mouseDown = (event) => {
-      if (event.button === 0) {
-        dragging.current = true;
-      }
-    };
-
-    const mouseUp = () => {
-      dragging.current = false;
-    };
-
-    const mouseMove = (event) => {
-      if (!dragging.current) return;
-
-      playerRuntime.yaw -=
-        event.movementX * 0.004;
-
-      playerRuntime.pitch +=
-        event.movementY * 0.003;
-
-      playerRuntime.pitch =
-        THREE.MathUtils.clamp(
-          playerRuntime.pitch,
-          -0.4,
-          1.15
-        );
-    };
-
-    gl.domElement.addEventListener(
-      "mousedown",
-      mouseDown
+    camera.position.set(
+      targetX,
+      cameraHeight,
+      targetZ
     );
 
-    window.addEventListener(
-      "mouseup",
-      mouseUp
-    );
+    /*
+      IMPORTANTE:
 
-    window.addEventListener(
-      "mousemove",
-      mouseMove
-    );
+      Una cámara mirando exactamente hacia abajo puede
+      tener problemas de orientación si su vector UP
+      coincide con la dirección de visión.
 
-    return () => {
-      gl.domElement.removeEventListener(
-        "mousedown",
-        mouseDown
-      );
+      Definimos Z como "arriba" de la imagen.
+    */
 
-      window.removeEventListener(
-        "mouseup",
-        mouseUp
-      );
-
-      window.removeEventListener(
-        "mousemove",
-        mouseMove
-      );
-    };
-  }, [gl]);
-
-  useFrame(({ camera }, delta) => {
-    const body = playerRuntime.body;
-
-    if (!body) return;
-
-    playerRuntime.yaw -=
-      playerInput.lookX;
-
-    playerRuntime.pitch +=
-      playerInput.lookY;
-
-    playerRuntime.pitch =
-      THREE.MathUtils.clamp(
-        playerRuntime.pitch,
-        -0.4,
-        1.15
-      );
-
-    playerInput.lookX = 0;
-    playerInput.lookY = 0;
-
-    const position = body.translation();
-
-    rawTarget.current.set(
-      position.x,
-      position.y + 1.25,
-      position.z
-    );
-
-    if (!initialized.current) {
-      smoothTarget.current.copy(
-        rawTarget.current
-      );
-
-      smoothCamera.current.set(
-        position.x,
-        position.y + 2.8,
-        position.z + 5
-      );
-
-      initialized.current = true;
-    }
-
-    const targetSmoothing =
-      1 - Math.exp(-14 * delta);
-
-    smoothTarget.current.lerp(
-      rawTarget.current,
-      targetSmoothing
-    );
-
-    const yaw = playerRuntime.yaw;
-    const pitch = playerRuntime.pitch;
-
-    const distance = 5;
-    const baseHeight = 1.5;
-
-    const horizontalDistance =
-      Math.cos(pitch) * distance;
-
-    const verticalDistance =
-      Math.sin(pitch) * distance;
-
-    desiredCamera.current.set(
-      smoothTarget.current.x +
-        Math.sin(yaw) *
-          horizontalDistance,
-
-      smoothTarget.current.y +
-        baseHeight +
-        verticalDistance,
-
-      smoothTarget.current.z +
-        Math.cos(yaw) *
-          horizontalDistance
-    );
-
-    const cameraSmoothing =
-      1 - Math.exp(-9 * delta);
-
-    smoothCamera.current.lerp(
-      desiredCamera.current,
-      cameraSmoothing
-    );
-
-    camera.position.copy(
-      smoothCamera.current
-    );
+    camera.up.set(0, 0, -1);
 
     camera.lookAt(
-      smoothTarget.current
+      new THREE.Vector3(
+        targetX,
+        0,
+        targetZ
+      )
     );
+
+    /*
+      FOV moderado para reducir deformación
+      de perspectiva.
+    */
+
+    camera.fov = 45;
+
+    camera.near = 0.1;
+    camera.far = 1000;
+
+    camera.updateProjectionMatrix();
   });
 
   return null;
