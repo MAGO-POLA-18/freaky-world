@@ -1,29 +1,31 @@
 import * as THREE from "three";
 
 export default function WingInterior() {
-  const ceilingLights = [
-    [-20, 13.8, -24],
-    [0, 13.8, -24],
-    [20, 13.8, -24],
+  const ceilingFixtures = [
+    [-18, 13.75, -27],
+    [0, 13.75, -27],
+    [18, 13.75, -27],
 
-    [-20, 13.8, -12],
-    [0, 13.8, -12],
-    [20, 13.8, -12],
+    [-18, 13.75, -16],
+    [0, 13.75, -16],
+    [18, 13.75, -16],
+
+    [-18, 13.75, -5],
+    [0, 13.75, -5],
+    [18, 13.75, -5],
   ];
 
-  const lowerLights = [
-    [-22, 6.65, 24],
-    [0, 6.65, 24],
-    [22, 6.65, 24],
+  const lowerFixtures = [
+    [-20, 6.68, 23],
+    [0, 6.68, 23],
+    [20, 6.68, 23],
   ];
 
   return (
     <group>
 
       {/* =================================================
-          SUELO INTERIOR
-          Ligeramente elevado sobre el suelo estructural
-          para evitar z-fighting.
+          SUELO
       ================================================= */}
 
       <mesh
@@ -35,17 +37,12 @@ export default function WingInterior() {
 
         <meshStandardMaterial
           color="#34383d"
-          roughness={0.82}
+          roughness={0.78}
           metalness={0.04}
         />
       </mesh>
 
-      {/* =================================================
-          FRANJA CENTRAL DE CIRCULACIÓN
-
-          Marca el eje principal desde la entrada
-          hasta el fondo de la sala.
-      ================================================= */}
+      {/* PASILLO CENTRAL */}
 
       <mesh
         position={[0, 0.018, -4]}
@@ -55,17 +52,13 @@ export default function WingInterior() {
         <planeGeometry args={[8, 57]} />
 
         <meshStandardMaterial
-          color="#41464c"
-          roughness={0.72}
-          metalness={0.03}
+          color="#464b51"
+          roughness={0.68}
         />
       </mesh>
 
       {/* =================================================
-          PARED INTERIOR DEL FONDO
-
-          Revestimiento visual independiente
-          de la pared estructural.
+          REVESTIMIENTO DE PAREDES
       ================================================= */}
 
       <mesh
@@ -75,15 +68,11 @@ export default function WingInterior() {
         <planeGeometry args={[58.6, 14.4]} />
 
         <meshStandardMaterial
-          color="#e3e4e5"
-          roughness={0.92}
+          color="#e5e7e9"
+          roughness={0.88}
           side={THREE.DoubleSide}
         />
       </mesh>
-
-      {/* =================================================
-          PARED INTERIOR IZQUIERDA
-      ================================================= */}
 
       <mesh
         position={[-29.55, 3.6, 0]}
@@ -93,15 +82,11 @@ export default function WingInterior() {
         <planeGeometry args={[68.8, 7]} />
 
         <meshStandardMaterial
-          color="#dadcde"
-          roughness={0.9}
+          color="#dde0e2"
+          roughness={0.88}
           side={THREE.DoubleSide}
         />
       </mesh>
-
-      {/* =================================================
-          PARED INTERIOR DERECHA
-      ================================================= */}
 
       <mesh
         position={[29.55, 3.6, 0]}
@@ -111,23 +96,17 @@ export default function WingInterior() {
         <planeGeometry args={[68.8, 7]} />
 
         <meshStandardMaterial
-          color="#dadcde"
-          roughness={0.9}
+          color="#dde0e2"
+          roughness={0.88}
           side={THREE.DoubleSide}
         />
       </mesh>
 
       {/* =================================================
-          ZÓCALOS LATERALES
-
-          Ayudan a que el suelo y las paredes tengan
-          un encuentro visual limpio.
+          ZÓCALOS
       ================================================= */}
 
-      <mesh
-        position={[-29.48, 0.18, 0]}
-        castShadow
-      >
+      <mesh position={[-29.48, 0.18, 0]}>
         <boxGeometry args={[0.12, 0.32, 68]} />
 
         <meshStandardMaterial
@@ -136,10 +115,7 @@ export default function WingInterior() {
         />
       </mesh>
 
-      <mesh
-        position={[29.48, 0.18, 0]}
-        castShadow
-      >
+      <mesh position={[29.48, 0.18, 0]}>
         <boxGeometry args={[0.12, 0.32, 68]} />
 
         <meshStandardMaterial
@@ -148,14 +124,7 @@ export default function WingInterior() {
         />
       </mesh>
 
-      {/* =================================================
-          ZÓCALO DEL FONDO
-      ================================================= */}
-
-      <mesh
-        position={[0, 0.18, -34.45]}
-        castShadow
-      >
+      <mesh position={[0, 0.18, -34.45]}>
         <boxGeometry args={[58.8, 0.32, 0.12]} />
 
         <meshStandardMaterial
@@ -165,91 +134,119 @@ export default function WingInterior() {
       </mesh>
 
       {/* =================================================
-          LÍNEAS DE LUZ DEL TECHO ALTO
+          LUMINARIAS DEL TECHO ALTO
+
+          Ahora sí son objetos visibles.
       ================================================= */}
 
-      {ceilingLights.map(([x, y, z], index) => (
+      {ceilingFixtures.map(([x, y, z], index) => (
         <group
-          key={`ceiling-light-${index}`}
+          key={`ceiling-fixture-${index}`}
           position={[x, y, z]}
         >
+          {/* MARCO */}
           <mesh>
-            <boxGeometry args={[8, 0.08, 0.22]} />
+            <boxGeometry args={[9, 0.14, 0.65]} />
 
             <meshStandardMaterial
-              color="#f2f1ea"
-              emissive="#f2f1ea"
-              emissiveIntensity={2}
+              color="#202327"
+              roughness={0.45}
+            />
+          </mesh>
+
+          {/* DIFUSOR */}
+          <mesh position={[0, -0.08, 0]}>
+            <boxGeometry args={[8.5, 0.06, 0.45]} />
+
+            <meshStandardMaterial
+              color="#ffffff"
+              emissive="#fff8e8"
+              emissiveIntensity={5}
             />
           </mesh>
         </group>
       ))}
 
       {/* =================================================
-          ILUMINACIÓN BAJO LA TERRAZA
+          LUMINARIAS BAJO TERRAZA
       ================================================= */}
 
-      {lowerLights.map(([x, y, z], index) => (
+      {lowerFixtures.map(([x, y, z], index) => (
         <group
-          key={`lower-light-${index}`}
+          key={`lower-fixture-${index}`}
           position={[x, y, z]}
         >
           <mesh>
-            <boxGeometry args={[8, 0.08, 0.22]} />
+            <boxGeometry args={[9, 0.12, 0.55]} />
 
             <meshStandardMaterial
-              color="#f1efe7"
-              emissive="#f1efe7"
-              emissiveIntensity={2}
+              color="#202327"
+              roughness={0.45}
+            />
+          </mesh>
+
+          <mesh position={[0, -0.07, 0]}>
+            <boxGeometry args={[8.5, 0.05, 0.38]} />
+
+            <meshStandardMaterial
+              color="#ffffff"
+              emissive="#eef5ff"
+              emissiveIntensity={5}
             />
           </mesh>
         </group>
       ))}
 
       {/* =================================================
-          LUZ GENERAL INTERIOR
+          LUZ REAL INTERIOR
 
-          Pocas luces reales.
-          Las demás tiras son emisivas.
+          Muy amplia, como una sala pública/comercial.
       ================================================= */}
 
-     <pointLight
-  position={[0, 10.5, -20]}
-  intensity={32}
-  distance={42}
-  decay={2}
-  color="#fff4dd"
-/>
+      <pointLight
+        position={[0, 11, -24]}
+        intensity={185}
+        distance={45}
+        decay={2}
+        color="#fff7e8"
+      />
 
-<pointLight
-  position={[0, 5.5, 22]}
-  intensity={24}
-  distance={34}
-  decay={2}
-  color="#e8f2ff"
-/>
+      <pointLight
+        position={[0, 10, -7]}
+        intensity={175}
+        distance={42}
+        decay={2}
+        color="#f7f9ff"
+      />
 
-<pointLight
-  position={[-18, 5.5, -5]}
-  intensity={16}
-  distance={24}
-  decay={2}
-  color="#eef4ff"
-/>
+      <pointLight
+        position={[0, 5.7, 22]}
+        intensity={160}
+        distance={35}
+        decay={2}
+        color="#eef5ff"
+      />
 
-<pointLight
-  position={[18, 5.5, -5]}
-  intensity={16}
-  distance={24}
-  decay={2}
-  color="#eef4ff"
-/>
+      {/* RELLENO LATERAL */}
+
+      <pointLight
+        position={[-21, 5, -16]}
+        intensity={75}
+        distance={26}
+        decay={2}
+        color="#f4f7ff"
+      />
+
+      <pointLight
+        position={[21, 5, -16]}
+        intensity={75}
+        distance={26}
+        decay={2}
+        color="#f4f7ff"
+      />
 
       {/* =================================================
-          PILARES VISUALES CERCA DE LA ENTRADA
-
-          Empiezan a dar lenguaje arquitectónico
-          al interior sin ocupar la circulación.
+          PILARES ENTRADA
       ================================================= */}
 
       <mesh
@@ -279,21 +276,18 @@ export default function WingInterior() {
       </mesh>
 
       {/* =================================================
-          LÍNEA DECORATIVA DE PARED
-
-          Base común para todas las salas.
-          Más adelante cada ala tendrá identidad propia.
+          LUZ DECORATIVA DEL FONDO
       ================================================= */}
 
       <mesh
         position={[0, 4.6, -34.48]}
       >
-        <boxGeometry args={[46, 0.08, 0.05]} />
+        <boxGeometry args={[46, 0.1, 0.05]} />
 
         <meshStandardMaterial
-          color="#6f9bab"
-          emissive="#36505b"
-          emissiveIntensity={1.2}
+          color="#8cc4dc"
+          emissive="#4d91ad"
+          emissiveIntensity={3}
         />
       </mesh>
 
