@@ -5,6 +5,8 @@ import {
 
 import * as THREE from "three";
 
+import WingInterior from "./WingInterior";
+
 export default function DpadWing({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -84,7 +86,15 @@ export default function DpadWing({
     >
 
       {/* =================================================
+          INTERIOR
+      ================================================= */}
+
+      <WingInterior />
+
+      {/* =================================================
           SUELO VISUAL
+
+          El suelo físico ahora lo proporciona Museum.jsx.
       ================================================= */}
 
       <mesh
@@ -99,21 +109,6 @@ export default function DpadWing({
           roughness={1}
         />
       </mesh>
-
-      {/* =================================================
-          SUELO FÍSICO DEL ALA
-      ================================================= */}
-
-      <RigidBody
-        type="fixed"
-        colliders={false}
-      >
-        <CuboidCollider
-          args={[30, 0.1, 35]}
-          position={[0, -0.105, 0]}
-          friction={0.9}
-        />
-      </RigidBody>
 
       {/* =================================================
           PARED LATERAL IZQUIERDA
@@ -361,32 +356,86 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
-    ILUMINACIÓN DE TERRAZA
-================================================= */}
+          ILUMINACIÓN DE TERRAZA
 
-<pointLight
-  position={[0, 10, 27]}
-  intensity={22}
-  distance={30}
-  decay={2}
-  color="#ffe2b8"
-/>
+          Ahora hay luminarias visibles.
+      ================================================= */}
 
-<pointLight
-  position={[-20, 9, 27]}
-  intensity={12}
-  distance={22}
-  decay={2}
-  color="#dcecff"
-/>
+      {[-22, -11, 0, 11, 22].map((x) => (
+        <group
+          key={`terrace-lamp-${x}`}
+          position={[x, 7, 30]}
+        >
+          {/* POSTE */}
 
-<pointLight
-  position={[20, 9, 27]}
-  intensity={12}
-  distance={22}
-  decay={2}
-  color="#dcecff"
-/>
+          <mesh
+            position={[0, 0.75, 0]}
+            castShadow
+          >
+            <cylinderGeometry
+              args={[0.055, 0.075, 1.5, 10]}
+            />
+
+            <meshStandardMaterial
+              color="#202327"
+              roughness={0.6}
+            />
+          </mesh>
+
+          {/* CABEZAL */}
+
+          <mesh
+            position={[0, 1.52, 0]}
+            castShadow
+          >
+            <cylinderGeometry
+              args={[0.18, 0.14, 0.14, 12]}
+            />
+
+            <meshStandardMaterial
+              color="#202327"
+              roughness={0.5}
+            />
+          </mesh>
+
+          {/* DIFUSOR */}
+
+          <mesh
+            position={[0, 1.44, 0]}
+          >
+            <sphereGeometry
+              args={[0.12, 12, 12]}
+            />
+
+            <meshStandardMaterial
+              color="#ffffff"
+              emissive="#fff0d4"
+              emissiveIntensity={5}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* =================================================
+          DOS LUCES REALES PARA TODA LA TERRAZA
+      ================================================= */}
+
+      <pointLight
+        position={[-14, 9, 28]}
+        intensity={115}
+        distance={28}
+        decay={2}
+        color="#fff0d4"
+      />
+
+      <pointLight
+        position={[14, 9, 28]}
+        intensity={115}
+        distance={28}
+        decay={2}
+        color="#fff0d4"
+      />
+
       {/* =================================================
           TERRAZA
       ================================================= */}
@@ -413,8 +462,6 @@ export default function DpadWing({
 
       {/* =================================================
           BARANDILLA FRONTAL
-
-          Ahora también tiene collider.
       ================================================= */}
 
       <RigidBody
@@ -506,7 +553,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          PERFILES SUPERIORES
+          PERFIL SUPERIOR IZQUIERDO
       ================================================= */}
 
       <mesh
@@ -531,6 +578,10 @@ export default function DpadWing({
           roughness={0.9}
         />
       </mesh>
+
+      {/* =================================================
+          PERFIL SUPERIOR DERECHO
+      ================================================= */}
 
       <mesh
         position={[30, 0, 0]}
@@ -581,9 +632,7 @@ export default function DpadWing({
 
       {/* =================================================
           TECHO INCLINADO
-
-          3 PAÑOS.
-          Huecos sobre las dos escaleras.
+          TRES PAÑOS
       ================================================= */}
 
       <RigidBody
@@ -761,6 +810,9 @@ export default function DpadWing({
 
       {/* =================================================
           RAMPAS FÍSICAS INVISIBLES
+
+          SE MANTIENEN.
+          El avatar necesita estas rampas para subir.
       ================================================= */}
 
       <RigidBody
@@ -851,13 +903,8 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          BARANDILLA INTERIOR DEL BORDE DE TERRAZA
-
-          Dejamos abiertos únicamente los dos accesos
-          de las escaleras.
+          BARANDILLA INTERIOR
       ================================================= */}
-
-      {/* EXTREMO IZQUIERDO */}
 
       <RigidBody
         type="fixed"
@@ -877,8 +924,6 @@ export default function DpadWing({
         </mesh>
       </RigidBody>
 
-      {/* CENTRO */}
-
       <RigidBody
         type="fixed"
         colliders="cuboid"
@@ -896,8 +941,6 @@ export default function DpadWing({
           />
         </mesh>
       </RigidBody>
-
-      {/* EXTREMO DERECHO */}
 
       <RigidBody
         type="fixed"
@@ -918,7 +961,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          POSTES BORDE INTERIOR
+          POSTES DEL BORDE INTERIOR
       ================================================= */}
 
       {[
