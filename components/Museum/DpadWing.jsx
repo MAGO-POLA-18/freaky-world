@@ -40,11 +40,11 @@ export default function DpadWing({
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
-        <mesh position={[0, 0, 0]} receiveShadow>
-          <boxGeometry args={[60, 0.4, 70]} />
-          <meshStandardMaterial color="#555555" roughness={1} />
-        </mesh>
-      </RigidBody>
+  <mesh position={[0, -0.2, 0]} receiveShadow>
+    <boxGeometry args={[60, 0.4, 70]} />
+    <meshStandardMaterial color="#555555" roughness={1} />
+  </mesh>
+</RigidBody>
 
       {/* =================================================
           PAREDES LATERALES INFERIORES
