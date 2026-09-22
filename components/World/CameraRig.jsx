@@ -36,7 +36,7 @@ export default function CameraRig() {
       la pieza completa.
     */
 
-    const cameraHeight = 90;
+    const cameraHeight = 300;
 
     camera.position.set(
       targetX,
