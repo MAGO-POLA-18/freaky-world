@@ -38,7 +38,7 @@ function CloudBank({ position, scale = 1, speed = 0.45 }) {
             color="#ffffff"
             roughness={1}
             transparent
-            opacity={0.86}
+            opacity={0.8}
             depthWrite={false}
           />
         </mesh>
@@ -88,9 +88,9 @@ export default function DynamicSky() {
     -45,
   ];
 
-  const dawn = new THREE.Color("#f4b183");
-  const noon = new THREE.Color("#7fc8f8");
-  const dusk = new THREE.Color("#e9976b");
+  const dawn = new THREE.Color("#f3a96d");
+  const noon = new THREE.Color("#56b8f5");
+  const dusk = new THREE.Color("#e98a5f");
   const night = new THREE.Color("#040714");
 
   let skyColor;
@@ -98,53 +98,34 @@ export default function DynamicSky() {
   if (!isDay) {
     skyColor = night;
   } else if (dayProgress < 0.5) {
-    skyColor = dawn
-      .clone()
-      .lerp(noon, dayProgress / 0.5);
+    skyColor = dawn.clone().lerp(noon, dayProgress / 0.5);
   } else {
     skyColor = noon
       .clone()
-      .lerp(
-        dusk,
-        (dayProgress - 0.5) / 0.5
-      );
+      .lerp(dusk, (dayProgress - 0.5) / 0.5);
   }
 
   const moonProgress =
     hour >= dayEnd
-      ? (hour - dayEnd) /
-        (24 - dayEnd + dayStart)
-      : (hour + 24 - dayEnd) /
-        (24 - dayEnd + dayStart);
+      ? (hour - dayEnd) / (24 - dayEnd + dayStart)
+      : (hour + 24 - dayEnd) / (24 - dayEnd + dayStart);
 
   const moonAngle =
-    THREE.MathUtils.clamp(
-      moonProgress,
-      0,
-      1
-    ) * Math.PI;
+    THREE.MathUtils.clamp(moonProgress, 0, 1) * Math.PI;
 
   const moonPosition = [
     Math.cos(moonAngle) * 105,
-    22 +
-      Math.max(
-        Math.sin(moonAngle),
-        0
-      ) *
-        78,
+    22 + Math.max(Math.sin(moonAngle), 0) * 78,
     35,
   ];
 
   return (
     <>
-      <color
-        attach="background"
-        args={[skyColor]}
-      />
+      <color attach="background" args={[skyColor]} />
 
       <fog
         attach="fog"
-        args={[skyColor, 150, 340]}
+        args={[isDay ? "#8fd0f8" : "#08101f", 170, 360]}
       />
 
       {isDay ? (
@@ -152,19 +133,17 @@ export default function DynamicSky() {
           <Sky
             distance={450000}
             sunPosition={sunPosition}
-            turbidity={4.5}
-            rayleigh={3.2}
-            mieCoefficient={0.004}
-            mieDirectionalG={0.82}
+            turbidity={2.2}
+            rayleigh={5.5}
+            mieCoefficient={0.002}
+            mieDirectionalG={0.75}
           />
 
           <mesh position={sunPosition}>
-            <sphereGeometry
-              args={[5.5, 32, 32]}
-            />
+            <sphereGeometry args={[5.5, 32, 32]} />
 
             <meshBasicMaterial
-              color="#fff4c4"
+              color="#fff3b8"
               toneMapped={false}
             />
           </mesh>
@@ -189,15 +168,11 @@ export default function DynamicSky() {
 
           <directionalLight
             position={sunPosition}
-            intensity={
-              0.85 +
-              sunHeight * 1.25
-            }
+            intensity={0.95 + sunHeight * 1.2}
             color={
-              dayProgress < 0.18 ||
-              dayProgress > 0.82
+              dayProgress < 0.18 || dayProgress > 0.82
                 ? "#ffd6a3"
-                : "#fff7e6"
+                : "#fff8ea"
             }
             castShadow
             shadow-mapSize-width={1024}
@@ -211,20 +186,12 @@ export default function DynamicSky() {
           />
 
           <hemisphereLight
-            intensity={
-              0.75 +
-              sunHeight * 0.35
-            }
-            color="#bfe3ff"
+            intensity={0.9 + sunHeight * 0.3}
+            color="#9fd8ff"
             groundColor="#66745f"
           />
 
-          <ambientLight
-            intensity={
-              0.25 +
-              sunHeight * 0.25
-            }
-          />
+          <ambientLight intensity={0.35 + sunHeight * 0.2} />
         </>
       ) : (
         <>
@@ -239,9 +206,7 @@ export default function DynamicSky() {
           />
 
           <mesh position={moonPosition}>
-            <sphereGeometry
-              args={[4.5, 32, 32]}
-            />
+            <sphereGeometry args={[4.5, 32, 32]} />
 
             <meshStandardMaterial
               color="#f1f0df"
@@ -263,9 +228,7 @@ export default function DynamicSky() {
             groundColor="#0b0d12"
           />
 
-          <ambientLight
-            intensity={0.09}
-          />
+          <ambientLight intensity={0.09} />
         </>
       )}
     </>
