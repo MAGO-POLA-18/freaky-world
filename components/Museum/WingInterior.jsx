@@ -42,7 +42,9 @@ export default function WingInterior() {
         />
       </mesh>
 
-      {/* PASILLO CENTRAL */}
+      {/* =================================================
+          PASILLO CENTRAL
+      ================================================= */}
 
       <mesh
         position={[0, 0.018, -4]}
@@ -58,7 +60,7 @@ export default function WingInterior() {
       </mesh>
 
       {/* =================================================
-          REVESTIMIENTO DE PAREDES
+          PARED DEL FONDO
       ================================================= */}
 
       <mesh
@@ -74,6 +76,10 @@ export default function WingInterior() {
         />
       </mesh>
 
+      {/* =================================================
+          PARED IZQUIERDA
+      ================================================= */}
+
       <mesh
         position={[-29.55, 3.6, 0]}
         rotation={[0, Math.PI / 2, 0]}
@@ -87,6 +93,10 @@ export default function WingInterior() {
           side={THREE.DoubleSide}
         />
       </mesh>
+
+      {/* =================================================
+          PARED DERECHA
+      ================================================= */}
 
       <mesh
         position={[29.55, 3.6, 0]}
@@ -134,9 +144,7 @@ export default function WingInterior() {
       </mesh>
 
       {/* =================================================
-          LUMINARIAS DEL TECHO ALTO
-
-          Ahora sí son objetos visibles.
+          LUMINARIAS DEL TECHO
       ================================================= */}
 
       {ceilingFixtures.map(([x, y, z], index) => (
@@ -144,7 +152,6 @@ export default function WingInterior() {
           key={`ceiling-fixture-${index}`}
           position={[x, y, z]}
         >
-          {/* MARCO */}
           <mesh>
             <boxGeometry args={[9, 0.14, 0.65]} />
 
@@ -154,7 +161,6 @@ export default function WingInterior() {
             />
           </mesh>
 
-          {/* DIFUSOR */}
           <mesh position={[0, -0.08, 0]}>
             <boxGeometry args={[8.5, 0.06, 0.45]} />
 
@@ -198,55 +204,27 @@ export default function WingInterior() {
       ))}
 
       {/* =================================================
-          LUZ REAL INTERIOR
-
-          Muy amplia, como una sala pública/comercial.
+          SOLO DOS LUCES REALES POR INTERIOR
       ================================================= */}
 
       <pointLight
-        position={[0, 11, -24]}
+        position={[0, 10, -18]}
         intensity={185}
+        distance={55}
+        decay={1.7}
+        color="#fff8ea"
+      />
+
+      <pointLight
+        position={[0, 7, 18]}
+        intensity={165}
         distance={45}
-        decay={2}
-        color="#fff7e8"
-      />
-
-      <pointLight
-        position={[0, 10, -7]}
-        intensity={175}
-        distance={42}
-        decay={2}
-        color="#f7f9ff"
-      />
-
-      <pointLight
-        position={[0, 5.7, 22]}
-        intensity={160}
-        distance={35}
-        decay={2}
-        color="#eef5ff"
-      />
-
-      {/* RELLENO LATERAL */}
-
-      <pointLight
-        position={[-21, 5, -16]}
-        intensity={75}
-        distance={26}
-        decay={2}
-        color="#f4f7ff"
-      />
-
-      <pointLight
-        position={[21, 5, -16]}
-        intensity={75}
-        distance={26}
-        decay={2}
-        color="#f4f7ff"
+        decay={1.7}
+        color="#f1f6ff"
       />
 
       {/* =================================================
-          PILARES ENTRADA
+          PILARES
       ================================================= */}
 
       <mesh
