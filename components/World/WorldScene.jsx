@@ -332,14 +332,7 @@ function Character() {
         Math.min(1, delta * 10);
     }
 
-    /* =================================================
-       SUAVIZADO DE VELOCIDAD
-
-       Evita el cambio instantáneo de velocidad
-       lateral que producía sensación de vibración.
-    ================================================= */
-
-    const moveSmooth =
+    const movementSmoothing =
       1 -
       Math.exp(-12 * delta);
 
@@ -347,14 +340,14 @@ function Character() {
       THREE.MathUtils.lerp(
         currentVelocity.x,
         targetX,
-        moveSmooth
+        movementSmoothing
       );
 
     const nextZ =
       THREE.MathUtils.lerp(
         currentVelocity.z,
         targetZ,
-        moveSmooth
+        movementSmoothing
       );
 
     body.current.setLinvel(
@@ -365,10 +358,6 @@ function Character() {
       },
       true
     );
-
-    /* =================================================
-       POSICIÓN FÍSICA
-    ================================================= */
 
     const rawPosition =
       body.current.translation();
@@ -394,20 +383,13 @@ function Character() {
       cameraInitialized.current = true;
     }
 
-    /* =================================================
-       FILTRO DE MICROVIBRACIONES FÍSICAS
-
-       La cámara ya no sigue cada pequeño ajuste
-       del collider.
-    ================================================= */
-
-    const playerSmooth =
+    const playerSmoothing =
       1 -
       Math.exp(-14 * delta);
 
     smoothPlayerPosition.current.lerp(
       rawVector,
-      playerSmooth
+      playerSmoothing
     );
 
     const position =
@@ -503,13 +485,13 @@ function Character() {
           );
     }
 
-    const cameraSmooth =
+    const cameraSmoothing =
       1 -
       Math.exp(-10 * delta);
 
     smoothCameraPosition.current.lerp(
       finalCameraPosition,
-      cameraSmooth
+      cameraSmoothing
     );
 
     camera.position.copy(
@@ -522,11 +504,7 @@ function Character() {
   return (
     <RigidBody
       ref={body}
-
-      /* Más alto para que nunca nazca
-         intersectando el suelo */
       position={[0, 1.35, 14]}
-
       colliders={false}
 
       enabledRotations={[
@@ -553,16 +531,13 @@ function Character() {
         ref={player}
         position={[0, -0.95, 0]}
       >
+
         <mesh
           position={[0, 1.15, 0]}
           castShadow
         >
           <boxGeometry
-            args={[
-              0.7,
-              1.1,
-              0.4,
-            ]}
+            args={[0.7, 1.1, 0.4]}
           />
 
           <meshStandardMaterial
@@ -575,11 +550,7 @@ function Character() {
           castShadow
         >
           <sphereGeometry
-            args={[
-              0.38,
-              24,
-              24,
-            ]}
+            args={[0.38, 24, 24]}
           />
 
           <meshStandardMaterial
@@ -588,19 +559,11 @@ function Character() {
         </mesh>
 
         <mesh
-          position={[
-            -0.2,
-            0.45,
-            0,
-          ]}
+          position={[-0.2, 0.45, 0]}
           castShadow
         >
           <boxGeometry
-            args={[
-              0.25,
-              0.9,
-              0.3,
-            ]}
+            args={[0.25, 0.9, 0.3]}
           />
 
           <meshStandardMaterial
@@ -609,25 +572,18 @@ function Character() {
         </mesh>
 
         <mesh
-          position={[
-            0.2,
-            0.45,
-            0,
-          ]}
+          position={[0.2, 0.45, 0]}
           castShadow
         >
           <boxGeometry
-            args={[
-              0.25,
-              0.9,
-              0.3,
-            ]}
+            args={[0.25, 0.9, 0.3]}
           />
 
           <meshStandardMaterial
             color="#222222"
           />
         </mesh>
+
       </group>
     </RigidBody>
   );
@@ -643,9 +599,7 @@ function MobileControls() {
   const lookTouch =
     useRef(null);
 
-  const updateJoystick = (
-    touch
-  ) => {
+  const updateJoystick = (touch) => {
     if (
       !joystick.current ||
       !knob.current
@@ -717,9 +671,7 @@ function MobileControls() {
     joystickTouch.current = null;
   };
 
-  const handleTouchStart = (
-    e
-  ) => {
+  const handleTouchStart = (e) => {
     e.preventDefault();
 
     for (
@@ -728,8 +680,7 @@ function MobileControls() {
     ) {
       if (
         touch.clientX <
-        window.innerWidth *
-          0.45
+        window.innerWidth * 0.45
       ) {
         if (
           joystickTouch.current ===
@@ -746,23 +697,16 @@ function MobileControls() {
           null
         ) {
           lookTouch.current = {
-            id:
-              touch.identifier,
-
-            x:
-              touch.clientX,
-
-            y:
-              touch.clientY,
+            id: touch.identifier,
+            x: touch.clientX,
+            y: touch.clientY,
           };
         }
       }
     }
   };
 
-  const handleTouchMove = (
-    e
-  ) => {
+  const handleTouchMove = (e) => {
     e.preventDefault();
 
     for (
@@ -804,9 +748,7 @@ function MobileControls() {
     }
   };
 
-  const handleTouchEnd = (
-    e
-  ) => {
+  const handleTouchEnd = (e) => {
     for (
       const touch
       of e.changedTouches
@@ -823,8 +765,7 @@ function MobileControls() {
         touch.identifier ===
           lookTouch.current.id
       ) {
-        lookTouch.current =
-          null;
+        lookTouch.current = null;
       }
     }
   };
@@ -832,22 +773,10 @@ function MobileControls() {
   return (
     <div
       className="mobile-controls"
-
-      onTouchStart={
-        handleTouchStart
-      }
-
-      onTouchMove={
-        handleTouchMove
-      }
-
-      onTouchEnd={
-        handleTouchEnd
-      }
-
-      onTouchCancel={
-        handleTouchEnd
-      }
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
       <div
         ref={joystick}
@@ -859,9 +788,7 @@ function MobileControls() {
         />
       </div>
 
-      <div
-        className="mobile-look"
-      >
+      <div className="mobile-look">
         Desliza para mirar
       </div>
     </div>
@@ -891,11 +818,11 @@ export default function WorldScene() {
 
         <Physics
           gravity={[0, -9.81, 0]}
-          timeStep="vary"
         >
           <Museum />
           <Character />
         </Physics>
+
       </Canvas>
 
       <MobileControls />
