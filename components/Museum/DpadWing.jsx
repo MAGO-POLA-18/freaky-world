@@ -1,4 +1,7 @@
-import { RigidBody } from "@react-three/rapier";
+import {
+  RigidBody,
+  CuboidCollider,
+} from "@react-three/rapier";
 import * as THREE from "three";
 
 export default function DpadWing({
@@ -8,29 +11,39 @@ export default function DpadWing({
   const steps = Array.from({ length: 14 });
 
   /* =====================================================
-     PERFIL LATERAL SUPERIOR
+     MEDIDAS PRINCIPALES
+  ===================================================== */
 
-     Profundidad exacta:
-     -35  fondo
-       0  comienzo pendiente
-      18  final pendiente
-      35  fachada
+  const stairWidth = 8;
+  const stairSteps = 14;
+  const stairStepDepth = 1.1;
+  const stairHeight = 7.2;
+
+  const stairStartZ = 1.4;
+  const stairRun = stairSteps * stairStepDepth;
+
+  const stairRampLength = Math.sqrt(
+    stairRun * stairRun + stairHeight * stairHeight
+  );
+
+  const stairRampAngle = Math.atan2(
+    stairHeight,
+    stairRun
+  );
+
+  /* =====================================================
+     PERFIL LATERAL SUPERIOR
   ===================================================== */
 
   const sideShape = new THREE.Shape();
 
-  // Solapamiento vertical mínimo de 2 cm
-  // para eliminar fisuras con la pared inferior.
   sideShape.moveTo(-35, 6.98);
   sideShape.lineTo(-35, 15);
 
-  // Techo alto
   sideShape.lineTo(0, 15);
 
-  // Pendiente
   sideShape.lineTo(18, 7);
 
-  // Base
   sideShape.lineTo(18, 6.98);
   sideShape.lineTo(-35, 6.98);
 
@@ -58,17 +71,9 @@ export default function DpadWing({
 
   return (
     <group position={position} rotation={rotation}>
-      
+
       {/* =================================================
-          SUELO INTERIOR VISUAL
-
-          SIN collider propio.
-
-          El collider del suelo general ya sostiene
-          al personaje.
-
-          Lo elevamos solo 6 mm para evitar z-fighting
-          con el suelo general.
+          SUELO INTERIOR
       ================================================= */}
 
       <mesh
@@ -85,12 +90,7 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
-          PARED LATERAL IZQUIERDA
-
-          Z:
-          -34.8 → +34.8
-
-          Así no invade las paredes de fondo/fachada.
+          PAREDES LATERALES
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -100,14 +100,9 @@ export default function DpadWing({
           receiveShadow
         >
           <boxGeometry args={[0.4, 7.02, 69.6]} />
-
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
       </RigidBody>
-
-      {/* =================================================
-          PARED LATERAL DERECHA
-      ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
         <mesh
@@ -116,18 +111,12 @@ export default function DpadWing({
           receiveShadow
         >
           <boxGeometry args={[0.4, 7.02, 69.6]} />
-
           <meshStandardMaterial color="#d8d8d8" />
         </mesh>
       </RigidBody>
 
       {/* =================================================
           PARED DEL FONDO
-
-          Encaja ENTRE las dos paredes laterales.
-
-          X:
-          -29.6 → +29.6
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -137,15 +126,12 @@ export default function DpadWing({
           receiveShadow
         >
           <boxGeometry args={[59.2, 15.02, 0.4]} />
-
           <meshStandardMaterial color="#d0d0d0" />
         </mesh>
       </RigidBody>
 
       {/* =================================================
-          FACHADA IZQUIERDA
-
-          -29.6 → -10
+          FACHADA
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -155,16 +141,9 @@ export default function DpadWing({
           receiveShadow
         >
           <boxGeometry args={[19.6, 7.02, 0.4]} />
-
           <meshStandardMaterial color="#e0e0e0" />
         </mesh>
       </RigidBody>
-
-      {/* =================================================
-          FACHADA DERECHA
-
-          +10 → +29.6
-      ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
         <mesh
@@ -173,7 +152,6 @@ export default function DpadWing({
           receiveShadow
         >
           <boxGeometry args={[19.6, 7.02, 0.4]} />
-
           <meshStandardMaterial color="#e0e0e0" />
         </mesh>
       </RigidBody>
@@ -236,8 +214,8 @@ export default function DpadWing({
         />
       </mesh>
 
-      <mesh position={[-20, 3.7, 35.12]}>
-        <boxGeometry args={[15.6, 5.6, 0.16]} />
+      <mesh position={[-20, 3.7, 35.13]}>
+        <boxGeometry args={[15.6, 5.6, 0.12]} />
 
         <meshStandardMaterial
           color="#30343a"
@@ -263,8 +241,8 @@ export default function DpadWing({
         />
       </mesh>
 
-      <mesh position={[20, 3.7, 35.12]}>
-        <boxGeometry args={[15.6, 5.6, 0.16]} />
+      <mesh position={[20, 3.7, 35.13]}>
+        <boxGeometry args={[15.6, 5.6, 0.12]} />
 
         <meshStandardMaterial
           color="#30343a"
@@ -273,7 +251,7 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
-          CARTEL / NOMBRE DE SALA
+          CARTEL
       ================================================= */}
 
       <mesh
@@ -290,15 +268,7 @@ export default function DpadWing({
 
       {/* =================================================
           TERRAZA
-
-          ANTES:
-          Z 19 → 35
-
-          AHORA:
           Z 18 → 35
-
-          Por lo tanto se une exactamente al final
-          del techo inclinado.
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -322,48 +292,38 @@ export default function DpadWing({
 
       <mesh position={[0, 8.15, 34.25]} castShadow>
         <boxGeometry args={[59, 0.15, 0.15]} />
-
         <meshStandardMaterial color="#303030" />
       </mesh>
 
-      {[-28, -21, -14, -7, 0, 7, 14, 21, 28].map((x) => (
-        <mesh
-          key={`front-post-${x}`}
-          position={[x, 7.6, 34.25]}
-          castShadow
-        >
-          <boxGeometry args={[0.14, 1.1, 0.14]} />
-
-          <meshStandardMaterial color="#303030" />
-        </mesh>
-      ))}
+      {[-28, -21, -14, -7, 0, 7, 14, 21, 28].map(
+        (x) => (
+          <mesh
+            key={`front-post-${x}`}
+            position={[x, 7.6, 34.25]}
+            castShadow
+          >
+            <boxGeometry args={[0.14, 1.1, 0.14]} />
+            <meshStandardMaterial color="#303030" />
+          </mesh>
+        )
+      )}
 
       {/* =================================================
           BARANDILLAS LATERALES
-
-          Ahora siguen toda la terraza:
-          Z 18 → 35
       ================================================= */}
 
       <mesh position={[-29.25, 8.15, 26.5]} castShadow>
         <boxGeometry args={[0.15, 0.15, 17]} />
-
         <meshStandardMaterial color="#303030" />
       </mesh>
 
       <mesh position={[29.25, 8.15, 26.5]} castShadow>
         <boxGeometry args={[0.15, 0.15, 17]} />
-
         <meshStandardMaterial color="#303030" />
       </mesh>
 
       {/* =================================================
-          PERFIL SUPERIOR IZQUIERDO
-
-          El extrusionado crece 0.4 hacia -X.
-
-          Posición correcta:
-          -29.6 → -30
+          PERFILES SUPERIORES
       ================================================= */}
 
       <mesh
@@ -381,16 +341,6 @@ export default function DpadWing({
           roughness={0.9}
         />
       </mesh>
-
-      {/* =================================================
-          PERFIL SUPERIOR DERECHO
-
-          Con la misma rotación el extrusionado también
-          crece hacia -X.
-
-          Por eso parte de X=30:
-          30 → 29.6
-      ================================================= */}
 
       <mesh
         position={[30, 0, 0]}
@@ -410,8 +360,6 @@ export default function DpadWing({
 
       {/* =================================================
           TECHO ALTO
-
-          Z -35 → 0
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -431,10 +379,6 @@ export default function DpadWing({
 
       {/* =================================================
           TECHO INCLINADO
-
-          Z 0 → 18
-
-          Y 15 → 7
       ================================================= */}
 
       <RigidBody type="fixed" colliders="cuboid">
@@ -457,28 +401,39 @@ export default function DpadWing({
 
       {/* =================================================
           ESCALERA IZQUIERDA
+          SOLO GEOMETRÍA VISUAL
       ================================================= */}
 
       {steps.map((_, i) => {
-        const height = ((i + 1) * 6.8) / 14;
-        const z = 13 - i * 1.15;
+        const topHeight =
+          ((i + 1) * stairHeight) / stairSteps;
+
+        const z =
+          stairStartZ +
+          i * stairStepDepth +
+          stairStepDepth / 2;
 
         return (
-          <RigidBody
+          <mesh
             key={`left-step-${i}`}
-            type="fixed"
-            colliders="cuboid"
+            position={[
+              -14,
+              topHeight / 2,
+              z,
+            ]}
+            castShadow
+            receiveShadow
           >
-            <mesh
-              position={[-14, height / 2, z]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[8, height, 1.2]} />
+            <boxGeometry
+              args={[
+                stairWidth,
+                topHeight,
+                stairStepDepth,
+              ]}
+            />
 
-              <meshStandardMaterial color="#888888" />
-            </mesh>
-          </RigidBody>
+            <meshStandardMaterial color="#888888" />
+          </mesh>
         );
       })}
 
@@ -487,27 +442,160 @@ export default function DpadWing({
       ================================================= */}
 
       {steps.map((_, i) => {
-        const height = ((i + 1) * 6.8) / 14;
-        const z = 13 - i * 1.15;
+        const topHeight =
+          ((i + 1) * stairHeight) / stairSteps;
+
+        const z =
+          stairStartZ +
+          i * stairStepDepth +
+          stairStepDepth / 2;
 
         return (
-          <RigidBody
+          <mesh
             key={`right-step-${i}`}
-            type="fixed"
-            colliders="cuboid"
+            position={[
+              14,
+              topHeight / 2,
+              z,
+            ]}
+            castShadow
+            receiveShadow
           >
-            <mesh
-              position={[14, height / 2, z]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[8, height, 1.2]} />
+            <boxGeometry
+              args={[
+                stairWidth,
+                topHeight,
+                stairStepDepth,
+              ]}
+            />
 
-              <meshStandardMaterial color="#888888" />
-            </mesh>
-          </RigidBody>
+            <meshStandardMaterial color="#888888" />
+          </mesh>
         );
       })}
+
+      {/* =================================================
+          RAMPAS FÍSICAS INVISIBLES
+
+          El personaje colisiona contra una pendiente
+          continua, no contra cada escalón.
+      ================================================= */}
+
+      <RigidBody type="fixed" colliders={false}>
+        <CuboidCollider
+          args={[
+            stairWidth / 2,
+            0.12,
+            stairRampLength / 2,
+          ]}
+          position={[-14, 3.55, 9.1]}
+          rotation={[-stairRampAngle, 0, 0]}
+        />
+
+        <CuboidCollider
+          args={[
+            stairWidth / 2,
+            0.12,
+            stairRampLength / 2,
+          ]}
+          position={[14, 3.55, 9.1]}
+          rotation={[-stairRampAngle, 0, 0]}
+        />
+      </RigidBody>
+
+      {/* =================================================
+          DESEMBARCOS
+
+          Conectan exactamente las escaleras
+          con la terraza.
+      ================================================= */}
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh
+          position={[-14, 7, 17.4]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[8, 0.4, 1.2]} />
+
+          <meshStandardMaterial
+            color="#707070"
+            roughness={0.9}
+          />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody type="fixed" colliders="cuboid">
+        <mesh
+          position={[14, 7, 17.4]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[8, 0.4, 1.2]} />
+
+          <meshStandardMaterial
+            color="#707070"
+            roughness={0.9}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* =================================================
+          PASAMANOS ESCALERA IZQUIERDA
+      ================================================= */}
+
+      <mesh
+        position={[-18.1, 4.45, 9.1]}
+        rotation={[-stairRampAngle, 0, 0]}
+        castShadow
+      >
+        <boxGeometry
+          args={[0.12, 0.12, stairRampLength]}
+        />
+
+        <meshStandardMaterial color="#303030" />
+      </mesh>
+
+      <mesh
+        position={[-9.9, 4.45, 9.1]}
+        rotation={[-stairRampAngle, 0, 0]}
+        castShadow
+      >
+        <boxGeometry
+          args={[0.12, 0.12, stairRampLength]}
+        />
+
+        <meshStandardMaterial color="#303030" />
+      </mesh>
+
+      {/* =================================================
+          PASAMANOS ESCALERA DERECHA
+      ================================================= */}
+
+      <mesh
+        position={[9.9, 4.45, 9.1]}
+        rotation={[-stairRampAngle, 0, 0]}
+        castShadow
+      >
+        <boxGeometry
+          args={[0.12, 0.12, stairRampLength]}
+        />
+
+        <meshStandardMaterial color="#303030" />
+      </mesh>
+
+      <mesh
+        position={[18.1, 4.45, 9.1]}
+        rotation={[-stairRampAngle, 0, 0]}
+        castShadow
+      >
+        <boxGeometry
+          args={[0.12, 0.12, stairRampLength]}
+        />
+
+        <meshStandardMaterial color="#303030" />
+      </mesh>
+
     </group>
   );
 }
