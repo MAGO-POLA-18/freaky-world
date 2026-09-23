@@ -3,24 +3,18 @@ import TopTenExhibition from "./TopTenExhibition";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
-
-   NORTE = SALA RETRO
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
       <ambientLight
-        intensity={
-          0.65
-        }
+        intensity={0.65}
         color="#dce6f2"
       />
 
       <hemisphereLight
-        intensity={
-          1.15
-        }
+        intensity={1.15}
         color="#e4eeff"
         groundColor="#596051"
       />
@@ -44,23 +38,22 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          TOP 10 FREAKY RANKING
+          TOP 10
 
-          Está colocado contra la pared
-          posterior de la sala norte.
+          IMPORTANTE:
 
-          La pared posterior del ala está
-          aproximadamente en Z -119.8.
+          Antes estaba en -119.25,
+          es decir DETRÁS de la pared
+          interior.
 
-          Lo adelantamos unos centímetros
-          para evitar parpadeos visuales.
+          Ahora está delante.
       =================================================== */}
 
       <TopTenExhibition
         position={[
           0,
           0,
-          -119.25,
+          -118.25,
         ]}
       />
 
@@ -93,8 +86,7 @@ export default function Museum() {
         ]}
         rotation={[
           0,
-          -Math.PI /
-            2,
+          -Math.PI / 2,
           0,
         ]}
       />
@@ -111,8 +103,7 @@ export default function Museum() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
       />
