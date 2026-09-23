@@ -9,31 +9,21 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   INPUT GLOBAL DEL JUGADOR
-
-   Lo utiliza:
-   - teclado
-   - joystick móvil
-   - cámara móvil
+   INPUT GLOBAL
 ========================================================= */
 
 export const playerInput = {
   x: 0,
   y: 0,
+
   lookX: 0,
   lookY: 0,
+
+  sprint: false,
 };
 
 /* =========================================================
-   RUNTIME GLOBAL DEL JUGADOR
-
-   Punto único donde otros sistemas pueden consultar:
-   - rigid body
-   - rotación de cámara
-   - spawn
-
-   IMPORTANTE:
-   spawn.y representa el CENTRO del collider.
+   RUNTIME GLOBAL
 ========================================================= */
 
 export const playerRuntime = {
@@ -42,37 +32,27 @@ export const playerRuntime = {
   yaw: 0,
   pitch: 0.35,
 
-  spawn: new THREE.Vector3(0, 1.05, 14),
+  spawn: new THREE.Vector3(
+    0,
+    1.05,
+    14
+  ),
 };
 
 /* =========================================================
-   CONFIGURACIÓN DEL PERSONAJE
+   CONFIGURACIÓN
 ========================================================= */
 
-const WALK_SPEED = 2;
-const RUN_SPEED = 6.5;
+const WALK_SPEED = 5.2;
+const SPRINT_SPEED = 12.5;
 
 const FALL_LIMIT = -8;
-
-/*
-  CapsuleCollider de Rapier:
-
-  args={[
-    halfHeight,
-    radius
-  ]}
-
-  Altura total aproximada:
-  halfHeight * 2 + radius * 2
-
-  0.7 * 2 + 0.35 * 2 = 2.1 m
-*/
 
 const COLLIDER_HALF_HEIGHT = 0.7;
 const COLLIDER_RADIUS = 0.35;
 
 /* =========================================================
-   PLAYER CONTROLLER
+   PLAYER
 ========================================================= */
 
 export default function PlayerController() {
@@ -86,20 +66,30 @@ export default function PlayerController() {
     s: false,
     a: false,
     d: false,
+    sprint: false,
   });
 
-  const movement = useRef(new THREE.Vector3());
-  const forward = useRef(new THREE.Vector3());
-  const right = useRef(new THREE.Vector3());
+  const movement = useRef(
+    new THREE.Vector3()
+  );
+
+  const forward = useRef(
+    new THREE.Vector3()
+  );
+
+  const right = useRef(
+    new THREE.Vector3()
+  );
 
   /* =======================================================
-     RESET / RESPAWN
+     RESPAWN
   ======================================================= */
 
   const respawn = () => {
     if (!body.current) return;
 
-    const rigidBody = body.current;
+    const rigidBody =
+      body.current;
 
     rigidBody.setTranslation(
       {
@@ -158,6 +148,11 @@ export default function PlayerController() {
           keys.current.d = true;
           break;
 
+        case "ShiftLeft":
+        case "ShiftRight":
+          keys.current.sprint = true;
+          break;
+
         default:
           break;
       }
@@ -185,38 +180,73 @@ export default function PlayerController() {
           keys.current.d = false;
           break;
 
+        case "ShiftLeft":
+        case "ShiftRight":
+          keys.current.sprint = false;
+          break;
+
         default:
           break;
       }
     };
 
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+    const resetKeys = () => {
+      keys.current.w = false;
+      keys.current.s = false;
+      keys.current.a = false;
+      keys.current.d = false;
+      keys.current.sprint = false;
+
+      playerInput.sprint = false;
+    };
+
+    window.addEventListener(
+      "keydown",
+      keyDown
+    );
+
+    window.addEventListener(
+      "keyup",
+      keyUp
+    );
+
+    window.addEventListener(
+      "blur",
+      resetKeys
+    );
 
     return () => {
-      window.removeEventListener("keydown", keyDown);
-      window.removeEventListener("keyup", keyUp);
+      window.removeEventListener(
+        "keydown",
+        keyDown
+      );
+
+      window.removeEventListener(
+        "keyup",
+        keyUp
+      );
+
+      window.removeEventListener(
+        "blur",
+        resetKeys
+      );
     };
   }, []);
 
   /* =======================================================
-     LOOP DEL JUGADOR
+     LOOP
   ======================================================= */
 
   useFrame((_, delta) => {
     if (!body.current) return;
 
-    const rigidBody = body.current;
+    const rigidBody =
+      body.current;
 
-    playerRuntime.body = rigidBody;
+    playerRuntime.body =
+      rigidBody;
 
-    /* -----------------------------------------------------
-       SPAWN INICIAL CONTROLADO
-
-       No dependemos únicamente de position={} de React.
-       Una vez que Rapier ya creó el rigid body,
-       colocamos explícitamente al jugador.
-    ----------------------------------------------------- */
+    /* SPAWN */
 
     if (!hasSpawned.current) {
       hasSpawned.current = true;
@@ -226,13 +256,10 @@ export default function PlayerController() {
       return;
     }
 
-    const position = rigidBody.translation();
+    const position =
+      rigidBody.translation();
 
-    /* -----------------------------------------------------
-       FALLBACK
-
-       Si sale del escenario, vuelve al spawn.
-    ----------------------------------------------------- */
+    /* FALLBACK */
 
     if (
       position.y < FALL_LIMIT ||
@@ -249,7 +276,8 @@ export default function PlayerController() {
        DIRECCIÓN SEGÚN CÁMARA
     ===================================================== */
 
-    const yaw = playerRuntime.yaw;
+    const yaw =
+      playerRuntime.yaw;
 
     forward.current.set(
       -Math.sin(yaw),
@@ -263,133 +291,165 @@ export default function PlayerController() {
       -Math.sin(yaw)
     );
 
-    movement.current.set(0, 0, 0);
+    movement.current.set(
+      0,
+      0,
+      0
+    );
 
     /* =====================================================
-       INPUT TECLADO
+       TECLADO
     ===================================================== */
 
     if (keys.current.w) {
-      movement.current.add(forward.current);
+      movement.current.add(
+        forward.current
+      );
     }
 
     if (keys.current.s) {
-      movement.current.sub(forward.current);
+      movement.current.sub(
+        forward.current
+      );
     }
 
     if (keys.current.d) {
-      movement.current.add(right.current);
+      movement.current.add(
+        right.current
+      );
     }
 
     if (keys.current.a) {
-      movement.current.sub(right.current);
+      movement.current.sub(
+        right.current
+      );
     }
 
     /* =====================================================
-       INPUT MÓVIL
+       MÓVIL
     ===================================================== */
 
     if (playerInput.y !== 0) {
-      movement.current.addScaledVector(
-        forward.current,
-        playerInput.y
-      );
+      movement.current
+        .addScaledVector(
+          forward.current,
+          playerInput.y
+        );
     }
 
     if (playerInput.x !== 0) {
-      movement.current.addScaledVector(
-        right.current,
-        playerInput.x
-      );
+      movement.current
+        .addScaledVector(
+          right.current,
+          playerInput.x
+        );
     }
 
     /* =====================================================
        VELOCIDAD
     ===================================================== */
 
-    const currentVelocity = rigidBody.linvel();
+    const currentVelocity =
+      rigidBody.linvel();
 
     let targetX = 0;
     let targetZ = 0;
 
-    if (movement.current.lengthSq() > 0.0001) {
-      const strength = Math.min(
-        movement.current.length(),
-        1
-      );
+    if (
+      movement.current.lengthSq() >
+      0.0001
+    ) {
+      const strength =
+        Math.min(
+          movement.current.length(),
+          1
+        );
 
       movement.current.normalize();
 
+      const sprinting =
+        keys.current.sprint ||
+        playerInput.sprint;
+
+      const maxSpeed =
+        sprinting
+          ? SPRINT_SPEED
+          : WALK_SPEED;
+
+      /*
+        Joystick analógico:
+        cuanto más lo empujamos,
+        más rápido caminamos.
+
+        Teclado:
+        strength = 1.
+      */
+
       const speed =
-        WALK_SPEED +
-        (RUN_SPEED - WALK_SPEED) *
-          strength;
+        maxSpeed * strength;
 
       targetX =
-        movement.current.x * speed;
+        movement.current.x *
+        speed;
 
       targetZ =
-        movement.current.z * speed;
+        movement.current.z *
+        speed;
 
-      /* ===================================================
-         ROTACIÓN VISUAL DEL PERSONAJE
-      =================================================== */
+      /* ROTACIÓN VISUAL */
 
       if (visual.current) {
-        const targetRotation = Math.atan2(
-          movement.current.x,
-          movement.current.z
-        );
+        const targetRotation =
+          Math.atan2(
+            movement.current.x,
+            movement.current.z
+          );
 
         let difference =
           targetRotation -
           visual.current.rotation.y;
 
-        difference = Math.atan2(
-          Math.sin(difference),
-          Math.cos(difference)
-        );
+        difference =
+          Math.atan2(
+            Math.sin(difference),
+            Math.cos(difference)
+          );
 
         const rotationSmoothing =
-          1 - Math.exp(-12 * delta);
+          1 -
+          Math.exp(
+            -12 * delta
+          );
 
         visual.current.rotation.y +=
-          difference * rotationSmoothing;
+          difference *
+          rotationSmoothing;
       }
     }
 
     /* =====================================================
-       SUAVIZADO DEL MOVIMIENTO
+       SUAVIZADO
     ===================================================== */
 
-    const movementSmoothing =
-      1 - Math.exp(-10 * delta);
+    const smoothing =
+      1 -
+      Math.exp(
+        -13 * delta
+      );
 
     const velocityX =
       THREE.MathUtils.lerp(
         currentVelocity.x,
         targetX,
-        movementSmoothing
+        smoothing
       );
 
     const velocityZ =
       THREE.MathUtils.lerp(
         currentVelocity.z,
         targetZ,
-        movementSmoothing
+        smoothing
       );
-
-    /*
-      Conservamos Y.
-
-      Rapier controla:
-      - gravedad
-      - suelo
-      - desniveles
-      - colisiones verticales
-
-      Nosotros controlamos únicamente X/Z.
-    */
 
     rigidBody.setLinvel(
       {
@@ -408,45 +468,24 @@ export default function PlayerController() {
   return (
     <RigidBody
       ref={body}
-
       position={[
         playerRuntime.spawn.x,
         playerRuntime.spawn.y,
         playerRuntime.spawn.z,
       ]}
-
       colliders={false}
-
       enabledRotations={[
         false,
         false,
         false,
       ]}
-
       friction={0.45}
       restitution={0}
-
       linearDamping={1}
       angularDamping={1}
-
       ccd
       canSleep={false}
     >
-      {/* ===================================================
-          COLLIDER
-
-          El centro del collider coincide con el RigidBody.
-
-          Altura total:
-          ~2.1 m
-
-          Spawn:
-          Y = 1.05
-
-          Por lo tanto la parte inferior aparece
-          aproximadamente sobre Y = 0.
-      =================================================== */}
-
       <CapsuleCollider
         args={[
           COLLIDER_HALF_HEIGHT,
@@ -456,30 +495,30 @@ export default function PlayerController() {
         restitution={0}
       />
 
-      {/* ===================================================
-          MODELO VISUAL TEMPORAL
-
-          Después esto podrá sustituirse por:
-          - avatar
-          - GLTF
-          - skins
-          - personajes online
-
-          sin tocar la física.
-      =================================================== */}
-
       <group
         ref={visual}
-        position={[0, -1.05, 0]}
+        position={[
+          0,
+          -1.05,
+          0,
+        ]}
       >
         {/* CUERPO */}
 
         <mesh
-          position={[0, 1.2, 0]}
+          position={[
+            0,
+            1.2,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
-            args={[0.7, 1.1, 0.4]}
+            args={[
+              0.7,
+              1.1,
+              0.4,
+            ]}
           />
 
           <meshStandardMaterial
@@ -490,11 +529,19 @@ export default function PlayerController() {
         {/* CABEZA */}
 
         <mesh
-          position={[0, 1.85, 0]}
+          position={[
+            0,
+            1.85,
+            0,
+          ]}
           castShadow
         >
           <sphereGeometry
-            args={[0.35, 24, 24]}
+            args={[
+              0.35,
+              24,
+              24,
+            ]}
           />
 
           <meshStandardMaterial
@@ -505,11 +552,19 @@ export default function PlayerController() {
         {/* PIERNA IZQUIERDA */}
 
         <mesh
-          position={[-0.2, 0.45, 0]}
+          position={[
+            -0.2,
+            0.45,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
-            args={[0.25, 0.9, 0.3]}
+            args={[
+              0.25,
+              0.9,
+              0.3,
+            ]}
           />
 
           <meshStandardMaterial
@@ -520,11 +575,19 @@ export default function PlayerController() {
         {/* PIERNA DERECHA */}
 
         <mesh
-          position={[0.2, 0.45, 0]}
+          position={[
+            0.2,
+            0.45,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
-            args={[0.25, 0.9, 0.3]}
+            args={[
+              0.25,
+              0.9,
+              0.3,
+            ]}
           />
 
           <meshStandardMaterial
