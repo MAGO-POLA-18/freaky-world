@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import {
+  useRef,
+} from "react";
 
 import {
   playerInput,
@@ -8,23 +10,14 @@ import {
 
 /* =========================================================
    MOBILE CONTROLS
-
-   Responsabilidad:
-   - joystick virtual
-   - movimiento táctil
-   - control táctil de cámara
-
-   NO controla directamente:
-   - física
-   - cámara
-   - personaje
-
-   Únicamente escribe en playerInput.
 ========================================================= */
 
 export default function MobileControls() {
-  const joystick = useRef(null);
-  const knob = useRef(null);
+  const joystick =
+    useRef(null);
+
+  const knob =
+    useRef(null);
 
   const joystickTouch =
     useRef(null);
@@ -36,7 +29,9 @@ export default function MobileControls() {
      JOYSTICK
   ======================================================= */
 
-  const updateJoystick = (touch) => {
+  const updateJoystick = (
+    touch
+  ) => {
     if (
       !joystick.current ||
       !knob.current
@@ -109,28 +104,51 @@ export default function MobileControls() {
         "translate(0px, 0px)";
     }
 
-    joystickTouch.current = null;
+    joystickTouch.current =
+      null;
+  };
+
+  /* =======================================================
+     SPRINT
+  ======================================================= */
+
+  const startSprint = (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    playerInput.sprint = true;
+  };
+
+  const stopSprint = (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    playerInput.sprint = false;
   };
 
   /* =======================================================
      TOUCH START
   ======================================================= */
 
-  const handleTouchStart = (event) => {
+  const handleTouchStart = (
+    event
+  ) => {
     event.preventDefault();
 
     for (
       const touch
       of event.changedTouches
     ) {
-      /*
-        Parte izquierda:
-        movimiento
-      */
+      /* MOVIMIENTO */
 
       if (
         touch.clientX <
-        window.innerWidth * 0.45
+        window.innerWidth *
+          0.45
       ) {
         if (
           joystickTouch.current ===
@@ -139,14 +157,13 @@ export default function MobileControls() {
           joystickTouch.current =
             touch.identifier;
 
-          updateJoystick(touch);
+          updateJoystick(
+            touch
+          );
         }
       }
 
-      /*
-        Parte derecha:
-        cámara
-      */
+      /* CÁMARA */
 
       else {
         if (
@@ -154,9 +171,12 @@ export default function MobileControls() {
           null
         ) {
           lookTouch.current = {
-            id: touch.identifier,
-            x: touch.clientX,
-            y: touch.clientY,
+            id:
+              touch.identifier,
+            x:
+              touch.clientX,
+            y:
+              touch.clientY,
           };
         }
       }
@@ -167,7 +187,9 @@ export default function MobileControls() {
      TOUCH MOVE
   ======================================================= */
 
-  const handleTouchMove = (event) => {
+  const handleTouchMove = (
+    event
+  ) => {
     event.preventDefault();
 
     for (
@@ -180,7 +202,9 @@ export default function MobileControls() {
         touch.identifier ===
         joystickTouch.current
       ) {
-        updateJoystick(touch);
+        updateJoystick(
+          touch
+        );
       }
 
       /* CÁMARA */
@@ -217,7 +241,9 @@ export default function MobileControls() {
      TOUCH END
   ======================================================= */
 
-  const handleTouchEnd = (event) => {
+  const handleTouchEnd = (
+    event
+  ) => {
     for (
       const touch
       of event.changedTouches
@@ -234,7 +260,8 @@ export default function MobileControls() {
         touch.identifier ===
           lookTouch.current.id
       ) {
-        lookTouch.current = null;
+        lookTouch.current =
+          null;
       }
     }
   };
@@ -246,11 +273,21 @@ export default function MobileControls() {
   return (
     <div
       className="mobile-controls"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      onTouchStart={
+        handleTouchStart
+      }
+      onTouchMove={
+        handleTouchMove
+      }
+      onTouchEnd={
+        handleTouchEnd
+      }
+      onTouchCancel={
+        handleTouchEnd
+      }
     >
+      {/* JOYSTICK */}
+
       <div
         ref={joystick}
         className="mobile-joystick"
@@ -260,6 +297,26 @@ export default function MobileControls() {
           className="joystick-knob"
         />
       </div>
+
+      {/* SPRINT */}
+
+      <button
+        type="button"
+        className="mobile-sprint"
+        onTouchStart={
+          startSprint
+        }
+        onTouchEnd={
+          stopSprint
+        }
+        onTouchCancel={
+          stopSprint
+        }
+      >
+        SPRINT
+      </button>
+
+      {/* INDICACIÓN CÁMARA */}
 
       <div className="mobile-look">
         Desliza para mirar
