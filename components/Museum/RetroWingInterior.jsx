@@ -497,3 +497,550 @@ export default function RetroWingInterior() {
                 height / 2,
                 z,
               ]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry
+                args={[
+                  stairWidth,
+                  height,
+                  stepDepth,
+                ]}
+              />
+
+              <meshStandardMaterial
+                color={
+                  stairColor
+                }
+                roughness={0.76}
+              />
+            </mesh>
+          );
+        }
+      )}
+
+      {/* ===================================================
+          RAMPA INVISIBLE PRINCIPAL
+
+          IMPORTANTE:
+
+          Empieza antes de la primera
+          escalera a nivel prácticamente 0.
+
+          Termina sobre el nivel del
+          segundo piso.
+
+          Sigue prácticamente la misma
+          pendiente que los escalones.
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <CuboidCollider
+          args={[
+            stairWidth /
+              2 -
+              0.25,
+
+            rampThickness,
+
+            rampLength /
+              2,
+          ]}
+          position={[
+            25,
+            rampCenterY,
+            rampCenterZ,
+          ]}
+          rotation={[
+            rampAngle,
+            0,
+            0,
+          ]}
+          friction={1}
+        />
+      </RigidBody>
+
+      {/* ===================================================
+          DESCANSO SUPERIOR VISUAL
+
+          SIN COLLIDER AUTOMÁTICO.
+
+          Esto elimina completamente el
+          borde vertical contra el que se
+          trababa el jugador.
+      =================================================== */}
+
+      <mesh
+        position={[
+          25,
+          6.85,
+          -6.5,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            7.5,
+            0.35,
+            6,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={
+            upperFloorColor
+          }
+          roughness={0.78}
+        />
+      </mesh>
+
+      {/* ===================================================
+          PUENTE FÍSICO DE TRANSICIÓN
+
+          Une:
+
+          rampa
+             ↓
+          descanso
+             ↓
+          galería superior
+
+          Está ligeramente por encima de
+          todos los bordes para que la
+          cápsula nunca choque de frente.
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <CuboidCollider
+          args={[
+            3.6,
+            0.06,
+            1.8,
+          ]}
+          position={[
+            25,
+            7.02,
+            -4.9,
+          ]}
+          friction={1}
+        />
+      </RigidBody>
+
+      {/* ===================================================
+          GALERÍA DERECHA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            18.5,
+            6.85,
+            -19,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              13,
+              0.35,
+              28,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              upperFloorColor
+            }
+            roughness={0.78}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          PUENTE TRASERO
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            0,
+            6.85,
+            -29,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              38,
+              0.35,
+              8,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              upperFloorColor
+            }
+            roughness={0.78}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          GALERÍA IZQUIERDA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -18.5,
+            6.85,
+            -8,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              13,
+              0.35,
+              42,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              upperFloorColor
+            }
+            roughness={0.78}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          SALIDA HACIA TERRAZA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -14,
+            6.95,
+            15.5,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              7.5,
+              0.3,
+              7,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#30363b"
+            roughness={0.76}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          RAMPA HACIA TERRAZA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <CuboidCollider
+          args={[
+            3.55,
+            0.1,
+            3.6,
+          ]}
+          position={[
+            -14,
+            7.03,
+            16.2,
+          ]}
+          rotation={[
+            -0.025,
+            0,
+            0,
+          ]}
+          friction={1}
+        />
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLA GALERÍA DERECHA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            11.85,
+            7.65,
+            -18,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.18,
+              1.6,
+              26,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLA GALERÍA IZQUIERDA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -11.85,
+            7.65,
+            -7,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.18,
+              1.6,
+              39,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLA PUENTE
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            0,
+            7.65,
+            -24.9,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              23.5,
+              1.6,
+              0.18,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLAS TERRAZA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -17.7,
+            7.65,
+            15.5,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.16,
+              1.5,
+              7,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -10.3,
+            7.65,
+            15.5,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.16,
+              1.5,
+              7,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          PILARES
+      =================================================== */}
+
+      {[
+        [
+          -26,
+          3.4,
+          27,
+        ],
+
+        [
+          26,
+          3.4,
+          27,
+        ],
+
+        [
+          -26,
+          3.4,
+          -26,
+        ],
+
+        [
+          26,
+          3.4,
+          -26,
+        ],
+      ].map(
+        (
+          [
+            x,
+            y,
+            z,
+          ],
+          index
+        ) => (
+          <mesh
+            key={`retro-column-${index}`}
+            position={[
+              x,
+              y,
+              z,
+            ]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry
+              args={[
+                0.7,
+                6.8,
+                0.7,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color="#282e33"
+              roughness={0.74}
+            />
+          </mesh>
+        )
+      )}
+
+      {/* ===================================================
+          ILUMINACIÓN
+      =================================================== */}
+
+      <pointLight
+        position={[
+          0,
+          11,
+          -7,
+        ]}
+        intensity={135}
+        distance={48}
+        decay={1.8}
+        color="#edf6ff"
+      />
+
+      <pointLight
+        position={[
+          0,
+          6,
+          25,
+        ]}
+        intensity={65}
+        distance={28}
+        decay={1.8}
+        color="#fff0dc"
+      />
+    </group>
+  );
+}
