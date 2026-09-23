@@ -4,23 +4,65 @@ import {
 } from "@react-three/rapier";
 
 /* =========================================================
-   RETRO WING
+   SALA RETRO
+   ARQUITECTURA BASE
 
-   PROTOTIPO ARQUITECTÓNICO
+   RECORRIDO:
+
+   ENTRADA
+      ↓
+   VESTÍBULO
+      ↓
+   GRAN NAVE
+      ↓
+   ESCALERA DERECHA
+      ↓
+   GALERÍA DERECHA
+      ↓
+   PUENTE TRASERO
+      ↓
+   GALERÍA IZQUIERDA
+      ↓
+   PASO SUPERIOR
+      ↓
+   TERRAZA
 
    Todavía NO agregamos:
-   - muebles
-   - vitrinas
    - máquinas
+   - vitrinas
    - decoración
-   - contenido
-
-   Primero resolvemos circulación y volumen.
+   - pantallas
+   - temática semanal
 ========================================================= */
 
 export default function RetroWingInterior() {
   /* =======================================================
-     ESCALERA
+     COLORES
+  ======================================================= */
+
+  const floorColor =
+    "#24292d";
+
+  const mainFloorColor =
+    "#2d3338";
+
+  const wallColor =
+    "#d8dcdf";
+
+  const darkWallColor =
+    "#181c20";
+
+  const upperFloorColor =
+    "#292f34";
+
+  const railColor =
+    "#101316";
+
+  const stairColor =
+    "#32383d";
+
+  /* =======================================================
+     ESCALERA PRINCIPAL
   ======================================================= */
 
   const stairSteps = 16;
@@ -29,11 +71,13 @@ export default function RetroWingInterior() {
 
   const stairRun = 15.5;
 
+  const stairWidth = 6.5;
+
   const stepDepth =
     stairRun /
     stairSteps;
 
-  const stairWidth = 6.5;
+  const stairStartZ = 11;
 
   const stairAngle =
     Math.atan2(
@@ -52,14 +96,14 @@ export default function RetroWingInterior() {
   return (
     <group>
       {/* ===================================================
-          SUELO
+          SUELO GENERAL
       =================================================== */}
 
       <mesh
         position={[
           0,
           0.018,
-          -0.3,
+          0,
         ]}
         rotation={[
           -Math.PI / 2,
@@ -76,52 +120,29 @@ export default function RetroWingInterior() {
         />
 
         <meshStandardMaterial
-          color="#25292d"
-          roughness={0.82}
+          color={
+            floorColor
+          }
+          roughness={0.84}
         />
       </mesh>
 
       {/* ===================================================
-          EJE PRINCIPAL DE ACCESO
-      =================================================== */}
+          VESTÍBULO DE ENTRADA
 
-      <mesh
-        position={[
-          0,
-          0.028,
-          12,
-        ]}
-        rotation={[
-          -Math.PI / 2,
-          0,
-          0,
-        ]}
-        receiveShadow
-      >
-        <planeGeometry
-          args={[
-            12,
-            44,
-          ]}
-        />
+          La terraza funciona como techo
+          de este primer espacio.
 
-        <meshStandardMaterial
-          color="#41484e"
-          roughness={0.72}
-        />
-      </mesh>
-
-      {/* ===================================================
-          GRAN ESPACIO CENTRAL
-
-          Por ahora completamente libre.
+          Se entra por la fachada y se
+          atraviesa un pasillo corto antes
+          de llegar a la gran nave.
       =================================================== */}
 
       <mesh
         position={[
           0,
           0.035,
-          -6,
+          26,
         ]}
         rotation={[
           -Math.PI / 2,
@@ -132,87 +153,203 @@ export default function RetroWingInterior() {
       >
         <planeGeometry
           args={[
-            42,
-            43,
+            17,
+            17,
           ]}
         />
 
         <meshStandardMaterial
-          color="#2d3237"
-          roughness={0.76}
+          color="#3c4349"
+          roughness={0.72}
+        />
+      </mesh>
+
+      {/* MURO IZQUIERDO VESTÍBULO */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -9,
+            2.6,
+            26,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              0.35,
+              5.2,
+              15,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              darkWallColor
+            }
+            roughness={0.84}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* MURO DERECHO VESTÍBULO */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            9,
+            2.6,
+            26,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              0.35,
+              5.2,
+              15,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              darkWallColor
+            }
+            roughness={0.84}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          SEGUNDO MARCO DE ENTRADA
+
+          Marca el momento en que termina
+          el vestíbulo y aparece la nave.
+      =================================================== */}
+
+      <mesh
+        position={[
+          -9,
+          3.5,
+          18.4,
+        ]}
+        castShadow
+      >
+        <boxGeometry
+          args={[
+            0.7,
+            7,
+            0.7,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#111417"
+          roughness={0.75}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          9,
+          3.5,
+          18.4,
+        ]}
+        castShadow
+      >
+        <boxGeometry
+          args={[
+            0.7,
+            7,
+            0.7,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#111417"
+          roughness={0.75}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          0,
+          6.65,
+          18.4,
+        ]}
+        castShadow
+      >
+        <boxGeometry
+          args={[
+            18.7,
+            0.7,
+            0.7,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#111417"
+          roughness={0.75}
         />
       </mesh>
 
       {/* ===================================================
-          MURO LATERAL IZQUIERDO
+          GRAN NAVE CENTRAL
 
-          Genera una futura zona secundaria.
+          Este será el espacio que después
+          cambia según la temática Retro.
+
+          Sega
+          Nintendo
+          80s
+          90s
+          Arcade
+          PlayStation
+          etc.
       =================================================== */}
 
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
+      <mesh
+        position={[
+          0,
+          0.038,
+          -5,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
+        receiveShadow
       >
-        <mesh
-          position={[
-            -22,
-            3.35,
-            -5,
+        <planeGeometry
+          args={[
+            43,
+            45,
           ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              0.35,
-              6.7,
-              29,
-            ]}
-          />
+        />
 
-          <meshStandardMaterial
-            color="#dadde0"
-            roughness={0.9}
-          />
-        </mesh>
-      </RigidBody>
+        <meshStandardMaterial
+          color={
+            mainFloorColor
+          }
+          roughness={0.77}
+        />
+      </mesh>
 
       {/* ===================================================
-          MURO DE ESCALERA DERECHA
+          PARED DE FONDO
 
-          La escalera queda detrás de esta pared.
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            21.5,
-            3.35,
-            -9,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              0.35,
-              6.7,
-              21,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#dadde0"
-            roughness={0.9}
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          PARED PRINCIPAL DEL FONDO
+          Gran superficie libre.
+          Más adelante puede alojar contenido
+          temático sin cambiar arquitectura.
       =================================================== */}
 
       <RigidBody
@@ -222,7 +359,7 @@ export default function RetroWingInterior() {
         <mesh
           position={[
             0,
-            4.3,
+            5,
             -33.7,
           ]}
           castShadow
@@ -230,15 +367,90 @@ export default function RetroWingInterior() {
         >
           <boxGeometry
             args={[
-              50,
-              8.6,
+              52,
+              10,
               0.5,
             ]}
           />
 
           <meshStandardMaterial
-            color="#171a1e"
-            roughness={0.82}
+            color={
+              darkWallColor
+            }
+            roughness={0.86}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          MURO BAJO IZQUIERDO
+
+          Delimita arquitectura inferior
+          sin cerrar visualmente la nave.
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -23.2,
+            2.6,
+            -5,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              0.35,
+              5.2,
+              30,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              wallColor
+            }
+            roughness={0.9}
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          MURO DE ESCALERA
+
+          Queda debajo de la galería.
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            21,
+            2.6,
+            -8,
+          ]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry
+            args={[
+              0.35,
+              5.2,
+              19,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              wallColor
+            }
+            roughness={0.9}
           />
         </mesh>
       </RigidBody>
@@ -246,11 +458,12 @@ export default function RetroWingInterior() {
       {/* ===================================================
           ESCALERA DERECHA
 
-          BAJA:
-          z = 11
+          Empieza delante.
 
-          ALTA:
-          z ≈ -4
+          Sube hacia el fondo.
+
+          Arriba conecta directamente
+          con un descanso real.
       =================================================== */}
 
       {Array.from({
@@ -264,7 +477,7 @@ export default function RetroWingInterior() {
             stairSteps;
 
           const z =
-            11 -
+            stairStartZ -
             index *
               stepDepth;
 
@@ -288,8 +501,10 @@ export default function RetroWingInterior() {
               />
 
               <meshStandardMaterial
-                color="#30363b"
-                roughness={0.75}
+                color={
+                  stairColor
+                }
+                roughness={0.76}
               />
             </mesh>
           );
@@ -297,12 +512,10 @@ export default function RetroWingInterior() {
       )}
 
       {/* ===================================================
-          RAMPA FÍSICA INVISIBLE
+          RAMPA INVISIBLE
 
-          El jugador pisa esto,
-          no los escalones.
-
-          Así la subida es continua.
+          El personaje realmente camina
+          por esta rampa.
       =================================================== */}
 
       <RigidBody
@@ -322,7 +535,8 @@ export default function RetroWingInterior() {
           ]}
           position={[
             25,
-            stairHeight / 2 +
+            stairHeight /
+              2 +
               0.06,
             3.25,
           ]}
@@ -336,7 +550,12 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          ENTREPLANTA IZQUIERDA
+          DESCANSO SUPERIOR
+
+          CORRECCIÓN IMPORTANTE:
+
+          Ahora la escalera termina
+          físicamente sobre una plataforma.
       =================================================== */}
 
       <RigidBody
@@ -345,30 +564,35 @@ export default function RetroWingInterior() {
       >
         <mesh
           position={[
-            -15,
+            25,
             6.85,
-            -22,
+            -6.5,
           ]}
           castShadow
           receiveShadow
         >
           <boxGeometry
             args={[
-              20,
+              7.5,
               0.35,
-              22,
+              6,
             ]}
           />
 
           <meshStandardMaterial
-            color="#272c31"
+            color={
+              upperFloorColor
+            }
             roughness={0.78}
           />
         </mesh>
       </RigidBody>
 
       {/* ===================================================
-          ENTREPLANTA DERECHA
+          GALERÍA DERECHA
+
+          Primera sección del recorrido
+          superior.
       =================================================== */}
 
       <RigidBody
@@ -377,30 +601,36 @@ export default function RetroWingInterior() {
       >
         <mesh
           position={[
-            15,
+            18.5,
             6.85,
-            -22,
+            -19,
           ]}
           castShadow
           receiveShadow
         >
           <boxGeometry
             args={[
-              20,
+              13,
               0.35,
-              22,
+              28,
             ]}
           />
 
           <meshStandardMaterial
-            color="#272c31"
+            color={
+              upperFloorColor
+            }
             roughness={0.78}
           />
         </mesh>
       </RigidBody>
 
       {/* ===================================================
-          PUENTE DEL FONDO
+          PUENTE TRASERO
+
+          Une ambas galerías.
+
+          Acá se completa la base de la U.
       =================================================== */}
 
       <RigidBody
@@ -411,28 +641,33 @@ export default function RetroWingInterior() {
           position={[
             0,
             6.85,
-            -30,
+            -29,
           ]}
           castShadow
           receiveShadow
         >
           <boxGeometry
             args={[
-              12,
+              38,
               0.35,
-              6,
+              8,
             ]}
           />
 
           <meshStandardMaterial
-            color="#272c31"
+            color={
+              upperFloorColor
+            }
             roughness={0.78}
           />
         </mesh>
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLA IZQUIERDA DEL VACÍO
+          GALERÍA IZQUIERDA
+
+          Regresa desde el fondo hacia
+          la parte delantera.
       =================================================== */}
 
       <RigidBody
@@ -441,28 +676,38 @@ export default function RetroWingInterior() {
       >
         <mesh
           position={[
-            -5.2,
-            7.75,
-            -20,
+            -18.5,
+            6.85,
+            -8,
           ]}
           castShadow
+          receiveShadow
         >
           <boxGeometry
             args={[
-              0.15,
-              1.8,
-              18,
+              13,
+              0.35,
+              42,
             ]}
           />
 
           <meshStandardMaterial
-            color="#111417"
+            color={
+              upperFloorColor
+            }
+            roughness={0.78}
           />
         </mesh>
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLA DERECHA DEL VACÍO
+          SALIDA SUPERIOR HACIA TERRAZA
+
+          Este corredor coincide con uno
+          de los antiguos huecos del techo.
+
+          Ahora ese hueco tiene una función
+          arquitectónica real.
       =================================================== */}
 
       <RigidBody
@@ -471,96 +716,249 @@ export default function RetroWingInterior() {
       >
         <mesh
           position={[
-            5.2,
-            7.75,
-            -20,
+            -14,
+            6.95,
+            15.5,
           ]}
           castShadow
+          receiveShadow
         >
           <boxGeometry
             args={[
-              0.15,
-              1.8,
-              18,
+              7.5,
+              0.3,
+              7,
             ]}
           />
 
           <meshStandardMaterial
-            color="#111417"
+            color="#30363b"
+            roughness={0.76}
           />
         </mesh>
       </RigidBody>
 
       {/* ===================================================
-          PASAMANOS
+          PEQUEÑA RAMPA DE TRANSICIÓN
+
+          Compensa la diferencia mínima
+          entre entreplanta y terraza.
       =================================================== */}
 
-      <mesh
-        position={[
-          -5.2,
-          8.65,
-          -20,
-        ]}
-        castShadow
+      <RigidBody
+        type="fixed"
+        colliders={false}
       >
-        <boxGeometry
+        <CuboidCollider
           args={[
-            0.22,
-            0.16,
-            18,
+            3.55,
+            0.1,
+            3.6,
           ]}
-        />
-
-        <meshStandardMaterial
-          color="#0d1013"
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          5.2,
-          8.65,
-          -20,
-        ]}
-        castShadow
-      >
-        <boxGeometry
-          args={[
-            0.22,
-            0.16,
-            18,
+          position={[
+            -14,
+            7.03,
+            16.2,
           ]}
+          rotation={[
+            -0.025,
+            0,
+            0,
+          ]}
+          friction={1}
         />
-
-        <meshStandardMaterial
-          color="#0d1013"
-        />
-      </mesh>
+      </RigidBody>
 
       {/* ===================================================
-          PILARES
+          BARANDILLA INTERIOR
+          GALERÍA DERECHA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            11.85,
+            7.65,
+            -18,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.18,
+              1.6,
+              26,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLA INTERIOR
+          GALERÍA IZQUIERDA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -11.85,
+            7.65,
+            -7,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.18,
+              1.6,
+              39,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLA DEL PUENTE
+
+          Solo en el borde que mira
+          hacia la nave.
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            0,
+            7.65,
+            -24.9,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              23.5,
+              1.6,
+              0.18,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          BARANDILLAS SALIDA A TERRAZA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -17.7,
+            7.65,
+            15.5,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.16,
+              1.5,
+              7,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      <RigidBody
+        type="fixed"
+        colliders="cuboid"
+      >
+        <mesh
+          position={[
+            -10.3,
+            7.65,
+            15.5,
+          ]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              0.16,
+              1.5,
+              7,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color={
+              railColor
+            }
+          />
+        </mesh>
+      </RigidBody>
+
+      {/* ===================================================
+          PILARES ESTRUCTURALES
+
+          Todavía simples.
       =================================================== */}
 
       {[
         [
           -26,
           3.4,
-          28,
+          27,
         ],
+
         [
           26,
           3.4,
-          28,
+          27,
         ],
+
         [
           -26,
           3.4,
-          -25,
+          -26,
         ],
+
         [
           26,
           3.4,
-          -25,
+          -26,
         ],
       ].map(
         (
@@ -590,8 +988,8 @@ export default function RetroWingInterior() {
             />
 
             <meshStandardMaterial
-              color="#282d32"
-              roughness={0.7}
+              color="#282e33"
+              roughness={0.74}
             />
           </mesh>
         )
@@ -599,28 +997,33 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           ILUMINACIÓN PROVISIONAL
+
+          Sigue siendo temporal.
+
+          Más adelante se conectará
+          al sistema día/noche.
       =================================================== */}
 
       <pointLight
         position={[
           0,
-          10,
-          -5,
+          11,
+          -7,
         ]}
-        intensity={150}
-        distance={52}
+        intensity={135}
+        distance={48}
         decay={1.8}
-        color="#eff8ff"
+        color="#edf6ff"
       />
 
       <pointLight
         position={[
           0,
-          8,
-          23,
+          6,
+          25,
         ]}
-        intensity={90}
-        distance={35}
+        intensity={65}
+        distance={28}
         decay={1.8}
         color="#fff0dc"
       />
