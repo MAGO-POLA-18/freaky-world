@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import {
+  useRef,
+} from "react";
 
 import {
   playerInput,
@@ -9,15 +11,28 @@ import {
 /* =========================================================
    MOBILE CONTROLS
 
-   Izquierda:
-   joystick analógico
+   IZQUIERDA
+   - joystick
+   - dirección
+   - velocidad analógica
 
-   Derecha:
-   cámara
-
-   La distancia del joystick al centro controla
-   directamente la velocidad.
+   DERECHA
+   - arrastrar = cámara
+   - doble toque = dash
 ========================================================= */
+
+const DOUBLE_TAP_TIME = 280;
+
+/*
+  Si el dedo se mueve demasiado,
+  consideramos que fue un gesto de cámara
+  y no un tap.
+
+  Esto evita activar dash mientras
+  simplemente estamos girando.
+*/
+
+const TAP_MOVE_LIMIT = 18;
 
 export default function MobileControls() {
   const joystick =
@@ -30,6 +45,26 @@ export default function MobileControls() {
     useRef(null);
 
   const lookTouch =
+    useRef(null);
+
+  /* =======================================================
+     DOBLE TAP
+  ======================================================= */
+
+  const lastRightTap =
+    useRef(0);
+
+  /*
+    Guardamos dónde empezó el toque.
+
+    Después podemos distinguir:
+
+    tap real
+    vs
+    arrastre de cámara.
+  */
+
+  const rightTouchStart =
     useRef(null);
 
   /* =======================================================
@@ -67,18 +102,13 @@ export default function MobileControls() {
       centerY;
 
     /*
-      Usamos bastante recorrido.
-
-      Esto da más precisión para distinguir:
-
-      - caminar lento
-      - caminar
-      - correr
-      - sprint
+      Recorrido amplio para poder
+      controlar bien la velocidad.
     */
 
     const maxDistance =
-      rect.width * 0.39;
+      rect.width *
+      0.39;
 
     const distance =
       Math.sqrt(
@@ -99,32 +129,39 @@ export default function MobileControls() {
         maxDistance;
     }
 
-    knob.current.style.transform =
+    knob.current
+      .style.transform =
       `translate(${dx}px, ${dy}px)`;
 
     playerInput.x =
-      dx / maxDistance;
+      dx /
+      maxDistance;
 
     playerInput.y =
-      -dy / maxDistance;
+      -dy /
+      maxDistance;
   };
 
   /* =======================================================
-     RESET
+     RESET JOYSTICK
   ======================================================= */
 
-  const resetJoystick = () => {
-    playerInput.x = 0;
-    playerInput.y = 0;
+  const resetJoystick =
+    () => {
+      playerInput.x = 0;
+      playerInput.y = 0;
 
-    if (knob.current) {
-      knob.current.style.transform =
-        "translate(0px, 0px)";
-    }
+      if (
+        knob.current
+      ) {
+        knob.current
+          .style.transform =
+          "translate(0px, 0px)";
+      }
 
-    joystickTouch.current =
-      null;
-  };
+      joystickTouch.current =
+        null;
+    };
 
   /* =======================================================
      TOUCH START
@@ -140,8 +177,8 @@ export default function MobileControls() {
       of event.changedTouches
     ) {
       /* ===================================================
-         MITAD IZQUIERDA
-         MOVIMIENTO
+         IZQUIERDA
+         JOYSTICK
       =================================================== */
 
       if (
@@ -163,8 +200,8 @@ export default function MobileControls() {
       }
 
       /* ===================================================
-         MITAD DERECHA
-         CÁMARA
+         DERECHA
+         CÁMARA / TAP
       =================================================== */
 
       else {
@@ -181,6 +218,20 @@ export default function MobileControls() {
 
             y:
               touch.clientY,
+          };
+
+          rightTouchStart.current = {
+            id:
+              touch.identifier,
+
+            x:
+              touch.clientX,
+
+            y:
+              touch.clientY,
+
+            moved:
+              false,
           };
         }
       }
@@ -200,7 +251,9 @@ export default function MobileControls() {
       const touch
       of event.changedTouches
     ) {
-      /* MOVIMIENTO */
+      /* ===================================================
+         JOYSTICK
+      =================================================== */
 
       if (
         touch.identifier ===
@@ -211,7 +264,9 @@ export default function MobileControls() {
         );
       }
 
-      /* CÁMARA */
+      /* ===================================================
+         CÁMARA
+      =================================================== */
 
       if (
         lookTouch.current &&
@@ -227,16 +282,57 @@ export default function MobileControls() {
           lookTouch.current.y;
 
         playerInput.lookX +=
-          dx * 0.0035;
+          dx *
+          0.0035;
 
         playerInput.lookY +=
-          dy * 0.0028;
+          dy *
+          0.0028;
 
         lookTouch.current.x =
           touch.clientX;
 
         lookTouch.current.y =
           touch.clientY;
+
+        /* ===============================================
+           DETECTAR SI DEJÓ DE SER TAP
+        =============================================== */
+
+        if (
+          rightTouchStart
+            .current &&
+          touch.identifier ===
+            rightTouchStart
+              .current.id
+        ) {
+          const totalDX =
+            touch.clientX -
+            rightTouchStart
+              .current.x;
+
+          const totalDY =
+            touch.clientY -
+            rightTouchStart
+              .current.y;
+
+          const totalDistance =
+            Math.sqrt(
+              totalDX *
+                totalDX +
+              totalDY *
+                totalDY
+            );
+
+          if (
+            totalDistance >
+            TAP_MOVE_LIMIT
+          ) {
+            rightTouchStart
+              .current.moved =
+              true;
+          }
+        }
       }
     }
   };
@@ -252,6 +348,10 @@ export default function MobileControls() {
       const touch
       of event.changedTouches
     ) {
+      /* ===================================================
+         JOYSTICK
+      =================================================== */
+
       if (
         touch.identifier ===
         joystickTouch.current
@@ -259,12 +359,81 @@ export default function MobileControls() {
         resetJoystick();
       }
 
+      /* ===================================================
+         DERECHA
+      =================================================== */
+
       if (
         lookTouch.current &&
         touch.identifier ===
           lookTouch.current.id
       ) {
+        /* ===============================================
+           ¿FUE TAP REAL?
+        =============================================== */
+
+        const touchStart =
+          rightTouchStart
+            .current;
+
+        if (
+          touchStart &&
+          touchStart.id ===
+            touch.identifier &&
+          !touchStart.moved
+        ) {
+          const now =
+            performance.now();
+
+          const elapsed =
+            now -
+            lastRightTap.current;
+
+          /* =============================================
+             DOBLE TAP
+          ============================================= */
+
+          if (
+            elapsed > 0 &&
+            elapsed <
+              DOUBLE_TAP_TIME
+          ) {
+            /*
+              Solo pedimos el dash.
+
+              PlayerController decidirá
+              si corresponde ejecutarlo.
+            */
+
+            playerInput
+              .dashRequested =
+              true;
+
+            /*
+              Reiniciamos para evitar
+              que tres taps seguidos
+              produzcan dos dashes
+              accidentalmente.
+            */
+
+            lastRightTap.current =
+              0;
+          }
+
+          /* =============================================
+             PRIMER TAP
+          ============================================= */
+
+          else {
+            lastRightTap.current =
+              now;
+          }
+        }
+
         lookTouch.current =
+          null;
+
+        rightTouchStart.current =
           null;
       }
     }
@@ -292,9 +461,6 @@ export default function MobileControls() {
     >
       {/* =================================================
           JOYSTICK
-
-          El mismo joystick controla
-          dirección + velocidad.
       ================================================= */}
 
       <div
@@ -308,7 +474,12 @@ export default function MobileControls() {
       </div>
 
       {/* =================================================
-          ZONA DERECHA
+          DERECHA
+
+          Sin botones.
+
+          Arrastrar = mirar
+          doble tap = dash
       ================================================= */}
 
       <div className="mobile-look">
