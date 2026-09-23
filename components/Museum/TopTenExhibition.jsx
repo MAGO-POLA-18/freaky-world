@@ -20,25 +20,31 @@ const FREAKY_RANKING_URL =
 /* =========================================================
    POSICIONES
 
-   Dos filas de cinco portadas.
+   Toda la exposición queda ARRIBA
+   del nivel del segundo piso.
+
+   Piso superior ≈ Y 7
+
+   Fila inferior = Y 9
+   Fila superior = Y 12.4
 ========================================================= */
 
 const X_POSITIONS = [
-  -9.6,
-  -4.8,
+  -9.4,
+  -4.7,
   0,
-  4.8,
-  9.6,
+  4.7,
+  9.4,
 ];
 
 const TOP_ROW_Y =
-  10.1;
+  12.35;
 
 const BOTTOM_ROW_Y =
-  3.85;
+  8.95;
 
 /* =========================================================
-   SCORE
+   PUNTUACIÓN
 ========================================================= */
 
 function getScore(
@@ -53,15 +59,9 @@ function getScore(
   if (
     official > 0
   ) {
-    return {
-      label:
-        official.toFixed(
-          1
-        ),
-
-      type:
-        "OFICIAL",
-    };
+    return official.toFixed(
+      1
+    );
   }
 
   const community =
@@ -76,28 +76,16 @@ function getScore(
   if (
     community > 0
   ) {
-    return {
-      label:
-        community.toFixed(
-          1
-        ),
-
-      type:
-        "COMUNIDAD",
-    };
+    return community.toFixed(
+      1
+    );
   }
 
-  return {
-    label:
-      "S/E",
-
-    type:
-      "",
-  };
+  return "S/E";
 }
 
 /* =========================================================
-   COLOR PUESTO
+   COLOR DEL PUESTO
 ========================================================= */
 
 function getRankColor(
@@ -106,26 +94,26 @@ function getRankColor(
   if (
     rank === 1
   ) {
-    return "#e5bd42";
+    return "#e7c34b";
   }
 
   if (
     rank === 2
   ) {
-    return "#c2c9d1";
+    return "#c7ced7";
   }
 
   if (
     rank === 3
   ) {
-    return "#c97842";
+    return "#ce7b42";
   }
 
-  return "#20262d";
+  return "#151b22";
 }
 
 /* =========================================================
-   PORTADA INDIVIDUAL
+   TARJETA
 ========================================================= */
 
 function GamePoster({
@@ -158,38 +146,19 @@ function GamePoster({
       game
     );
 
-  /* =======================================================
-     ABRIR FICHA REAL
-
-     Abrimos en pestaña nueva para que por ahora
-     no pierdas la posición dentro del mundo 3D.
-  ======================================================= */
-
   const openGame =
     (event) => {
       event.stopPropagation();
 
-      const url =
-        `${FREAKY_RANKING_URL}/game/${game.id}`;
-
-      const newWindow =
-        window.open(
-          url,
-          "_blank",
-          "noopener,noreferrer"
-        );
-
       /*
-        Fallback por si algún navegador
-        bloquea la nueva pestaña.
+        Navegamos directamente.
+
+        Esto evita problemas de popups
+        bloqueados en Safari/iPhone.
       */
 
-      if (
-        !newWindow
-      ) {
-        window.location.href =
-          url;
-      }
+      window.location.href =
+        `${FREAKY_RANKING_URL}/game/${game.id}`;
     };
 
   return (
@@ -208,16 +177,15 @@ function GamePoster({
         position={[
           0,
           0,
-          -0.18,
+          -0.09,
         ]}
         castShadow
-        receiveShadow
       >
         <boxGeometry
           args={[
-            3.65,
-            5.25,
-            0.18,
+            3.25,
+            2.95,
+            0.16,
           ]}
         />
 
@@ -227,40 +195,42 @@ function GamePoster({
               rank
             )
           }
-          roughness={0.35}
-          metalness={0.65}
+          roughness={
+            0.38
+          }
+          metalness={
+            0.55
+          }
         />
       </mesh>
 
       {/* =================================================
-          MARCO INTERIOR
+          BASE NEGRA
       ================================================= */}
 
       <mesh
         position={[
           0,
           0,
-          -0.08,
+          -0.01,
         ]}
-        castShadow
       >
-        <boxGeometry
+        <planeGeometry
           args={[
-            3.38,
-            4.98,
-            0.16,
+            3.02,
+            2.72,
           ]}
         />
 
         <meshStandardMaterial
-          color="#080b0e"
-          roughness={0.6}
-          metalness={0.25}
+          color="#090c10"
         />
       </mesh>
 
       {/* =================================================
           PORTADA
+
+          onPointerUp funciona mejor en móvil.
       ================================================= */}
 
       {game
@@ -272,15 +242,18 @@ function GamePoster({
           }
           position={[
             0,
-            0,
-            0.04,
+            0.22,
+            0.06,
           ]}
           scale={[
-            3.15,
-            4.72,
+            2.78,
+            2.2,
           ]}
           transparent={
             false
+          }
+          onPointerUp={
+            openGame
           }
           onClick={
             openGame
@@ -310,17 +283,20 @@ function GamePoster({
         <mesh
           position={[
             0,
-            0,
-            0.04,
+            0.22,
+            0.06,
           ]}
+          onPointerUp={
+            openGame
+          }
           onClick={
             openGame
           }
         >
           <planeGeometry
             args={[
-              3.15,
-              4.72,
+              2.78,
+              2.2,
             ]}
           />
 
@@ -331,19 +307,58 @@ function GamePoster({
       )}
 
       {/* =================================================
-          NÚMERO DEL RANKING
+          SUPERFICIE DE CLICK
+
+          Invisible.
+
+          Ocupa toda la tarjeta para que
+          no haga falta tocar exactamente
+          la imagen.
       ================================================= */}
 
       <mesh
         position={[
-          -1.32,
-          1.92,
-          0.11,
+          0,
+          0,
+          0.12,
+        ]}
+        onPointerUp={
+          openGame
+        }
+        onClick={
+          openGame
+        }
+      >
+        <planeGeometry
+          args={[
+            3.2,
+            2.95,
+          ]}
+        />
+
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={
+            false
+          }
+        />
+      </mesh>
+
+      {/* =================================================
+          PUESTO
+      ================================================= */}
+
+      <mesh
+        position={[
+          -1.23,
+          1.05,
+          0.16,
         ]}
       >
         <circleGeometry
           args={[
-            0.42,
+            0.34,
             32,
           ]}
         />
@@ -354,23 +369,21 @@ function GamePoster({
               rank
             )
           }
-          roughness={0.35}
-          metalness={0.45}
         />
       </mesh>
 
       <Text
         position={[
-          -1.32,
-          1.92,
-          0.13,
+          -1.23,
+          1.05,
+          0.18,
         ]}
         fontSize={
-          0.33
+          0.27
         }
         color={
           rank === 1
-            ? "#111111"
+            ? "#101010"
             : "#ffffff"
         }
         anchorX="center"
@@ -386,19 +399,19 @@ function GamePoster({
       <Text
         position={[
           0,
-          -2.92,
-          0,
+          -1.06,
+          0.17,
         ]}
         fontSize={
-          0.25
+          0.19
         }
         maxWidth={
-          3.8
+          2.75
         }
-        color="#f4f7f9"
-        textAlign="center"
+        color="#ffffff"
         anchorX="center"
         anchorY="middle"
+        textAlign="center"
       >
         {
           game.title
@@ -411,27 +424,25 @@ function GamePoster({
 
       <Text
         position={[
-          0,
-          -3.3,
-          0,
+          1.2,
+          -1.08,
+          0.17,
         ]}
         fontSize={
-          0.28
+          0.19
         }
-        color="#73d9ff"
+        color="#77dcff"
         anchorX="center"
         anchorY="middle"
       >
-        {
-          score.label
-        }
+        {score}
       </Text>
     </group>
   );
 }
 
 /* =========================================================
-   EXPOSICIÓN COMPLETA
+   EXPOSICIÓN
 ========================================================= */
 
 export default function TopTenExhibition({
@@ -469,10 +480,6 @@ export default function TopTenExhibition({
 
     async function load() {
       try {
-        setStatus(
-          "loading"
-        );
-
         const response =
           await fetch(
             "/api/world-top10",
@@ -507,7 +514,10 @@ export default function TopTenExhibition({
             : [];
 
         setGames(
-          nextGames
+          nextGames.slice(
+            0,
+            10
+          )
         );
 
         setStatus(
@@ -517,7 +527,7 @@ export default function TopTenExhibition({
         error
       ) {
         console.error(
-          "No se pudo cargar el TOP 10:",
+          "TOP 10 ERROR:",
           error
         );
 
@@ -549,33 +559,40 @@ export default function TopTenExhibition({
       }
     >
       {/* =================================================
-          PANEL DE FONDO
+          PANEL
+
+          Empieza aproximadamente en Y 7.15
+          y termina en Y 14.8.
+
+          Todo queda por encima del piso.
       ================================================= */}
 
       <mesh
         position={[
           0,
-          7.25,
-          -0.32,
+          10.9,
+          -0.25,
         ]}
         receiveShadow
       >
         <boxGeometry
           args={[
             26.5,
-            14.5,
-            0.42,
+            7.7,
+            0.4,
           ]}
         />
 
         <meshStandardMaterial
-          color="#090d11"
-          roughness={0.93}
+          color="#080c10"
+          roughness={
+            0.92
+          }
         />
       </mesh>
 
       {/* =================================================
-          CABECERA
+          TÍTULO
       ================================================= */}
 
       <Text
@@ -585,7 +602,7 @@ export default function TopTenExhibition({
           0.02,
         ]}
         fontSize={
-          0.7
+          0.58
         }
         color="#ffffff"
         anchorX="center"
@@ -597,21 +614,21 @@ export default function TopTenExhibition({
       <Text
         position={[
           0,
-          13.55,
+          13.72,
           0.02,
         ]}
         fontSize={
-          0.25
+          0.2
         }
-        color="#78d9ff"
+        color="#7ad9ff"
         anchorX="center"
         anchorY="middle"
       >
-        Tocá una portada para entrar en su ficha
+        Tocá una portada para abrir su ficha
       </Text>
 
       {/* =================================================
-          CARGANDO
+          ESTADO CARGANDO
       ================================================= */}
 
       {status ===
@@ -619,13 +636,13 @@ export default function TopTenExhibition({
         <Text
           position={[
             0,
-            7,
+            10.5,
             0.03,
           ]}
           fontSize={
-            0.45
+            0.42
           }
-          color="#aebbc5"
+          color="#b6c1ca"
           anchorX="center"
           anchorY="middle"
         >
@@ -642,13 +659,13 @@ export default function TopTenExhibition({
         <Text
           position={[
             0,
-            7,
+            10.5,
             0.03,
           ]}
           fontSize={
-            0.38
+            0.36
           }
-          color="#ff8f8f"
+          color="#ff8e8e"
           anchorX="center"
           anchorY="middle"
         >
@@ -657,7 +674,7 @@ export default function TopTenExhibition({
       )}
 
       {/* =================================================
-          JUEGOS
+          TOP 10
       ================================================= */}
 
       {status ===
@@ -682,61 +699,61 @@ export default function TopTenExhibition({
         )}
 
       {/* =================================================
-          ILUMINACIÓN DE GALERÍA
+          LUCES
       ================================================= */}
 
       <pointLight
         position={[
           0,
-          9,
-          6,
+          11,
+          5,
         ]}
         intensity={
-          105
+          115
         }
         distance={
-          32
+          30
         }
         decay={
           2
         }
-        color="#dcefff"
+        color="#dceeff"
       />
 
       <pointLight
         position={[
           -10,
-          8,
-          4,
+          10,
+          3,
         ]}
         intensity={
-          45
+          40
         }
         distance={
-          18
+          15
         }
         decay={
           2
         }
-        color="#fff1ce"
+        color="#fff0d2"
       />
 
       <pointLight
         position={[
           10,
-          8,
-          4,
+          10,
+          3,
         ]}
         intensity={
-          45
+          40
         }
         distance={
-          18
+          15
         }
         decay={
           2
         }
-        color="#fff1ce"
+        color="#fff0d2"
       />
     </group>
   );
