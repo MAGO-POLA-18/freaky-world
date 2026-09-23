@@ -129,13 +129,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           VESTÍBULO DE ENTRADA
-
-          La terraza funciona como techo
-          de este primer espacio.
-
-          Se entra por la fachada y se
-          atraviesa un pasillo corto antes
-          de llegar a la gran nave.
       =================================================== */}
 
       <mesh
@@ -230,9 +223,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           SEGUNDO MARCO DE ENTRADA
-
-          Marca el momento en que termina
-          el vestíbulo y aparece la nave.
       =================================================== */}
 
       <mesh
@@ -303,17 +293,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           GRAN NAVE CENTRAL
-
-          Este será el espacio que después
-          cambia según la temática Retro.
-
-          Sega
-          Nintendo
-          80s
-          90s
-          Arcade
-          PlayStation
-          etc.
       =================================================== */}
 
       <mesh
@@ -346,10 +325,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           PARED DE FONDO
-
-          Gran superficie libre.
-          Más adelante puede alojar contenido
-          temático sin cambiar arquitectura.
       =================================================== */}
 
       <RigidBody
@@ -384,9 +359,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           MURO BAJO IZQUIERDO
-
-          Delimita arquitectura inferior
-          sin cerrar visualmente la nave.
       =================================================== */}
 
       <RigidBody
@@ -421,8 +393,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           MURO DE ESCALERA
-
-          Queda debajo de la galería.
       =================================================== */}
 
       <RigidBody
@@ -457,13 +427,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           ESCALERA DERECHA
-
-          Empieza delante.
-
-          Sube hacia el fondo.
-
-          Arriba conecta directamente
-          con un descanso real.
       =================================================== */}
 
       {Array.from({
@@ -514,8 +477,14 @@ export default function RetroWingInterior() {
       {/* ===================================================
           RAMPA INVISIBLE
 
-          El personaje realmente camina
-          por esta rampa.
+          CORRECCIÓN:
+
+          La rampa ahora se extiende más
+          hacia dentro del descanso superior.
+
+          Evita que el collider del jugador
+          choque contra el canto vertical
+          del segundo piso.
       =================================================== */}
 
       <RigidBody
@@ -524,21 +493,14 @@ export default function RetroWingInterior() {
       >
         <CuboidCollider
           args={[
-            stairWidth /
-              2 -
-              0.15,
-
-            0.09,
-
-            rampLength /
-              2,
+            stairWidth / 2 - 0.15,
+            0.11,
+            rampLength / 2 + 1.15,
           ]}
           position={[
             25,
-            stairHeight /
-              2 +
-              0.06,
-            3.25,
+            stairHeight / 2 + 0.12,
+            2.25,
           ]}
           rotation={[
             stairAngle,
@@ -551,11 +513,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           DESCANSO SUPERIOR
-
-          CORRECCIÓN IMPORTANTE:
-
-          Ahora la escalera termina
-          físicamente sobre una plataforma.
       =================================================== */}
 
       <RigidBody
@@ -590,9 +547,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           GALERÍA DERECHA
-
-          Primera sección del recorrido
-          superior.
       =================================================== */}
 
       <RigidBody
@@ -627,10 +581,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           PUENTE TRASERO
-
-          Une ambas galerías.
-
-          Acá se completa la base de la U.
       =================================================== */}
 
       <RigidBody
@@ -665,9 +615,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           GALERÍA IZQUIERDA
-
-          Regresa desde el fondo hacia
-          la parte delantera.
       =================================================== */}
 
       <RigidBody
@@ -702,12 +649,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           SALIDA SUPERIOR HACIA TERRAZA
-
-          Este corredor coincide con uno
-          de los antiguos huecos del techo.
-
-          Ahora ese hueco tiene una función
-          arquitectónica real.
       =================================================== */}
 
       <RigidBody
@@ -740,9 +681,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           PEQUEÑA RAMPA DE TRANSICIÓN
-
-          Compensa la diferencia mínima
-          entre entreplanta y terraza.
       =================================================== */}
 
       <RigidBody
@@ -837,9 +775,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           BARANDILLA DEL PUENTE
-
-          Solo en el borde que mira
-          hacia la nave.
       =================================================== */}
 
       <RigidBody
@@ -932,8 +867,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           PILARES ESTRUCTURALES
-
-          Todavía simples.
       =================================================== */}
 
       {[
@@ -997,11 +930,6 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           ILUMINACIÓN PROVISIONAL
-
-          Sigue siendo temporal.
-
-          Más adelante se conectará
-          al sistema día/noche.
       =================================================== */}
 
       <pointLight
