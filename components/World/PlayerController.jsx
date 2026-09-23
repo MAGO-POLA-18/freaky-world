@@ -2,10 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+
 import {
   RigidBody,
   CapsuleCollider,
 } from "@react-three/rapier";
+
 import * as THREE from "three";
 
 /* =========================================================
@@ -18,8 +20,6 @@ export const playerInput = {
 
   lookX: 0,
   lookY: 0,
-
-  sprint: false,
 };
 
 /* =========================================================
@@ -40,9 +40,23 @@ export const playerRuntime = {
 };
 
 /* =========================================================
-   CONFIGURACIÓN
+   VELOCIDADES
+
+   El joystick móvil controla progresivamente todo el rango.
+
+   Aproximadamente:
+
+   0–10 %   = zona muerta
+   10–45 %  = caminar lento
+   45–82 %  = caminar rápido
+   82–100 % = sprint
+
+   En teclado:
+   WASD = velocidad normal
+   Shift = sprint
 ========================================================= */
 
+const SLOW_SPEED = 2.2;
 const WALK_SPEED = 5.2;
 const SPRINT_SPEED = 12.5;
 
@@ -50,6 +64,81 @@ const FALL_LIMIT = -8;
 
 const COLLIDER_HALF_HEIGHT = 0.7;
 const COLLIDER_RADIUS = 0.35;
+
+/* =========================================================
+   CURVA DE VELOCIDAD DEL JOYSTICK
+========================================================= */
+
+function getAnalogSpeed(strength) {
+  /*
+    Zona muerta.
+
+    Evita que pequeñas desviaciones del pulgar
+    muevan al personaje.
+  */
+
+  if (strength < 0.1) {
+    return 0;
+  }
+
+  /* =======================================================
+     CAMINAR LENTO
+     10 % -> 45 %
+  ======================================================= */
+
+  if (strength < 0.45) {
+    const t =
+      (strength - 0.1) /
+      (0.45 - 0.1);
+
+    return THREE.MathUtils.lerp(
+      0.8,
+      SLOW_SPEED,
+      t
+    );
+  }
+
+  /* =======================================================
+     CAMINAR NORMAL / RÁPIDO
+     45 % -> 82 %
+  ======================================================= */
+
+  if (strength < 0.82) {
+    const t =
+      (strength - 0.45) /
+      (0.82 - 0.45);
+
+    return THREE.MathUtils.lerp(
+      SLOW_SPEED,
+      WALK_SPEED,
+      t
+    );
+  }
+
+  /* =======================================================
+     SPRINT
+     82 % -> 100 %
+  ======================================================= */
+
+  const t =
+    (strength - 0.82) /
+    (1 - 0.82);
+
+  /*
+    smoothstep:
+
+    Evita que el sprint entre como un golpe brusco.
+  */
+
+  const smoothT =
+    t * t * (3 - 2 * t);
+
+  return THREE.MathUtils.lerp(
+    WALK_SPEED,
+    SPRINT_SPEED,
+    smoothT
+  );
+}
 
 /* =========================================================
    PLAYER
@@ -86,7 +175,9 @@ export default function PlayerController() {
   ======================================================= */
 
   const respawn = () => {
-    if (!body.current) return;
+    if (!body.current) {
+      return;
+    }
 
     const rigidBody =
       body.current;
@@ -196,8 +287,6 @@ export default function PlayerController() {
       keys.current.a = false;
       keys.current.d = false;
       keys.current.sprint = false;
-
-      playerInput.sprint = false;
     };
 
     window.addEventListener(
@@ -238,7 +327,9 @@ export default function PlayerController() {
   ======================================================= */
 
   useFrame((_, delta) => {
-    if (!body.current) return;
+    if (!body.current) {
+      return;
+    }
 
     const rigidBody =
       body.current;
@@ -246,7 +337,9 @@ export default function PlayerController() {
     playerRuntime.body =
       rigidBody;
 
-    /* SPAWN */
+    /* =====================================================
+       SPAWN
+    ===================================================== */
 
     if (!hasSpawned.current) {
       hasSpawned.current = true;
@@ -259,7 +352,9 @@ export default function PlayerController() {
     const position =
       rigidBody.translation();
 
-    /* FALLBACK */
+    /* =====================================================
+       FALLBACK
+    ===================================================== */
 
     if (
       position.y < FALL_LIMIT ||
@@ -301,48 +396,72 @@ export default function PlayerController() {
        TECLADO
     ===================================================== */
 
+    let keyboardActive = false;
+
     if (keys.current.w) {
       movement.current.add(
         forward.current
       );
+
+      keyboardActive = true;
     }
 
     if (keys.current.s) {
       movement.current.sub(
         forward.current
       );
+
+      keyboardActive = true;
     }
 
     if (keys.current.d) {
       movement.current.add(
         right.current
       );
+
+      keyboardActive = true;
     }
 
     if (keys.current.a) {
       movement.current.sub(
         right.current
       );
+
+      keyboardActive = true;
     }
 
     /* =====================================================
-       MÓVIL
+       JOYSTICK MÓVIL
     ===================================================== */
 
-    if (playerInput.y !== 0) {
-      movement.current
-        .addScaledVector(
-          forward.current,
-          playerInput.y
-        );
-    }
+    const analogStrength =
+      Math.min(
+        Math.sqrt(
+          playerInput.x *
+            playerInput.x +
+          playerInput.y *
+            playerInput.y
+        ),
+        1
+      );
 
-    if (playerInput.x !== 0) {
-      movement.current
-        .addScaledVector(
-          right.current,
-          playerInput.x
-        );
+    if (!keyboardActive) {
+      if (
+        analogStrength >
+        0.001
+      ) {
+        movement.current
+          .addScaledVector(
+            forward.current,
+            playerInput.y
+          );
+
+        movement.current
+          .addScaledVector(
+            right.current,
+            playerInput.x
+          );
+      }
     }
 
     /* =====================================================
@@ -359,34 +478,27 @@ export default function PlayerController() {
       movement.current.lengthSq() >
       0.0001
     ) {
-      const strength =
-        Math.min(
-          movement.current.length(),
-          1
-        );
-
       movement.current.normalize();
 
-      const sprinting =
-        keys.current.sprint ||
-        playerInput.sprint;
+      let speed = 0;
 
-      const maxSpeed =
-        sprinting
-          ? SPRINT_SPEED
-          : WALK_SPEED;
+      /* DESKTOP */
 
-      /*
-        Joystick analógico:
-        cuanto más lo empujamos,
-        más rápido caminamos.
+      if (keyboardActive) {
+        speed =
+          keys.current.sprint
+            ? SPRINT_SPEED
+            : WALK_SPEED;
+      }
 
-        Teclado:
-        strength = 1.
-      */
+      /* MÓVIL */
 
-      const speed =
-        maxSpeed * strength;
+      else {
+        speed =
+          getAnalogSpeed(
+            analogStrength
+          );
+      }
 
       targetX =
         movement.current.x *
@@ -396,7 +508,9 @@ export default function PlayerController() {
         movement.current.z *
         speed;
 
-      /* ROTACIÓN VISUAL */
+      /* ===================================================
+         ROTACIÓN VISUAL
+      =================================================== */
 
       if (visual.current) {
         const targetRotation =
@@ -428,27 +542,30 @@ export default function PlayerController() {
     }
 
     /* =====================================================
-       SUAVIZADO
+       ACELERACIÓN / DESACELERACIÓN
+
+       El sprint entra rápido,
+       pero sin cambiar de velocidad instantáneamente.
     ===================================================== */
 
-    const smoothing =
+    const movementSmoothing =
       1 -
       Math.exp(
-        -13 * delta
+        -14 * delta
       );
 
     const velocityX =
       THREE.MathUtils.lerp(
         currentVelocity.x,
         targetX,
-        smoothing
+        movementSmoothing
       );
 
     const velocityZ =
       THREE.MathUtils.lerp(
         currentVelocity.z,
         targetZ,
-        smoothing
+        movementSmoothing
       );
 
     rigidBody.setLinvel(
