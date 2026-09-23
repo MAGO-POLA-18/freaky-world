@@ -1,15 +1,12 @@
 import DpadWing from "./DpadWing";
-import WingShell from "./WingShell";
 
 /* =========================================================
    MUSEUM
 
    Edificio principal de Freaky World.
 
-   TEST ACTUAL:
-   - mantenemos las cuatro alas existentes
-   - mostramos WingShell en el patio
-   - comprobamos únicamente su silueta
+   Cuatro alas principales colocadas como una cruceta
+   gigante recorrible.
 ========================================================= */
 
 export default function Museum() {
@@ -73,21 +70,6 @@ export default function Museum() {
           Math.PI / 2,
           0,
         ]}
-      />
-
-      {/* ===================================================
-          TEST DE LA NUEVA FORMA
-
-          Pieza temporal colocada en el patio.
-
-          Está elevada 0.25 m para evitar que se mezcle
-          visualmente con el suelo.
-
-          NO forma parte todavía del edificio definitivo.
-      =================================================== */}
-
-      <WingShell
-        position={[0, 0.25, 0]}
       />
 
     </group>
