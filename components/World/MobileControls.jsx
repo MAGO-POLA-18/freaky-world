@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  useRef,
-} from "react";
+import { useRef } from "react";
 
 import {
   playerInput,
@@ -10,6 +8,15 @@ import {
 
 /* =========================================================
    MOBILE CONTROLS
+
+   Izquierda:
+   joystick analógico
+
+   Derecha:
+   cámara
+
+   La distancia del joystick al centro controla
+   directamente la velocidad.
 ========================================================= */
 
 export default function MobileControls() {
@@ -59,8 +66,19 @@ export default function MobileControls() {
       touch.clientY -
       centerY;
 
+    /*
+      Usamos bastante recorrido.
+
+      Esto da más precisión para distinguir:
+
+      - caminar lento
+      - caminar
+      - correr
+      - sprint
+    */
+
     const maxDistance =
-      rect.width * 0.34;
+      rect.width * 0.39;
 
     const distance =
       Math.sqrt(
@@ -92,7 +110,7 @@ export default function MobileControls() {
   };
 
   /* =======================================================
-     RESET JOYSTICK
+     RESET
   ======================================================= */
 
   const resetJoystick = () => {
@@ -109,28 +127,6 @@ export default function MobileControls() {
   };
 
   /* =======================================================
-     SPRINT
-  ======================================================= */
-
-  const startSprint = (
-    event
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    playerInput.sprint = true;
-  };
-
-  const stopSprint = (
-    event
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    playerInput.sprint = false;
-  };
-
-  /* =======================================================
      TOUCH START
   ======================================================= */
 
@@ -143,7 +139,10 @@ export default function MobileControls() {
       const touch
       of event.changedTouches
     ) {
-      /* MOVIMIENTO */
+      /* ===================================================
+         MITAD IZQUIERDA
+         MOVIMIENTO
+      =================================================== */
 
       if (
         touch.clientX <
@@ -163,7 +162,10 @@ export default function MobileControls() {
         }
       }
 
-      /* CÁMARA */
+      /* ===================================================
+         MITAD DERECHA
+         CÁMARA
+      =================================================== */
 
       else {
         if (
@@ -173,8 +175,10 @@ export default function MobileControls() {
           lookTouch.current = {
             id:
               touch.identifier,
+
             x:
               touch.clientX,
+
             y:
               touch.clientY,
           };
@@ -286,7 +290,12 @@ export default function MobileControls() {
         handleTouchEnd
       }
     >
-      {/* JOYSTICK */}
+      {/* =================================================
+          JOYSTICK
+
+          El mismo joystick controla
+          dirección + velocidad.
+      ================================================= */}
 
       <div
         ref={joystick}
@@ -298,25 +307,9 @@ export default function MobileControls() {
         />
       </div>
 
-      {/* SPRINT */}
-
-      <button
-        type="button"
-        className="mobile-sprint"
-        onTouchStart={
-          startSprint
-        }
-        onTouchEnd={
-          stopSprint
-        }
-        onTouchCancel={
-          stopSprint
-        }
-      >
-        SPRINT
-      </button>
-
-      {/* INDICACIÓN CÁMARA */}
+      {/* =================================================
+          ZONA DERECHA
+      ================================================= */}
 
       <div className="mobile-look">
         Desliza para mirar
