@@ -1,22 +1,19 @@
 import DpadWing from "./DpadWing";
 
 /* =========================================================
-   MUSEUM
+   MUSEUM / FREAKY WORLD
 
-   Edificio principal de Freaky World.
+   Distribución actual:
 
-   Cuatro alas principales colocadas como una cruceta
-   gigante recorrible.
+   NORTE  = Sala Retro
+   SUR    = estándar temporal
+   ESTE   = estándar temporal
+   OESTE  = estándar temporal
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
-
-      {/* ===================================================
-          ILUMINACIÓN BASE DEL EDIFICIO
-      =================================================== */}
-
       <ambientLight
         intensity={0.65}
         color="#dce6f2"
@@ -29,16 +26,17 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          ALA NORTE
+          NORTE — SALA RETRO
       =================================================== */}
 
       <DpadWing
         position={[0, 0, -85]}
         rotation={[0, 0, 0]}
+        variant="retro"
       />
 
       {/* ===================================================
-          ALA SUR
+          SUR
       =================================================== */}
 
       <DpadWing
@@ -47,7 +45,7 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          ALA ESTE
+          ESTE
       =================================================== */}
 
       <DpadWing
@@ -60,7 +58,7 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          ALA OESTE
+          OESTE
       =================================================== */}
 
       <DpadWing
@@ -71,7 +69,6 @@ export default function Museum() {
           0,
         ]}
       />
-
     </group>
   );
 }
