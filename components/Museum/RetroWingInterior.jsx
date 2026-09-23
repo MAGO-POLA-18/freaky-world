@@ -5,34 +5,6 @@ import {
 
 /* =========================================================
    SALA RETRO
-   ARQUITECTURA BASE
-
-   RECORRIDO:
-
-   ENTRADA
-      ↓
-   VESTÍBULO
-      ↓
-   GRAN NAVE
-      ↓
-   ESCALERA DERECHA
-      ↓
-   GALERÍA DERECHA
-      ↓
-   PUENTE TRASERO
-      ↓
-   GALERÍA IZQUIERDA
-      ↓
-   PASO SUPERIOR
-      ↓
-   TERRAZA
-
-   Todavía NO agregamos:
-   - máquinas
-   - vitrinas
-   - decoración
-   - pantallas
-   - temática semanal
 ========================================================= */
 
 export default function RetroWingInterior() {
@@ -62,7 +34,7 @@ export default function RetroWingInterior() {
     "#32383d";
 
   /* =======================================================
-     ESCALERA PRINCIPAL
+     ESCALERA VISUAL
   ======================================================= */
 
   const stairSteps = 16;
@@ -79,19 +51,63 @@ export default function RetroWingInterior() {
 
   const stairStartZ = 11;
 
-  const stairAngle =
-    Math.atan2(
-      stairHeight,
-      stairRun
+  /* =======================================================
+     RAMPA FÍSICA
+
+     Esta rampa NO coincide exactamente con
+     los escalones visuales.
+
+     Está diseñada para que el personaje:
+
+     - entre desde el suelo sin escalón
+     - suba continuamente
+     - pase por encima del borde del descanso
+     - termine ya dentro del piso superior
+  ======================================================= */
+
+  const rampStartZ =
+    11.8;
+
+  const rampEndZ =
+    -8;
+
+  const rampStartY =
+    0.02;
+
+  const rampEndY =
+    7.12;
+
+  const physicalRampRun =
+    rampStartZ -
+    rampEndZ;
+
+  const physicalRampRise =
+    rampEndY -
+    rampStartY;
+
+  const physicalRampLength =
+    Math.sqrt(
+      physicalRampRun *
+        physicalRampRun +
+      physicalRampRise *
+        physicalRampRise
     );
 
-  const rampLength =
-    Math.sqrt(
-      stairRun *
-        stairRun +
-      stairHeight *
-        stairHeight
+  const physicalRampAngle =
+    Math.atan2(
+      physicalRampRise,
+      physicalRampRun
     );
+
+  const physicalRampCenterZ =
+    (rampStartZ +
+      rampEndZ) /
+    2;
+
+  const physicalRampCenterY =
+    (rampStartY +
+      rampEndY) /
+    2;
 
   return (
     <group>
@@ -128,7 +144,7 @@ export default function RetroWingInterior() {
       </mesh>
 
       {/* ===================================================
-          VESTÍBULO DE ENTRADA
+          VESTÍBULO
       =================================================== */}
 
       <mesh
@@ -157,7 +173,7 @@ export default function RetroWingInterior() {
         />
       </mesh>
 
-      {/* MURO IZQUIERDO VESTÍBULO */}
+      {/* MURO IZQUIERDO */}
 
       <RigidBody
         type="fixed"
@@ -189,7 +205,7 @@ export default function RetroWingInterior() {
         </mesh>
       </RigidBody>
 
-      {/* MURO DERECHO VESTÍBULO */}
+      {/* MURO DERECHO */}
 
       <RigidBody
         type="fixed"
@@ -222,7 +238,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          SEGUNDO MARCO DE ENTRADA
+          MARCO INTERIOR
       =================================================== */}
 
       <mesh
@@ -292,7 +308,7 @@ export default function RetroWingInterior() {
       </mesh>
 
       {/* ===================================================
-          GRAN NAVE CENTRAL
+          GRAN NAVE
       =================================================== */}
 
       <mesh
@@ -426,7 +442,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          ESCALERA DERECHA
+          ESCALERA VISUAL DERECHA
       =================================================== */}
 
       {Array.from({
@@ -475,16 +491,17 @@ export default function RetroWingInterior() {
       )}
 
       {/* ===================================================
-          RAMPA INVISIBLE
+          RAMPA FÍSICA NUEVA
 
-          CORRECCIÓN:
+          El extremo alto llega a Y 7.12
+          y hasta Z -8.
 
-          La rampa ahora se extiende más
-          hacia dentro del descanso superior.
+          El piso superior tiene su cara
+          superior aproximadamente en Y 7.025.
 
-          Evita que el collider del jugador
-          choque contra el canto vertical
-          del segundo piso.
+          Por tanto la rampa pasa POR ENCIMA
+          del canto y entra dentro de la
+          plataforma.
       =================================================== */}
 
       <RigidBody
@@ -493,17 +510,22 @@ export default function RetroWingInterior() {
       >
         <CuboidCollider
           args={[
-            stairWidth / 2 - 0.15,
-            0.11,
-            rampLength / 2 + 1.15,
+            stairWidth /
+              2 -
+              0.2,
+
+            0.075,
+
+            physicalRampLength /
+              2,
           ]}
           position={[
             25,
-            stairHeight / 2 + 0.12,
-            2.25,
+            physicalRampCenterY,
+            physicalRampCenterZ,
           ]}
           rotation={[
-            stairAngle,
+            physicalRampAngle,
             0,
             0,
           ]}
@@ -513,11 +535,22 @@ export default function RetroWingInterior() {
 
       {/* ===================================================
           DESCANSO SUPERIOR
+
+          El mesh sigue visible.
+
+          Desactivamos su collider automático
+          porque su canto delantero era uno
+          de los puntos donde podía engancharse
+          la cápsula.
+
+          La superficie física de esta zona
+          se resuelve debajo con un collider
+          fino independiente.
       =================================================== */}
 
       <RigidBody
         type="fixed"
-        colliders="cuboid"
+        colliders={false}
       >
         <mesh
           position={[
@@ -543,6 +576,20 @@ export default function RetroWingInterior() {
             roughness={0.78}
           />
         </mesh>
+
+        <CuboidCollider
+          args={[
+            3.75,
+            0.07,
+            3,
+          ]}
+          position={[
+            25,
+            7.03,
+            -6.5,
+          ]}
+          friction={1}
+        />
       </RigidBody>
 
       {/* ===================================================
@@ -680,7 +727,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          PEQUEÑA RAMPA DE TRANSICIÓN
+          RAMPA HACIA TERRAZA
       =================================================== */}
 
       <RigidBody
@@ -708,8 +755,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLA INTERIOR
-          GALERÍA DERECHA
+          BARANDILLA GALERÍA DERECHA
       =================================================== */}
 
       <RigidBody
@@ -741,8 +787,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLA INTERIOR
-          GALERÍA IZQUIERDA
+          BARANDILLA GALERÍA IZQUIERDA
       =================================================== */}
 
       <RigidBody
@@ -774,7 +819,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLA DEL PUENTE
+          BARANDILLA PUENTE
       =================================================== */}
 
       <RigidBody
@@ -806,7 +851,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          BARANDILLAS SALIDA A TERRAZA
+          BARANDILLAS SALIDA TERRAZA
       =================================================== */}
 
       <RigidBody
@@ -866,7 +911,7 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          PILARES ESTRUCTURALES
+          PILARES
       =================================================== */}
 
       {[
@@ -929,7 +974,7 @@ export default function RetroWingInterior() {
       )}
 
       {/* ===================================================
-          ILUMINACIÓN PROVISIONAL
+          ILUMINACIÓN
       =================================================== */}
 
       <pointLight
