@@ -1,14 +1,11 @@
 import DpadWing from "./DpadWing";
 
+import RetroRankingTerminal from "./RetroRankingTerminal";
+
 /* =========================================================
    MUSEUM / FREAKY WORLD
 
-   Distribución actual:
-
-   NORTE  = Sala Retro
-   SUR    = estándar temporal
-   ESTE   = estándar temporal
-   OESTE  = estándar temporal
+   NORTE = SALA RETRO
 ========================================================= */
 
 export default function Museum() {
@@ -26,13 +23,39 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          NORTE — SALA RETRO
+          NORTE — RETRO
       =================================================== */}
 
       <DpadWing
-        position={[0, 0, -85]}
-        rotation={[0, 0, 0]}
+        position={[
+          0,
+          0,
+          -85,
+        ]}
+        rotation={[
+          0,
+          0,
+          0,
+        ]}
         variant="retro"
+      />
+
+      {/* ===================================================
+          TERMINAL RANKING
+
+          Ala Retro:
+          centro mundial aproximado -85.
+
+          Terminal unos metros hacia
+          el fondo de la nave.
+      =================================================== */}
+
+      <RetroRankingTerminal
+        position={[
+          0,
+          0,
+          -91,
+        ]}
       />
 
       {/* ===================================================
@@ -40,8 +63,16 @@ export default function Museum() {
       =================================================== */}
 
       <DpadWing
-        position={[0, 0, 85]}
-        rotation={[0, Math.PI, 0]}
+        position={[
+          0,
+          0,
+          85,
+        ]}
+        rotation={[
+          0,
+          Math.PI,
+          0,
+        ]}
       />
 
       {/* ===================================================
@@ -49,7 +80,11 @@ export default function Museum() {
       =================================================== */}
 
       <DpadWing
-        position={[85, 0, 0]}
+        position={[
+          85,
+          0,
+          0,
+        ]}
         rotation={[
           0,
           -Math.PI / 2,
@@ -62,7 +97,11 @@ export default function Museum() {
       =================================================== */}
 
       <DpadWing
-        position={[-85, 0, 0]}
+        position={[
+          -85,
+          0,
+          0,
+        ]}
         rotation={[
           0,
           Math.PI / 2,
