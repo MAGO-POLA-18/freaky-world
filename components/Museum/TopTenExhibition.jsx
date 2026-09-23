@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -10,23 +11,19 @@ import {
   Text,
 } from "@react-three/drei";
 
-/* =========================================================
-   FREAKY RANKING
-========================================================= */
+import {
+  useFrame,
+  useThree,
+} from "@react-three/fiber";
 
-const FREAKY_RANKING_URL =
-  "https://freakyranking.base44.app";
+import * as THREE from "three";
+
+import {
+  playerRuntime,
+} from "../World/PlayerController";
 
 /* =========================================================
    POSICIONES
-
-   Toda la exposición queda ARRIBA
-   del nivel del segundo piso.
-
-   Piso superior ≈ Y 7
-
-   Fila inferior = Y 9
-   Fila superior = Y 12.4
 ========================================================= */
 
 const X_POSITIONS = [
@@ -44,8 +41,24 @@ const BOTTOM_ROW_Y =
   8.95;
 
 /* =========================================================
-   PUNTUACIÓN
+   HELPERS
 ========================================================= */
+
+function getPosterPosition(
+  index
+) {
+  return {
+    x:
+      X_POSITIONS[
+        index % 5
+      ],
+
+    y:
+      index < 5
+        ? TOP_ROW_Y
+        : BOTTOM_ROW_Y,
+  };
+}
 
 function getScore(
   game
@@ -66,8 +79,7 @@ function getScore(
 
   const community =
     Number(
-      game
-        ?.community_score ||
+      game?.community_score ||
         game
           ?.external_rating ||
         0
@@ -83,10 +95,6 @@ function getScore(
 
   return "S/E";
 }
-
-/* =========================================================
-   COLOR DEL PUESTO
-========================================================= */
 
 function getRankColor(
   rank
@@ -113,7 +121,7 @@ function getRankColor(
 }
 
 /* =========================================================
-   TARJETA
+   POSTER
 ========================================================= */
 
 function GamePoster({
@@ -123,43 +131,18 @@ function GamePoster({
   const rank =
     index + 1;
 
-  const column =
-    index % 5;
-
-  const row =
-    index < 5
-      ? 0
-      : 1;
-
-  const x =
-    X_POSITIONS[
-      column
-    ];
-
-  const y =
-    row === 0
-      ? TOP_ROW_Y
-      : BOTTOM_ROW_Y;
+  const {
+    x,
+    y,
+  } =
+    getPosterPosition(
+      index
+    );
 
   const score =
     getScore(
       game
     );
-
-  const openGame =
-    (event) => {
-      event.stopPropagation();
-
-      /*
-        Navegamos directamente.
-
-        Esto evita problemas de popups
-        bloqueados en Safari/iPhone.
-      */
-
-      window.location.href =
-        `${FREAKY_RANKING_URL}/game/${game.id}`;
-    };
 
   return (
     <group
@@ -169,9 +152,7 @@ function GamePoster({
         0,
       ]}
     >
-      {/* =================================================
-          MARCO EXTERIOR
-      ================================================= */}
+      {/* MARCO */}
 
       <mesh
         position={[
@@ -195,18 +176,12 @@ function GamePoster({
               rank
             )
           }
-          roughness={
-            0.38
-          }
-          metalness={
-            0.55
-          }
+          roughness={0.38}
+          metalness={0.55}
         />
       </mesh>
 
-      {/* =================================================
-          BASE NEGRA
-      ================================================= */}
+      {/* BASE */}
 
       <mesh
         position={[
@@ -227,11 +202,7 @@ function GamePoster({
         />
       </mesh>
 
-      {/* =================================================
-          PORTADA
-
-          onPointerUp funciona mejor en móvil.
-      ================================================= */}
+      {/* PORTADA */}
 
       {game
         .cover_image ? (
@@ -252,32 +223,6 @@ function GamePoster({
           transparent={
             false
           }
-          onPointerUp={
-            openGame
-          }
-          onClick={
-            openGame
-          }
-          onPointerOver={(
-            event
-          ) => {
-            event.stopPropagation();
-
-            document
-              .body
-              .style
-              .cursor =
-              "pointer";
-          }}
-          onPointerOut={
-            () => {
-              document
-                .body
-                .style
-                .cursor =
-                "default";
-            }
-          }
         />
       ) : (
         <mesh
@@ -286,12 +231,6 @@ function GamePoster({
             0.22,
             0.06,
           ]}
-          onPointerUp={
-            openGame
-          }
-          onClick={
-            openGame
-          }
         >
           <planeGeometry
             args={[
@@ -306,54 +245,13 @@ function GamePoster({
         </mesh>
       )}
 
-      {/* =================================================
-          SUPERFICIE DE CLICK
-
-          Invisible.
-
-          Ocupa toda la tarjeta para que
-          no haga falta tocar exactamente
-          la imagen.
-      ================================================= */}
-
-      <mesh
-        position={[
-          0,
-          0,
-          0.12,
-        ]}
-        onPointerUp={
-          openGame
-        }
-        onClick={
-          openGame
-        }
-      >
-        <planeGeometry
-          args={[
-            3.2,
-            2.95,
-          ]}
-        />
-
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={
-            false
-          }
-        />
-      </mesh>
-
-      {/* =================================================
-          PUESTO
-      ================================================= */}
+      {/* PUESTO */}
 
       <mesh
         position={[
           -1.23,
           1.05,
-          0.16,
+          0.15,
         ]}
       >
         <circleGeometry
@@ -376,14 +274,12 @@ function GamePoster({
         position={[
           -1.23,
           1.05,
-          0.18,
+          0.17,
         ]}
-        fontSize={
-          0.27
-        }
+        fontSize={0.27}
         color={
           rank === 1
-            ? "#101010"
+            ? "#111111"
             : "#ffffff"
         }
         anchorX="center"
@@ -392,45 +288,33 @@ function GamePoster({
         {rank}
       </Text>
 
-      {/* =================================================
-          TÍTULO
-      ================================================= */}
+      {/* TÍTULO */}
 
       <Text
         position={[
           0,
           -1.06,
-          0.17,
+          0.15,
         ]}
-        fontSize={
-          0.19
-        }
-        maxWidth={
-          2.75
-        }
+        fontSize={0.18}
+        maxWidth={2.7}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
         textAlign="center"
       >
-        {
-          game.title
-        }
+        {game.title}
       </Text>
 
-      {/* =================================================
-          PUNTUACIÓN
-      ================================================= */}
+      {/* SCORE */}
 
       <Text
         position={[
           1.2,
           -1.08,
-          0.17,
+          0.15,
         ]}
-        fontSize={
-          0.19
-        }
+        fontSize={0.18}
         color="#77dcff"
         anchorX="center"
         anchorY="middle"
@@ -458,6 +342,26 @@ export default function TopTenExhibition({
     0,
   ],
 }) {
+  const group =
+    useRef(null);
+
+  const lastGameId =
+    useRef(null);
+
+  const worldPosition =
+    useRef(
+      new THREE.Vector3()
+    );
+
+  const projected =
+    useRef(
+      new THREE.Vector3()
+    );
+
+  const {
+    camera,
+  } = useThree();
+
   const [
     games,
     setGames,
@@ -471,7 +375,7 @@ export default function TopTenExhibition({
   );
 
   /* =======================================================
-     CARGAR TOP 10
+     DATOS
   ======================================================= */
 
   useEffect(() => {
@@ -506,18 +410,15 @@ export default function TopTenExhibition({
           return;
         }
 
-        const nextGames =
+        setGames(
           Array.isArray(
             data?.games
           )
-            ? data.games
-            : [];
-
-        setGames(
-          nextGames.slice(
-            0,
-            10
-          )
+            ? data.games.slice(
+                0,
+                10
+              )
+            : []
         );
 
         setStatus(
@@ -546,11 +447,217 @@ export default function TopTenExhibition({
     return () => {
       active =
         false;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:game-near",
+          {
+            detail: {
+              near:
+                false,
+            },
+          }
+        )
+      );
     };
   }, []);
 
+  /* =======================================================
+     DETECCIÓN DE INTERACCIÓN
+
+     No tocamos directamente el Canvas.
+
+     Detectamos:
+
+     1. jugador cerca
+     2. portada aproximadamente en el
+        centro de la cámara
+
+     Y enviamos el juego a WorldScene.
+  ======================================================= */
+
+  useFrame(() => {
+    if (
+      !group.current ||
+      !playerRuntime.body ||
+      games.length === 0
+    ) {
+      return;
+    }
+
+    const player =
+      playerRuntime
+        .body
+        .translation();
+
+    let selected =
+      null;
+
+    let bestScore =
+      Infinity;
+
+    games.forEach(
+      (
+        game,
+        index
+      ) => {
+        const {
+          x,
+          y,
+        } =
+          getPosterPosition(
+            index
+          );
+
+        worldPosition
+          .current
+          .set(
+            x,
+            y,
+            0.2
+          );
+
+        group.current
+          .localToWorld(
+            worldPosition
+              .current
+          );
+
+        const dx =
+          worldPosition
+            .current.x -
+          player.x;
+
+        const dy =
+          worldPosition
+            .current.y -
+          player.y;
+
+        const dz =
+          worldPosition
+            .current.z -
+          player.z;
+
+        const distance =
+          Math.sqrt(
+            dx * dx +
+              dy * dy +
+              dz * dz
+          );
+
+        /*
+          Demasiado lejos:
+          no se puede interactuar.
+        */
+
+        if (
+          distance > 12
+        ) {
+          return;
+        }
+
+        projected
+          .current
+          .copy(
+            worldPosition
+              .current
+          )
+          .project(
+            camera
+          );
+
+        /*
+          Detrás de cámara.
+        */
+
+        if (
+          projected
+            .current.z <
+            -1 ||
+          projected
+            .current.z >
+            1
+        ) {
+          return;
+        }
+
+        /*
+          Distancia al centro
+          de pantalla.
+
+          Esto permite seleccionar
+          también fila superior mirando
+          ligeramente hacia arriba.
+        */
+
+        const screenScore =
+          Math.sqrt(
+            projected
+              .current.x *
+              projected
+                .current.x +
+              projected
+                .current.y *
+                projected
+                  .current.y
+          );
+
+        if (
+          screenScore >
+          0.72
+        ) {
+          return;
+        }
+
+        if (
+          screenScore <
+          bestScore
+        ) {
+          bestScore =
+            screenScore;
+
+          selected =
+            game;
+        }
+      }
+    );
+
+    const nextId =
+      selected?.id ||
+      null;
+
+    if (
+      nextId ===
+      lastGameId.current
+    ) {
+      return;
+    }
+
+    lastGameId.current =
+      nextId;
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "freaky:game-near",
+        {
+          detail: {
+            near:
+              Boolean(
+                selected
+              ),
+
+            game:
+              selected ||
+              null,
+          },
+        }
+      )
+    );
+  });
+
   return (
     <group
+      ref={group}
       position={
         position
       }
@@ -558,14 +665,7 @@ export default function TopTenExhibition({
         rotation
       }
     >
-      {/* =================================================
-          PANEL
-
-          Empieza aproximadamente en Y 7.15
-          y termina en Y 14.8.
-
-          Todo queda por encima del piso.
-      ================================================= */}
+      {/* PANEL */}
 
       <mesh
         position={[
@@ -585,15 +685,11 @@ export default function TopTenExhibition({
 
         <meshStandardMaterial
           color="#080c10"
-          roughness={
-            0.92
-          }
+          roughness={0.92}
         />
       </mesh>
 
-      {/* =================================================
-          TÍTULO
-      ================================================= */}
+      {/* TÍTULO */}
 
       <Text
         position={[
@@ -601,9 +697,7 @@ export default function TopTenExhibition({
           14.25,
           0.02,
         ]}
-        fontSize={
-          0.58
-        }
+        fontSize={0.58}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
@@ -617,19 +711,15 @@ export default function TopTenExhibition({
           13.72,
           0.02,
         ]}
-        fontSize={
-          0.2
-        }
+        fontSize={0.2}
         color="#7ad9ff"
         anchorX="center"
         anchorY="middle"
       >
-        Tocá una portada para abrir su ficha
+        Acercate y mirá una portada
       </Text>
 
-      {/* =================================================
-          ESTADO CARGANDO
-      ================================================= */}
+      {/* CARGANDO */}
 
       {status ===
         "loading" && (
@@ -639,9 +729,7 @@ export default function TopTenExhibition({
             10.5,
             0.03,
           ]}
-          fontSize={
-            0.42
-          }
+          fontSize={0.42}
           color="#b6c1ca"
           anchorX="center"
           anchorY="middle"
@@ -650,9 +738,7 @@ export default function TopTenExhibition({
         </Text>
       )}
 
-      {/* =================================================
-          ERROR
-      ================================================= */}
+      {/* ERROR */}
 
       {status ===
         "error" && (
@@ -662,9 +748,7 @@ export default function TopTenExhibition({
             10.5,
             0.03,
           ]}
-          fontSize={
-            0.36
-          }
+          fontSize={0.36}
           color="#ff8e8e"
           anchorX="center"
           anchorY="middle"
@@ -673,9 +757,7 @@ export default function TopTenExhibition({
         </Text>
       )}
 
-      {/* =================================================
-          TOP 10
-      ================================================= */}
+      {/* JUEGOS */}
 
       {status ===
         "ready" &&
@@ -698,9 +780,7 @@ export default function TopTenExhibition({
           )
         )}
 
-      {/* =================================================
-          LUCES
-      ================================================= */}
+      {/* LUZ */}
 
       <pointLight
         position={[
@@ -708,52 +788,10 @@ export default function TopTenExhibition({
           11,
           5,
         ]}
-        intensity={
-          115
-        }
-        distance={
-          30
-        }
-        decay={
-          2
-        }
+        intensity={115}
+        distance={30}
+        decay={2}
         color="#dceeff"
-      />
-
-      <pointLight
-        position={[
-          -10,
-          10,
-          3,
-        ]}
-        intensity={
-          40
-        }
-        distance={
-          15
-        }
-        decay={
-          2
-        }
-        color="#fff0d2"
-      />
-
-      <pointLight
-        position={[
-          10,
-          10,
-          3,
-        ]}
-        intensity={
-          40
-        }
-        distance={
-          15
-        }
-        decay={
-          2
-        }
-        color="#fff0d2"
       />
     </group>
   );
