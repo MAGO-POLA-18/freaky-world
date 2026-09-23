@@ -373,7 +373,11 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color="#24272b"
+          color={
+            isRetro
+              ? "#101316"
+              : "#24272b"
+          }
           roughness={0.7}
         />
       </mesh>
@@ -395,7 +399,11 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color="#24272b"
+          color={
+            isRetro
+              ? "#101316"
+              : "#24272b"
+          }
           roughness={0.7}
         />
       </mesh>
@@ -417,7 +425,11 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color="#24272b"
+          color={
+            isRetro
+              ? "#101316"
+              : "#24272b"
+          }
           roughness={0.7}
         />
       </mesh>
@@ -625,7 +637,7 @@ export default function DpadWing({
       ))}
 
       {/* =================================================
-          BARANDILLAS LATERALES
+          BARANDILLAS LATERALES TERRAZA
       ================================================= */}
 
       <RigidBody
@@ -775,10 +787,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          TECHO INCLINADO ORIGINAL
-
-          Tres piezas:
-          izquierda / centro / derecha
+          TECHO INCLINADO PRINCIPAL
       ================================================= */}
 
       {[
@@ -810,7 +819,9 @@ export default function DpadWing({
                 x === 0
                   ? 20
                   : 11.6,
+
                 0.4,
+
                 roofLength,
               ]}
             />
@@ -826,61 +837,58 @@ export default function DpadWing({
       ))}
 
       {/* =================================================
-          RETRO — CERRAR HUECOS DE ESCALERAS ANTIGUAS
+          RETRO
 
-          El techo original dejaba dos franjas abiertas
-          exactamente donde estaban las dos escaleras.
+          HUECO DERECHO:
+          cerrado.
 
-          Como Retro ya no usa esas escaleras,
-          cerramos ambas.
+          HUECO IZQUIERDO:
+          queda libre porque ahora es la
+          salida superior hacia la terraza.
       ================================================= */}
 
-      {isRetro &&
-        [
-          -14,
-          14,
-        ].map((x) => (
-          <RigidBody
-            key={`retro-roof-fill-${x}`}
-            type="fixed"
-            colliders="cuboid"
+      {isRetro && (
+        <RigidBody
+          type="fixed"
+          colliders="cuboid"
+        >
+          <mesh
+            position={[
+              14,
+              11,
+              9,
+            ]}
+            rotation={[
+              roofAngle,
+              0,
+              0,
+            ]}
+            castShadow
+            receiveShadow
           >
-            <mesh
-              position={[
-                x,
-                11,
-                9,
+            <boxGeometry
+              args={[
+                8,
+                0.4,
+                roofLength,
               ]}
-              rotation={[
-                roofAngle,
-                0,
-                0,
-              ]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry
-                args={[
-                  8,
-                  0.4,
-                  roofLength,
-                ]}
-              />
+            />
 
-              <meshStandardMaterial
-                color={
-                  shellTopColor
-                }
-                roughness={0.9}
-              />
-            </mesh>
-          </RigidBody>
-        ))}
+            <meshStandardMaterial
+              color={
+                shellTopColor
+              }
+              roughness={0.9}
+            />
+          </mesh>
+        </RigidBody>
+      )}
 
       {/* =================================================
-          ESCALERAS ORIGINAL
+          ESCALERAS STANDARD
 
-          SOLO STANDARD
+          Las otras alas siguen exactamente
+          con el sistema anterior.
       ================================================= */}
 
       {!isRetro && (
