@@ -52,62 +52,82 @@ export default function RetroWingInterior() {
   const stairStartZ = 11;
 
   /* =======================================================
-     RAMPA FÍSICA
+     RAMPA FÍSICA DEFINITIVA
 
-     Esta rampa NO coincide exactamente con
-     los escalones visuales.
+     La escalera visual ocupa aproximadamente:
 
-     Está diseñada para que el personaje:
+     Z 11.5  -> Z -3.5
 
-     - entre desde el suelo sin escalón
-     - suba continuamente
-     - pase por encima del borde del descanso
-     - termine ya dentro del piso superior
+     Su parte superior:
+
+     Y 0     -> Y 7
+
+     La rampa comienza ANTES de los escalones
+     para que no exista ningún borde físico
+     al comenzar a subir.
+
+     Y termina justo por encima del nivel
+     del segundo piso.
   ======================================================= */
 
   const rampStartZ =
-    11.8;
+    12.5;
 
   const rampEndZ =
-    -8;
+    -3.5;
 
   const rampStartY =
-    0.02;
+    0.03;
 
   const rampEndY =
-    7.12;
+    7.08;
 
-  const physicalRampRun =
+  const rampRun =
     rampStartZ -
     rampEndZ;
 
-  const physicalRampRise =
+  const rampRise =
     rampEndY -
     rampStartY;
 
-  const physicalRampLength =
+  const rampLength =
     Math.sqrt(
-      physicalRampRun *
-        physicalRampRun +
-      physicalRampRise *
-        physicalRampRise
+      rampRun *
+        rampRun +
+      rampRise *
+        rampRise
     );
 
-  const physicalRampAngle =
+  const rampAngle =
     Math.atan2(
-      physicalRampRise,
-      physicalRampRun
+      rampRise,
+      rampRun
     );
 
-  const physicalRampCenterZ =
+  const rampCenterZ =
     (rampStartZ +
       rampEndZ) /
     2;
 
-  const physicalRampCenterY =
+  /*
+    0.075 compensa el espesor del collider.
+
+    De esta manera la CARA SUPERIOR
+    de la rampa queda donde queremos,
+    no su centro.
+  */
+
+  const rampThickness =
+    0.08;
+
+  const rampCenterY =
     (rampStartY +
       rampEndY) /
-    2;
+      2 -
+    rampThickness *
+      Math.cos(
+        rampAngle
+      );
 
   return (
     <group>
@@ -173,7 +193,9 @@ export default function RetroWingInterior() {
         />
       </mesh>
 
-      {/* MURO IZQUIERDO */}
+      {/* ===================================================
+          MURO IZQUIERDO VESTÍBULO
+      =================================================== */}
 
       <RigidBody
         type="fixed"
@@ -205,7 +227,9 @@ export default function RetroWingInterior() {
         </mesh>
       </RigidBody>
 
-      {/* MURO DERECHO */}
+      {/* ===================================================
+          MURO DERECHO VESTÍBULO
+      =================================================== */}
 
       <RigidBody
         type="fixed"
@@ -442,7 +466,12 @@ export default function RetroWingInterior() {
       </RigidBody>
 
       {/* ===================================================
-          ESCALERA VISUAL DERECHA
+          ESCALERA VISUAL
+
+          Los escalones NO tienen collider.
+
+          El personaje camina únicamente
+          sobre la rampa invisible.
       =================================================== */}
 
       {Array.from({
@@ -468,538 +497,3 @@ export default function RetroWingInterior() {
                 height / 2,
                 z,
               ]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry
-                args={[
-                  stairWidth,
-                  height,
-                  stepDepth,
-                ]}
-              />
-
-              <meshStandardMaterial
-                color={
-                  stairColor
-                }
-                roughness={0.76}
-              />
-            </mesh>
-          );
-        }
-      )}
-
-      {/* ===================================================
-          RAMPA FÍSICA NUEVA
-
-          El extremo alto llega a Y 7.12
-          y hasta Z -8.
-
-          El piso superior tiene su cara
-          superior aproximadamente en Y 7.025.
-
-          Por tanto la rampa pasa POR ENCIMA
-          del canto y entra dentro de la
-          plataforma.
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders={false}
-      >
-        <CuboidCollider
-          args={[
-            stairWidth /
-              2 -
-              0.2,
-
-            0.075,
-
-            physicalRampLength /
-              2,
-          ]}
-          position={[
-            25,
-            physicalRampCenterY,
-            physicalRampCenterZ,
-          ]}
-          rotation={[
-            physicalRampAngle,
-            0,
-            0,
-          ]}
-          friction={1}
-        />
-      </RigidBody>
-
-      {/* ===================================================
-          DESCANSO SUPERIOR
-
-          El mesh sigue visible.
-
-          Desactivamos su collider automático
-          porque su canto delantero era uno
-          de los puntos donde podía engancharse
-          la cápsula.
-
-          La superficie física de esta zona
-          se resuelve debajo con un collider
-          fino independiente.
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders={false}
-      >
-        <mesh
-          position={[
-            25,
-            6.85,
-            -6.5,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              7.5,
-              0.35,
-              6,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              upperFloorColor
-            }
-            roughness={0.78}
-          />
-        </mesh>
-
-        <CuboidCollider
-          args={[
-            3.75,
-            0.07,
-            3,
-          ]}
-          position={[
-            25,
-            7.03,
-            -6.5,
-          ]}
-          friction={1}
-        />
-      </RigidBody>
-
-      {/* ===================================================
-          GALERÍA DERECHA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            18.5,
-            6.85,
-            -19,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              13,
-              0.35,
-              28,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              upperFloorColor
-            }
-            roughness={0.78}
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          PUENTE TRASERO
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            0,
-            6.85,
-            -29,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              38,
-              0.35,
-              8,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              upperFloorColor
-            }
-            roughness={0.78}
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          GALERÍA IZQUIERDA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            -18.5,
-            6.85,
-            -8,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              13,
-              0.35,
-              42,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              upperFloorColor
-            }
-            roughness={0.78}
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          SALIDA SUPERIOR HACIA TERRAZA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            -14,
-            6.95,
-            15.5,
-          ]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              7.5,
-              0.3,
-              7,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#30363b"
-            roughness={0.76}
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          RAMPA HACIA TERRAZA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders={false}
-      >
-        <CuboidCollider
-          args={[
-            3.55,
-            0.1,
-            3.6,
-          ]}
-          position={[
-            -14,
-            7.03,
-            16.2,
-          ]}
-          rotation={[
-            -0.025,
-            0,
-            0,
-          ]}
-          friction={1}
-        />
-      </RigidBody>
-
-      {/* ===================================================
-          BARANDILLA GALERÍA DERECHA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            11.85,
-            7.65,
-            -18,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              0.18,
-              1.6,
-              26,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              railColor
-            }
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          BARANDILLA GALERÍA IZQUIERDA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            -11.85,
-            7.65,
-            -7,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              0.18,
-              1.6,
-              39,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              railColor
-            }
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          BARANDILLA PUENTE
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            0,
-            7.65,
-            -24.9,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              23.5,
-              1.6,
-              0.18,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              railColor
-            }
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          BARANDILLAS SALIDA TERRAZA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            -17.7,
-            7.65,
-            15.5,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              0.16,
-              1.5,
-              7,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              railColor
-            }
-          />
-        </mesh>
-      </RigidBody>
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            -10.3,
-            7.65,
-            15.5,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              0.16,
-              1.5,
-              7,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={
-              railColor
-            }
-          />
-        </mesh>
-      </RigidBody>
-
-      {/* ===================================================
-          PILARES
-      =================================================== */}
-
-      {[
-        [
-          -26,
-          3.4,
-          27,
-        ],
-
-        [
-          26,
-          3.4,
-          27,
-        ],
-
-        [
-          -26,
-          3.4,
-          -26,
-        ],
-
-        [
-          26,
-          3.4,
-          -26,
-        ],
-      ].map(
-        (
-          [
-            x,
-            y,
-            z,
-          ],
-          index
-        ) => (
-          <mesh
-            key={`retro-column-${index}`}
-            position={[
-              x,
-              y,
-              z,
-            ]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                0.7,
-                6.8,
-                0.7,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#282e33"
-              roughness={0.74}
-            />
-          </mesh>
-        )
-      )}
-
-      {/* ===================================================
-          ILUMINACIÓN
-      =================================================== */}
-
-      <pointLight
-        position={[
-          0,
-          11,
-          -7,
-        ]}
-        intensity={135}
-        distance={48}
-        decay={1.8}
-        color="#edf6ff"
-      />
-
-      <pointLight
-        position={[
-          0,
-          6,
-          25,
-        ]}
-        intensity={65}
-        distance={28}
-        decay={1.8}
-        color="#fff0dc"
-      />
-    </group>
-  );
-}
