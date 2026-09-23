@@ -1,6 +1,5 @@
 import DpadWing from "./DpadWing";
-
-import RetroRankingTerminal from "./RetroRankingTerminal";
+import TopTenExhibition from "./TopTenExhibition";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
@@ -12,12 +11,16 @@ export default function Museum() {
   return (
     <group>
       <ambientLight
-        intensity={0.65}
+        intensity={
+          0.65
+        }
         color="#dce6f2"
       />
 
       <hemisphereLight
-        intensity={1.15}
+        intensity={
+          1.15
+        }
         color="#e4eeff"
         groundColor="#596051"
       />
@@ -41,20 +44,23 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          TERMINAL RANKING
+          TOP 10 FREAKY RANKING
 
-          Ala Retro:
-          centro mundial aproximado -85.
+          Está colocado contra la pared
+          posterior de la sala norte.
 
-          Terminal unos metros hacia
-          el fondo de la nave.
+          La pared posterior del ala está
+          aproximadamente en Z -119.8.
+
+          Lo adelantamos unos centímetros
+          para evitar parpadeos visuales.
       =================================================== */}
 
-      <RetroRankingTerminal
+      <TopTenExhibition
         position={[
           0,
           0,
-          -91,
+          -119.25,
         ]}
       />
 
@@ -87,7 +93,8 @@ export default function Museum() {
         ]}
         rotation={[
           0,
-          -Math.PI / 2,
+          -Math.PI /
+            2,
           0,
         ]}
       />
@@ -104,7 +111,8 @@ export default function Museum() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
       />
