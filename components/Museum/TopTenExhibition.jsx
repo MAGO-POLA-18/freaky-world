@@ -41,7 +41,7 @@ const BOTTOM_ROW_Y =
   8.95;
 
 /* =========================================================
-   HELPERS
+   POSICIÓN DE CADA CUADRO
 ========================================================= */
 
 function getPosterPosition(
@@ -59,6 +59,10 @@ function getPosterPosition(
         : BOTTOM_ROW_Y,
   };
 }
+
+/* =========================================================
+   SCORE
+========================================================= */
 
 function getScore(
   game
@@ -79,7 +83,8 @@ function getScore(
 
   const community =
     Number(
-      game?.community_score ||
+      game
+        ?.community_score ||
         game
           ?.external_rating ||
         0
@@ -95,6 +100,10 @@ function getScore(
 
   return "S/E";
 }
+
+/* =========================================================
+   COLOR RANK
+========================================================= */
 
 function getRankColor(
   rank
@@ -176,8 +185,12 @@ function GamePoster({
               rank
             )
           }
-          roughness={0.38}
-          metalness={0.55}
+          roughness={
+            0.38
+          }
+          metalness={
+            0.55
+          }
         />
       </mesh>
 
@@ -276,7 +289,9 @@ function GamePoster({
           1.05,
           0.17,
         ]}
-        fontSize={0.27}
+        fontSize={
+          0.27
+        }
         color={
           rank === 1
             ? "#111111"
@@ -296,14 +311,20 @@ function GamePoster({
           -1.06,
           0.15,
         ]}
-        fontSize={0.18}
-        maxWidth={2.7}
+        fontSize={
+          0.18
+        }
+        maxWidth={
+          2.7
+        }
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
         textAlign="center"
       >
-        {game.title}
+        {
+          game.title
+        }
       </Text>
 
       {/* SCORE */}
@@ -314,7 +335,9 @@ function GamePoster({
           -1.08,
           0.15,
         ]}
-        fontSize={0.18}
+        fontSize={
+          0.18
+        }
         color="#77dcff"
         anchorX="center"
         anchorY="middle"
@@ -348,7 +371,12 @@ export default function TopTenExhibition({
   const lastGameId =
     useRef(null);
 
-  const worldPosition =
+  const posterWorld =
+    useRef(
+      new THREE.Vector3()
+    );
+
+  const wallWorld =
     useRef(
       new THREE.Vector3()
     );
@@ -375,7 +403,7 @@ export default function TopTenExhibition({
   );
 
   /* =======================================================
-     DATOS
+     CARGA
   ======================================================= */
 
   useEffect(() => {
@@ -410,7 +438,7 @@ export default function TopTenExhibition({
           return;
         }
 
-        setGames(
+        const nextGames =
           Array.isArray(
             data?.games
           )
@@ -418,7 +446,10 @@ export default function TopTenExhibition({
                 0,
                 10
               )
-            : []
+            : [];
+
+        setGames(
+          nextGames
         );
 
         setStatus(
@@ -463,17 +494,23 @@ export default function TopTenExhibition({
   }, []);
 
   /* =======================================================
-     DETECCIÓN DE INTERACCIÓN
+     INTERACCIÓN
 
-     No tocamos directamente el Canvas.
+     NUEVO SISTEMA:
 
-     Detectamos:
+     1. Miramos si el jugador está cerca
+        de LA PARED, no de cada portada.
 
-     1. jugador cerca
-     2. portada aproximadamente en el
-        centro de la cámara
+     2. Ignoramos la diferencia vertical
+        jugador-portada.
 
-     Y enviamos el juego a WorldScene.
+     3. Entre las 10 portadas elegimos
+        la que esté más cerca del centro
+        de la cámara.
+
+     Resultado:
+
+     funcionan fila superior e inferior.
   ======================================================= */
 
   useFrame(() => {
@@ -489,6 +526,83 @@ export default function TopTenExhibition({
       playerRuntime
         .body
         .translation();
+
+    /* =====================================================
+       CENTRO DE LA PARED EN MUNDO
+    ===================================================== */
+
+    wallWorld
+      .current
+      .set(
+        0,
+        8,
+        0
+      );
+
+    group.current
+      .localToWorld(
+        wallWorld.current
+      );
+
+    /*
+      Solo usamos distancia horizontal.
+
+      La altura del jugador NO importa.
+    */
+
+    const wallDx =
+      wallWorld
+        .current.x -
+      player.x;
+
+    const wallDz =
+      wallWorld
+        .current.z -
+      player.z;
+
+    const horizontalDistance =
+      Math.sqrt(
+        wallDx *
+          wallDx +
+        wallDz *
+          wallDz
+      );
+
+    /*
+      Fuera de la zona de la exposición.
+    */
+
+    if (
+      horizontalDistance >
+      14
+    ) {
+      if (
+        lastGameId
+          .current !==
+        null
+      ) {
+        lastGameId.current =
+          null;
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:game-near",
+            {
+              detail: {
+                near:
+                  false,
+              },
+            }
+          )
+        );
+      }
+
+      return;
+    }
+
+    /* =====================================================
+       BUSCAR QUÉ PORTADA ESTÁ MIRANDO
+    ===================================================== */
 
     let selected =
       null;
@@ -509,7 +623,7 @@ export default function TopTenExhibition({
             index
           );
 
-        worldPosition
+        posterWorld
           .current
           .set(
             x,
@@ -519,47 +633,14 @@ export default function TopTenExhibition({
 
         group.current
           .localToWorld(
-            worldPosition
+            posterWorld
               .current
           );
-
-        const dx =
-          worldPosition
-            .current.x -
-          player.x;
-
-        const dy =
-          worldPosition
-            .current.y -
-          player.y;
-
-        const dz =
-          worldPosition
-            .current.z -
-          player.z;
-
-        const distance =
-          Math.sqrt(
-            dx * dx +
-              dy * dy +
-              dz * dz
-          );
-
-        /*
-          Demasiado lejos:
-          no se puede interactuar.
-        */
-
-        if (
-          distance > 12
-        ) {
-          return;
-        }
 
         projected
           .current
           .copy(
-            worldPosition
+            posterWorld
               .current
           )
           .project(
@@ -567,7 +648,8 @@ export default function TopTenExhibition({
           );
 
         /*
-          Detrás de cámara.
+          Portada detrás
+          de la cámara.
         */
 
         if (
@@ -582,39 +664,46 @@ export default function TopTenExhibition({
         }
 
         /*
-          Distancia al centro
-          de pantalla.
+          Calculamos cercanía al centro
+          visual.
 
-          Esto permite seleccionar
-          también fila superior mirando
-          ligeramente hacia arriba.
+          X e Y cuentan igual.
+
+          Así podés mirar arriba
+          para elegir las superiores.
         */
 
-        const screenScore =
+        const screenDistance =
           Math.sqrt(
             projected
               .current.x *
               projected
                 .current.x +
+            projected
+              .current.y *
               projected
-                .current.y *
-                projected
-                  .current.y
+                .current.y
           );
 
+        /*
+          Solo consideramos cuadros
+          razonablemente cerca
+          del centro de la pantalla.
+        */
+
         if (
-          screenScore >
-          0.72
+          screenDistance >
+          0.78
         ) {
           return;
         }
 
         if (
-          screenScore <
+          screenDistance <
           bestScore
         ) {
           bestScore =
-            screenScore;
+            screenDistance;
 
           selected =
             game;
@@ -685,7 +774,9 @@ export default function TopTenExhibition({
 
         <meshStandardMaterial
           color="#080c10"
-          roughness={0.92}
+          roughness={
+            0.92
+          }
         />
       </mesh>
 
@@ -697,7 +788,9 @@ export default function TopTenExhibition({
           14.25,
           0.02,
         ]}
-        fontSize={0.58}
+        fontSize={
+          0.58
+        }
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
@@ -711,7 +804,9 @@ export default function TopTenExhibition({
           13.72,
           0.02,
         ]}
-        fontSize={0.2}
+        fontSize={
+          0.2
+        }
         color="#7ad9ff"
         anchorX="center"
         anchorY="middle"
@@ -729,7 +824,9 @@ export default function TopTenExhibition({
             10.5,
             0.03,
           ]}
-          fontSize={0.42}
+          fontSize={
+            0.42
+          }
           color="#b6c1ca"
           anchorX="center"
           anchorY="middle"
@@ -748,7 +845,9 @@ export default function TopTenExhibition({
             10.5,
             0.03,
           ]}
-          fontSize={0.36}
+          fontSize={
+            0.36
+          }
           color="#ff8e8e"
           anchorX="center"
           anchorY="middle"
@@ -788,9 +887,15 @@ export default function TopTenExhibition({
           11,
           5,
         ]}
-        intensity={115}
-        distance={30}
-        decay={2}
+        intensity={
+          115
+        }
+        distance={
+          30
+        }
+        decay={
+          2
+        }
         color="#dceeff"
       />
     </group>
