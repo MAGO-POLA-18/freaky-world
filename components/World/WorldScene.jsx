@@ -17,35 +17,84 @@ import {
 import WorldEnvironment from "./WorldEnvironment";
 import DynamicSky from "./DynamicSky";
 import WorldLighting from "./WorldLighting";
+
 import PlayerController, {
   playerInput,
 } from "./PlayerController";
 
 import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
-import RankingOverlay from "./RankingOverlay";
 
 /* =========================================================
-   WORLD SCENE
+   FREAKY RANKING
+========================================================= */
+
+const FREAKY_RANKING_URL =
+  "https://freakyranking.base44.app";
+
+/* =========================================================
+   WORLD
 ========================================================= */
 
 export default function WorldScene() {
   const [
-    terminalNear,
-    setTerminalNear,
-  ] = useState(false);
-
-  const [
-    rankingOpen,
-    setRankingOpen,
-  ] = useState(false);
+    nearbyGame,
+    setNearbyGame,
+  ] = useState(
+    null
+  );
 
   /* =======================================================
-     ABRIR RANKING
+     EVENTO DESDE EL MUNDO 3D
   ======================================================= */
 
-  const openRanking =
+  useEffect(() => {
+    const handleGameNear =
+      (event) => {
+        if (
+          event.detail
+            ?.near &&
+          event.detail
+            ?.game
+        ) {
+          setNearbyGame(
+            event.detail
+              .game
+          );
+
+          return;
+        }
+
+        setNearbyGame(
+          null
+        );
+      };
+
+    window.addEventListener(
+      "freaky:game-near",
+      handleGameNear
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:game-near",
+        handleGameNear
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     ABRIR FICHA
+  ======================================================= */
+
+  const openGame =
     useCallback(() => {
+      if (
+        !nearbyGame?.id
+      ) {
+        return;
+      }
+
       playerInput.x = 0;
       playerInput.y = 0;
 
@@ -53,57 +102,43 @@ export default function WorldScene() {
         .dashRequested =
         false;
 
-      playerInput.uiLocked =
-        true;
+      /*
+        Al venir de un botón HTML real,
+        Safari permite abrir una nueva pestaña.
 
-      setRankingOpen(true);
-    }, []);
+        Así Freaky World queda abierto
+        exactamente donde estaba.
+      */
 
-  /* =======================================================
-     CERRAR
-  ======================================================= */
+      const url =
+        `${FREAKY_RANKING_URL}/game/${nearbyGame.id}`;
 
-  const closeRanking =
-    useCallback(() => {
-      playerInput.uiLocked =
-        false;
-
-      setRankingOpen(false);
-    }, []);
-
-  /* =======================================================
-     EVENTO DE PROXIMIDAD
-  ======================================================= */
-
-  useEffect(() => {
-    const handleTerminalNear =
-      (event) => {
-        setTerminalNear(
-          Boolean(
-            event.detail
-              ?.near
-          )
+      const opened =
+        window.open(
+          url,
+          "_blank"
         );
-      };
 
-    window.addEventListener(
-      "freaky:retro-terminal-near",
-      handleTerminalNear
-    );
+      /*
+        Fallback:
+        si Safari bloquea la pestaña,
+        navegamos en la misma.
+      */
 
-    return () => {
-      window.removeEventListener(
-        "freaky:retro-terminal-near",
-        handleTerminalNear
-      );
-    };
-  }, []);
+      if (
+        !opened
+      ) {
+        window.location.href =
+          url;
+      }
+    }, [
+      nearbyGame,
+    ]);
 
   /* =======================================================
-     TECLADO
+     DESKTOP
 
-     E = abrir
-     ESC = cerrar
+     E = abrir ficha
   ======================================================= */
 
   useEffect(() => {
@@ -112,18 +147,9 @@ export default function WorldScene() {
         if (
           event.code ===
             "KeyE" &&
-          terminalNear &&
-          !rankingOpen
+          nearbyGame
         ) {
-          openRanking();
-        }
-
-        if (
-          event.code ===
-            "Escape" &&
-          rankingOpen
-        ) {
-          closeRanking();
+          openGame();
         }
       };
 
@@ -139,37 +165,22 @@ export default function WorldScene() {
       );
     };
   }, [
-    terminalNear,
-    rankingOpen,
-    openRanking,
-    closeRanking,
+    nearbyGame,
+    openGame,
   ]);
-
-  /* =======================================================
-     CLEANUP
-  ======================================================= */
-
-  useEffect(() => {
-    return () => {
-      playerInput.uiLocked =
-        false;
-    };
-  }, []);
 
   return (
     <>
       {/* ===================================================
-          INSTRUCCIONES DESKTOP
+          INSTRUCCIONES
       =================================================== */}
 
-      {!rankingOpen && (
-        <div className="instructions">
-          WASD para caminar · Shift para sprint · Arrastra para mover la cámara
-        </div>
-      )}
+      <div className="instructions">
+        WASD para caminar · Shift para sprint · Arrastra para mover la cámara
+      </div>
 
       {/* ===================================================
-          MOTOR 3D
+          MUNDO
       =================================================== */}
 
       <Canvas
@@ -186,11 +197,16 @@ export default function WorldScene() {
           ],
 
           fov: 60,
-          near: 0.1,
-          far: 600,
+
+          near:
+            0.1,
+
+          far:
+            600,
         }}
         gl={{
-          antialias: true,
+          antialias:
+            true,
 
           powerPreference:
             "high-performance",
@@ -220,51 +236,40 @@ export default function WorldScene() {
 
       {/* ===================================================
           CONTROLES MÓVILES
-
-          Cuando abrimos 2D desaparecen.
       =================================================== */}
 
-      {!rankingOpen && (
-        <MobileControls />
-      )}
+      <MobileControls />
 
       {/* ===================================================
-          AVISO DE INTERACCIÓN
+          BOTÓN HTML
+
+          ESTE es el mismo principio que
+          funcionaba con el ranking ficticio.
       =================================================== */}
 
-      {terminalNear &&
-        !rankingOpen && (
-          <button
-            type="button"
-            className="world-interaction-button"
-            onClick={
-              openRanking
-            }
-          >
-            <span className="world-interaction-icon">
-              R
-            </span>
-
-            <span>
-              Abrir Ranking
-            </span>
-
-            <small>
-              E
-            </small>
-          </button>
-        )}
-
-      {/* ===================================================
-          INTERFAZ 2D
-      =================================================== */}
-
-      {rankingOpen && (
-        <RankingOverlay
-          onClose={
-            closeRanking
+      {nearbyGame && (
+        <button
+          type="button"
+          className="world-interaction-button"
+          onClick={
+            openGame
           }
-        />
+        >
+          <span className="world-interaction-icon">
+            ↗
+          </span>
+
+          <span>
+            Abrir{" "}
+            {
+              nearbyGame.title
+            }
+          </span>
+
+          <small>
+            E
+          </small>
+        </button>
       )}
     </>
   );
