@@ -9,76 +9,147 @@ import WingInterior from "./WingInterior";
 import RetroWingInterior from "./RetroWingInterior";
 
 export default function DpadWing({
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
+  position = [
+    0,
+    0,
+    0,
+  ],
+
+  rotation = [
+    0,
+    0,
+    0,
+  ],
+
   variant = "standard",
 }) {
-  const isRetro = variant === "retro";
+  const isRetro =
+    variant === "retro";
 
-  const shellColor = "#151719";
-  const shellSideColor = "#202327";
-  const shellTopColor = "#111315";
-  const shellEdgeColor = "#2f3439";
-  const terraceColor = "#23272b";
-  const stairColor = "#2c3034";
-  const glassColor = "#7fb6c8";
+  /* =======================================================
+     COLORES
+  ======================================================= */
+
+  const shellColor =
+    "#151719";
+
+  const shellSideColor =
+    "#202327";
+
+  const shellTopColor =
+    "#111315";
+
+  const shellEdgeColor =
+    "#2f3439";
+
+  const terraceColor =
+    "#23272b";
+
+  const stairColor =
+    "#2c3034";
+
+  const glassColor =
+    "#7fb6c8";
+
+  const railColor =
+    "#0f1113";
+
+  /* =======================================================
+     ESCALERAS STANDARD
+  ======================================================= */
 
   const stairSteps = 14;
 
   const stairWidth = 8;
+
   const stairHeight = 7.2;
-  const stairStepDepth = 1.1;
-  const stairStartZ = 0.6;
+
+  const stairStepDepth =
+    1.1;
+
+  const stairStartZ =
+    0.6;
 
   const stairRun =
-    stairSteps * stairStepDepth;
+    stairSteps *
+    stairStepDepth;
 
-  const stairRampLength = Math.sqrt(
-    stairRun * stairRun +
-      stairHeight * stairHeight
+  const stairRampLength =
+    Math.sqrt(
+      stairRun *
+        stairRun +
+      stairHeight *
+        stairHeight
+    );
+
+  const stairRampAngle =
+    Math.atan2(
+      stairHeight,
+      stairRun
+    );
+
+  /* =======================================================
+     PERFIL DEL EDIFICIO
+  ======================================================= */
+
+  const sideShape =
+    new THREE.Shape();
+
+  sideShape.moveTo(
+    -35,
+    6.98
   );
 
-  const stairRampAngle = Math.atan2(
-    stairHeight,
-    stairRun
+  sideShape.lineTo(
+    -35,
+    15
   );
 
-  /* =====================================================
-     PERFIL LATERAL
-  ===================================================== */
+  sideShape.lineTo(
+    0,
+    15
+  );
 
-  const sideShape = new THREE.Shape();
+  sideShape.lineTo(
+    18,
+    7
+  );
 
-  sideShape.moveTo(-35, 6.98);
-  sideShape.lineTo(-35, 15);
-  sideShape.lineTo(0, 15);
-  sideShape.lineTo(18, 7);
-  sideShape.lineTo(18, 6.98);
-  sideShape.lineTo(-35, 6.98);
+  sideShape.lineTo(
+    18,
+    6.98
+  );
+
+  sideShape.lineTo(
+    -35,
+    6.98
+  );
 
   const sideExtrudeSettings = {
     depth: 0.4,
     bevelEnabled: false,
   };
 
-  /* =====================================================
-     TECHO INCLINADO
-  ===================================================== */
+  /* =======================================================
+     TECHO
+  ======================================================= */
 
   const roofDepth = 18;
   const roofDrop = 8;
 
-  const roofLength = Math.sqrt(
-    roofDepth * roofDepth +
-      roofDrop * roofDrop
-  );
+  const roofLength =
+    Math.sqrt(
+      roofDepth *
+        roofDepth +
+      roofDrop *
+        roofDrop
+    );
 
-  const roofAngle = Math.atan2(
-    roofDrop,
-    roofDepth
-  );
-
-  const railColor = "#0f1113";
+  const roofAngle =
+    Math.atan2(
+      roofDrop,
+      roofDepth
+    );
 
   return (
     <group
@@ -87,12 +158,6 @@ export default function DpadWing({
     >
       {/* =================================================
           INTERIOR
-
-          STANDARD:
-          interior original
-
-          RETRO:
-          arquitectura propia
       ================================================= */}
 
       {isRetro ? (
@@ -106,11 +171,24 @@ export default function DpadWing({
       ================================================= */}
 
       <mesh
-        position={[0, 0.006, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
+        position={[
+          0,
+          0.006,
+          0,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
         receiveShadow
       >
-        <planeGeometry args={[60, 70]} />
+        <planeGeometry
+          args={[
+            60,
+            70,
+          ]}
+        />
 
         <meshStandardMaterial
           color="#101214"
@@ -119,7 +197,7 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
-          PARED LATERAL IZQUIERDA
+          PAREDES LATERALES
       ================================================= */}
 
       <RigidBody
@@ -127,7 +205,11 @@ export default function DpadWing({
         colliders="cuboid"
       >
         <mesh
-          position={[-29.8, 3.49, 0]}
+          position={[
+            -29.8,
+            3.49,
+            0,
+          ]}
           castShadow
           receiveShadow
         >
@@ -140,22 +222,24 @@ export default function DpadWing({
           />
 
           <meshStandardMaterial
-            color={shellSideColor}
+            color={
+              shellSideColor
+            }
             roughness={0.88}
           />
         </mesh>
       </RigidBody>
-
-      {/* =================================================
-          PARED LATERAL DERECHA
-      ================================================= */}
 
       <RigidBody
         type="fixed"
         colliders="cuboid"
       >
         <mesh
-          position={[29.8, 3.49, 0]}
+          position={[
+            29.8,
+            3.49,
+            0,
+          ]}
           castShadow
           receiveShadow
         >
@@ -168,14 +252,16 @@ export default function DpadWing({
           />
 
           <meshStandardMaterial
-            color={shellSideColor}
+            color={
+              shellSideColor
+            }
             roughness={0.88}
           />
         </mesh>
       </RigidBody>
 
       {/* =================================================
-          PARED DEL FONDO
+          FONDO
       ================================================= */}
 
       <RigidBody
@@ -207,7 +293,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          FACHADA FRONTAL IZQUIERDA
+          FACHADA
       ================================================= */}
 
       <RigidBody
@@ -238,10 +324,6 @@ export default function DpadWing({
         </mesh>
       </RigidBody>
 
-      {/* =================================================
-          FACHADA FRONTAL DERECHA
-      ================================================= */}
-
       <RigidBody
         type="fixed"
         colliders="cuboid"
@@ -271,7 +353,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          MARCO DE ENTRADA
+          ENTRADA
       ================================================= */}
 
       <mesh
@@ -341,7 +423,7 @@ export default function DpadWing({
       </mesh>
 
       {/* =================================================
-          CRISTAL FRONTAL IZQUIERDO
+          VIDRIOS
       ================================================= */}
 
       <mesh
@@ -365,7 +447,9 @@ export default function DpadWing({
           roughness={0.12}
           metalness={0.05}
           transmission={0.25}
-          side={THREE.DoubleSide}
+          side={
+            THREE.DoubleSide
+          }
         />
       </mesh>
 
@@ -385,14 +469,12 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={shellEdgeColor}
+          color={
+            shellEdgeColor
+          }
           wireframe
         />
       </mesh>
-
-      {/* =================================================
-          CRISTAL FRONTAL DERECHO
-      ================================================= */}
 
       <mesh
         position={[
@@ -415,7 +497,9 @@ export default function DpadWing({
           roughness={0.12}
           metalness={0.05}
           transmission={0.25}
-          side={THREE.DoubleSide}
+          side={
+            THREE.DoubleSide
+          }
         />
       </mesh>
 
@@ -435,119 +519,15 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={shellEdgeColor}
+          color={
+            shellEdgeColor
+          }
           wireframe
         />
       </mesh>
 
       {/* =================================================
-          BORDE SUPERIOR DE ENTRADA
-      ================================================= */}
-
-      <mesh
-        position={[
-          0,
-          6.2,
-          35.45,
-        ]}
-        castShadow
-      >
-        <boxGeometry
-          args={[
-            16,
-            1.1,
-            0.22,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#0b0d10"
-          roughness={0.55}
-        />
-      </mesh>
-
-      {/* =================================================
-          LUCES DE TERRAZA
-
-          Por ahora siguen existiendo.
-          Luego automatizaremos día/noche.
-      ================================================= */}
-
-      {[
-        -22,
-        -11,
-        0,
-        11,
-        22,
-      ].map((x) => (
-        <group
-          key={`terrace-lamp-${x}`}
-          position={[
-            x,
-            7,
-            30,
-          ]}
-        >
-          <mesh
-            position={[0, 0.75, 0]}
-            castShadow
-          >
-            <cylinderGeometry
-              args={[
-                0.055,
-                0.075,
-                1.5,
-                10,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#0d0f11"
-              roughness={0.6}
-            />
-          </mesh>
-
-          <mesh
-            position={[0, 1.52, 0]}
-            castShadow
-          >
-            <cylinderGeometry
-              args={[
-                0.18,
-                0.14,
-                0.14,
-                12,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#0d0f11"
-              roughness={0.5}
-            />
-          </mesh>
-
-          <mesh
-            position={[0, 1.44, 0]}
-          >
-            <sphereGeometry
-              args={[
-                0.12,
-                12,
-                12,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#ffffff"
-              emissive="#fff0d4"
-              emissiveIntensity={6}
-            />
-          </mesh>
-        </group>
-      ))}
-
-      {/* =================================================
-          TERRAZA EXTERIOR
+          TERRAZA
       ================================================= */}
 
       <RigidBody
@@ -572,7 +552,9 @@ export default function DpadWing({
           />
 
           <meshStandardMaterial
-            color={terraceColor}
+            color={
+              terraceColor
+            }
             roughness={0.9}
           />
         </mesh>
@@ -643,7 +625,7 @@ export default function DpadWing({
       ))}
 
       {/* =================================================
-          BARANDILLAS LATERALES DE TERRAZA
+          BARANDILLAS LATERALES
       ================================================= */}
 
       <RigidBody
@@ -656,7 +638,6 @@ export default function DpadWing({
             8.15,
             26.5,
           ]}
-          castShadow
         >
           <boxGeometry
             args={[
@@ -682,7 +663,6 @@ export default function DpadWing({
             8.15,
             26.5,
           ]}
-          castShadow
         >
           <boxGeometry
             args={[
@@ -699,7 +679,7 @@ export default function DpadWing({
       </RigidBody>
 
       {/* =================================================
-          PERFIL LATERAL IZQUIERDO
+          PERFILES LATERALES
       ================================================= */}
 
       <mesh
@@ -724,14 +704,12 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={shellSideColor}
+          color={
+            shellSideColor
+          }
           roughness={0.9}
         />
       </mesh>
-
-      {/* =================================================
-          PERFIL LATERAL DERECHO
-      ================================================= */}
 
       <mesh
         position={[
@@ -755,13 +733,15 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={shellSideColor}
+          color={
+            shellSideColor
+          }
           roughness={0.9}
         />
       </mesh>
 
       {/* =================================================
-          TECHO PLANO POSTERIOR
+          TECHO POSTERIOR
       ================================================= */}
 
       <RigidBody
@@ -786,14 +766,19 @@ export default function DpadWing({
           />
 
           <meshStandardMaterial
-            color={shellTopColor}
+            color={
+              shellTopColor
+            }
             roughness={0.9}
           />
         </mesh>
       </RigidBody>
 
       {/* =================================================
-          TECHO INCLINADO
+          TECHO INCLINADO ORIGINAL
+
+          Tres piezas:
+          izquierda / centro / derecha
       ================================================= */}
 
       {[
@@ -802,7 +787,7 @@ export default function DpadWing({
         23.8,
       ].map((x) => (
         <RigidBody
-          key={`sloped-roof-${x}`}
+          key={`roof-main-${x}`}
           type="fixed"
           colliders="cuboid"
         >
@@ -831,7 +816,9 @@ export default function DpadWing({
             />
 
             <meshStandardMaterial
-              color={shellTopColor}
+              color={
+                shellTopColor
+              }
               roughness={0.9}
             />
           </mesh>
@@ -839,107 +826,160 @@ export default function DpadWing({
       ))}
 
       {/* =================================================
-          ARQUITECTURA ORIGINAL
+          RETRO — CERRAR HUECOS DE ESCALERAS ANTIGUAS
 
-          Las dos escaleras originales SOLO aparecen en
-          las alas normales.
+          El techo original dejaba dos franjas abiertas
+          exactamente donde estaban las dos escaleras.
 
-          El ala Retro tiene su propia escalera interior.
+          Como Retro ya no usa esas escaleras,
+          cerramos ambas.
+      ================================================= */}
+
+      {isRetro &&
+        [
+          -14,
+          14,
+        ].map((x) => (
+          <RigidBody
+            key={`retro-roof-fill-${x}`}
+            type="fixed"
+            colliders="cuboid"
+          >
+            <mesh
+              position={[
+                x,
+                11,
+                9,
+              ]}
+              rotation={[
+                roofAngle,
+                0,
+                0,
+              ]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry
+                args={[
+                  8,
+                  0.4,
+                  roofLength,
+                ]}
+              />
+
+              <meshStandardMaterial
+                color={
+                  shellTopColor
+                }
+                roughness={0.9}
+              />
+            </mesh>
+          </RigidBody>
+        ))}
+
+      {/* =================================================
+          ESCALERAS ORIGINAL
+
+          SOLO STANDARD
       ================================================= */}
 
       {!isRetro && (
         <>
-          {/* ===============================================
-              ESCALERA IZQUIERDA
-          =============================================== */}
+          {Array.from({
+            length:
+              stairSteps,
+          }).map(
+            (_, i) => {
+              const stepHeight =
+                ((i + 1) *
+                  stairHeight) /
+                stairSteps;
+
+              const z =
+                stairStartZ +
+                i *
+                  stairStepDepth +
+                stairStepDepth /
+                  2;
+
+              return (
+                <mesh
+                  key={`left-step-${i}`}
+                  position={[
+                    -14,
+                    stepHeight /
+                      2,
+                    z,
+                  ]}
+                  castShadow
+                  receiveShadow
+                >
+                  <boxGeometry
+                    args={[
+                      stairWidth,
+                      stepHeight,
+                      stairStepDepth,
+                    ]}
+                  />
+
+                  <meshStandardMaterial
+                    color={
+                      stairColor
+                    }
+                  />
+                </mesh>
+              );
+            }
+          )}
 
           {Array.from({
-            length: stairSteps,
-          }).map((_, i) => {
-            const stepHeight =
-              ((i + 1) *
-                stairHeight) /
-              stairSteps;
+            length:
+              stairSteps,
+          }).map(
+            (_, i) => {
+              const stepHeight =
+                ((i + 1) *
+                  stairHeight) /
+                stairSteps;
 
-            const z =
-              stairStartZ +
-              i * stairStepDepth +
-              stairStepDepth / 2;
+              const z =
+                stairStartZ +
+                i *
+                  stairStepDepth +
+                stairStepDepth /
+                  2;
 
-            return (
-              <mesh
-                key={`left-step-${i}`}
-                position={[
-                  -14,
-                  stepHeight / 2,
-                  z,
-                ]}
-                castShadow
-                receiveShadow
-              >
-                <boxGeometry
-                  args={[
-                    stairWidth,
-                    stepHeight,
-                    stairStepDepth,
+              return (
+                <mesh
+                  key={`right-step-${i}`}
+                  position={[
+                    14,
+                    stepHeight /
+                      2,
+                    z,
                   ]}
-                />
+                  castShadow
+                  receiveShadow
+                >
+                  <boxGeometry
+                    args={[
+                      stairWidth,
+                      stepHeight,
+                      stairStepDepth,
+                    ]}
+                  />
 
-                <meshStandardMaterial
-                  color={stairColor}
-                />
-              </mesh>
-            );
-          })}
+                  <meshStandardMaterial
+                    color={
+                      stairColor
+                    }
+                  />
+                </mesh>
+              );
+            }
+          )}
 
-          {/* ===============================================
-              ESCALERA DERECHA
-          =============================================== */}
-
-          {Array.from({
-            length: stairSteps,
-          }).map((_, i) => {
-            const stepHeight =
-              ((i + 1) *
-                stairHeight) /
-              stairSteps;
-
-            const z =
-              stairStartZ +
-              i * stairStepDepth +
-              stairStepDepth / 2;
-
-            return (
-              <mesh
-                key={`right-step-${i}`}
-                position={[
-                  14,
-                  stepHeight / 2,
-                  z,
-                ]}
-                castShadow
-                receiveShadow
-              >
-                <boxGeometry
-                  args={[
-                    stairWidth,
-                    stepHeight,
-                    stairStepDepth,
-                  ]}
-                />
-
-                <meshStandardMaterial
-                  color={stairColor}
-                />
-              </mesh>
-            );
-          })}
-
-          {/* ===============================================
-              COLLIDERS INVISIBLES DE ESCALERAS
-
-              Permiten subir suavemente.
-          =============================================== */}
+          {/* RAMPAS */}
 
           <RigidBody
             type="fixed"
@@ -949,7 +989,8 @@ export default function DpadWing({
               args={[
                 3.8,
                 0.08,
-                stairRampLength / 2,
+                stairRampLength /
+                  2,
               ]}
               position={[
                 -14,
@@ -968,7 +1009,8 @@ export default function DpadWing({
               args={[
                 3.8,
                 0.08,
-                stairRampLength / 2,
+                stairRampLength /
+                  2,
               ]}
               position={[
                 14,
@@ -984,9 +1026,7 @@ export default function DpadWing({
             />
           </RigidBody>
 
-          {/* ===============================================
-              DESCANSO IZQUIERDO
-          =============================================== */}
+          {/* DESCANSOS */}
 
           <RigidBody
             type="fixed"
@@ -1010,15 +1050,12 @@ export default function DpadWing({
               />
 
               <meshStandardMaterial
-                color={terraceColor}
-                roughness={0.9}
+                color={
+                  terraceColor
+                }
               />
             </mesh>
           </RigidBody>
-
-          {/* ===============================================
-              DESCANSO DERECHO
-          =============================================== */}
 
           <RigidBody
             type="fixed"
@@ -1042,15 +1079,14 @@ export default function DpadWing({
               />
 
               <meshStandardMaterial
-                color={terraceColor}
-                roughness={0.9}
+                color={
+                  terraceColor
+                }
               />
             </mesh>
           </RigidBody>
 
-          {/* ===============================================
-              BARANDILLAS INTERIORES
-          =============================================== */}
+          {/* BARANDILLAS */}
 
           {[
             -23.75,
@@ -1068,59 +1104,26 @@ export default function DpadWing({
                   8.15,
                   18.1,
                 ]}
-                castShadow
               >
                 <boxGeometry
                   args={[
                     x === 0
                       ? 20
                       : 10.5,
+
                     0.18,
                     0.18,
                   ]}
                 />
 
                 <meshStandardMaterial
-                  color={railColor}
+                  color={
+                    railColor
+                  }
                 />
               </mesh>
             </RigidBody>
           ))}
-
-          {[
-            -29,
-            -18.5,
-            -9.8,
-            9.8,
-            18.5,
-            29,
-          ].map((x) => (
-            <mesh
-              key={`inner-post-${x}`}
-              position={[
-                x,
-                7.6,
-                18.1,
-              ]}
-              castShadow
-            >
-              <boxGeometry
-                args={[
-                  0.14,
-                  1.1,
-                  0.14,
-                ]}
-              />
-
-              <meshStandardMaterial
-                color={railColor}
-              />
-            </mesh>
-          ))}
-
-          {/* ===============================================
-              BARANDILLAS DE ESCALERAS
-          =============================================== */}
 
           {[
             -18.1,
@@ -1140,7 +1143,6 @@ export default function DpadWing({
                 0,
                 0,
               ]}
-              castShadow
             >
               <boxGeometry
                 args={[
@@ -1151,7 +1153,9 @@ export default function DpadWing({
               />
 
               <meshStandardMaterial
-                color={railColor}
+                color={
+                  railColor
+                }
               />
             </mesh>
           ))}
