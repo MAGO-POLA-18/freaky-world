@@ -30,12 +30,18 @@ import PerformanceMonitor from "./PerformanceMonitor";
 
 /* =========================================================
    RESOLUCIÓN INTERNA POR CALIDAD
+
+   OBJETIVO:
+   - evitar dientes de sierra exagerados
+   - LOW sigue siendo ligero, pero ya no destruye la imagen
+   - MEDIUM recupera resolución prácticamente nativa
+   - HIGH conserva buena nitidez
 ========================================================= */
 
 const DPR_BY_QUALITY = {
-  low: 0.65,
-  medium: 0.85,
-  high: 1.15,
+  low: 0.8,
+  medium: 0.95,
+  high: 1.1,
 };
 
 const SKY_TEST_HOURS = [
@@ -115,6 +121,9 @@ export default function WorldScene() {
 
       PC:
       arrancamos HIGH.
+
+      El PerformanceMonitor puede bajar/subir
+      posteriormente según rendimiento real.
     */
 
     setQuality(
@@ -706,6 +715,18 @@ export default function WorldScene() {
 
       {/* ===================================================
           CANVAS 3D
+
+          IMPORTANTE:
+          MSAA ACTIVADO.
+
+          Antes:
+          antialias: false
+
+          Ahora:
+          antialias: true
+
+          Recuperamos bordes suaves sin aumentar
+          geometría, sombras ni cantidad de luces.
       =================================================== */}
 
       <Canvas
@@ -736,7 +757,7 @@ export default function WorldScene() {
         }}
         gl={{
           antialias:
-            false,
+            true,
 
           powerPreference:
             "high-performance",
