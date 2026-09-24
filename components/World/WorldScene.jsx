@@ -27,80 +27,65 @@ import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
-/* =========================================================
-   DPR POR CALIDAD
-========================================================= */
-
 const DPR_BY_QUALITY = {
-  low: [
-    0.7,
-    0.9,
-  ],
-
-  medium: [
-    0.85,
-    1.1,
-  ],
-
-  high: [
-    1,
-    1.35,
-  ],
+  low: [0.7, 0.9],
+  medium: [0.85, 1.1],
+  high: [1, 1.35],
 };
 
-/* =========================================================
-   WORLD
-========================================================= */
+const SKY_TEST_HOURS = [
+  null,
+  6,
+  8,
+  13,
+  18,
+  20,
+  23,
+];
 
 export default function WorldScene() {
   const [
     nearbyGame,
     setNearbyGame,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     openedGame,
     setOpenedGame,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     quality,
     setQuality,
-  ] =
-    useState(
-      "high"
-    );
+  ] = useState("high");
 
   const [
     stats,
     setStats,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     showStats,
     setShowStats,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     showTutorial,
     setShowTutorial,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     mobile,
     setMobile,
-  ] =
-    useState(false);
+  ] = useState(false);
+
+  const [
+    skyTestHour,
+    setSkyTestHour,
+  ] = useState(null);
 
   const overlayOpen =
-    Boolean(
-      openedGame
-    );
+    Boolean(openedGame);
 
   /* =======================================================
      TUTORIAL
@@ -112,15 +97,12 @@ export default function WorldScene() {
         "(pointer: coarse)"
       ).matches;
 
-    setMobile(
-      coarse
-    );
+    setMobile(coarse);
 
     const completed =
-      window.localStorage
-        .getItem(
-          "freakyWorldTutorialCompleted"
-        );
+      window.localStorage.getItem(
+        "freakyWorldTutorialCompleted"
+      );
 
     if (
       completed ===
@@ -129,22 +111,17 @@ export default function WorldScene() {
       return;
     }
 
-    setShowTutorial(
-      true
-    );
+    setShowTutorial(true);
 
     const timer =
       window.setTimeout(
         () => {
-          setShowTutorial(
-            false
-          );
+          setShowTutorial(false);
 
-          window.localStorage
-            .setItem(
-              "freakyWorldTutorialCompleted",
-              "true"
-            );
+          window.localStorage.setItem(
+            "freakyWorldTutorialCompleted",
+            "true"
+          );
         },
         9000
       );
@@ -157,19 +134,16 @@ export default function WorldScene() {
 
   const closeTutorial =
     useCallback(() => {
-      setShowTutorial(
-        false
-      );
+      setShowTutorial(false);
 
-      window.localStorage
-        .setItem(
-          "freakyWorldTutorialCompleted",
-          "true"
-        );
+      window.localStorage.setItem(
+        "freakyWorldTutorialCompleted",
+        "true"
+      );
     }, []);
 
   /* =======================================================
-     EVENTO DESDE 3D
+     EVENTOS 3D
   ======================================================= */
 
   useEffect(() => {
@@ -186,9 +160,7 @@ export default function WorldScene() {
           return;
         }
 
-        setNearbyGame(
-          null
-        );
+        setNearbyGame(null);
       };
 
     window.addEventListener(
@@ -204,10 +176,6 @@ export default function WorldScene() {
     };
   }, []);
 
-  /* =======================================================
-     ABRIR FICHA
-  ======================================================= */
-
   const openGame =
     useCallback(() => {
       if (
@@ -217,14 +185,10 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x =
-        0;
+      playerInput.x = 0;
+      playerInput.y = 0;
 
-      playerInput.y =
-        0;
-
-      playerInput
-        .dashRequested =
+      playerInput.dashRequested =
         false;
 
       setOpenedGame(
@@ -235,30 +199,16 @@ export default function WorldScene() {
       overlayOpen,
     ]);
 
-  /* =======================================================
-     CERRAR FICHA
-  ======================================================= */
-
   const closeGame =
     useCallback(() => {
-      playerInput.x =
-        0;
+      playerInput.x = 0;
+      playerInput.y = 0;
 
-      playerInput.y =
-        0;
-
-      playerInput
-        .dashRequested =
+      playerInput.dashRequested =
         false;
 
-      setOpenedGame(
-        null
-      );
+      setOpenedGame(null);
     }, []);
-
-  /* =======================================================
-     TECLADO GENERAL
-  ======================================================= */
 
   useEffect(() => {
     const handleKey =
@@ -317,69 +267,41 @@ export default function WorldScene() {
 
   return (
     <>
-      {/* ===================================================
-          TUTORIAL
-      =================================================== */}
+      {/* TUTORIAL */}
 
       {showTutorial &&
         !overlayOpen && (
           <div
             style={{
-              position:
-                "fixed",
-
-              top:
-                mobile
-                  ? 18
-                  : 22,
-
-              left:
-                "50%",
-
+              position: "fixed",
+              top: mobile
+                ? 18
+                : 22,
+              left: "50%",
               transform:
                 "translateX(-50%)",
-
-              zIndex:
-                70,
-
+              zIndex: 70,
               width:
                 "min(90vw, 390px)",
-
               padding:
                 "14px 16px",
-
-              borderRadius:
-                16,
-
-              color:
-                "#fff",
-
+              borderRadius: 16,
+              color: "#fff",
               background:
                 "rgba(5,8,12,0.82)",
-
               backdropFilter:
                 "blur(14px)",
-
               border:
                 "1px solid rgba(255,255,255,0.15)",
-
-              boxShadow:
-                "0 10px 30px rgba(0,0,0,0.25)",
-
-              fontSize:
-                13,
+              fontSize: 13,
             }}
           >
             <div
               style={{
-                display:
-                  "flex",
-
+                display: "flex",
                 justifyContent:
                   "space-between",
-
-                gap:
-                  16,
+                gap: 16,
               }}
             >
               <div>
@@ -389,14 +311,9 @@ export default function WorldScene() {
 
                 <div
                   style={{
-                    marginTop:
-                      6,
-
-                    opacity:
-                      0.72,
-
-                    lineHeight:
-                      1.55,
+                    marginTop: 6,
+                    opacity: 0.72,
+                    lineHeight: 1.55,
                   }}
                 >
                   {mobile ? (
@@ -411,9 +328,9 @@ export default function WorldScene() {
                     <>
                       WASD para caminar
                       <br />
-                      Doble W para sprint
+                      Doble toque en cualquier dirección para sprint
                       <br />
-                      Ctrl para correr · Arrastra para mirar
+                      Arrastra para mirar
                     </>
                   )}
                 </div>
@@ -425,29 +342,15 @@ export default function WorldScene() {
                   closeTutorial
                 }
                 style={{
-                  width:
-                    30,
-
-                  height:
-                    30,
-
-                  flex:
-                    "0 0 auto",
-
-                  border:
-                    0,
-
+                  width: 30,
+                  height: 30,
+                  border: 0,
                   borderRadius:
                     "50%",
-
                   background:
                     "rgba(255,255,255,0.1)",
-
-                  color:
-                    "#fff",
-
-                  fontSize:
-                    20,
+                  color: "#fff",
+                  fontSize: 20,
                 }}
               >
                 ×
@@ -456,9 +359,7 @@ export default function WorldScene() {
           </div>
         )}
 
-      {/* ===================================================
-          DIAGNÓSTICO
-      =================================================== */}
+      {/* FPS */}
 
       {!overlayOpen && (
         <>
@@ -471,41 +372,20 @@ export default function WorldScene() {
               )
             }
             style={{
-              position:
-                "fixed",
-
-              top:
-                14,
-
-              right:
-                14,
-
-              zIndex:
-                80,
-
+              position: "fixed",
+              top: 14,
+              right: 14,
+              zIndex: 80,
               padding:
                 "7px 10px",
-
               border:
                 "1px solid rgba(255,255,255,0.14)",
-
-              borderRadius:
-                9,
-
+              borderRadius: 9,
               background:
                 "rgba(0,0,0,0.48)",
-
-              color:
-                "#fff",
-
-              fontSize:
-                11,
-
-              fontWeight:
-                800,
-
-              backdropFilter:
-                "blur(10px)",
+              color: "#fff",
+              fontSize: 11,
+              fontWeight: 800,
             }}
           >
             FPS
@@ -517,51 +397,27 @@ export default function WorldScene() {
                 style={{
                   position:
                     "fixed",
-
-                  top:
-                    52,
-
-                  right:
-                    14,
-
-                  zIndex:
-                    80,
-
-                  minWidth:
-                    150,
-
+                  top: 52,
+                  right: 14,
+                  zIndex: 80,
+                  width: 190,
                   padding:
                     "10px 12px",
-
-                  borderRadius:
-                    10,
-
+                  borderRadius: 10,
                   background:
-                    "rgba(0,0,0,0.72)",
-
-                  color:
-                    "#fff",
-
+                    "rgba(0,0,0,0.76)",
+                  color: "#fff",
                   fontFamily:
                     "monospace",
-
-                  fontSize:
-                    11,
-
-                  lineHeight:
-                    1.55,
-
-                  pointerEvents:
-                    "none",
+                  fontSize: 11,
+                  lineHeight: 1.55,
                 }}
               >
-                FPS:{" "}
-                {stats.fps}
+                FPS: {stats.fps}
                 <br />
 
                 Frame:{" "}
-                {stats.frameMs}
-                ms
+                {stats.frameMs}ms
                 <br />
 
                 Draw calls:{" "}
@@ -578,14 +434,78 @@ export default function WorldScene() {
 
                 Quality:{" "}
                 {quality.toUpperCase()}
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    paddingTop: 8,
+                    borderTop:
+                      "1px solid rgba(255,255,255,0.15)",
+                  }}
+                >
+                  CIELO
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 4,
+                    marginTop: 5,
+                  }}
+                >
+                  {SKY_TEST_HOURS.map(
+                    (hour) => {
+                      const active =
+                        skyTestHour ===
+                        hour;
+
+                      return (
+                        <button
+                          key={
+                            hour ??
+                            "real"
+                          }
+                          type="button"
+                          onClick={() =>
+                            setSkyTestHour(
+                              hour
+                            )
+                          }
+                          style={{
+                            padding:
+                              "4px 6px",
+                            border:
+                              "1px solid rgba(255,255,255,0.16)",
+                            borderRadius:
+                              5,
+                            background:
+                              active
+                                ? "#ffffff"
+                                : "rgba(255,255,255,0.07)",
+                            color:
+                              active
+                                ? "#111"
+                                : "#fff",
+                            fontSize:
+                              10,
+                          }}
+                        >
+                          {hour ===
+                          null
+                            ? "REAL"
+                            : `${hour}:00`}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
               </div>
             )}
         </>
       )}
 
-      {/* ===================================================
-          WORLD
-      =================================================== */}
+      {/* MUNDO */}
 
       <Canvas
         shadows
@@ -600,33 +520,28 @@ export default function WorldScene() {
             3,
             6,
           ],
-
           fov: 60,
-
-          near:
-            0.1,
-
-          far:
-            600,
+          near: 0.1,
+          far: 600,
         }}
         gl={{
-          antialias:
-            true,
-
+          antialias: true,
           powerPreference:
             "high-performance",
         }}
       >
         <PerformanceMonitor
-          onStats={
-            setStats
-          }
+          onStats={setStats}
           onQualityChange={
             setQuality
           }
         />
 
-        <DynamicSky />
+        <DynamicSky
+          testHour={
+            skyTestHour
+          }
+        />
 
         <WorldLighting />
 
@@ -636,9 +551,7 @@ export default function WorldScene() {
             -9.81,
             0,
           ]}
-          timeStep={
-            1 / 60
-          }
+          timeStep={1 / 60}
         >
           <WorldEnvironment />
 
@@ -648,17 +561,9 @@ export default function WorldScene() {
         </Physics>
       </Canvas>
 
-      {/* ===================================================
-          MOBILE
-      =================================================== */}
-
       {!overlayOpen && (
         <MobileControls />
       )}
-
-      {/* ===================================================
-          INTERACCIÓN
-      =================================================== */}
 
       {nearbyGame &&
         !overlayOpen && (
@@ -675,26 +580,16 @@ export default function WorldScene() {
 
             <span>
               Abrir{" "}
-              {
-                nearbyGame.title
-              }
+              {nearbyGame.title}
             </span>
 
-            <small>
-              E
-            </small>
+            <small>E</small>
           </button>
         )}
 
-      {/* ===================================================
-          2D
-      =================================================== */}
-
       {openedGame && (
         <RankingOverlay
-          game={
-            openedGame
-          }
+          game={openedGame}
           onClose={
             closeGame
           }
