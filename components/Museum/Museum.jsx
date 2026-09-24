@@ -1,36 +1,18 @@
 import DpadWing from "./DpadWing";
-import CentralMonument from "../World/CentralMonument";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
+
+   IMPORTANTE:
+
+   - El monumento central vive en WorldEnvironment.
+   - La iluminación global vive en DynamicSky.
+   - Museum solo contiene las cuatro alas.
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
-      <ambientLight
-        intensity={0.65}
-        color="#dce6f2"
-      />
-
-      <hemisphereLight
-        intensity={1.15}
-        color="#e4eeff"
-        groundColor="#596051"
-      />
-
-      {/* ===================================================
-          MONUMENTO CENTRAL
-      =================================================== */}
-
-      <CentralMonument
-        position={[
-          0,
-          0,
-          0,
-        ]}
-      />
-
       {/* ===================================================
           NORTE — RETRO
       =================================================== */}
