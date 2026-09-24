@@ -24,13 +24,7 @@ import PlayerController, {
 
 import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
-
-/* =========================================================
-   FREAKY RANKING
-========================================================= */
-
-const FREAKY_RANKING_URL =
-  "https://freakyranking.base44.app";
+import RankingOverlay from "./RankingOverlay";
 
 /* =========================================================
    WORLD
@@ -40,9 +34,15 @@ export default function WorldScene() {
   const [
     nearbyGame,
     setNearbyGame,
-  ] = useState(
-    null
-  );
+  ] = useState(null);
+
+  const [
+    openedGame,
+    setOpenedGame,
+  ] = useState(null);
+
+  const overlayOpen =
+    Boolean(openedGame);
 
   /* =======================================================
      EVENTO DESDE EL MUNDO 3D
@@ -52,22 +52,17 @@ export default function WorldScene() {
     const handleGameNear =
       (event) => {
         if (
-          event.detail
-            ?.near &&
-          event.detail
-            ?.game
+          event.detail?.near &&
+          event.detail?.game
         ) {
           setNearbyGame(
-            event.detail
-              .game
+            event.detail.game
           );
 
           return;
         }
 
-        setNearbyGame(
-          null
-        );
+        setNearbyGame(null);
       };
 
     window.addEventListener(
@@ -84,13 +79,18 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR FICHA
+     ABRIR FICHA 2D
+
+     NO cambiamos de página.
+     NO abrimos pestaña nueva.
+     NO desmontamos el mundo 3D.
   ======================================================= */
 
   const openGame =
     useCallback(() => {
       if (
-        !nearbyGame?.id
+        !nearbyGame?.id ||
+        overlayOpen
       ) {
         return;
       }
@@ -98,47 +98,37 @@ export default function WorldScene() {
       playerInput.x = 0;
       playerInput.y = 0;
 
-      playerInput
-        .dashRequested =
+      playerInput.dashRequested =
         false;
 
-      /*
-        Al venir de un botón HTML real,
-        Safari permite abrir una nueva pestaña.
-
-        Así Freaky World queda abierto
-        exactamente donde estaba.
-      */
-
-      const url =
-        `${FREAKY_RANKING_URL}/game/${nearbyGame.id}`;
-
-      const opened =
-        window.open(
-          url,
-          "_blank"
-        );
-
-      /*
-        Fallback:
-        si Safari bloquea la pestaña,
-        navegamos en la misma.
-      */
-
-      if (
-        !opened
-      ) {
-        window.location.href =
-          url;
-      }
+      setOpenedGame(
+        nearbyGame
+      );
     }, [
       nearbyGame,
+      overlayOpen,
     ]);
 
   /* =======================================================
-     DESKTOP
+     CERRAR FICHA
+  ======================================================= */
+
+  const closeGame =
+    useCallback(() => {
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+
+      setOpenedGame(null);
+    }, []);
+
+  /* =======================================================
+     TECLADO
 
      E = abrir ficha
+     ESC = cerrar ficha
   ======================================================= */
 
   useEffect(() => {
@@ -146,9 +136,24 @@ export default function WorldScene() {
       (event) => {
         if (
           event.code ===
-            "KeyE" &&
-          nearbyGame
+            "Escape" &&
+          overlayOpen
         ) {
+          event.preventDefault();
+
+          closeGame();
+
+          return;
+        }
+
+        if (
+          event.code ===
+            "KeyE" &&
+          nearbyGame &&
+          !overlayOpen
+        ) {
+          event.preventDefault();
+
           openGame();
         }
       };
@@ -166,7 +171,9 @@ export default function WorldScene() {
     };
   }, [
     nearbyGame,
+    overlayOpen,
     openGame,
+    closeGame,
   ]);
 
   return (
@@ -175,12 +182,17 @@ export default function WorldScene() {
           INSTRUCCIONES
       =================================================== */}
 
-      <div className="instructions">
-        WASD para caminar · Shift para sprint · Arrastra para mover la cámara
-      </div>
+      {!overlayOpen && (
+        <div className="instructions">
+          WASD para caminar · Shift para sprint · Arrastra para mover la cámara
+        </div>
+      )}
 
       {/* ===================================================
-          MUNDO
+          MUNDO 3D
+
+          El Canvas permanece montado aunque abramos
+          una ficha 2D.
       =================================================== */}
 
       <Canvas
@@ -236,40 +248,57 @@ export default function WorldScene() {
 
       {/* ===================================================
           CONTROLES MÓVILES
+
+          Se ocultan mientras está abierta la ficha.
       =================================================== */}
 
-      <MobileControls />
+      {!overlayOpen && (
+        <MobileControls />
+      )}
 
       {/* ===================================================
-          BOTÓN HTML
-
-          ESTE es el mismo principio que
-          funcionaba con el ranking ficticio.
+          BOTÓN ABRIR FICHA
       =================================================== */}
 
-      {nearbyGame && (
-        <button
-          type="button"
-          className="world-interaction-button"
-          onClick={
-            openGame
-          }
-        >
-          <span className="world-interaction-icon">
-            ↗
-          </span>
-
-          <span>
-            Abrir{" "}
-            {
-              nearbyGame.title
+      {nearbyGame &&
+        !overlayOpen && (
+          <button
+            type="button"
+            className="world-interaction-button"
+            onClick={
+              openGame
             }
-          </span>
+          >
+            <span className="world-interaction-icon">
+              ↗
+            </span>
 
-          <small>
-            E
-          </small>
-        </button>
+            <span>
+              Abrir{" "}
+              {
+                nearbyGame.title
+              }
+            </span>
+
+            <small>
+              E
+            </small>
+          </button>
+        )}
+
+      {/* ===================================================
+          FICHA 2D SOBRE EL MUNDO
+      =================================================== */}
+
+      {openedGame && (
+        <RankingOverlay
+          game={
+            openedGame
+          }
+          onClose={
+            closeGame
+          }
+        />
       )}
     </>
   );
