@@ -3,101 +3,143 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 
+/* =========================================================
+   MONUMENTO CENTRAL — FREAKY WORLD
+
+   IDEA:
+   - Cruceta retro simple
+   - 4 brazos negros
+   - Suspendida claramente en el aire
+   - Giro lento y limpio
+   - Sin aros flotantes
+   - Plataforma circular sobria
+========================================================= */
+
 export default function CentralMonument({
   position = [0, 0, 0],
 }) {
   const dpadRef = useRef(null);
-  const ringARef = useRef(null);
-  const ringBRef = useRef(null);
-  const ringCRef = useRef(null);
+
+  /* =======================================================
+     ANIMACIÓN
+  ======================================================= */
 
   useFrame((state, delta) => {
-    if (dpadRef.current) {
-      dpadRef.current.rotation.y += delta * 0.34;
-    }
+    if (!dpadRef.current) return;
 
-    if (ringARef.current) {
-      ringARef.current.rotation.y += delta * 0.22;
-      ringARef.current.rotation.z += delta * 0.08;
-    }
-
-    if (ringBRef.current) {
-      ringBRef.current.rotation.y -= delta * 0.18;
-      ringBRef.current.rotation.x += delta * 0.06;
-    }
-
-    if (ringCRef.current) {
-      ringCRef.current.rotation.y += delta * 0.12;
-    }
+    // Giro lento y constante.
+    // Solo sobre el eje vertical.
+    dpadRef.current.rotation.y +=
+      delta * 0.22;
   });
 
-  const glow = "#a9ddff";
+  /* =======================================================
+     COLORES
+  ======================================================= */
+
+  const black = "#07090b";
+  const blackSoft = "#11161a";
+  const platformDark = "#20272d";
+  const platformMid = "#303942";
+  const glow = "#8fd8ff";
 
   return (
     <group position={position}>
       {/* ===================================================
-          PLATAFORMA EXTERIOR
+          PLATAFORMA — NIVEL INFERIOR
       =================================================== */}
 
       <mesh
-        position={[0, 0.12, 0]}
+        position={[
+          0,
+          0.1,
+          0,
+        ]}
         receiveShadow
       >
         <cylinderGeometry
-          args={[10.2, 10.2, 0.24, 64]}
+          args={[
+            9,
+            9,
+            0.2,
+            64,
+          ]}
         />
 
         <meshStandardMaterial
-          color="#15191d"
+          color={blackSoft}
+          roughness={0.9}
+          metalness={0.05}
+        />
+      </mesh>
+
+      {/* ===================================================
+          PLATAFORMA — SEGUNDO NIVEL
+      =================================================== */}
+
+      <mesh
+        position={[
+          0,
+          0.24,
+          0,
+        ]}
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            7.4,
+            7.4,
+            0.18,
+            64,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={platformDark}
           roughness={0.82}
           metalness={0.08}
         />
       </mesh>
 
       {/* ===================================================
-          SEGUNDO NIVEL
+          PLATAFORMA — CENTRO
       =================================================== */}
 
       <mesh
-        position={[0, 0.28, 0]}
+        position={[
+          0,
+          0.38,
+          0,
+        ]}
         receiveShadow
       >
         <cylinderGeometry
-          args={[8.6, 8.6, 0.18, 64]}
+          args={[
+            5.6,
+            5.6,
+            0.16,
+            64,
+          ]}
         />
 
         <meshStandardMaterial
-          color="#22282e"
+          color={platformMid}
           roughness={0.78}
           metalness={0.1}
         />
       </mesh>
 
       {/* ===================================================
-          CENTRO DE PLATAFORMA
+          ÚNICO ARO LUMINOSO
+          Integrado en la plataforma
       =================================================== */}
 
       <mesh
-        position={[0, 0.42, 0]}
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[6.9, 6.9, 0.16, 64]}
-        />
-
-        <meshStandardMaterial
-          color="#313a42"
-          roughness={0.72}
-          metalness={0.12}
-        />
-      </mesh>
-
-      {/* ===================================================
-          ARO LUMINOSO DE LA PLATAFORMA
-      =================================================== */}
-
-      <mesh
-        position={[0, 0.515, 0]}
+        position={[
+          0,
+          0.48,
+          0,
+        ]}
         rotation={[
           Math.PI / 2,
           0,
@@ -106,7 +148,7 @@ export default function CentralMonument({
       >
         <torusGeometry
           args={[
-            5.55,
+            4.7,
             0.055,
             10,
             96,
@@ -116,213 +158,168 @@ export default function CentralMonument({
         <meshStandardMaterial
           color={glow}
           emissive={glow}
-          emissiveIntensity={1.5}
+          emissiveIntensity={1.25}
           toneMapped={false}
         />
       </mesh>
 
       {/* ===================================================
-          CRUCETA SUSPENDIDA
+          CRUCETA
+
+          IMPORTANTE:
+          Ahora está a 6.2 unidades de altura.
+
+          Esto la separa claramente del suelo.
       =================================================== */}
 
       <group
         ref={dpadRef}
-        position={[0, 4.3, 0]}
-        rotation={[
-          0.12,
+        position={[
           0,
-          Math.PI / 4,
+          6.2,
+          0,
         ]}
       >
-        {/* ARRIBA */}
+        {/* =================================================
+            BRAZO SUPERIOR
+        ================================================= */}
 
         <mesh
-          position={[0, 2.35, 0]}
+          position={[
+            0,
+            2.15,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
             args={[
-              3.25,
-              3.25,
-              1.55,
+              3,
+              3.6,
+              1.4,
             ]}
           />
 
           <meshStandardMaterial
-            color="#050607"
-            roughness={0.46}
-            metalness={0.12}
+            color={black}
+            roughness={0.48}
+            metalness={0.18}
           />
         </mesh>
 
-        {/* ABAJO */}
+        {/* =================================================
+            BRAZO INFERIOR
+        ================================================= */}
 
         <mesh
-          position={[0, -2.35, 0]}
+          position={[
+            0,
+            -2.15,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
             args={[
-              3.25,
-              3.25,
-              1.55,
+              3,
+              3.6,
+              1.4,
             ]}
           />
 
           <meshStandardMaterial
-            color="#050607"
-            roughness={0.46}
-            metalness={0.12}
+            color={black}
+            roughness={0.48}
+            metalness={0.18}
           />
         </mesh>
 
-        {/* IZQUIERDA */}
+        {/* =================================================
+            BRAZO IZQUIERDO
+        ================================================= */}
 
         <mesh
-          position={[-2.35, 0, 0]}
+          position={[
+            -2.15,
+            0,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
             args={[
-              3.25,
-              3.25,
-              1.55,
+              3.6,
+              3,
+              1.4,
             ]}
           />
 
           <meshStandardMaterial
-            color="#050607"
-            roughness={0.46}
-            metalness={0.12}
+            color={black}
+            roughness={0.48}
+            metalness={0.18}
           />
         </mesh>
 
-        {/* DERECHA */}
+        {/* =================================================
+            BRAZO DERECHO
+        ================================================= */}
 
         <mesh
-          position={[2.35, 0, 0]}
+          position={[
+            2.15,
+            0,
+            0,
+          ]}
           castShadow
         >
           <boxGeometry
             args={[
-              3.25,
-              3.25,
-              1.55,
+              3.6,
+              3,
+              1.4,
             ]}
           />
 
           <meshStandardMaterial
-            color="#050607"
-            roughness={0.46}
-            metalness={0.12}
+            color={black}
+            roughness={0.48}
+            metalness={0.18}
           />
         </mesh>
       </group>
 
       {/* ===================================================
-          AROS ORBITALES
-          NO HAY PELOTA CENTRAL
-      =================================================== */}
+          RESPLANDOR INFERIOR
 
-      <group
-        position={[0, 4.3, 0]}
-      >
-        {/* ARO 1 */}
-
-        <mesh
-          ref={ringARef}
-          rotation={[
-            Math.PI / 2.8,
-            0.1,
-            0.25,
-          ]}
-        >
-          <torusGeometry
-            args={[
-              5.7,
-              0.045,
-              8,
-              96,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={glow}
-            emissive={glow}
-            emissiveIntensity={1.65}
-            transparent
-            opacity={0.72}
-            toneMapped={false}
-          />
-        </mesh>
-
-        {/* ARO 2 */}
-
-        <mesh
-          ref={ringBRef}
-          rotation={[
-            0.35,
-            0.25,
-            Math.PI / 2.45,
-          ]}
-        >
-          <torusGeometry
-            args={[
-              5.2,
-              0.04,
-              8,
-              96,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#d8f1ff"
-            emissive="#d8f1ff"
-            emissiveIntensity={1.4}
-            transparent
-            opacity={0.5}
-            toneMapped={false}
-          />
-        </mesh>
-
-        {/* ARO 3 */}
-
-        <mesh
-          ref={ringCRef}
-          rotation={[
-            Math.PI / 2,
-            0,
-            0,
-          ]}
-        >
-          <torusGeometry
-            args={[
-              6.15,
-              0.035,
-              8,
-              96,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#7fc7ff"
-            emissive="#7fc7ff"
-            emissiveIntensity={1.3}
-            transparent
-            opacity={0.38}
-            toneMapped={false}
-          />
-        </mesh>
-      </group>
-
-      {/* ===================================================
-          LUZ DEBAJO
+          Da sensación de suspensión,
+          sin poner efectos alrededor.
       =================================================== */}
 
       <pointLight
-        position={[0, 2.8, 0]}
-        intensity={7}
-        distance={15}
+        position={[
+          0,
+          2.2,
+          0,
+        ]}
+        intensity={5}
+        distance={12}
+        decay={2}
+        color={glow}
+      />
+
+      {/* ===================================================
+          PEQUEÑO PUNTO DE LUZ SOBRE LA BASE
+      =================================================== */}
+
+      <pointLight
+        position={[
+          0,
+          0.8,
+          0,
+        ]}
+        intensity={2}
+        distance={7}
         decay={2}
         color={glow}
       />
