@@ -3,10 +3,39 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
+import * as THREE from "three";
 
 /* =========================================================
    MONUMENTO CENTRAL — CRUCETA RETRO
 ========================================================= */
+
+function TriangleMark({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+}) {
+  const shape = new THREE.Shape();
+
+  shape.moveTo(0, 0.75);
+  shape.lineTo(-0.6, -0.5);
+  shape.lineTo(0.6, -0.5);
+  shape.closePath();
+
+  return (
+    <mesh
+      position={position}
+      rotation={rotation}
+    >
+      <shapeGeometry args={[shape]} />
+
+      <meshStandardMaterial
+        color="#010203"
+        roughness={0.95}
+        metalness={0}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+}
 
 export default function CentralMonument({
   position = [0, 0, 0],
@@ -16,14 +45,21 @@ export default function CentralMonument({
   useFrame((state, delta) => {
     if (!dpadRef.current) return;
 
-    dpadRef.current.rotation.y += delta * 0.2;
+    dpadRef.current.rotation.y +=
+      delta * 0.18;
   });
 
   const black = "#07090b";
   const blackSoft = "#11161a";
-  const platformDark = "#20272d";
-  const platformMid = "#303942";
-  const glow = "#8fd8ff";
+
+  const platformDark =
+    "#20272d";
+
+  const platformMid =
+    "#303942";
+
+  const glow =
+    "#8fd8ff";
 
   return (
     <group position={position}>
@@ -32,7 +68,11 @@ export default function CentralMonument({
       =================================================== */}
 
       <mesh
-        position={[0, 0.1, 0]}
+        position={[
+          0,
+          0.1,
+          0,
+        ]}
         receiveShadow
       >
         <cylinderGeometry
@@ -52,7 +92,11 @@ export default function CentralMonument({
       </mesh>
 
       <mesh
-        position={[0, 0.24, 0]}
+        position={[
+          0,
+          0.24,
+          0,
+        ]}
         receiveShadow
       >
         <cylinderGeometry
@@ -72,7 +116,11 @@ export default function CentralMonument({
       </mesh>
 
       <mesh
-        position={[0, 0.38, 0]}
+        position={[
+          0,
+          0.38,
+          0,
+        ]}
         receiveShadow
       >
         <cylinderGeometry
@@ -92,7 +140,7 @@ export default function CentralMonument({
       </mesh>
 
       {/* ===================================================
-          ARO DE LUZ INTEGRADO
+          ARO LUMINOSO INTEGRADO
       =================================================== */}
 
       <mesh
@@ -119,17 +167,13 @@ export default function CentralMonument({
         <meshStandardMaterial
           color={glow}
           emissive={glow}
-          emissiveIntensity={1.15}
+          emissiveIntensity={1}
           toneMapped={false}
         />
       </mesh>
 
       {/* ===================================================
-          CRUCETA SUSPENDIDA
-
-          - diagonal
-          - extremos redondeados
-          - centro hundido
+          CRUCETA
       =================================================== */}
 
       <group
@@ -161,8 +205,8 @@ export default function CentralMonument({
         >
           <meshStandardMaterial
             color={black}
-            roughness={0.48}
-            metalness={0.16}
+            roughness={0.5}
+            metalness={0.14}
           />
         </RoundedBox>
 
@@ -182,93 +226,142 @@ export default function CentralMonument({
         >
           <meshStandardMaterial
             color={black}
-            roughness={0.48}
-            metalness={0.16}
+            roughness={0.5}
+            metalness={0.14}
           />
         </RoundedBox>
 
         {/* =================================================
             CENTRO HUNDIDO
 
-            Semiesfera oscura ligeramente metida
-            dentro de la cruceta.
+            No sobresale.
+            Queda metido dentro de la cara frontal.
         ================================================= */}
 
         <mesh
           position={[
             0,
             0,
-            0.63,
-          ]}
-          rotation={[
-            Math.PI,
-            0,
-            0,
+            0.68,
           ]}
         >
-          <sphereGeometry
+          <cylinderGeometry
             args={[
-              1.15,
-              32,
-              20,
-              0,
-              Math.PI * 2,
-              0,
-              Math.PI / 2,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#020303"
-            roughness={0.7}
-            metalness={0.05}
-          />
-        </mesh>
-
-        {/* =================================================
-            ANILLO MUY SUTIL ALREDEDOR DEL HUNDIMIENTO
-        ================================================= */}
-
-        <mesh
-          position={[
-            0,
-            0,
-            0.74,
-          ]}
-          rotation={[
-            Math.PI / 2,
-            0,
-            0,
-          ]}
-        >
-          <torusGeometry
-            args={[
-              1.18,
-              0.06,
-              10,
+              1.2,
+              1.0,
+              0.22,
               48,
             ]}
           />
 
           <meshStandardMaterial
-            color="#15191d"
-            roughness={0.72}
-            metalness={0.12}
+            color="#020304"
+            roughness={0.9}
+            metalness={0}
           />
         </mesh>
+
+        {/* =================================================
+            FONDO DEL HUNDIMIENTO
+        ================================================= */}
+
+        <mesh
+          position={[
+            0,
+            0,
+            0.55,
+          ]}
+        >
+          <cylinderGeometry
+            args={[
+              0.95,
+              0.95,
+              0.08,
+              48,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#000102"
+            roughness={1}
+          />
+        </mesh>
+
+        {/* =================================================
+            FLECHA ARRIBA
+        ================================================= */}
+
+        <TriangleMark
+          position={[
+            0,
+            2.75,
+            0.735,
+          ]}
+        />
+
+        {/* =================================================
+            FLECHA ABAJO
+        ================================================= */}
+
+        <TriangleMark
+          position={[
+            0,
+            -2.75,
+            0.735,
+          ]}
+          rotation={[
+            0,
+            0,
+            Math.PI,
+          ]}
+        />
+
+        {/* =================================================
+            FLECHA IZQUIERDA
+        ================================================= */}
+
+        <TriangleMark
+          position={[
+            -2.75,
+            0,
+            0.735,
+          ]}
+          rotation={[
+            0,
+            0,
+            Math.PI / 2,
+          ]}
+        />
+
+        {/* =================================================
+            FLECHA DERECHA
+        ================================================= */}
+
+        <TriangleMark
+          position={[
+            2.75,
+            0,
+            0.735,
+          ]}
+          rotation={[
+            0,
+            0,
+            -Math.PI / 2,
+          ]}
+        />
       </group>
 
       {/* ===================================================
-          LUZ BAJO LA CRUCETA
+          LUZ SUAVE INFERIOR
       =================================================== */}
 
       <pointLight
         position={[
           0,
-          2.4,
+          2.3,
           0,
         ]}
-        intensity={4}
+        intensity={3.5}
         distance={12}
         decay={2}
         color={glow}
