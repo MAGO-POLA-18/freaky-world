@@ -667,7 +667,6 @@ function CloudBank({
 /* =========================================================
    CIELO DIRECCIONAL
 ========================================================= */
-
 function SkyDome({
   topColor,
   horizonColor,
@@ -679,43 +678,37 @@ function SkyDome({
   const uniforms = useMemo(
     () => ({
       topColor: {
-        value:
-          new THREE.Color(
-            topColor
-          ),
+        value: new THREE.Color(topColor),
       },
 
       horizonColor: {
-        value:
-          new THREE.Color(
-            horizonColor
-          ),
+        value: new THREE.Color(horizonColor),
       },
 
       sunDirection: {
-        value:
-          new THREE.Vector3(
-            ...sunDirection
-          ).normalize(),
+        value: new THREE.Vector3(
+          ...sunDirection
+        ).normalize(),
       },
 
       twilightStrength: {
-        value:
-          twilightStrength,
+        value: twilightStrength,
       },
 
       sunsetColor: {
-        value:
-          new THREE.Color(
-            "#ff713d"
-          ),
+        value: new THREE.Color("#ff713d"),
       },
 
       sunsetYellow: {
-        value:
-          new THREE.Color(
-            "#ffd38b"
-          ),
+        value: new THREE.Color("#ffd38b"),
+      },
+
+      nightHorizon: {
+        value: new THREE.Color("#071020"),
+      },
+
+      deepNight: {
+        value: new THREE.Color("#01040d"),
       },
     }),
     []
@@ -727,9 +720,7 @@ function SkyDome({
     }
 
     material.current.uniforms
-      .topColor.value.set(
-        topColor
-      );
+      .topColor.value.set(topColor);
 
     material.current.uniforms
       .horizonColor.value.set(
@@ -754,11 +745,7 @@ function SkyDome({
   return (
     <mesh scale={280}>
       <sphereGeometry
-        args={[
-          1,
-          48,
-          32,
-        ]}
+        args={[1, 48, 32]}
       />
 
       <shaderMaterial
@@ -772,10 +759,7 @@ function SkyDome({
           void main() {
             vec4 worldPosition =
               modelMatrix *
-              vec4(
-                position,
-                1.0
-              );
+              vec4(position, 1.0);
 
             vWorldPosition =
               worldPosition.xyz;
@@ -783,10 +767,7 @@ function SkyDome({
             gl_Position =
               projectionMatrix *
               modelViewMatrix *
-              vec4(
-                position,
-                1.0
-              );
+              vec4(position, 1.0);
           }
         `}
         fragmentShader={`
@@ -795,20 +776,29 @@ function SkyDome({
 
           uniform vec3 sunDirection;
 
-          uniform float
-            twilightStrength;
+          uniform float twilightStrength;
 
           uniform vec3 sunsetColor;
           uniform vec3 sunsetYellow;
 
-          varying vec3
-            vWorldPosition;
+          uniform vec3 nightHorizon;
+          uniform vec3 deepNight;
+
+          varying vec3 vWorldPosition;
 
           void main() {
+
+            /* ==========================================
+               DIRECCIÓN DE LA MIRADA
+            ========================================== */
+
             vec3 direction =
-              normalize(
-                vWorldPosition
-              );
+              normalize(vWorldPosition);
+
+            /*
+             * 0 = horizonte
+             * 1 = parte alta del cielo
+             */
 
             float heightMix =
               smoothstep(
@@ -817,12 +807,9 @@ function SkyDome({
                 direction.y
               );
 
-            vec3 baseColor =
-              mix(
-                horizonColor,
-                topColor,
-                heightMix
-              );
+            /* ==========================================
+               DIRECCIÓN HORIZONTAL DEL SOL
+            ========================================== */
 
             vec3 horizontalView =
               normalize(
@@ -842,89 +829,233 @@ function SkyDome({
                 )
               );
 
+            /*
+             *  1 = mirando directamente
+             *      hacia el Sol.
+             *
+             *  0 = mirando a 90 grados.
+             *
+             * -1 = mirando exactamente
+             *      en dirección contraria.
+             */
+
             float facingSun =
               dot(
                 horizontalView,
                 horizontalSun
               );
 
-            float sunSide =
-              smoothstep(
-                -0.25,
-                0.95,
-                facingSun
-              );
+            /* ==========================================
+               ZONA DEL HORIZONTE
+            ========================================== */
 
             float horizonBand =
               1.0 -
               smoothstep(
                 0.02,
-                0.58,
-                abs(
-                  direction.y
-                )
+                0.62,
+                abs(direction.y)
               );
 
-            float solarGlow =
+            /* ==========================================
+               ZONA CÁLIDA DEL SOL
+
+               Mucho más localizada que antes.
+            ========================================== */
+
+            float sunWarmArea =
+              smoothstep(
+                0.05,
+                0.92,
+                facingSun
+              );
+
+            sunWarmArea =
               pow(
+                sunWarmArea,
+                1.45
+              );
+
+            /*
+             * Núcleo amarillo/naranja
+             * muy próximo al Sol.
+             */
+
+            float solarCore =
+              smoothstep(
+                0.72,
+                0.995,
+                facingSun
+              );
+
+            solarCore =
+              pow(
+                solarCore,
+                1.8
+              );
+
+            /* ==========================================
+               LADO OPUESTO
+
+               Empieza a oscurecer aproximadamente
+               después de pasar los 90 grados
+               respecto al Sol.
+            ========================================== */
+
+            float oppositeSide =
+              smoothstep(
+                0.05,
+                0.88,
+                -facingSun
+              );
+
+            /* ==========================================
+               CIELO BASE
+
+               IMPORTANTE:
+               Ya NO utilizamos horizonColor
+               indiscriminadamente alrededor
+               de los 360 grados.
+            ========================================== */
+
+            vec3 neutralHorizon =
+              mix(
+                nightHorizon,
+                horizonColor,
+                0.28 +
+                0.72 *
                 max(
                   facingSun,
                   0.0
-                ),
-                5.0
-              ) *
-              horizonBand *
-              twilightStrength;
+                )
+              );
 
-            float warmArea =
-              sunSide *
-              horizonBand *
-              twilightStrength;
+            /*
+             * El cielo superior conserva
+             * topColor.
+             */
 
             vec3 finalColor =
-              baseColor;
+              mix(
+                neutralHorizon,
+                topColor,
+                heightMix
+              );
+
+            /* ==========================================
+               ATARDECER / AMANECER
+               HACIA EL SOL
+            ========================================== */
+
+            float warmStrength =
+              sunWarmArea *
+              horizonBand *
+              twilightStrength;
 
             finalColor =
               mix(
                 finalColor,
                 sunsetColor,
-                warmArea *
-                0.72
+                warmStrength *
+                0.78
               );
+
+            /* ==========================================
+               NÚCLEO DORADO
+            ========================================== */
+
+            float yellowStrength =
+              solarCore *
+              horizonBand *
+              twilightStrength;
 
             finalColor =
               mix(
                 finalColor,
                 sunsetYellow,
-                solarGlow *
+                yellowStrength *
                 0.88
               );
 
-            float oppositeSide =
-              (
-                1.0 -
-                sunSide
-              ) *
+            /* ==========================================
+               OSCURECIMIENTO DEL LADO OPUESTO
+            ========================================== */
+
+            float oppositeHorizon =
+              oppositeSide *
               horizonBand *
               twilightStrength;
 
-            vec3 darkOpposite =
+            /*
+             * Cerca del horizonte, detrás del Sol,
+             * entramos claramente en azul noche.
+             */
+
+            finalColor =
               mix(
                 finalColor,
-                vec3(
-                  0.015,
-                  0.025,
-                  0.055
-                ),
-                oppositeSide *
-                  0.58
+                nightHorizon,
+                oppositeHorizon *
+                0.90
+              );
+
+            /*
+             * Un poco más arriba también se
+             * oscurece, pero mucho menos.
+             *
+             * Esto evita una pared vertical
+             * entre día y noche.
+             */
+
+            float oppositeUpper =
+              oppositeSide *
+              (
+                1.0 -
+                heightMix
+              ) *
+              twilightStrength;
+
+            finalColor =
+              mix(
+                finalColor,
+                deepNight,
+                oppositeUpper *
+                0.38
+              );
+
+            /* ==========================================
+               TRANSICIÓN LATERAL
+
+               A 90 grados del Sol no queremos
+               ni naranja fuerte ni noche absoluta.
+            ========================================== */
+
+            float sideAmount =
+              1.0 -
+              abs(facingSun);
+
+            sideAmount =
+              smoothstep(
+                0.35,
+                1.0,
+                sideAmount
+              );
+
+            vec3 sideBlue =
+              mix(
+                nightHorizon,
+                topColor,
+                0.55
               );
 
             finalColor =
               mix(
                 finalColor,
-                darkOpposite,
-                oppositeSide
+                sideBlue,
+                sideAmount *
+                horizonBand *
+                twilightStrength *
+                0.28
               );
 
             gl_FragColor =
