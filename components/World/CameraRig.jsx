@@ -51,6 +51,12 @@ export default function CameraRig() {
 
   const dragging = useRef(false);
 
+  const initialized =
+    useRef(false);
+
+  const cameraInitialized =
+    useRef(false);
+
   const lastPointer = useRef({
     x: 0,
     y: 0,
@@ -73,6 +79,10 @@ export default function CameraRig() {
   );
 
   const rayDirection = useRef(
+    new THREE.Vector3()
+  );
+
+  const targetPosition = useRef(
     new THREE.Vector3()
   );
 
@@ -212,29 +222,47 @@ export default function CameraRig() {
       const body =
         playerRuntime.body;
 
-      if (!body) return;
+      if (!body) {
+        return;
+      }
 
       const playerPosition =
         body.translation();
 
       /* ===================================================
-         TARGET SUAVE
+         TARGET DEL JUGADOR
       =================================================== */
 
-      const targetPosition =
-        new THREE.Vector3(
-          playerPosition.x,
-          playerPosition.y + 0.7,
-          playerPosition.z
-        );
-
-      smoothTarget.current.lerp(
-        targetPosition,
-        1 -
-          Math.exp(
-            -12 * delta
-          )
+      targetPosition.current.set(
+        playerPosition.x,
+        playerPosition.y + 0.7,
+        playerPosition.z
       );
+
+      /* ===================================================
+         INICIALIZACIÓN
+
+         La primera vez NO interpolamos desde 0,0,0.
+
+         Colocamos inmediatamente el target
+         sobre la posición real del jugador.
+      =================================================== */
+
+      if (!initialized.current) {
+        initialized.current = true;
+
+        smoothTarget.current.copy(
+          targetPosition.current
+        );
+      } else {
+        smoothTarget.current.lerp(
+          targetPosition.current,
+          1 -
+            Math.exp(
+              -12 * delta
+            )
+        );
+      }
 
       /* ===================================================
          LOOK MÓVIL
@@ -305,12 +333,6 @@ export default function CameraRig() {
 
       /* ===================================================
          COLISIÓN DE CÁMARA
-
-         Lanzamos un raycast desde el punto que estamos
-         mirando hacia la posición ideal de cámara.
-
-         Si aparece una pared antes, la cámara se coloca
-         delante de ella.
       =================================================== */
 
       rayDirection.current
@@ -335,16 +357,20 @@ export default function CameraRig() {
             {
               x:
                 lookAtTarget.current.x,
+
               y:
                 lookAtTarget.current.y,
+
               z:
                 lookAtTarget.current.z,
             },
             {
               x:
                 rayDirection.current.x,
+
               y:
                 rayDirection.current.y,
+
               z:
                 rayDirection.current.z,
             }
@@ -365,6 +391,7 @@ export default function CameraRig() {
           const safeDistance =
             Math.max(
               MIN_CAMERA_DISTANCE,
+
               hit.timeOfImpact -
                 CAMERA_WALL_MARGIN
             );
@@ -390,15 +417,31 @@ export default function CameraRig() {
 
       /* ===================================================
          MOVIMIENTO FINAL
+
+         En el primer frame colocamos la cámara
+         directamente en su posición correcta.
+
+         A partir de ahí vuelve el suavizado normal.
       =================================================== */
 
-      camera.position.lerp(
-        safePosition.current,
-        1 -
-          Math.exp(
-            -12 * delta
-          )
-      );
+      if (
+        !cameraInitialized.current
+      ) {
+        cameraInitialized.current =
+          true;
+
+        camera.position.copy(
+          safePosition.current
+        );
+      } else {
+        camera.position.lerp(
+          safePosition.current,
+          1 -
+            Math.exp(
+              -12 * delta
+            )
+        );
+      }
 
       camera.up.set(
         0,
