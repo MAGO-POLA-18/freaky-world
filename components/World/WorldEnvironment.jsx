@@ -14,6 +14,7 @@ import * as THREE from "three";
 
 import Museum from "../Museum/Museum";
 import CentralMonument from "./CentralMonument";
+import CentralGarden from "./CentralGarden";
 
 /* =========================================================
    CAJAS INSTANCIADAS
@@ -388,7 +389,7 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          AGUA — 4 OBJETOS / 1 DRAW CALL
+          AGUA
       =================================================== */}
 
       <InstancedBoxes
@@ -511,7 +512,7 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          FRANJAS VERDES — 8 OBJETOS / 1 DRAW CALL
+          FRANJAS VERDES
       =================================================== */}
 
       <InstancedBoxes
@@ -522,7 +523,7 @@ export default function WorldEnvironment() {
       />
 
       {/* ===================================================
-          CAMINOS — 4 OBJETOS / 1 DRAW CALL
+          CAMINOS
       =================================================== */}
 
       <InstancedBoxes
@@ -580,6 +581,14 @@ export default function WorldEnvironment() {
       </group>
 
       {/* ===================================================
+          JARDÍN Y VEGETACIÓN
+
+          Todo el sistema vegetal queda aislado aquí.
+      =================================================== */}
+
+      <CentralGarden />
+
+      {/* ===================================================
           PLATAFORMA DEL MONUMENTO
       =================================================== */}
 
@@ -631,7 +640,7 @@ export default function WorldEnvironment() {
       </mesh>
 
       {/* ===================================================
-          MONUMENTO — UNA SOLA VEZ
+          MONUMENTO
       =================================================== */}
 
       <CentralMonument />
