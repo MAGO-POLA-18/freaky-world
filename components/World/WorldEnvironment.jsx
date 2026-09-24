@@ -1,13 +1,359 @@
 "use client";
 
 import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
+
+import {
   RigidBody,
 } from "@react-three/rapier";
+
+import * as THREE from "three";
 
 import Museum from "../Museum/Museum";
 import CentralMonument from "./CentralMonument";
 
+/* =========================================================
+   CAJAS INSTANCIADAS
+
+   Todos los objetos del mismo tipo
+   se renderizan en una sola draw call.
+========================================================= */
+
+function InstancedBoxes({
+  items,
+  color,
+  roughness = 1,
+  metalness = 0,
+}) {
+  const meshRef =
+    useRef(null);
+
+  const dummy =
+    useMemo(
+      () =>
+        new THREE.Object3D(),
+      []
+    );
+
+  useLayoutEffect(() => {
+    if (
+      !meshRef.current
+    ) {
+      return;
+    }
+
+    items.forEach(
+      (
+        item,
+        index
+      ) => {
+        dummy.position.set(
+          ...item.position
+        );
+
+        dummy.scale.set(
+          ...item.scale
+        );
+
+        dummy.updateMatrix();
+
+        meshRef.current
+          .setMatrixAt(
+            index,
+            dummy.matrix
+          );
+      }
+    );
+
+    meshRef.current
+      .instanceMatrix
+      .needsUpdate =
+      true;
+
+    meshRef.current
+      .computeBoundingSphere?.();
+  }, [
+    items,
+    dummy,
+  ]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[
+        null,
+        null,
+        items.length,
+      ]}
+      receiveShadow
+    >
+      <boxGeometry
+        args={[
+          1,
+          1,
+          1,
+        ]}
+      />
+
+      <meshStandardMaterial
+        color={color}
+        roughness={
+          roughness
+        }
+        metalness={
+          metalness
+        }
+      />
+    </instancedMesh>
+  );
+}
+
+/* =========================================================
+   WORLD ENVIRONMENT
+========================================================= */
+
 export default function WorldEnvironment() {
+  /* =======================================================
+     AGUA
+  ======================================================= */
+
+  const waterItems =
+    useMemo(
+      () => [
+        {
+          position: [
+            -88,
+            -0.01,
+            -88,
+          ],
+          scale: [
+            72,
+            0.08,
+            72,
+          ],
+        },
+
+        {
+          position: [
+            88,
+            -0.01,
+            -88,
+          ],
+          scale: [
+            72,
+            0.08,
+            72,
+          ],
+        },
+
+        {
+          position: [
+            -88,
+            -0.01,
+            88,
+          ],
+          scale: [
+            72,
+            0.08,
+            72,
+          ],
+        },
+
+        {
+          position: [
+            88,
+            -0.01,
+            88,
+          ],
+          scale: [
+            72,
+            0.08,
+            72,
+          ],
+        },
+      ],
+      []
+    );
+
+  /* =======================================================
+     FRANJAS VERDES
+  ======================================================= */
+
+  const gardenItems =
+    useMemo(
+      () => [
+        {
+          position: [
+            -32,
+            0.3,
+            -76,
+          ],
+          scale: [
+            12,
+            0.12,
+            96,
+          ],
+        },
+
+        {
+          position: [
+            32,
+            0.3,
+            -76,
+          ],
+          scale: [
+            12,
+            0.12,
+            96,
+          ],
+        },
+
+        {
+          position: [
+            -32,
+            0.3,
+            76,
+          ],
+          scale: [
+            12,
+            0.12,
+            96,
+          ],
+        },
+
+        {
+          position: [
+            32,
+            0.3,
+            76,
+          ],
+          scale: [
+            12,
+            0.12,
+            96,
+          ],
+        },
+
+        {
+          position: [
+            76,
+            0.3,
+            -32,
+          ],
+          scale: [
+            96,
+            0.12,
+            12,
+          ],
+        },
+
+        {
+          position: [
+            76,
+            0.3,
+            32,
+          ],
+          scale: [
+            96,
+            0.12,
+            12,
+          ],
+        },
+
+        {
+          position: [
+            -76,
+            0.3,
+            -32,
+          ],
+          scale: [
+            96,
+            0.12,
+            12,
+          ],
+        },
+
+        {
+          position: [
+            -76,
+            0.3,
+            32,
+          ],
+          scale: [
+            96,
+            0.12,
+            12,
+          ],
+        },
+      ],
+      []
+    );
+
+  /* =======================================================
+     CAMINOS
+  ======================================================= */
+
+  const pathItems =
+    useMemo(
+      () => [
+        {
+          position: [
+            0,
+            0.36,
+            -52,
+          ],
+          scale: [
+            12,
+            0.09,
+            78,
+          ],
+        },
+
+        {
+          position: [
+            0,
+            0.36,
+            52,
+          ],
+          scale: [
+            12,
+            0.09,
+            78,
+          ],
+        },
+
+        {
+          position: [
+            52,
+            0.36,
+            0,
+          ],
+          scale: [
+            78,
+            0.09,
+            12,
+          ],
+        },
+
+        {
+          position: [
+            -52,
+            0.36,
+            0,
+          ],
+          scale: [
+            78,
+            0.09,
+            12,
+          ],
+        },
+      ],
+      []
+    );
+
   return (
     <group>
       {/* ===================================================
@@ -42,47 +388,17 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          AGUA EXTERIOR
+          AGUA — 4 OBJETOS / 1 DRAW CALL
       =================================================== */}
 
-      {[
-        [-88, -88],
-        [88, -88],
-        [-88, 88],
-        [88, 88],
-      ].map(
-        (
-          [
-            x,
-            z,
-          ],
-          index
-        ) => (
-          <mesh
-            key={`water-${index}`}
-            position={[
-              x,
-              -0.01,
-              z,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                72,
-                0.08,
-                72,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#315d65"
-              roughness={0.28}
-              metalness={0.05}
-            />
-          </mesh>
-        )
-      )}
+      <InstancedBoxes
+        items={
+          waterItems
+        }
+        color="#315d65"
+        roughness={0.28}
+        metalness={0.05}
+      />
 
       {/* ===================================================
           BASE OSCURA DE LA GRAN CRUZ
@@ -195,161 +511,27 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          FRANJAS VERDES
+          FRANJAS VERDES — 8 OBJETOS / 1 DRAW CALL
       =================================================== */}
 
-      {[
-        [-32, 0.3, -76, 12, 0.12, 96],
-        [32, 0.3, -76, 12, 0.12, 96],
-
-        [-32, 0.3, 76, 12, 0.12, 96],
-        [32, 0.3, 76, 12, 0.12, 96],
-
-        [76, 0.3, -32, 96, 0.12, 12],
-        [76, 0.3, 32, 96, 0.12, 12],
-
-        [-76, 0.3, -32, 96, 0.12, 12],
-        [-76, 0.3, 32, 96, 0.12, 12],
-      ].map(
-        (
-          [
-            x,
-            y,
-            z,
-            width,
-            height,
-            depth,
-          ],
-          index
-        ) => (
-          <mesh
-            key={`garden-strip-${index}`}
-            position={[
-              x,
-              y,
-              z,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                width,
-                height,
-                depth,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#43583e"
-              roughness={1}
-            />
-          </mesh>
-        )
-      )}
+      <InstancedBoxes
+        items={
+          gardenItems
+        }
+        color="#43583e"
+      />
 
       {/* ===================================================
-          CAMINO NORTE
+          CAMINOS — 4 OBJETOS / 1 DRAW CALL
       =================================================== */}
 
-      <mesh
-        position={[
-          0,
-          0.36,
-          -52,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            12,
-            0.09,
-            78,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#b9b09d"
-          roughness={0.95}
-        />
-      </mesh>
-
-      {/* ===================================================
-          CAMINO SUR
-      =================================================== */}
-
-      <mesh
-        position={[
-          0,
-          0.36,
-          52,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            12,
-            0.09,
-            78,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#b9b09d"
-          roughness={0.95}
-        />
-      </mesh>
-
-      {/* ===================================================
-          CAMINO ESTE
-      =================================================== */}
-
-      <mesh
-        position={[
-          52,
-          0.36,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            78,
-            0.09,
-            12,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#b9b09d"
-          roughness={0.95}
-        />
-      </mesh>
-
-      {/* ===================================================
-          CAMINO OESTE
-      =================================================== */}
-
-      <mesh
-        position={[
-          -52,
-          0.36,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            78,
-            0.09,
-            12,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#b9b09d"
-          roughness={0.95}
-        />
-      </mesh>
+      <InstancedBoxes
+        items={
+          pathItems
+        }
+        color="#b9b09d"
+        roughness={0.95}
+      />
 
       {/* ===================================================
           PLAZA CENTRAL
@@ -362,7 +544,9 @@ export default function WorldEnvironment() {
           0,
         ]}
       >
-        <mesh receiveShadow>
+        <mesh
+          receiveShadow
+        >
           <boxGeometry
             args={[
               18,
@@ -377,7 +561,9 @@ export default function WorldEnvironment() {
           />
         </mesh>
 
-        <mesh receiveShadow>
+        <mesh
+          receiveShadow
+        >
           <boxGeometry
             args={[
               46,
@@ -410,7 +596,7 @@ export default function WorldEnvironment() {
             7.3,
             7.8,
             0.16,
-            48,
+            32,
           ]}
         />
 
@@ -419,10 +605,6 @@ export default function WorldEnvironment() {
           roughness={0.82}
         />
       </mesh>
-
-      {/* ===================================================
-          ANILLO INTERIOR
-      =================================================== */}
 
       <mesh
         position={[
@@ -437,7 +619,7 @@ export default function WorldEnvironment() {
             4.8,
             5.2,
             0.16,
-            48,
+            32,
           ]}
         />
 
@@ -449,78 +631,10 @@ export default function WorldEnvironment() {
       </mesh>
 
       {/* ===================================================
-          MONUMENTO
+          MONUMENTO — UNA SOLA VEZ
       =================================================== */}
 
       <CentralMonument />
-
-      {/* ===================================================
-          ILUMINACIÓN GENERAL DEL PATIO
-      =================================================== */}
-
-      <pointLight
-        position={[
-          0,
-          18,
-          0,
-        ]}
-        intensity={230}
-        distance={135}
-        decay={2}
-        color="#fff1d8"
-      />
-
-      {/* ===================================================
-          ILUMINACIÓN DE ACCESOS
-      =================================================== */}
-
-      <pointLight
-        position={[
-          0,
-          8,
-          -55,
-        ]}
-        intensity={160}
-        distance={52}
-        decay={2}
-        color="#f3f7ff"
-      />
-
-      <pointLight
-        position={[
-          0,
-          8,
-          55,
-        ]}
-        intensity={160}
-        distance={52}
-        decay={2}
-        color="#f3f7ff"
-      />
-
-      <pointLight
-        position={[
-          55,
-          8,
-          0,
-        ]}
-        intensity={160}
-        distance={52}
-        decay={2}
-        color="#f3f7ff"
-      />
-
-      <pointLight
-        position={[
-          -55,
-          8,
-          0,
-        ]}
-        intensity={160}
-        distance={52}
-        decay={2}
-        color="#f3f7ff"
-      />
 
       {/* ===================================================
           EDIFICIOS
