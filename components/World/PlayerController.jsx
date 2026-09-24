@@ -29,11 +29,6 @@ export const playerInput = {
 
   dashRequested: false,
 
-  /*
-    Si una interfaz 2D está abierta,
-    bloqueamos el movimiento.
-  */
-
   uiLocked: false,
 };
 
@@ -59,13 +54,17 @@ export const playerRuntime = {
    VELOCIDADES
 ========================================================= */
 
-const SLOW_SPEED = 2.2;
-const WALK_SPEED = 5.2;
+const SLOW_SPEED =
+  2.2;
+
+const WALK_SPEED =
+  5.2;
 
 const SPRINT_SPEED =
   12.5;
 
-const DASH_SPEED = 20;
+const DASH_SPEED =
+  20;
 
 const DASH_DURATION =
   0.22;
@@ -73,7 +72,11 @@ const DASH_DURATION =
 const DASH_COOLDOWN =
   0.32;
 
-const FALL_LIMIT = -8;
+const DOUBLE_W_TIME =
+  280;
+
+const FALL_LIMIT =
+  -8;
 
 const COLLIDER_HALF_HEIGHT =
   0.7;
@@ -100,8 +103,10 @@ function getAnalogSpeed(
     0.45
   ) {
     const t =
-      (strength -
-        0.1) /
+      (
+        strength -
+        0.1
+      ) /
       0.35;
 
     return THREE.MathUtils
@@ -117,8 +122,10 @@ function getAnalogSpeed(
     0.82
   ) {
     const t =
-      (strength -
-        0.45) /
+      (
+        strength -
+        0.45
+      ) /
       0.37;
 
     return THREE.MathUtils
@@ -130,14 +137,20 @@ function getAnalogSpeed(
   }
 
   const t =
-    (strength -
-      0.82) /
+    (
+      strength -
+      0.82
+    ) /
     0.18;
 
   const smoothT =
     t *
     t *
-    (3 - 2 * t);
+    (
+      3 -
+      2 *
+        t
+    );
 
   return THREE.MathUtils
     .lerp(
@@ -165,6 +178,9 @@ export default function PlayerController() {
     useRef(0);
 
   const dashCooldown =
+    useRef(0);
+
+  const lastWPress =
     useRef(0);
 
   const dashDirection =
@@ -201,63 +217,64 @@ export default function PlayerController() {
      RESPAWN
   ======================================================= */
 
-  const respawn = () => {
-    if (
-      !body.current
-    ) {
-      return;
-    }
+  const respawn =
+    () => {
+      if (
+        !body.current
+      ) {
+        return;
+      }
 
-    const rigidBody =
-      body.current;
+      const rigidBody =
+        body.current;
 
-    rigidBody.setTranslation(
-      {
-        x:
-          playerRuntime
-            .spawn.x,
+      rigidBody.setTranslation(
+        {
+          x:
+            playerRuntime
+              .spawn.x,
 
-        y:
-          playerRuntime
-            .spawn.y,
+          y:
+            playerRuntime
+              .spawn.y,
 
-        z:
-          playerRuntime
-            .spawn.z,
-      },
-      true
-    );
+          z:
+            playerRuntime
+              .spawn.z,
+        },
+        true
+      );
 
-    rigidBody.setLinvel(
-      {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-      true
-    );
+      rigidBody.setLinvel(
+        {
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+        true
+      );
 
-    rigidBody.setAngvel(
-      {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-      true
-    );
+      rigidBody.setAngvel(
+        {
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+        true
+      );
 
-    dashRemaining.current =
-      0;
+      dashRemaining.current =
+        0;
 
-    dashCooldown.current =
-      0;
+      dashCooldown.current =
+        0;
 
-    playerInput
-      .dashRequested =
-      false;
+      playerInput
+        .dashRequested =
+        false;
 
-    rigidBody.wakeUp();
-  };
+      rigidBody.wakeUp();
+    };
 
   /* =======================================================
      TECLADO
@@ -270,34 +287,72 @@ export default function PlayerController() {
           event.code
         ) {
           case "KeyW":
+            if (
+              !event.repeat
+            ) {
+              const now =
+                performance.now();
+
+              const elapsed =
+                now -
+                lastWPress.current;
+
+              if (
+                elapsed >
+                  0 &&
+                elapsed <
+                  DOUBLE_W_TIME
+              ) {
+                playerInput
+                  .dashRequested =
+                  true;
+
+                lastWPress.current =
+                  0;
+              } else {
+                lastWPress.current =
+                  now;
+              }
+            }
+
+            keys.current.w =
+              true;
+
+            break;
+
           case "ArrowUp":
             keys.current.w =
               true;
+
             break;
 
           case "KeyS":
           case "ArrowDown":
             keys.current.s =
               true;
+
             break;
 
           case "KeyA":
           case "ArrowLeft":
             keys.current.a =
               true;
+
             break;
 
           case "KeyD":
           case "ArrowRight":
             keys.current.d =
               true;
+
             break;
 
-          case "ShiftLeft":
-          case "ShiftRight":
+          case "ControlLeft":
+          case "ControlRight":
             keys.current
               .sprint =
               true;
+
             break;
 
           default:
@@ -314,31 +369,36 @@ export default function PlayerController() {
           case "ArrowUp":
             keys.current.w =
               false;
+
             break;
 
           case "KeyS":
           case "ArrowDown":
             keys.current.s =
               false;
+
             break;
 
           case "KeyA":
           case "ArrowLeft":
             keys.current.a =
               false;
+
             break;
 
           case "KeyD":
           case "ArrowRight":
             keys.current.d =
               false;
+
             break;
 
-          case "ShiftLeft":
-          case "ShiftRight":
+          case "ControlLeft":
+          case "ControlRight":
             keys.current
               .sprint =
               false;
+
             break;
 
           default:
@@ -416,9 +476,7 @@ export default function PlayerController() {
       playerRuntime.body =
         rigidBody;
 
-      /* ===================================================
-         SPAWN
-      =================================================== */
+      /* SPAWN */
 
       if (
         !hasSpawned.current
@@ -434,9 +492,7 @@ export default function PlayerController() {
       const position =
         rigidBody.translation();
 
-      /* ===================================================
-         FALLBACK
-      =================================================== */
+      /* FALLBACK */
 
       if (
         position.y <
@@ -456,12 +512,7 @@ export default function PlayerController() {
         return;
       }
 
-      /* ===================================================
-         UI BLOQUEADA
-
-         El usuario está usando
-         la interfaz 2D.
-      =================================================== */
+      /* UI BLOQUEADA */
 
       if (
         playerInput.uiLocked
@@ -472,8 +523,10 @@ export default function PlayerController() {
         rigidBody.setLinvel(
           {
             x: 0,
+
             y:
               velocity.y,
+
             z: 0,
           },
           true
@@ -489,13 +542,12 @@ export default function PlayerController() {
         return;
       }
 
-      /* ===================================================
-         DASH TIMERS
-      =================================================== */
+      /* DASH TIMERS */
 
       dashRemaining.current =
         Math.max(
           0,
+
           dashRemaining.current -
             delta
         );
@@ -503,27 +555,34 @@ export default function PlayerController() {
       dashCooldown.current =
         Math.max(
           0,
+
           dashCooldown.current -
             delta
         );
 
-      /* ===================================================
-         DIRECCIÓN CÁMARA
-      =================================================== */
+      /* DIRECCIÓN */
 
       const yaw =
         playerRuntime.yaw;
 
       forward.current.set(
-        -Math.sin(yaw),
+        -Math.sin(
+          yaw
+        ),
         0,
-        -Math.cos(yaw)
+        -Math.cos(
+          yaw
+        )
       );
 
       right.current.set(
-        Math.cos(yaw),
+        Math.cos(
+          yaw
+        ),
         0,
-        -Math.sin(yaw)
+        -Math.sin(
+          yaw
+        )
       );
 
       movement.current.set(
@@ -535,9 +594,7 @@ export default function PlayerController() {
       let keyboardActive =
         false;
 
-      /* ===================================================
-         DESKTOP
-      =================================================== */
+      /* DESKTOP */
 
       if (
         keys.current.w
@@ -583,9 +640,7 @@ export default function PlayerController() {
           true;
       }
 
-      /* ===================================================
-         MÓVIL
-      =================================================== */
+      /* MÓVIL */
 
       const analogStrength =
         Math.min(
@@ -628,9 +683,7 @@ export default function PlayerController() {
           .normalize();
       }
 
-      /* ===================================================
-         DASH REQUEST
-      =================================================== */
+      /* DASH */
 
       if (
         playerInput
@@ -639,9 +692,11 @@ export default function PlayerController() {
         if (
           hasMovement &&
           dashRemaining
-            .current <= 0 &&
+            .current <=
+            0 &&
           dashCooldown
-            .current <= 0
+            .current <=
+            0
         ) {
           dashDirection.current
             .copy(
@@ -660,19 +715,19 @@ export default function PlayerController() {
           false;
       }
 
-      /* ===================================================
-         VELOCIDAD
-      =================================================== */
-
       const currentVelocity =
         rigidBody.linvel();
 
-      let targetX = 0;
-      let targetZ = 0;
+      let targetX =
+        0;
+
+      let targetZ =
+        0;
 
       if (
         dashRemaining
-          .current > 0
+          .current >
+        0
       ) {
         targetX =
           dashDirection
@@ -707,9 +762,7 @@ export default function PlayerController() {
           speed;
       }
 
-      /* ===================================================
-         ROTACIÓN VISUAL
-      =================================================== */
+      /* ROTACIÓN */
 
       if (
         visual.current
@@ -719,7 +772,8 @@ export default function PlayerController() {
 
         if (
           dashRemaining
-            .current > 0
+            .current >
+          0
         ) {
           direction =
             dashDirection
@@ -750,6 +804,7 @@ export default function PlayerController() {
               Math.sin(
                 difference
               ),
+
               Math.cos(
                 difference
               )
@@ -769,13 +824,12 @@ export default function PlayerController() {
         }
       }
 
-      /* ===================================================
-         SUAVIZADO
-      =================================================== */
+      /* SUAVIZADO */
 
       const smoothing =
         dashRemaining
-          .current > 0
+          .current >
+        0
           ? 1 -
             Math.exp(
               -28 *
@@ -820,7 +874,7 @@ export default function PlayerController() {
   );
 
   /* =======================================================
-     PERSONAJE TEMPORAL
+     AVATAR TEMPORAL
   ======================================================= */
 
   return (
