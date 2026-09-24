@@ -44,7 +44,9 @@ function declination(l, b) {
 
   return Math.asin(
     Math.sin(b) * Math.cos(e) +
-      Math.cos(b) * Math.sin(e) * Math.sin(l)
+      Math.cos(b) *
+        Math.sin(e) *
+        Math.sin(l)
   );
 }
 
@@ -59,12 +61,17 @@ function azimuth(H, phi, dec) {
 function altitude(H, phi, dec) {
   return Math.asin(
     Math.sin(phi) * Math.sin(dec) +
-      Math.cos(phi) * Math.cos(dec) * Math.cos(H)
+      Math.cos(phi) *
+        Math.cos(dec) *
+        Math.cos(H)
   );
 }
 
 function siderealTime(d, lw) {
-  return RAD * (280.16 + 360.9856235 * d) - lw;
+  return (
+    RAD * (280.16 + 360.9856235 * d) -
+    lw
+  );
 }
 
 /* =========================================================
@@ -89,7 +96,11 @@ function eclipticLongitude(M) {
   return M + C + P + Math.PI;
 }
 
-function getSunPosition(date, latitude, longitude) {
+function getSunPosition(
+  date,
+  latitude,
+  longitude
+) {
   const lw = RAD * -longitude;
   const phi = RAD * latitude;
   const d = toDays(date);
@@ -100,7 +111,8 @@ function getSunPosition(date, latitude, longitude) {
   const dec = declination(L, 0);
   const ra = rightAscension(L, 0);
 
-  const H = siderealTime(d, lw) - ra;
+  const H =
+    siderealTime(d, lw) - ra;
 
   return {
     azimuth: azimuth(H, phi, dec),
@@ -113,12 +125,20 @@ function getSunPosition(date, latitude, longitude) {
 ========================================================= */
 
 function moonCoords(d) {
-  const L = RAD * (218.316 + 13.176396 * d);
-  const M = RAD * (134.963 + 13.064993 * d);
-  const F = RAD * (93.272 + 13.22935 * d);
+  const L =
+    RAD * (218.316 + 13.176396 * d);
 
-  const l = L + RAD * 6.289 * Math.sin(M);
-  const b = RAD * 5.128 * Math.sin(F);
+  const M =
+    RAD * (134.963 + 13.064993 * d);
+
+  const F =
+    RAD * (93.272 + 13.22935 * d);
+
+  const l =
+    L + RAD * 6.289 * Math.sin(M);
+
+  const b =
+    RAD * 5.128 * Math.sin(F);
 
   return {
     ra: rightAscension(l, b),
@@ -126,32 +146,56 @@ function moonCoords(d) {
   };
 }
 
-function getMoonPosition(date, latitude, longitude) {
+function getMoonPosition(
+  date,
+  latitude,
+  longitude
+) {
   const lw = RAD * -longitude;
   const phi = RAD * latitude;
   const d = toDays(date);
 
   const coords = moonCoords(d);
-  const H = siderealTime(d, lw) - coords.ra;
+
+  const H =
+    siderealTime(d, lw) - coords.ra;
 
   return {
-    azimuth: azimuth(H, phi, coords.dec),
-    altitude: altitude(H, phi, coords.dec),
+    azimuth: azimuth(
+      H,
+      phi,
+      coords.dec
+    ),
+
+    altitude: altitude(
+      H,
+      phi,
+      coords.dec
+    ),
   };
 }
 
 /* =========================================================
-   VECTOR CELESTE → POSICIÓN 3D
+   VECTOR CELESTE
 ========================================================= */
 
-function celestialToVector(position, radius = SKY_RADIUS) {
+function celestialToVector(
+  position,
+  radius = SKY_RADIUS
+) {
   const horizontal =
-    Math.cos(position.altitude) * radius;
+    Math.cos(position.altitude) *
+    radius;
 
   return [
-    Math.sin(position.azimuth) * horizontal,
-    Math.sin(position.altitude) * radius,
-    -Math.cos(position.azimuth) * horizontal,
+    Math.sin(position.azimuth) *
+      horizontal,
+
+    Math.sin(position.altitude) *
+      radius,
+
+    -Math.cos(position.azimuth) *
+      horizontal,
   ];
 }
 
@@ -165,23 +209,44 @@ function StarField({
 }) {
   const group = useRef();
   const material = useRef();
+
   const { camera } = useThree();
 
   const geometry = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const phases = new Float32Array(count);
-    const sizes = new Float32Array(count);
-    const brightness = new Float32Array(count);
+    const positions =
+      new Float32Array(count * 3);
+
+    const phases =
+      new Float32Array(count);
+
+    const sizes =
+      new Float32Array(count);
+
+    const brightness =
+      new Float32Array(count);
 
     let seed = 918273;
 
     const random = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
+      seed =
+        (seed * 16807) %
+        2147483647;
+
+      return (
+        (seed - 1) /
+        2147483646
+      );
     };
 
-    for (let i = 0; i < count; i += 1) {
-      const angle = random() * Math.PI * 2;
+    for (
+      let i = 0;
+      i < count;
+      i += 1
+    ) {
+      const angle =
+        random() *
+        Math.PI *
+        2;
 
       const y =
         THREE.MathUtils.lerp(
@@ -313,7 +378,8 @@ function StarField({
     }
 
     if (material.current) {
-      material.current.uniforms.uTime.value =
+      material.current.uniforms
+        .uTime.value =
         state.clock.elapsedTime;
     }
   });
@@ -335,8 +401,10 @@ function StarField({
           uniforms={uniforms}
           transparent
           depthWrite={false}
-          depthTest={false}
-          blending={THREE.AdditiveBlending}
+          depthTest
+          blending={
+            THREE.AdditiveBlending
+          }
           toneMapped={false}
           vertexShader={`
             attribute float aPhase;
@@ -378,8 +446,11 @@ function StarField({
                   twinkleMask
                 );
 
-              vBrightness = aBrightness;
-              vTwinkle = twinkle;
+              vBrightness =
+                aBrightness;
+
+              vTwinkle =
+                twinkle;
 
               gl_PointSize =
                 aSize *
@@ -502,7 +573,12 @@ function CloudBank({
     >
       {pieces.map(
         (
-          [x, y, z, radius],
+          [
+            x,
+            y,
+            z,
+            radius,
+          ],
           index
         ) => (
           <mesh
@@ -538,8 +614,10 @@ function CloudBank({
 /* =========================================================
    CIELO
 
-   CORRECCIÓN:
-   la cúpula sigue la posición de la cámara.
+   IMPORTANTE:
+   - De día: gradiente normal en 360 grados.
+   - Amanecer/atardecer: naranja sólo hacia el Sol.
+   - Lado contrario: mantiene el color base.
 ========================================================= */
 
 function SkyDome({
@@ -548,11 +626,7 @@ function SkyDome({
   sunDirection,
   twilightStrength,
 }) {
-  const mesh = useRef();
   const material = useRef();
-
-  const { camera } =
-    useThree();
 
   const uniforms = useMemo(
     () => ({
@@ -595,13 +669,6 @@ function SkyDome({
             "#ffd38b"
           ),
       },
-
-      nightHorizon: {
-        value:
-          new THREE.Color(
-            "#071020"
-          ),
-      },
     }),
     []
   );
@@ -634,27 +701,8 @@ function SkyDome({
     twilightStrength,
   ]);
 
-  useFrame(() => {
-    /*
-     * CLAVE:
-     * el centro de la esfera siempre es
-     * exactamente la cámara.
-     */
-
-    if (mesh.current) {
-      mesh.current.position.copy(
-        camera.position
-      );
-    }
-  });
-
   return (
-    <mesh
-      ref={mesh}
-      scale={280}
-      frustumCulled={false}
-      renderOrder={-100}
-    >
+    <mesh scale={280}>
       <sphereGeometry
         args={[1, 48, 32]}
       />
@@ -663,20 +711,11 @@ function SkyDome({
         ref={material}
         side={THREE.BackSide}
         depthWrite={false}
-        depthTest={false}
         uniforms={uniforms}
         vertexShader={`
           varying vec3 vDirection;
 
           void main() {
-            /*
-             * Usamos la posición LOCAL de la
-             * esfera como dirección celeste.
-             *
-             * Ya no depende de las coordenadas
-             * absolutas del mundo.
-             */
-
             vDirection =
               normalize(position);
 
@@ -697,7 +736,6 @@ function SkyDome({
 
           uniform vec3 sunsetColor;
           uniform vec3 sunsetYellow;
-          uniform vec3 nightHorizon;
 
           varying vec3 vDirection;
 
@@ -706,10 +744,11 @@ function SkyDome({
               normalize(vDirection);
 
             /*
-             * Gradiente vertical.
+             * CIELO ORIGINAL:
+             * horizonte → parte alta.
              *
-             * Este gradiente es igual
-             * alrededor de los 360 grados.
+             * No hay ningún oscurecimiento
+             * direccional aquí.
              */
 
             float heightMix =
@@ -727,58 +766,65 @@ function SkyDome({
               );
 
             /*
-             * TODO lo que sigue sólo tiene
-             * efecto durante amanecer/atardecer.
-             *
-             * Si twilightStrength = 0,
-             * finalColor no cambia.
+             * Sólo durante amanecer/atardecer
+             * añadimos color cálido.
              */
 
             if (
               twilightStrength >
               0.001
             ) {
-              vec3 horizontalView =
-                normalize(
-                  vec3(
-                    direction.x,
-                    0.0,
-                    direction.z
-                  )
+              vec2 viewXZ =
+                direction.xz;
+
+              vec2 sunXZ =
+                sunDirection.xz;
+
+              float viewLength =
+                max(
+                  length(viewXZ),
+                  0.0001
                 );
 
-              vec3 horizontalSun =
-                normalize(
-                  vec3(
-                    sunDirection.x,
-                    0.0,
-                    sunDirection.z
-                  )
+              float sunLength =
+                max(
+                  length(sunXZ),
+                  0.0001
                 );
+
+              viewXZ /=
+                viewLength;
+
+              sunXZ /=
+                sunLength;
 
               float facingSun =
                 dot(
-                  horizontalView,
-                  horizontalSun
+                  viewXZ,
+                  sunXZ
                 );
+
+              /*
+               * El efecto sólo existe
+               * cerca del horizonte.
+               */
 
               float horizonBand =
                 1.0 -
                 smoothstep(
                   0.02,
-                  0.62,
-                  abs(
-                    direction.y
-                  )
+                  0.58,
+                  abs(direction.y)
                 );
 
               /*
-               * Zona cálida hacia el Sol.
+               * Naranja localizado
+               * hacia el Sol.
                */
 
               float warmArea =
                 smoothstep(
-                  0.05,
+                  0.18,
                   0.92,
                   facingSun
                 );
@@ -786,7 +832,7 @@ function SkyDome({
               warmArea =
                 pow(
                   warmArea,
-                  1.45
+                  1.35
                 );
 
               float warmStrength =
@@ -803,12 +849,13 @@ function SkyDome({
                 );
 
               /*
-               * Núcleo dorado.
+               * Amarillo sólo muy cerca
+               * de la posición solar.
                */
 
               float solarCore =
                 smoothstep(
-                  0.72,
+                  0.80,
                   0.995,
                   facingSun
                 );
@@ -816,7 +863,7 @@ function SkyDome({
               solarCore =
                 pow(
                   solarCore,
-                  1.8
+                  2.0
                 );
 
               finalColor =
@@ -826,30 +873,7 @@ function SkyDome({
                   solarCore *
                   horizonBand *
                   twilightStrength *
-                  0.82
-                );
-
-              /*
-               * Lado opuesto.
-               *
-               * Sólo durante crepúsculo.
-               */
-
-              float opposite =
-                smoothstep(
-                  0.15,
-                  0.90,
-                  -facingSun
-                );
-
-              finalColor =
-                mix(
-                  finalColor,
-                  nightHorizon,
-                  opposite *
-                  horizonBand *
-                  twilightStrength *
-                  0.52
+                  0.72
                 );
             }
 
@@ -866,24 +890,42 @@ function SkyDome({
 }
 
 /* =========================================================
-   TEXTURA PROCEDURAL PARA EL SOL
+   TEXTURA PROCEDURAL DEL SOL
 ========================================================= */
 
-function createSunTexture(type = "glow") {
+function createSunTexture(
+  type = "glow"
+) {
   const size = 128;
 
   const data =
     new Uint8Array(
-      size * size * 4
+      size *
+      size *
+      4
     );
 
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
+  for (
+    let y = 0;
+    y < size;
+    y++
+  ) {
+    for (
+      let x = 0;
+      x < size;
+      x++
+    ) {
       const nx =
-        ((x + 0.5) / size) * 2 - 1;
+        ((x + 0.5) /
+          size) *
+          2 -
+        1;
 
       const ny =
-        ((y + 0.5) / size) * 2 - 1;
+        ((y + 0.5) /
+          size) *
+          2 -
+        1;
 
       const d =
         Math.sqrt(
@@ -893,7 +935,9 @@ function createSunTexture(type = "glow") {
 
       let alpha = 0;
 
-      if (type === "glow") {
+      if (
+        type === "glow"
+      ) {
         alpha =
           Math.pow(
             Math.max(
@@ -911,27 +955,32 @@ function createSunTexture(type = "glow") {
 
         const horizontal =
           Math.exp(
-            -Math.abs(ny) * 25
+            -Math.abs(ny) *
+              25
           ) *
           Math.max(
             0,
-            1 - Math.abs(nx)
+            1 -
+              Math.abs(nx)
           );
 
         const vertical =
           Math.exp(
-            -Math.abs(nx) * 25
+            -Math.abs(nx) *
+              25
           ) *
           Math.max(
             0,
-            1 - Math.abs(ny)
+            1 -
+              Math.abs(ny)
           );
 
         const diagonalA =
           Math.exp(
             -Math.abs(
               nx - ny
-            ) * 18
+            ) *
+              18
           ) *
           radial;
 
@@ -939,7 +988,8 @@ function createSunTexture(type = "glow") {
           Math.exp(
             -Math.abs(
               nx + ny
-            ) * 18
+            ) *
+              18
           ) *
           radial;
 
@@ -949,16 +999,26 @@ function createSunTexture(type = "glow") {
             Math.pow(
               radial,
               5
-            ) * 0.9 +
-              horizontal * 0.30 +
-              vertical * 0.30 +
-              diagonalA * 0.10 +
-              diagonalB * 0.10
+            ) *
+              0.9 +
+              horizontal *
+                0.30 +
+              vertical *
+                0.30 +
+              diagonalA *
+                0.10 +
+              diagonalB *
+                0.10
           );
       }
 
       const index =
-        (y * size + x) * 4;
+        (
+          y *
+            size +
+          x
+        ) *
+        4;
 
       data[index] = 255;
       data[index + 1] = 255;
@@ -966,7 +1026,8 @@ function createSunTexture(type = "glow") {
 
       data[index + 3] =
         Math.round(
-          alpha * 255
+          alpha *
+          255
         );
     }
   }
@@ -995,22 +1056,24 @@ function createSunTexture(type = "glow") {
 
 /* =========================================================
    SOL
+
+   IMPORTANTE:
+   depthTest está ACTIVADO.
+   El Sol NO atraviesa edificios.
 ========================================================= */
 
 function Sun({
   position,
   altitudeDegrees,
 }) {
-  const group = useRef();
-
-  const { camera } =
-    useThree();
-
   const glowMaterial =
     useRef();
 
   const flareMaterial =
     useRef();
+
+  const { camera } =
+    useThree();
 
   const lowSun =
     altitudeDegrees < 12;
@@ -1048,10 +1111,6 @@ function Sun({
     );
 
   useFrame(() => {
-    if (!group.current) {
-      return;
-    }
-
     sunVector
       .set(...position)
       .sub(
@@ -1072,11 +1131,6 @@ function Sun({
         1
       );
 
-    /*
-     * El glare aparece cuando el Sol
-     * se acerca al centro de la mirada.
-     */
-
     const flare =
       THREE.MathUtils.smoothstep(
         alignment,
@@ -1084,15 +1138,21 @@ function Sun({
         0.995
       );
 
-    if (glowMaterial.current) {
+    if (
+      glowMaterial.current
+    ) {
       glowMaterial.current.opacity =
         0.20 +
-        flare * 0.20;
+        flare *
+          0.20;
     }
 
-    if (flareMaterial.current) {
+    if (
+      flareMaterial.current
+    ) {
       flareMaterial.current.opacity =
-        flare * 0.42;
+        flare *
+        0.30;
     }
   });
 
@@ -1107,10 +1167,7 @@ function Sun({
   ]);
 
   return (
-    <group
-      ref={group}
-      position={position}
-    >
+    <group position={position}>
       {/* CORONA */}
 
       <sprite
@@ -1131,7 +1188,7 @@ function Sun({
           transparent
           opacity={0.22}
           depthWrite={false}
-          depthTest={false}
+          depthTest
           blending={
             THREE.AdditiveBlending
           }
@@ -1159,7 +1216,7 @@ function Sun({
           transparent
           opacity={0}
           depthWrite={false}
-          depthTest={false}
+          depthTest
           blending={
             THREE.AdditiveBlending
           }
@@ -1167,7 +1224,7 @@ function Sun({
         />
       </sprite>
 
-      {/* HALO INTERMEDIO */}
+      {/* HALO */}
 
       <sprite
         scale={[
@@ -1186,7 +1243,7 @@ function Sun({
           transparent
           opacity={0.50}
           depthWrite={false}
-          depthTest={false}
+          depthTest
           blending={
             THREE.AdditiveBlending
           }
@@ -1212,8 +1269,8 @@ function Sun({
               : "#fffce8"
           }
           toneMapped={false}
-          depthTest={false}
-          depthWrite={false}
+          depthTest
+          depthWrite
         />
       </mesh>
     </group>
@@ -1222,9 +1279,6 @@ function Sun({
 
 /* =========================================================
    LUNA
-
-   Se conserva la fase dinámica según la relación
-   real entre la posición de la Luna y el Sol.
 ========================================================= */
 
 function Moon({
@@ -1304,11 +1358,7 @@ function Moon({
   ]);
 
   return (
-    <group
-      position={position}
-    >
-      {/* HALO LUNAR */}
-
+    <group position={position}>
       <mesh>
         <sphereGeometry
           args={[
@@ -1327,11 +1377,8 @@ function Moon({
               : 0.055
           }
           depthWrite={false}
-          toneMapped={false}
         />
       </mesh>
-
-      {/* CUERPO LUNAR */}
 
       <mesh>
         <sphereGeometry
@@ -1352,9 +1399,7 @@ function Moon({
             void main() {
               vNormalWorld =
                 normalize(
-                  mat3(
-                    modelMatrix
-                  ) *
+                  mat3(modelMatrix) *
                   normal
                 );
 
@@ -1391,10 +1436,6 @@ function Moon({
                   )
                 );
 
-              /*
-               * Terminador lunar suave.
-               */
-
               float lit =
                 smoothstep(
                   -0.035,
@@ -1402,21 +1443,20 @@ function Moon({
                   sunlight
                 );
 
-              /*
-               * Pequeña variación superficial
-               * sin texturas externas.
-               */
-
               float craterA =
                 sin(
-                  vPosition.x * 4.1 +
-                  vPosition.y * 2.7
+                  vPosition.x *
+                    4.1 +
+                  vPosition.y *
+                    2.7
                 );
 
               float craterB =
                 sin(
-                  vPosition.z * 5.3 -
-                  vPosition.y * 3.4
+                  vPosition.z *
+                    5.3 -
+                  vPosition.y *
+                    3.4
                 );
 
               float surface =
@@ -1442,11 +1482,6 @@ function Moon({
                 ) *
                 surface;
 
-              /*
-               * De día la parte oscura
-               * recibe algo de luz atmosférica.
-               */
-
               darkSide =
                 mix(
                   darkSide,
@@ -1455,7 +1490,8 @@ function Moon({
                     0.20,
                     0.22
                   ),
-                  daylight * 0.45
+                  daylight *
+                    0.45
                 );
 
               vec3 finalColor =
@@ -1486,7 +1522,9 @@ export default function DynamicSky({
   testHour = null,
 }) {
   const [now, setNow] =
-    useState(() => new Date());
+    useState(
+      () => new Date()
+    );
 
   const [
     location,
@@ -1502,16 +1540,19 @@ export default function DynamicSky({
   });
 
   /* =======================================================
-     HORA REAL
+     RELOJ
   ======================================================= */
 
   useEffect(() => {
     const timer =
-      setInterval(() => {
-        setNow(
-          new Date()
-        );
-      }, 15000);
+      setInterval(
+        () => {
+          setNow(
+            new Date()
+          );
+        },
+        15000
+      );
 
     return () =>
       clearInterval(
@@ -1567,28 +1608,32 @@ export default function DynamicSky({
   ======================================================= */
 
   const effectiveNow =
-    useMemo(() => {
-      if (
-        testHour === null
-      ) {
-        return now;
-      }
+    useMemo(
+      () => {
+        if (
+          testHour === null ||
+          testHour === undefined
+        ) {
+          return now;
+        }
 
-      const simulated =
-        new Date(now);
+        const simulated =
+          new Date(now);
 
-      simulated.setHours(
+        simulated.setHours(
+          testHour,
+          0,
+          0,
+          0
+        );
+
+        return simulated;
+      },
+      [
+        now,
         testHour,
-        0,
-        0,
-        0
-      );
-
-      return simulated;
-    }, [
-      now,
-      testHour,
-    ]);
+      ]
+    );
 
   /* =======================================================
      SOL Y LUNA
@@ -1635,71 +1680,66 @@ export default function DynamicSky({
       .normalize()
       .toArray();
 
-  /*
-   * El Sol continúa siendo visible
-   * ligeramente bajo el horizonte.
-   */
-
   const sunVisible =
-    sunDegrees > -2;
+    sunDegrees > -1.5;
 
   const moonVisible =
     moonDegrees > -1;
 
   /* =======================================================
-     CANTIDAD GENERAL DE DÍA
+     DÍA / CREPÚSCULO
 
-     Transición rápida.
-
-     Cuando el Sol ya está unos grados
-     por encima del horizonte, el mundo
-     tiene que sentirse claramente de día.
+     Recuperamos la progresión original.
   ======================================================= */
 
   const daylight =
-    THREE.MathUtils.smoothstep(
-      sunDegrees,
-      -6,
-      6
+    THREE.MathUtils.clamp(
+      (sunDegrees + 6) /
+        18,
+      0,
+      1
     );
 
-  /* =======================================================
-     CREPÚSCULO DIRECCIONAL
+  const twilight =
+    THREE.MathUtils.clamp(
+      (sunDegrees + 12) /
+        12,
+      0,
+      1
+    );
 
-     Sólo funciona cuando el Sol está
-     realmente cerca del horizonte.
-
-     -6° → comienza
-      0° → máximo
-     +4° → desaparece
-
-     Después de +4° no existe ningún
-     oscurecimiento según la dirección.
-  ======================================================= */
+  /*
+   * ÚNICO CAMBIO DE COMPORTAMIENTO:
+   *
+   * El efecto direccional sólo vive
+   * cerca del amanecer/atardecer.
+   *
+   * A +6 grados desaparece completamente.
+   */
 
   let twilightDirectionalStrength =
     0;
 
   if (
-    sunDegrees >= -6 &&
-    sunDegrees < 0
+    sunDegrees >= -10 &&
+    sunDegrees <= 0
   ) {
     twilightDirectionalStrength =
       THREE.MathUtils.smoothstep(
         sunDegrees,
-        -6,
+        -10,
         0
       );
   } else if (
-    sunDegrees >= 0 &&
-    sunDegrees < 4
+    sunDegrees > 0 &&
+    sunDegrees < 6
   ) {
     twilightDirectionalStrength =
       1 -
       THREE.MathUtils.smoothstep(
         sunDegrees,
         0,
-        4
+        6
       );
   }
 
@@ -1711,7 +1751,7 @@ export default function DynamicSky({
     );
 
   /* =======================================================
-     COLORES BASE
+     COLORES ORIGINALES
   ======================================================= */
 
   const nightTop =
@@ -1724,75 +1764,54 @@ export default function DynamicSky({
       "#0b1429"
     );
 
-  /*
-   * El amanecer base es azulado.
-   *
-   * NO hacemos el horizonte completo
-   * naranja. El naranja lo añade SkyDome
-   * únicamente hacia el Sol.
-   */
-
   const dawnTop =
     new THREE.Color(
       "#315d88"
     );
 
+  /*
+   * IMPORTANTE:
+   *
+   * El horizonte base NO es naranja.
+   *
+   * Si usáramos naranja aquí,
+   * aparecería naranja en los 360 grados.
+   *
+   * El naranja lo añade SkyDome
+   * solamente mirando hacia el Sol.
+   */
+
   const dawnHorizon =
     new THREE.Color(
-      "#7897ad"
+      "#728da6"
     );
-
-  /*
-   * Día.
-   */
 
   const dayTop =
     new THREE.Color(
-      "#238fd5"
+      "#168ee0"
     );
 
   const dayHorizon =
     new THREE.Color(
-      "#a9d9ef"
+      "#a9dcf7"
     );
 
   let topColor;
   let horizonColor;
 
   /* =======================================================
-     NOCHE
+     NOCHE → AMANECER
   ======================================================= */
 
   if (
-    sunDegrees <= -8
+    sunDegrees <= -6
   ) {
-    topColor =
-      nightTop.clone();
-
-    horizonColor =
-      nightHorizon.clone();
-  }
-
-  /* =======================================================
-     PRE-AMANECER / POST-ATARDECER
-  ======================================================= */
-
-  else if (
-    sunDegrees < 0
-  ) {
-    const amount =
-      THREE.MathUtils.smoothstep(
-        sunDegrees,
-        -8,
-        0
-      );
-
     topColor =
       nightTop
         .clone()
         .lerp(
           dawnTop,
-          amount
+          twilight
         );
 
     horizonColor =
@@ -1800,33 +1819,21 @@ export default function DynamicSky({
         .clone()
         .lerp(
           dawnHorizon,
-          amount
+          twilight
         );
   }
 
   /* =======================================================
-     SOL RECIÉN SALIDO
-
-     De 0° a 6° hacemos rápidamente
-     la transición a cielo diurno.
+     AMANECER → DÍA
   ======================================================= */
 
-  else if (
-    sunDegrees < 6
-  ) {
-    const amount =
-      THREE.MathUtils.smoothstep(
-        sunDegrees,
-        0,
-        6
-      );
-
+  else {
     topColor =
       dawnTop
         .clone()
         .lerp(
           dayTop,
-          amount
+          daylight
         );
 
     horizonColor =
@@ -1834,92 +1841,33 @@ export default function DynamicSky({
         .clone()
         .lerp(
           dayHorizon,
-          amount
+          daylight
         );
   }
 
   /* =======================================================
-     DÍA COMPLETO
-
-     A partir de 6° el cielo base es
-     homogéneo alrededor de los 360°.
-
-     Sólo cambia verticalmente:
-     horizonte claro → cénit azul.
-  ======================================================= */
-
-  else {
-    topColor =
-      dayTop.clone();
-
-    horizonColor =
-      dayHorizon.clone();
-
-    twilightDirectionalStrength =
-      0;
-  }
-
-  /* =======================================================
-     ILUMINACIÓN DEL MUNDO
-
-     Corregimos el segundo problema:
-     las zonas sin Sol directo estaban
-     prácticamente negras.
-  ======================================================= */
-
-  const dayLightAmount =
-    THREE.MathUtils.smoothstep(
-      sunDegrees,
-      -4,
-      7
-    );
-
-  /*
-   * LUZ DIRECTA DEL SOL
-
-   * Sigue siendo la responsable principal
-   * de dirección y sombras.
+     ILUMINACIÓN ORIGINAL
   ======================================================= */
 
   const sunIntensity =
-    THREE.MathUtils.lerp(
+    THREE.MathUtils.clamp(
+      daylight * 2.1,
       0,
-      2.25,
-      dayLightAmount
+      2.1
     );
-
-  /*
-   * LUZ DEL CIELO
-
-   * Subimos considerablemente la iluminación
-   * difusa durante el día.
-
-   * Una pared que esté de espaldas al Sol
-   * seguirá siendo claramente visible.
-  ======================================================= */
 
   const hemisphereIntensity =
     THREE.MathUtils.lerp(
       0.12,
-      1.55,
-      dayLightAmount
+      1,
+      daylight
     );
-
-  /*
-   * RELLENO AMBIENTAL
-
-   * Antes el máximo era 0.35.
-   * Eso dejaba demasiado negras las sombras.
-
-   * 0.65 mantiene volumen pero recupera
-   * detalle en las zonas indirectas.
-  ======================================================= */
 
   const ambientIntensity =
     THREE.MathUtils.lerp(
-      0.055,
-      0.65,
-      dayLightAmount
+      0.06,
+      0.35,
+      daylight
     );
 
   /* =======================================================
@@ -1930,7 +1878,7 @@ export default function DynamicSky({
     sunDegrees < -4;
 
   /* =======================================================
-     BRILLO LUNAR SEGÚN FASE
+     LUNA / FASE
   ======================================================= */
 
   const sunDirectionVector =
@@ -1971,30 +1919,6 @@ export default function DynamicSky({
     );
 
   /* =======================================================
-     COLORES DE ILUMINACIÓN
-  ======================================================= */
-
-  const sunlightColor =
-    sunDegrees < 6
-      ? "#ffd09b"
-      : "#fff7e6";
-
-  const hemisphereSkyColor =
-    daylight > 0.45
-      ? "#b9e2fa"
-      : "#52668a";
-
-  /*
-   * También aclaramos la componente
-   * reflejada desde el suelo.
-  */
-
-  const hemisphereGroundColor =
-    daylight > 0.45
-      ? "#8b927e"
-      : "#090b10";
-
-  /* =======================================================
      RENDER
   ======================================================= */
 
@@ -2009,7 +1933,7 @@ export default function DynamicSky({
         ]}
       />
 
-      {/* CÚPULA */}
+      {/* CIELO */}
 
       <SkyDome
         topColor={
@@ -2032,8 +1956,8 @@ export default function DynamicSky({
         attach="fog"
         args={[
           `#${horizonColor.getHexString()}`,
-          180,
-          380,
+          170,
+          360,
         ]}
       />
 
@@ -2087,7 +2011,8 @@ export default function DynamicSky({
         speed={0.5}
         opacity={
           0.55 +
-          daylight * 0.27
+          daylight *
+            0.27
         }
       />
 
@@ -2101,7 +2026,8 @@ export default function DynamicSky({
         speed={0.32}
         opacity={
           0.5 +
-          daylight * 0.3
+          daylight *
+            0.3
         }
       />
 
@@ -2115,7 +2041,8 @@ export default function DynamicSky({
         speed={0.42}
         opacity={
           0.55 +
-          daylight * 0.27
+          daylight *
+            0.27
         }
       />
 
@@ -2129,16 +2056,12 @@ export default function DynamicSky({
         speed={0.25}
         opacity={
           0.48 +
-          daylight * 0.3
+          daylight *
+            0.3
         }
       />
 
-      {/* =========================================
-          SOL DIRECTO
-
-          Una única luz con sombras.
-          No aumentamos el coste importante.
-      ========================================= */}
+      {/* LUZ SOLAR */}
 
       {sunDegrees > -5 && (
         <directionalLight
@@ -2149,7 +2072,9 @@ export default function DynamicSky({
             sunIntensity
           }
           color={
-            sunlightColor
+            sunDegrees < 10
+              ? "#ffd09b"
+              : "#fff6e2"
           }
           castShadow
           shadow-mapSize-width={
@@ -2164,13 +2089,10 @@ export default function DynamicSky({
           shadow-camera-right={120}
           shadow-camera-top={120}
           shadow-camera-bottom={-120}
-          shadow-bias={-0.00015}
         />
       )}
 
-      {/* =========================================
-          LUZ LUNAR
-      ========================================= */}
+      {/* LUZ LUNAR */}
 
       {moonVisible &&
         sunDegrees < -2 && (
@@ -2185,31 +2107,28 @@ export default function DynamicSky({
           />
         )}
 
-      {/* =========================================
-          LUZ DIFUSA DEL CIELO
-      ========================================= */}
+      {/* LUZ GENERAL ORIGINAL */}
 
       <hemisphereLight
         intensity={
           hemisphereIntensity
         }
         color={
-          hemisphereSkyColor
+          daylight > 0.3
+            ? "#9bd9ff"
+            : "#52668a"
         }
         groundColor={
-          hemisphereGroundColor
+          daylight > 0.3
+            ? "#53614c"
+            : "#090b10"
         }
       />
-
-      {/* =========================================
-          RELLENO AMBIENTAL
-      ========================================= */}
 
       <ambientLight
         intensity={
           ambientIntensity
         }
-        color="#ffffff"
       />
     </>
   );
