@@ -108,14 +108,21 @@ canvas {
     touch-action: none;
   }
 
+  /* =======================================================
+     ZONA TÁCTIL IZQUIERDA
+
+     Sigue siendo circular e invisible para mantener
+     exactamente la misma lógica analógica.
+  ======================================================= */
+
   .mobile-joystick {
     position: absolute;
 
     left: 24px;
     bottom: 30px;
 
-    width: 132px;
-    height: 132px;
+    width: 140px;
+    height: 140px;
 
     border-radius: 50%;
 
@@ -124,51 +131,282 @@ canvas {
         0,
         0,
         0,
-        0.28
+        0.13
       );
 
     border:
-      2px solid
+      1px solid
       rgba(
         255,
         255,
         255,
-        0.45
+        0.12
+      );
+
+    box-shadow:
+      inset 0 0 28px
+      rgba(
+        0,
+        0,
+        0,
+        0.22
       );
 
     pointer-events: auto;
   }
 
+  /* =======================================================
+     CONTENEDOR MÓVIL DE LA CRUCETA
+  ======================================================= */
+
   .joystick-knob {
     position: absolute;
 
-    width: 52px;
-    height: 52px;
+    left: 39px;
+    top: 39px;
 
-    left: 40px;
-    top: 40px;
+    width: 62px;
+    height: 62px;
+
+    pointer-events: none;
+
+    will-change: transform;
+
+    transition:
+      transform 0.035s
+      linear;
+  }
+
+  /* =======================================================
+     CRUCETA
+  ======================================================= */
+
+  .joystick-dpad {
+    filter:
+      drop-shadow(
+        0 4px 4px
+        rgba(
+          0,
+          0,
+          0,
+          0.38
+        )
+      );
+  }
+
+  /* =======================================================
+     BRAZO VERTICAL
+  ======================================================= */
+
+  .joystick-dpad-vertical {
+    position: absolute;
+
+    left: 20px;
+    top: 0;
+
+    width: 22px;
+    height: 62px;
+
+    border-radius: 6px;
+
+    background:
+      linear-gradient(
+        90deg,
+        #111417,
+        #22282d 48%,
+        #0b0d0f
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.1
+      );
+  }
+
+  /* =======================================================
+     BRAZO HORIZONTAL
+  ======================================================= */
+
+  .joystick-dpad-horizontal {
+    position: absolute;
+
+    left: 0;
+    top: 20px;
+
+    width: 62px;
+    height: 22px;
+
+    border-radius: 6px;
+
+    background:
+      linear-gradient(
+        180deg,
+        #1f252a,
+        #0c0e10
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.1
+      );
+  }
+
+  /* =======================================================
+     CENTRO HUNDIDO
+  ======================================================= */
+
+  .joystick-dpad-center {
+    position: absolute;
+
+    left: 22px;
+    top: 22px;
+
+    width: 18px;
+    height: 18px;
 
     border-radius: 50%;
 
     background:
+      radial-gradient(
+        circle at 50% 65%,
+        #080a0c 0%,
+        #111519 42%,
+        #22282d 70%,
+        #07090b 100%
+      );
+
+    box-shadow:
+      inset 0 4px 6px
+      rgba(
+        0,
+        0,
+        0,
+        0.75
+      ),
+      inset 0 -1px 2px
       rgba(
         255,
         255,
         255,
-        0.78
+        0.08
       );
 
-    border:
-      2px solid
-      rgba(
-        0,
-        0,
-        0,
-        0.25
-      );
-
-    pointer-events: none;
+    z-index: 4;
   }
+
+  /* =======================================================
+     FLECHAS
+  ======================================================= */
+
+  .joystick-dpad-arrow {
+    position: absolute;
+
+    z-index: 5;
+
+    width: 0;
+    height: 0;
+
+    opacity: 0.72;
+
+    filter:
+      drop-shadow(
+        0 1px 0
+        rgba(
+          255,
+          255,
+          255,
+          0.08
+        )
+      );
+  }
+
+  /* ARRIBA */
+
+  .joystick-dpad-arrow-up {
+    left: 26px;
+    top: 5px;
+
+    border-left:
+      5px solid
+      transparent;
+
+    border-right:
+      5px solid
+      transparent;
+
+    border-bottom:
+      8px solid
+      #343b41;
+  }
+
+  /* ABAJO */
+
+  .joystick-dpad-arrow-down {
+    left: 26px;
+    bottom: 5px;
+
+    border-left:
+      5px solid
+      transparent;
+
+    border-right:
+      5px solid
+      transparent;
+
+    border-top:
+      8px solid
+      #343b41;
+  }
+
+  /* IZQUIERDA */
+
+  .joystick-dpad-arrow-left {
+    left: 5px;
+    top: 26px;
+
+    border-top:
+      5px solid
+      transparent;
+
+    border-bottom:
+      5px solid
+      transparent;
+
+    border-right:
+      8px solid
+      #343b41;
+  }
+
+  /* DERECHA */
+
+  .joystick-dpad-arrow-right {
+    right: 5px;
+    top: 26px;
+
+    border-top:
+      5px solid
+      transparent;
+
+    border-bottom:
+      5px solid
+      transparent;
+
+    border-left:
+      8px solid
+      #343b41;
+  }
+
+  /* =======================================================
+     TEXTO CÁMARA
+  ======================================================= */
 
   .mobile-look {
     position: absolute;
@@ -680,6 +918,7 @@ canvas {
     font-size: 14px;
   }
 }
+
 /* =========================================================
    FICHA 2D REAL SOBRE FREAKY WORLD
 ========================================================= */
