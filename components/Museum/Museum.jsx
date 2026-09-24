@@ -1,5 +1,5 @@
 import DpadWing from "./DpadWing";
-import CentralMonument from "./CentralMonument";
+import CentralMonument from "../World/CentralMonument";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
