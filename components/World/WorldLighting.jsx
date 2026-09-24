@@ -10,23 +10,26 @@ import {
 
 import * as THREE from "three";
 
+/* =========================================================
+   WORLD LIGHTING
+
+   Este componente ahora SOLO configura el renderer.
+
+   Las luces reales vienen de DynamicSky.
+
+   Antes estábamos sumando:
+   - ambient
+   - hemisphere
+   - directional
+
+   encima de las luces del cielo.
+========================================================= */
+
 export default function WorldLighting() {
   const {
     gl,
     scene,
   } = useThree();
-
-  /* =========================================================
-     CONFIGURACIÓN DEL RENDERER
-
-     useLayoutEffect se ejecuta antes de que el navegador
-     pinte visualmente el frame.
-
-     Así evitamos:
-     frame inicial con configuración por defecto
-     +
-     cambio posterior de exposición/tone mapping.
-  ========================================================= */
 
   useLayoutEffect(() => {
     gl.toneMapping =
@@ -45,40 +48,5 @@ export default function WorldLighting() {
     scene,
   ]);
 
-  /* =========================================================
-     LUZ BASE
-
-     Se mantiene estable desde el montaje.
-  ========================================================= */
-
-  return (
-    <>
-      <ambientLight
-        intensity={
-          0.28
-        }
-        color="#dce7f5"
-      />
-
-      <hemisphereLight
-        intensity={
-          0.4
-        }
-        color="#dce9ff"
-        groundColor="#526052"
-      />
-
-      <directionalLight
-        position={[
-          -30,
-          55,
-          20,
-        ]}
-        intensity={
-          0.45
-        }
-        color="#d8e5ff"
-      />
-    </>
-  );
+  return null;
 }
