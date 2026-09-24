@@ -1,17 +1,29 @@
 "use client";
 
-import { RigidBody } from "@react-three/rapier";
+import {
+  RigidBody,
+} from "@react-three/rapier";
+
 import Museum from "../Museum/Museum";
+import CentralMonument from "./CentralMonument";
 
 export default function WorldEnvironment() {
   return (
     <group>
+      {/* ===================================================
+          TERRENO GENERAL
+      =================================================== */}
+
       <RigidBody
         type="fixed"
         colliders="cuboid"
       >
         <mesh
-          position={[0, -0.3, 0]}
+          position={[
+            0,
+            -0.3,
+            0,
+          ]}
           receiveShadow
         >
           <boxGeometry
@@ -29,6 +41,10 @@ export default function WorldEnvironment() {
         </mesh>
       </RigidBody>
 
+      {/* ===================================================
+          AGUA EXTERIOR
+      =================================================== */}
+
       {[
         [-88, -88],
         [88, -88],
@@ -36,7 +52,10 @@ export default function WorldEnvironment() {
         [88, 88],
       ].map(
         (
-          [x, z],
+          [
+            x,
+            z,
+          ],
           index
         ) => (
           <mesh
@@ -65,6 +84,10 @@ export default function WorldEnvironment() {
         )
       )}
 
+      {/* ===================================================
+          BASE OSCURA DE LA GRAN CRUZ
+      =================================================== */}
+
       <RigidBody
         type="fixed"
         colliders="cuboid"
@@ -116,6 +139,10 @@ export default function WorldEnvironment() {
         </group>
       </RigidBody>
 
+      {/* ===================================================
+          GRAN CRUZ VERDE
+      =================================================== */}
+
       <RigidBody
         type="fixed"
         colliders="cuboid"
@@ -166,6 +193,10 @@ export default function WorldEnvironment() {
           </mesh>
         </group>
       </RigidBody>
+
+      {/* ===================================================
+          FRANJAS VERDES
+      =================================================== */}
 
       {[
         [-32, 0.3, -76, 12, 0.12, 96],
@@ -216,6 +247,10 @@ export default function WorldEnvironment() {
         )
       )}
 
+      {/* ===================================================
+          CAMINO NORTE
+      =================================================== */}
+
       <mesh
         position={[
           0,
@@ -237,6 +272,10 @@ export default function WorldEnvironment() {
           roughness={0.95}
         />
       </mesh>
+
+      {/* ===================================================
+          CAMINO SUR
+      =================================================== */}
 
       <mesh
         position={[
@@ -260,6 +299,10 @@ export default function WorldEnvironment() {
         />
       </mesh>
 
+      {/* ===================================================
+          CAMINO ESTE
+      =================================================== */}
+
       <mesh
         position={[
           52,
@@ -282,6 +325,10 @@ export default function WorldEnvironment() {
         />
       </mesh>
 
+      {/* ===================================================
+          CAMINO OESTE
+      =================================================== */}
+
       <mesh
         position={[
           -52,
@@ -303,6 +350,10 @@ export default function WorldEnvironment() {
           roughness={0.95}
         />
       </mesh>
+
+      {/* ===================================================
+          PLAZA CENTRAL
+      =================================================== */}
 
       <group
         position={[
@@ -342,65 +393,70 @@ export default function WorldEnvironment() {
         </mesh>
       </group>
 
-      <group
-        position={[
-          0,
-          0.49,
-          0,
-        ]}
-      >
-        <mesh receiveShadow>
-          <boxGeometry
-            args={[
-              8,
-              0.12,
-              18,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#496143"
-            roughness={1}
-          />
-        </mesh>
-
-        <mesh receiveShadow>
-          <boxGeometry
-            args={[
-              18,
-              0.12,
-              8,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#496143"
-            roughness={1}
-          />
-        </mesh>
-      </group>
+      {/* ===================================================
+          PLATAFORMA DEL MONUMENTO
+      =================================================== */}
 
       <mesh
         position={[
           0,
-          0.59,
+          0.53,
           0,
         ]}
         receiveShadow
       >
-        <boxGeometry
+        <cylinderGeometry
           args={[
-            5,
+            7.3,
+            7.8,
             0.16,
-            5,
+            48,
           ]}
         />
 
         <meshStandardMaterial
-          color="#354832"
-          roughness={1}
+          color="#3c453d"
+          roughness={0.82}
         />
       </mesh>
+
+      {/* ===================================================
+          ANILLO INTERIOR
+      =================================================== */}
+
+      <mesh
+        position={[
+          0,
+          0.63,
+          0,
+        ]}
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            4.8,
+            5.2,
+            0.16,
+            48,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#24292d"
+          roughness={0.6}
+          metalness={0.12}
+        />
+      </mesh>
+
+      {/* ===================================================
+          MONUMENTO
+      =================================================== */}
+
+      <CentralMonument />
+
+      {/* ===================================================
+          ILUMINACIÓN GENERAL DEL PATIO
+      =================================================== */}
 
       <pointLight
         position={[
@@ -414,6 +470,10 @@ export default function WorldEnvironment() {
         color="#fff1d8"
       />
 
+      {/* ===================================================
+          ILUMINACIÓN DE ACCESOS
+      =================================================== */}
+
       <pointLight
         position={[
           0,
@@ -461,6 +521,10 @@ export default function WorldEnvironment() {
         decay={2}
         color="#f3f7ff"
       />
+
+      {/* ===================================================
+          EDIFICIOS
+      =================================================== */}
 
       <Museum />
     </group>
