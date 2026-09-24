@@ -12,8 +12,10 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   FLECHA EN LA CARA FRONTAL
-   Visible en cada brazo de la cruceta
+   FLECHA CALADA / GRABADA
+   Simulada con doble nivel:
+   - borde/labio exterior
+   - fondo más oscuro y hundido
 ========================================================= */
 
 function ArrowMark({
@@ -21,43 +23,75 @@ function ArrowMark({
   y = 0,
   rotationZ = 0,
 }) {
-  const arrowShape = useMemo(() => {
+  const outerArrowShape = useMemo(() => {
     const shape = new THREE.Shape();
 
     // punta
-    shape.moveTo(0, 0.78);
+    shape.moveTo(0, 0.95);
 
     // hombro derecho
-    shape.lineTo(0.58, 0.08);
+    shape.lineTo(0.76, 0.14);
 
     // entrada derecha
-    shape.lineTo(0.27, 0.08);
+    shape.lineTo(0.36, 0.14);
 
     // base derecha
-    shape.lineTo(0.27, -0.52);
+    shape.lineTo(0.36, -0.68);
 
     // base izquierda
-    shape.lineTo(-0.27, -0.52);
+    shape.lineTo(-0.36, -0.68);
 
     // entrada izquierda
-    shape.lineTo(-0.27, 0.08);
+    shape.lineTo(-0.36, 0.14);
 
     // hombro izquierdo
-    shape.lineTo(-0.58, 0.08);
+    shape.lineTo(-0.76, 0.14);
 
     shape.closePath();
 
     return shape;
   }, []);
 
+  const innerArrowShape = useMemo(() => {
+    const shape = new THREE.Shape();
+
+    // misma forma, pero más chica
+    shape.moveTo(0, 0.74);
+
+    shape.lineTo(0.56, 0.08);
+    shape.lineTo(0.24, 0.08);
+    shape.lineTo(0.24, -0.5);
+    shape.lineTo(-0.24, -0.5);
+    shape.lineTo(-0.24, 0.08);
+    shape.lineTo(-0.56, 0.08);
+
+    shape.closePath();
+
+    return shape;
+  }, []);
+
+  const outerExtrude = useMemo(
+    () => ({
+      depth: 0.03,
+      bevelEnabled: false,
+    }),
+    []
+  );
+
+  const innerExtrude = useMemo(
+    () => ({
+      depth: 0.05,
+      bevelEnabled: false,
+    }),
+    []
+  );
+
   return (
-    <mesh
+    <group
       position={[
         x,
         y,
-
-        // cara frontal real
-        0.87,
+        0.865,
       ]}
       rotation={[
         0,
@@ -65,17 +99,53 @@ function ArrowMark({
         rotationZ,
       ]}
     >
-      <shapeGeometry
-        args={[arrowShape]}
-      />
+      {/* ===============================================
+          LABIO EXTERIOR
+      =============================================== */}
 
-      <meshStandardMaterial
-        color="#262b2f"
-        roughness={1}
-        metalness={0}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
+      <mesh>
+        <extrudeGeometry
+          args={[
+            outerArrowShape,
+            outerExtrude,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#171b1f"
+          roughness={0.95}
+          metalness={0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* ===============================================
+          FONDO HUNDIDO
+          Más oscuro y un poco más atrás
+      =============================================== */}
+
+      <mesh
+        position={[
+          0,
+          0,
+          -0.02,
+        ]}
+      >
+        <extrudeGeometry
+          args={[
+            innerArrowShape,
+            innerExtrude,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#050607"
+          roughness={1}
+          metalness={0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -88,10 +158,6 @@ export default function CentralMonument({
 }) {
   const dpadRef =
     useRef(null);
-
-  /* =======================================================
-     ROTACIÓN
-  ======================================================= */
 
   useFrame(
     (state, delta) => {
@@ -471,7 +537,6 @@ export default function CentralMonument({
 
         {/* ===============================================
             CAVIDAD CENTRAL
-            Cóncava hacia adentro
         =============================================== */}
 
         <mesh
@@ -507,7 +572,7 @@ export default function CentralMonument({
         </mesh>
 
         {/* ===============================================
-            FLECHAS EN LAS 4 PUNTAS DE LA CARA FRONTAL
+            FLECHAS CALADAS
         =============================================== */}
 
         {/* ARRIBA */}
