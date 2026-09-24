@@ -25,6 +25,28 @@ import PlayerController, {
 import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
+import PerformanceMonitor from "./PerformanceMonitor";
+
+/* =========================================================
+   DPR POR CALIDAD
+========================================================= */
+
+const DPR_BY_QUALITY = {
+  low: [
+    0.7,
+    0.9,
+  ],
+
+  medium: [
+    0.85,
+    1.1,
+  ],
+
+  high: [
+    1,
+    1.35,
+  ],
+};
 
 /* =========================================================
    WORLD
@@ -34,18 +56,120 @@ export default function WorldScene() {
   const [
     nearbyGame,
     setNearbyGame,
-  ] = useState(null);
+  ] =
+    useState(null);
 
   const [
     openedGame,
     setOpenedGame,
-  ] = useState(null);
+  ] =
+    useState(null);
+
+  const [
+    quality,
+    setQuality,
+  ] =
+    useState(
+      "high"
+    );
+
+  const [
+    stats,
+    setStats,
+  ] =
+    useState(null);
+
+  const [
+    showStats,
+    setShowStats,
+  ] =
+    useState(false);
+
+  const [
+    showTutorial,
+    setShowTutorial,
+  ] =
+    useState(false);
+
+  const [
+    mobile,
+    setMobile,
+  ] =
+    useState(false);
 
   const overlayOpen =
-    Boolean(openedGame);
+    Boolean(
+      openedGame
+    );
 
   /* =======================================================
-     EVENTO DESDE EL MUNDO 3D
+     TUTORIAL
+  ======================================================= */
+
+  useEffect(() => {
+    const coarse =
+      window.matchMedia(
+        "(pointer: coarse)"
+      ).matches;
+
+    setMobile(
+      coarse
+    );
+
+    const completed =
+      window.localStorage
+        .getItem(
+          "freakyWorldTutorialCompleted"
+        );
+
+    if (
+      completed ===
+      "true"
+    ) {
+      return;
+    }
+
+    setShowTutorial(
+      true
+    );
+
+    const timer =
+      window.setTimeout(
+        () => {
+          setShowTutorial(
+            false
+          );
+
+          window.localStorage
+            .setItem(
+              "freakyWorldTutorialCompleted",
+              "true"
+            );
+        },
+        9000
+      );
+
+    return () =>
+      window.clearTimeout(
+        timer
+      );
+  }, []);
+
+  const closeTutorial =
+    useCallback(() => {
+      setShowTutorial(
+        false
+      );
+
+      window.localStorage
+        .setItem(
+          "freakyWorldTutorialCompleted",
+          "true"
+        );
+    }, []);
+
+  /* =======================================================
+     EVENTO DESDE 3D
   ======================================================= */
 
   useEffect(() => {
@@ -62,7 +186,9 @@ export default function WorldScene() {
           return;
         }
 
-        setNearbyGame(null);
+        setNearbyGame(
+          null
+        );
       };
 
     window.addEventListener(
@@ -79,11 +205,7 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR FICHA 2D
-
-     NO cambiamos de página.
-     NO abrimos pestaña nueva.
-     NO desmontamos el mundo 3D.
+     ABRIR FICHA
   ======================================================= */
 
   const openGame =
@@ -95,10 +217,14 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x = 0;
-      playerInput.y = 0;
+      playerInput.x =
+        0;
 
-      playerInput.dashRequested =
+      playerInput.y =
+        0;
+
+      playerInput
+        .dashRequested =
         false;
 
       setOpenedGame(
@@ -115,20 +241,23 @@ export default function WorldScene() {
 
   const closeGame =
     useCallback(() => {
-      playerInput.x = 0;
-      playerInput.y = 0;
+      playerInput.x =
+        0;
 
-      playerInput.dashRequested =
+      playerInput.y =
+        0;
+
+      playerInput
+        .dashRequested =
         false;
 
-      setOpenedGame(null);
+      setOpenedGame(
+        null
+      );
     }, []);
 
   /* =======================================================
-     TECLADO
-
-     E = abrir ficha
-     ESC = cerrar ficha
+     TECLADO GENERAL
   ======================================================= */
 
   useEffect(() => {
@@ -156,6 +285,16 @@ export default function WorldScene() {
 
           openGame();
         }
+
+        if (
+          event.code ===
+          "KeyP"
+        ) {
+          setShowStats(
+            (current) =>
+              !current
+          );
+        }
       };
 
     window.addEventListener(
@@ -179,28 +318,282 @@ export default function WorldScene() {
   return (
     <>
       {/* ===================================================
-          INSTRUCCIONES
+          TUTORIAL
+      =================================================== */}
+
+      {showTutorial &&
+        !overlayOpen && (
+          <div
+            style={{
+              position:
+                "fixed",
+
+              top:
+                mobile
+                  ? 18
+                  : 22,
+
+              left:
+                "50%",
+
+              transform:
+                "translateX(-50%)",
+
+              zIndex:
+                70,
+
+              width:
+                "min(90vw, 390px)",
+
+              padding:
+                "14px 16px",
+
+              borderRadius:
+                16,
+
+              color:
+                "#fff",
+
+              background:
+                "rgba(5,8,12,0.82)",
+
+              backdropFilter:
+                "blur(14px)",
+
+              border:
+                "1px solid rgba(255,255,255,0.15)",
+
+              boxShadow:
+                "0 10px 30px rgba(0,0,0,0.25)",
+
+              fontSize:
+                13,
+            }}
+          >
+            <div
+              style={{
+                display:
+                  "flex",
+
+                justifyContent:
+                  "space-between",
+
+                gap:
+                  16,
+              }}
+            >
+              <div>
+                <strong>
+                  Controles
+                </strong>
+
+                <div
+                  style={{
+                    marginTop:
+                      6,
+
+                    opacity:
+                      0.72,
+
+                    lineHeight:
+                      1.55,
+                  }}
+                >
+                  {mobile ? (
+                    <>
+                      Joystick para moverte
+                      <br />
+                      Desliza para mirar
+                      <br />
+                      Doble toque para sprint
+                    </>
+                  ) : (
+                    <>
+                      WASD para caminar
+                      <br />
+                      Doble W para sprint
+                      <br />
+                      Ctrl para correr · Arrastra para mirar
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  closeTutorial
+                }
+                style={{
+                  width:
+                    30,
+
+                  height:
+                    30,
+
+                  flex:
+                    "0 0 auto",
+
+                  border:
+                    0,
+
+                  borderRadius:
+                    "50%",
+
+                  background:
+                    "rgba(255,255,255,0.1)",
+
+                  color:
+                    "#fff",
+
+                  fontSize:
+                    20,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
+      {/* ===================================================
+          DIAGNÓSTICO
       =================================================== */}
 
       {!overlayOpen && (
-        <div className="instructions">
-          WASD para caminar · Shift para sprint · Arrastra para mover la cámara
-        </div>
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              setShowStats(
+                (value) =>
+                  !value
+              )
+            }
+            style={{
+              position:
+                "fixed",
+
+              top:
+                14,
+
+              right:
+                14,
+
+              zIndex:
+                80,
+
+              padding:
+                "7px 10px",
+
+              border:
+                "1px solid rgba(255,255,255,0.14)",
+
+              borderRadius:
+                9,
+
+              background:
+                "rgba(0,0,0,0.48)",
+
+              color:
+                "#fff",
+
+              fontSize:
+                11,
+
+              fontWeight:
+                800,
+
+              backdropFilter:
+                "blur(10px)",
+            }}
+          >
+            FPS
+          </button>
+
+          {showStats &&
+            stats && (
+              <div
+                style={{
+                  position:
+                    "fixed",
+
+                  top:
+                    52,
+
+                  right:
+                    14,
+
+                  zIndex:
+                    80,
+
+                  minWidth:
+                    150,
+
+                  padding:
+                    "10px 12px",
+
+                  borderRadius:
+                    10,
+
+                  background:
+                    "rgba(0,0,0,0.72)",
+
+                  color:
+                    "#fff",
+
+                  fontFamily:
+                    "monospace",
+
+                  fontSize:
+                    11,
+
+                  lineHeight:
+                    1.55,
+
+                  pointerEvents:
+                    "none",
+                }}
+              >
+                FPS:{" "}
+                {stats.fps}
+                <br />
+
+                Frame:{" "}
+                {stats.frameMs}
+                ms
+                <br />
+
+                Draw calls:{" "}
+                {stats.calls}
+                <br />
+
+                Triangles:{" "}
+                {stats.triangles}
+                <br />
+
+                Textures:{" "}
+                {stats.textures}
+                <br />
+
+                Quality:{" "}
+                {quality.toUpperCase()}
+              </div>
+            )}
+        </>
       )}
 
       {/* ===================================================
-          MUNDO 3D
-
-          El Canvas permanece montado aunque abramos
-          una ficha 2D.
+          WORLD
       =================================================== */}
 
       <Canvas
         shadows
-        dpr={[
-          1,
-          1.35,
-        ]}
+        dpr={
+          DPR_BY_QUALITY[
+            quality
+          ]
+        }
         camera={{
           position: [
             0,
@@ -224,6 +617,15 @@ export default function WorldScene() {
             "high-performance",
         }}
       >
+        <PerformanceMonitor
+          onStats={
+            setStats
+          }
+          onQualityChange={
+            setQuality
+          }
+        />
+
         <DynamicSky />
 
         <WorldLighting />
@@ -247,9 +649,7 @@ export default function WorldScene() {
       </Canvas>
 
       {/* ===================================================
-          CONTROLES MÓVILES
-
-          Se ocultan mientras está abierta la ficha.
+          MOBILE
       =================================================== */}
 
       {!overlayOpen && (
@@ -257,7 +657,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          BOTÓN ABRIR FICHA
+          INTERACCIÓN
       =================================================== */}
 
       {nearbyGame &&
@@ -287,7 +687,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          FICHA 2D SOBRE EL MUNDO
+          2D
       =================================================== */}
 
       {openedGame && (
