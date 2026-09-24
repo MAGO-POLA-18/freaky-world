@@ -1489,4 +1489,312 @@ export default function DynamicSky() {
 
   const ambientIntensity =
     THREE.MathUtils.lerp(
-      0.06
+      0.06,
+      0.35,
+      daylight
+    );
+
+  const showStars =
+    sunDegrees <
+    -4;
+
+  /* =======================================================
+     BRILLO LUNAR SEGÚN FASE
+  ======================================================= */
+
+  const sunDirectionVector =
+    new THREE.Vector3(
+      ...sunPosition
+    ).normalize();
+
+  const moonDirectionVector =
+    new THREE.Vector3(
+      ...moonPosition
+    ).normalize();
+
+  const elongation =
+    Math.acos(
+      THREE.MathUtils.clamp(
+        sunDirectionVector.dot(
+          moonDirectionVector
+        ),
+        -1,
+        1
+      )
+    );
+
+  const moonIllumination =
+    (
+      1 -
+      Math.cos(
+        elongation
+      )
+    ) /
+    2;
+
+  const moonLightIntensity =
+    THREE.MathUtils.lerp(
+      0.015,
+      0.26,
+      moonIllumination
+    );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <>
+      <color
+        attach="background"
+        args={[
+          `#${topColor.getHexString()}`,
+        ]}
+      />
+
+      <SkyDome
+        topColor={
+          `#${topColor.getHexString()}`
+        }
+        horizonColor={
+          `#${horizonColor.getHexString()}`
+        }
+        sunDirection={
+          sunDirection
+        }
+        twilightStrength={
+          twilightDirectionalStrength
+        }
+      />
+
+      <fog
+        attach="fog"
+        args={[
+          `#${horizonColor.getHexString()}`,
+          170,
+          360,
+        ]}
+      />
+
+      {/* ESTRELLAS */}
+
+      {showStars && (
+        <Stars
+          radius={
+            190
+          }
+          depth={
+            90
+          }
+          count={
+            3200
+          }
+          factor={
+            2.8
+          }
+          saturation={
+            0.08
+          }
+          fade
+          speed={
+            0.08
+          }
+        />
+      )}
+
+      {/* SOL */}
+
+      {sunVisible && (
+        <Sun
+          position={
+            sunPosition
+          }
+          altitudeDegrees={
+            sunDegrees
+          }
+        />
+      )}
+
+      {/* LUNA */}
+
+      {moonVisible && (
+        <Moon
+          position={
+            moonPosition
+          }
+          sunPosition={
+            sunPosition
+          }
+          daylight={
+            daylight
+          }
+        />
+      )}
+
+      {/* NUBES */}
+
+      <CloudBank
+        position={[
+          -105,
+          44,
+          -85,
+        ]}
+        scale={
+          1.3
+        }
+        speed={
+          0.5
+        }
+        opacity={
+          0.55 +
+          daylight *
+            0.27
+        }
+      />
+
+      <CloudBank
+        position={[
+          -15,
+          55,
+          -120,
+        ]}
+        scale={
+          0.95
+        }
+        speed={
+          0.32
+        }
+        opacity={
+          0.5 +
+          daylight *
+            0.3
+        }
+      />
+
+      <CloudBank
+        position={[
+          75,
+          39,
+          -75,
+        ]}
+        scale={
+          1.15
+        }
+        speed={
+          0.42
+        }
+        opacity={
+          0.55 +
+          daylight *
+            0.27
+        }
+      />
+
+      <CloudBank
+        position={[
+          120,
+          60,
+          -145,
+        ]}
+        scale={
+          0.75
+        }
+        speed={
+          0.25
+        }
+        opacity={
+          0.48 +
+          daylight *
+            0.3
+        }
+      />
+
+      {/* SOLAR */}
+
+      {sunDegrees >
+        -5 && (
+        <directionalLight
+          position={
+            sunPosition
+          }
+          intensity={
+            sunIntensity
+          }
+          color={
+            sunDegrees <
+            10
+              ? "#ffd09b"
+              : "#fff6e2"
+          }
+          castShadow
+          shadow-mapSize-width={
+            1024
+          }
+          shadow-mapSize-height={
+            1024
+          }
+          shadow-camera-near={
+            1
+          }
+          shadow-camera-far={
+            260
+          }
+          shadow-camera-left={
+            -120
+          }
+          shadow-camera-right={
+            120
+          }
+          shadow-camera-top={
+            120
+          }
+          shadow-camera-bottom={
+            -120
+          }
+        />
+      )}
+
+      {/* LUNA */}
+
+      {moonVisible &&
+        sunDegrees <
+          -2 && (
+          <directionalLight
+            position={
+              moonPosition
+            }
+            intensity={
+              moonLightIntensity
+            }
+            color="#9ebbe8"
+          />
+        )}
+
+      {/* AMBIENTAL */}
+
+      <hemisphereLight
+        intensity={
+          hemisphereIntensity
+        }
+        color={
+          daylight >
+          0.3
+            ? "#9bd9ff"
+            : "#52668a"
+        }
+        groundColor={
+          daylight >
+          0.3
+            ? "#53614c"
+            : "#090b10"
+        }
+      />
+
+      <ambientLight
+        intensity={
+          ambientIntensity
+        }
+      />
+    </>
+  );
+}
