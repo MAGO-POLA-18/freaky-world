@@ -54,35 +54,25 @@ export const playerRuntime = {
    VELOCIDADES
 ========================================================= */
 
-const SLOW_SPEED =
-  2.2;
+const SLOW_SPEED = 2.2;
 
-const WALK_SPEED =
-  5.2;
+const WALK_SPEED = 5.2;
 
-const SPRINT_SPEED =
-  12.5;
+const MOBILE_MAX_SPEED = 12.5;
 
-const DASH_SPEED =
-  20;
+const DASH_SPEED = 20;
 
-const DASH_DURATION =
-  0.22;
+const DASH_DURATION = 0.22;
 
-const DASH_COOLDOWN =
-  0.32;
+const DASH_COOLDOWN = 0.32;
 
-const DOUBLE_W_TIME =
-  280;
+const DOUBLE_KEY_TIME = 280;
 
-const FALL_LIMIT =
-  -8;
+const FALL_LIMIT = -8;
 
-const COLLIDER_HALF_HEIGHT =
-  0.7;
+const COLLIDER_HALF_HEIGHT = 0.7;
 
-const COLLIDER_RADIUS =
-  0.35;
+const COLLIDER_RADIUS = 0.35;
 
 /* =========================================================
    VELOCIDAD ANALÓGICA
@@ -155,7 +145,7 @@ function getAnalogSpeed(
   return THREE.MathUtils
     .lerp(
       WALK_SPEED,
-      SPRINT_SPEED,
+      MOBILE_MAX_SPEED,
       smoothT
     );
 }
@@ -178,9 +168,6 @@ export default function PlayerController() {
     useRef(0);
 
   const dashCooldown =
-    useRef(0);
-
-  const lastWPress =
     useRef(0);
 
   const dashDirection =
@@ -209,8 +196,14 @@ export default function PlayerController() {
       s: false,
       a: false,
       d: false,
+    });
 
-      sprint: false,
+  const lastPress =
+    useRef({
+      w: 0,
+      s: 0,
+      a: 0,
+      d: 0,
     });
 
   /* =======================================================
@@ -281,129 +274,101 @@ export default function PlayerController() {
   ======================================================= */
 
   useEffect(() => {
-    const keyDown =
-      (event) => {
-        switch (
-          event.code
-        ) {
+    const getDirection =
+      (code) => {
+        switch (code) {
           case "KeyW":
-            if (
-              !event.repeat
-            ) {
-              const now =
-                performance.now();
-
-              const elapsed =
-                now -
-                lastWPress.current;
-
-              if (
-                elapsed >
-                  0 &&
-                elapsed <
-                  DOUBLE_W_TIME
-              ) {
-                playerInput
-                  .dashRequested =
-                  true;
-
-                lastWPress.current =
-                  0;
-              } else {
-                lastWPress.current =
-                  now;
-              }
-            }
-
-            keys.current.w =
-              true;
-
-            break;
-
           case "ArrowUp":
-            keys.current.w =
-              true;
-
-            break;
+            return "w";
 
           case "KeyS":
           case "ArrowDown":
-            keys.current.s =
-              true;
-
-            break;
+            return "s";
 
           case "KeyA":
           case "ArrowLeft":
-            keys.current.a =
-              true;
-
-            break;
+            return "a";
 
           case "KeyD":
           case "ArrowRight":
-            keys.current.d =
-              true;
-
-            break;
-
-          case "ControlLeft":
-          case "ControlRight":
-            keys.current
-              .sprint =
-              true;
-
-            break;
+            return "d";
 
           default:
-            break;
+            return null;
         }
+      };
+
+    const keyDown =
+      (event) => {
+        const direction =
+          getDirection(
+            event.code
+          );
+
+        if (
+          !direction
+        ) {
+          return;
+        }
+
+        /*
+          Evitamos que mantener apretada
+          una tecla genere falsos dobles toques.
+        */
+
+        if (
+          !event.repeat
+        ) {
+          const now =
+            performance.now();
+
+          const elapsed =
+            now -
+            lastPress.current[
+              direction
+            ];
+
+          if (
+            elapsed >
+              0 &&
+            elapsed <
+              DOUBLE_KEY_TIME
+          ) {
+            playerInput
+              .dashRequested =
+              true;
+
+            lastPress.current[
+              direction
+            ] = 0;
+          } else {
+            lastPress.current[
+              direction
+            ] = now;
+          }
+        }
+
+        keys.current[
+          direction
+        ] = true;
       };
 
     const keyUp =
       (event) => {
-        switch (
-          event.code
+        const direction =
+          getDirection(
+            event.code
+          );
+
+        if (
+          !direction
         ) {
-          case "KeyW":
-          case "ArrowUp":
-            keys.current.w =
-              false;
-
-            break;
-
-          case "KeyS":
-          case "ArrowDown":
-            keys.current.s =
-              false;
-
-            break;
-
-          case "KeyA":
-          case "ArrowLeft":
-            keys.current.a =
-              false;
-
-            break;
-
-          case "KeyD":
-          case "ArrowRight":
-            keys.current.d =
-              false;
-
-            break;
-
-          case "ControlLeft":
-          case "ControlRight":
-            keys.current
-              .sprint =
-              false;
-
-            break;
-
-          default:
-            break;
+          return;
         }
+
+        keys.current[
+          direction
+        ] = false;
       };
 
     const reset =
@@ -418,10 +383,6 @@ export default function PlayerController() {
           false;
 
         keys.current.d =
-          false;
-
-        keys.current
-          .sprint =
           false;
       };
 
@@ -476,7 +437,9 @@ export default function PlayerController() {
       playerRuntime.body =
         rigidBody;
 
-      /* SPAWN */
+      /* ===================================================
+         SPAWN
+      =================================================== */
 
       if (
         !hasSpawned.current
@@ -492,7 +455,9 @@ export default function PlayerController() {
       const position =
         rigidBody.translation();
 
-      /* FALLBACK */
+      /* ===================================================
+         FALLBACK
+      =================================================== */
 
       if (
         position.y <
@@ -512,10 +477,13 @@ export default function PlayerController() {
         return;
       }
 
-      /* UI BLOQUEADA */
+      /* ===================================================
+         UI BLOQUEADA
+      =================================================== */
 
       if (
-        playerInput.uiLocked
+        playerInput
+          .uiLocked
       ) {
         const velocity =
           rigidBody.linvel();
@@ -542,7 +510,9 @@ export default function PlayerController() {
         return;
       }
 
-      /* DASH TIMERS */
+      /* ===================================================
+         DASH TIMERS
+      =================================================== */
 
       dashRemaining.current =
         Math.max(
@@ -560,7 +530,9 @@ export default function PlayerController() {
             delta
         );
 
-      /* DIRECCIÓN */
+      /* ===================================================
+         DIRECCIÓN DE CÁMARA
+      =================================================== */
 
       const yaw =
         playerRuntime.yaw;
@@ -594,7 +566,9 @@ export default function PlayerController() {
       let keyboardActive =
         false;
 
-      /* DESKTOP */
+      /* ===================================================
+         DESKTOP
+      =================================================== */
 
       if (
         keys.current.w
@@ -640,7 +614,9 @@ export default function PlayerController() {
           true;
       }
 
-      /* MÓVIL */
+      /* ===================================================
+         MÓVIL
+      =================================================== */
 
       const analogStrength =
         Math.min(
@@ -683,7 +659,9 @@ export default function PlayerController() {
           .normalize();
       }
 
-      /* DASH */
+      /* ===================================================
+         DASH
+      =================================================== */
 
       if (
         playerInput
@@ -715,14 +693,15 @@ export default function PlayerController() {
           false;
       }
 
+      /* ===================================================
+         VELOCIDAD
+      =================================================== */
+
       const currentVelocity =
         rigidBody.linvel();
 
-      let targetX =
-        0;
-
-      let targetZ =
-        0;
+      let targetX = 0;
+      let targetZ = 0;
 
       if (
         dashRemaining
@@ -743,10 +722,7 @@ export default function PlayerController() {
       ) {
         const speed =
           keyboardActive
-            ? keys.current
-                .sprint
-              ? SPRINT_SPEED
-              : WALK_SPEED
+            ? WALK_SPEED
             : getAnalogSpeed(
                 analogStrength
               );
@@ -762,7 +738,9 @@ export default function PlayerController() {
           speed;
       }
 
-      /* ROTACIÓN */
+      /* ===================================================
+         ROTACIÓN DEL AVATAR
+      =================================================== */
 
       if (
         visual.current
@@ -824,7 +802,9 @@ export default function PlayerController() {
         }
       }
 
-      /* SUAVIZADO */
+      /* ===================================================
+         SUAVIZADO
+      =================================================== */
 
       const smoothing =
         dashRemaining
