@@ -2,17 +2,10 @@
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
 
 /* =========================================================
-   MONUMENTO CENTRAL — FREAKY WORLD
-
-   IDEA:
-   - Cruceta retro simple
-   - 4 brazos negros
-   - Suspendida claramente en el aire
-   - Giro lento y limpio
-   - Sin aros flotantes
-   - Plataforma circular sobria
+   MONUMENTO CENTRAL — CRUCETA RETRO
 ========================================================= */
 
 export default function CentralMonument({
@@ -20,22 +13,11 @@ export default function CentralMonument({
 }) {
   const dpadRef = useRef(null);
 
-  /* =======================================================
-     ANIMACIÓN
-  ======================================================= */
-
   useFrame((state, delta) => {
     if (!dpadRef.current) return;
 
-    // Giro lento y constante.
-    // Solo sobre el eje vertical.
-    dpadRef.current.rotation.y +=
-      delta * 0.22;
+    dpadRef.current.rotation.y += delta * 0.2;
   });
-
-  /* =======================================================
-     COLORES
-  ======================================================= */
 
   const black = "#07090b";
   const blackSoft = "#11161a";
@@ -46,15 +28,11 @@ export default function CentralMonument({
   return (
     <group position={position}>
       {/* ===================================================
-          PLATAFORMA — NIVEL INFERIOR
+          PLATAFORMA
       =================================================== */}
 
       <mesh
-        position={[
-          0,
-          0.1,
-          0,
-        ]}
+        position={[0, 0.1, 0]}
         receiveShadow
       >
         <cylinderGeometry
@@ -73,16 +51,8 @@ export default function CentralMonument({
         />
       </mesh>
 
-      {/* ===================================================
-          PLATAFORMA — SEGUNDO NIVEL
-      =================================================== */}
-
       <mesh
-        position={[
-          0,
-          0.24,
-          0,
-        ]}
+        position={[0, 0.24, 0]}
         receiveShadow
       >
         <cylinderGeometry
@@ -101,16 +71,8 @@ export default function CentralMonument({
         />
       </mesh>
 
-      {/* ===================================================
-          PLATAFORMA — CENTRO
-      =================================================== */}
-
       <mesh
-        position={[
-          0,
-          0.38,
-          0,
-        ]}
+        position={[0, 0.38, 0]}
         receiveShadow
       >
         <cylinderGeometry
@@ -130,8 +92,7 @@ export default function CentralMonument({
       </mesh>
 
       {/* ===================================================
-          ÚNICO ARO LUMINOSO
-          Integrado en la plataforma
+          ARO DE LUZ INTEGRADO
       =================================================== */}
 
       <mesh
@@ -158,168 +119,157 @@ export default function CentralMonument({
         <meshStandardMaterial
           color={glow}
           emissive={glow}
-          emissiveIntensity={1.25}
+          emissiveIntensity={1.15}
           toneMapped={false}
         />
       </mesh>
 
       {/* ===================================================
-          CRUCETA
+          CRUCETA SUSPENDIDA
 
-          IMPORTANTE:
-          Ahora está a 6.2 unidades de altura.
-
-          Esto la separa claramente del suelo.
+          - diagonal
+          - extremos redondeados
+          - centro hundido
       =================================================== */}
 
       <group
         ref={dpadRef}
         position={[
           0,
-          6.2,
+          6.4,
           0,
+        ]}
+        rotation={[
+          -0.12,
+          0,
+          Math.PI / 4,
         ]}
       >
         {/* =================================================
-            BRAZO SUPERIOR
+            BRAZO VERTICAL
+        ================================================= */}
+
+        <RoundedBox
+          args={[
+            3.2,
+            8.2,
+            1.45,
+          ]}
+          radius={0.42}
+          smoothness={5}
+          castShadow
+        >
+          <meshStandardMaterial
+            color={black}
+            roughness={0.48}
+            metalness={0.16}
+          />
+        </RoundedBox>
+
+        {/* =================================================
+            BRAZO HORIZONTAL
+        ================================================= */}
+
+        <RoundedBox
+          args={[
+            8.2,
+            3.2,
+            1.45,
+          ]}
+          radius={0.42}
+          smoothness={5}
+          castShadow
+        >
+          <meshStandardMaterial
+            color={black}
+            roughness={0.48}
+            metalness={0.16}
+          />
+        </RoundedBox>
+
+        {/* =================================================
+            CENTRO HUNDIDO
+
+            Semiesfera oscura ligeramente metida
+            dentro de la cruceta.
         ================================================= */}
 
         <mesh
           position={[
             0,
-            2.15,
+            0,
+            0.63,
+          ]}
+          rotation={[
+            Math.PI,
+            0,
             0,
           ]}
-          castShadow
         >
-          <boxGeometry
+          <sphereGeometry
             args={[
-              3,
-              3.6,
-              1.4,
+              1.15,
+              32,
+              20,
+              0,
+              Math.PI * 2,
+              0,
+              Math.PI / 2,
             ]}
           />
 
           <meshStandardMaterial
-            color={black}
-            roughness={0.48}
-            metalness={0.18}
+            color="#020303"
+            roughness={0.7}
+            metalness={0.05}
           />
         </mesh>
 
         {/* =================================================
-            BRAZO INFERIOR
+            ANILLO MUY SUTIL ALREDEDOR DEL HUNDIMIENTO
         ================================================= */}
 
         <mesh
           position={[
             0,
-            -2.15,
+            0,
+            0.74,
+          ]}
+          rotation={[
+            Math.PI / 2,
+            0,
             0,
           ]}
-          castShadow
         >
-          <boxGeometry
+          <torusGeometry
             args={[
-              3,
-              3.6,
-              1.4,
+              1.18,
+              0.06,
+              10,
+              48,
             ]}
           />
 
           <meshStandardMaterial
-            color={black}
-            roughness={0.48}
-            metalness={0.18}
-          />
-        </mesh>
-
-        {/* =================================================
-            BRAZO IZQUIERDO
-        ================================================= */}
-
-        <mesh
-          position={[
-            -2.15,
-            0,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              3.6,
-              3,
-              1.4,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={black}
-            roughness={0.48}
-            metalness={0.18}
-          />
-        </mesh>
-
-        {/* =================================================
-            BRAZO DERECHO
-        ================================================= */}
-
-        <mesh
-          position={[
-            2.15,
-            0,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              3.6,
-              3,
-              1.4,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color={black}
-            roughness={0.48}
-            metalness={0.18}
+            color="#15191d"
+            roughness={0.72}
+            metalness={0.12}
           />
         </mesh>
       </group>
 
       {/* ===================================================
-          RESPLANDOR INFERIOR
-
-          Da sensación de suspensión,
-          sin poner efectos alrededor.
+          LUZ BAJO LA CRUCETA
       =================================================== */}
 
       <pointLight
         position={[
           0,
-          2.2,
+          2.4,
           0,
         ]}
-        intensity={5}
+        intensity={4}
         distance={12}
-        decay={2}
-        color={glow}
-      />
-
-      {/* ===================================================
-          PEQUEÑO PUNTO DE LUZ SOBRE LA BASE
-      =================================================== */}
-
-      <pointLight
-        position={[
-          0,
-          0.8,
-          0,
-        ]}
-        intensity={2}
-        distance={7}
         decay={2}
         color={glow}
       />
