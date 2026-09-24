@@ -12,7 +12,8 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   FLECHA GRABADA EN LA CRUCETA
+   FLECHA EN LA CARA FRONTAL
+   Visible en cada brazo de la cruceta
 ========================================================= */
 
 function ArrowMark({
@@ -23,37 +24,26 @@ function ArrowMark({
   const arrowShape = useMemo(() => {
     const shape = new THREE.Shape();
 
+    // punta
     shape.moveTo(0, 0.78);
 
-    shape.lineTo(
-      0.58,
-      0.08
-    );
+    // hombro derecho
+    shape.lineTo(0.58, 0.08);
 
-    shape.lineTo(
-      0.27,
-      0.08
-    );
+    // entrada derecha
+    shape.lineTo(0.27, 0.08);
 
-    shape.lineTo(
-      0.27,
-      -0.52
-    );
+    // base derecha
+    shape.lineTo(0.27, -0.52);
 
-    shape.lineTo(
-      -0.27,
-      -0.52
-    );
+    // base izquierda
+    shape.lineTo(-0.27, -0.52);
 
-    shape.lineTo(
-      -0.27,
-      0.08
-    );
+    // entrada izquierda
+    shape.lineTo(-0.27, 0.08);
 
-    shape.lineTo(
-      -0.58,
-      0.08
-    );
+    // hombro izquierdo
+    shape.lineTo(-0.58, 0.08);
 
     shape.closePath();
 
@@ -65,7 +55,9 @@ function ArrowMark({
       position={[
         x,
         y,
-        0.735,
+
+        // cara frontal real
+        0.87,
       ]}
       rotation={[
         0,
@@ -74,18 +66,14 @@ function ArrowMark({
       ]}
     >
       <shapeGeometry
-        args={[
-          arrowShape,
-        ]}
+        args={[arrowShape]}
       />
 
       <meshStandardMaterial
-        color="#2b3035"
-        roughness={0.9}
+        color="#262b2f"
+        roughness={1}
         metalness={0}
-        side={
-          THREE.DoubleSide
-        }
+        side={THREE.DoubleSide}
       />
     </mesh>
   );
@@ -100,6 +88,10 @@ export default function CentralMonument({
 }) {
   const dpadRef =
     useRef(null);
+
+  /* =======================================================
+     ROTACIÓN
+  ======================================================= */
 
   useFrame(
     (state, delta) => {
@@ -116,7 +108,7 @@ export default function CentralMonument({
   );
 
   /* =======================================================
-     FORMA GENERAL DE CRUCETA
+     FORMA GENERAL DE LA CRUCETA
   ======================================================= */
 
   const createCrossShape =
@@ -197,6 +189,7 @@ export default function CentralMonument({
 
   /* =======================================================
      PARTE TRASERA
+     Lisa y cerrada
   ======================================================= */
 
   const backShape =
@@ -205,7 +198,8 @@ export default function CentralMonument({
     }, []);
 
   /* =======================================================
-     PARTE FRONTAL CON HUECO CENTRAL
+     PARTE FRONTAL
+     Con el hueco circular central
   ======================================================= */
 
   const frontShape =
@@ -290,7 +284,7 @@ export default function CentralMonument({
       position={position}
     >
       {/* ===================================================
-          BASE
+          PLATAFORMA — BASE
       =================================================== */}
 
       <mesh
@@ -317,6 +311,10 @@ export default function CentralMonument({
         />
       </mesh>
 
+      {/* ===================================================
+          PLATAFORMA — NIVEL 2
+      =================================================== */}
+
       <mesh
         position={[
           0,
@@ -341,6 +339,10 @@ export default function CentralMonument({
         />
       </mesh>
 
+      {/* ===================================================
+          PLATAFORMA — CENTRO
+      =================================================== */}
+
       <mesh
         position={[
           0,
@@ -364,6 +366,10 @@ export default function CentralMonument({
           metalness={0.1}
         />
       </mesh>
+
+      {/* ===================================================
+          ARO LUMINOSO DE LA BASE
+      =================================================== */}
 
       <mesh
         position={[
@@ -465,6 +471,7 @@ export default function CentralMonument({
 
         {/* ===============================================
             CAVIDAD CENTRAL
+            Cóncava hacia adentro
         =============================================== */}
 
         <mesh
@@ -495,39 +502,31 @@ export default function CentralMonument({
             color="#030405"
             roughness={0.82}
             metalness={0.02}
-            side={
-              THREE.BackSide
-            }
+            side={THREE.BackSide}
           />
         </mesh>
 
         {/* ===============================================
-            FLECHAS EN LAS 4 PUNTAS
-
-            Ahora están puestas bien
-            sobre la cara frontal.
+            FLECHAS EN LAS 4 PUNTAS DE LA CARA FRONTAL
         =============================================== */}
 
         {/* ARRIBA */}
-
         <ArrowMark
           x={0}
-          y={3.15}
+          y={3.05}
           rotationZ={0}
         />
 
         {/* ABAJO */}
-
         <ArrowMark
           x={0}
-          y={-3.15}
+          y={-3.05}
           rotationZ={Math.PI}
         />
 
         {/* IZQUIERDA */}
-
         <ArrowMark
-          x={-3.15}
+          x={-3.05}
           y={0}
           rotationZ={
             Math.PI / 2
@@ -535,9 +534,8 @@ export default function CentralMonument({
         />
 
         {/* DERECHA */}
-
         <ArrowMark
-          x={3.15}
+          x={3.05}
           y={0}
           rotationZ={
             -Math.PI / 2
