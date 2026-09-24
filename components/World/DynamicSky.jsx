@@ -21,19 +21,18 @@ import * as THREE from "three";
    CONFIGURACIÓN
 ========================================================= */
 
-const SKY_RADIUS = 220;
+const SKY_RADIUS =
+  220;
 
-/*
-  Ubicación de respaldo.
+const FALLBACK_LATITUDE =
+  39.57;
 
-  Solo se usa mientras conseguimos la ubicación
-  del dispositivo o si el usuario no da permiso.
-*/
+const FALLBACK_LONGITUDE =
+  2.65;
 
-const FALLBACK_LATITUDE = 39.57;
-const FALLBACK_LONGITUDE = 2.65;
-
-const RAD = Math.PI / 180;
+const RAD =
+  Math.PI /
+  180;
 
 const DAY_MS =
   1000 *
@@ -41,14 +40,19 @@ const DAY_MS =
   60 *
   24;
 
-const J1970 = 2440588;
-const J2000 = 2451545;
+const J1970 =
+  2440588;
+
+const J2000 =
+  2451545;
 
 /* =========================================================
    ASTRONOMÍA
 ========================================================= */
 
-function toJulian(date) {
+function toJulian(
+  date
+) {
   return (
     date.valueOf() /
       DAY_MS -
@@ -57,9 +61,13 @@ function toJulian(date) {
   );
 }
 
-function toDays(date) {
+function toDays(
+  date
+) {
   return (
-    toJulian(date) -
+    toJulian(
+      date
+    ) -
     J2000
   );
 }
@@ -73,12 +81,22 @@ function rightAscension(
     23.4397;
 
   return Math.atan2(
-    Math.sin(l) *
-      Math.cos(e) -
-      Math.tan(b) *
-        Math.sin(e),
+    Math.sin(
+      l
+    ) *
+      Math.cos(
+        e
+      ) -
+      Math.tan(
+        b
+      ) *
+        Math.sin(
+          e
+        ),
 
-    Math.cos(l)
+    Math.cos(
+      l
+    )
   );
 }
 
@@ -91,11 +109,21 @@ function declination(
     23.4397;
 
   return Math.asin(
-    Math.sin(b) *
-      Math.cos(e) +
-      Math.cos(b) *
-        Math.sin(e) *
-        Math.sin(l)
+    Math.sin(
+      b
+    ) *
+      Math.cos(
+        e
+      ) +
+      Math.cos(
+        b
+      ) *
+        Math.sin(
+          e
+        ) *
+        Math.sin(
+          l
+        )
   );
 }
 
@@ -105,12 +133,22 @@ function azimuth(
   dec
 ) {
   return Math.atan2(
-    Math.sin(H),
+    Math.sin(
+      H
+    ),
 
-    Math.cos(H) *
-      Math.sin(phi) -
-      Math.tan(dec) *
-        Math.cos(phi)
+    Math.cos(
+      H
+    ) *
+      Math.sin(
+        phi
+      ) -
+      Math.tan(
+        dec
+      ) *
+        Math.cos(
+          phi
+        )
   );
 }
 
@@ -120,11 +158,21 @@ function altitude(
   dec
 ) {
   return Math.asin(
-    Math.sin(phi) *
-      Math.sin(dec) +
-      Math.cos(phi) *
-        Math.cos(dec) *
-        Math.cos(H)
+    Math.sin(
+      phi
+    ) *
+      Math.sin(
+        dec
+      ) +
+      Math.cos(
+        phi
+      ) *
+        Math.cos(
+          dec
+        ) *
+        Math.cos(
+          H
+        )
   );
 }
 
@@ -167,14 +215,18 @@ function eclipticLongitude(
     RAD *
     (
       1.9148 *
-        Math.sin(M) +
+        Math.sin(
+          M
+        ) +
       0.02 *
         Math.sin(
-          2 * M
+          2 *
+            M
         ) +
       0.0003 *
         Math.sin(
-          3 * M
+          3 *
+            M
         )
     );
 
@@ -204,7 +256,9 @@ function getSunPosition(
     latitude;
 
   const d =
-    toDays(date);
+    toDays(
+      date
+    );
 
   const M =
     solarMeanAnomaly(
@@ -256,7 +310,9 @@ function getSunPosition(
    LUNA
 ========================================================= */
 
-function moonCoords(d) {
+function moonCoords(
+  d
+) {
   const L =
     RAD *
     (
@@ -285,12 +341,16 @@ function moonCoords(d) {
     L +
     RAD *
       6.289 *
-      Math.sin(M);
+      Math.sin(
+        M
+      );
 
   const b =
     RAD *
     5.128 *
-    Math.sin(F);
+    Math.sin(
+      F
+    );
 
   return {
     ra:
@@ -321,10 +381,14 @@ function getMoonPosition(
     latitude;
 
   const d =
-    toDays(date);
+    toDays(
+      date
+    );
 
   const coords =
-    moonCoords(d);
+    moonCoords(
+      d
+    );
 
   const H =
     siderealTime(
@@ -492,12 +556,14 @@ function CloudBank({
 }
 
 /* =========================================================
-   CÚPULA
+   CIELO DIRECCIONAL
 ========================================================= */
 
 function SkyDome({
   topColor,
   horizonColor,
+  sunDirection,
+  twilightStrength,
 }) {
   const material =
     useRef();
@@ -516,6 +582,32 @@ function SkyDome({
           value:
             new THREE.Color(
               horizonColor
+            ),
+        },
+
+        sunDirection: {
+          value:
+            new THREE.Vector3(
+              ...sunDirection
+            ).normalize(),
+        },
+
+        twilightStrength: {
+          value:
+            twilightStrength,
+        },
+
+        sunsetColor: {
+          value:
+            new THREE.Color(
+              "#ff713d"
+            ),
+        },
+
+        sunsetYellow: {
+          value:
+            new THREE.Color(
+              "#ffd38b"
             ),
         },
       }),
@@ -544,9 +636,26 @@ function SkyDome({
       .set(
         horizonColor
       );
+
+    material.current
+      .uniforms
+      .sunDirection
+      .value
+      .set(
+        ...sunDirection
+      )
+      .normalize();
+
+    material.current
+      .uniforms
+      .twilightStrength
+      .value =
+      twilightStrength;
   }, [
     topColor,
     horizonColor,
+    sunDirection,
+    twilightStrength,
   ]);
 
   return (
@@ -558,8 +667,8 @@ function SkyDome({
       <sphereGeometry
         args={[
           1,
-          48,
-          32,
+          64,
+          40,
         ]}
       />
 
@@ -597,26 +706,136 @@ function SkyDome({
           uniform vec3 topColor;
           uniform vec3 horizonColor;
 
+          uniform vec3 sunDirection;
+
+          uniform float twilightStrength;
+
+          uniform vec3 sunsetColor;
+          uniform vec3 sunsetYellow;
+
           varying vec3 vWorldPosition;
 
           void main() {
-            float h =
+            vec3 direction =
               normalize(
                 vWorldPosition
-              ).y;
-
-            float mixValue =
-              smoothstep(
-                -0.10,
-                0.72,
-                h
               );
 
-            vec3 finalColor =
+            float heightMix =
+              smoothstep(
+                -0.08,
+                0.72,
+                direction.y
+              );
+
+            vec3 baseColor =
               mix(
                 horizonColor,
                 topColor,
-                mixValue
+                heightMix
+              );
+
+            vec3 horizontalView =
+              normalize(
+                vec3(
+                  direction.x,
+                  0.0,
+                  direction.z
+                )
+              );
+
+            vec3 horizontalSun =
+              normalize(
+                vec3(
+                  sunDirection.x,
+                  0.0,
+                  sunDirection.z
+                )
+              );
+
+            float facingSun =
+              dot(
+                horizontalView,
+                horizontalSun
+              );
+
+            float sunSide =
+              smoothstep(
+                -0.25,
+                0.95,
+                facingSun
+              );
+
+            float horizonBand =
+              1.0 -
+              smoothstep(
+                0.02,
+                0.58,
+                abs(
+                  direction.y
+                )
+              );
+
+            float solarGlow =
+              pow(
+                max(
+                  facingSun,
+                  0.0
+                ),
+                5.0
+              ) *
+              horizonBand *
+              twilightStrength;
+
+            float warmArea =
+              sunSide *
+              horizonBand *
+              twilightStrength;
+
+            vec3 finalColor =
+              baseColor;
+
+            finalColor =
+              mix(
+                finalColor,
+                sunsetColor,
+                warmArea *
+                0.72
+              );
+
+            finalColor =
+              mix(
+                finalColor,
+                sunsetYellow,
+                solarGlow *
+                0.88
+              );
+
+            float oppositeSide =
+              (
+                1.0 -
+                sunSide
+              ) *
+              horizonBand *
+              twilightStrength;
+
+            vec3 darkOpposite =
+              mix(
+                finalColor,
+                vec3(
+                  0.015,
+                  0.025,
+                  0.055
+                ),
+                oppositeSide *
+                0.58
+              );
+
+            finalColor =
+              mix(
+                finalColor,
+                darkOpposite,
+                oppositeSide
               );
 
             gl_FragColor =
@@ -632,7 +851,7 @@ function SkyDome({
 }
 
 /* =========================================================
-   SOL VISUAL
+   SOL
 ========================================================= */
 
 function Sun({
@@ -643,19 +862,12 @@ function Sun({
     altitudeDegrees <
     12;
 
-  const coreColor =
-    lowSun
-      ? "#ffd09a"
-      : "#fff9df";
-
   return (
     <group
       position={
         position
       }
     >
-      {/* HALO GRANDE */}
-
       <mesh>
         <sphereGeometry
           args={[
@@ -683,8 +895,6 @@ function Sun({
           }
         />
       </mesh>
-
-      {/* HALO INTERMEDIO */}
 
       <mesh>
         <sphereGeometry
@@ -714,8 +924,6 @@ function Sun({
         />
       </mesh>
 
-      {/* DISCO SOLAR */}
-
       <mesh>
         <sphereGeometry
           args={[
@@ -727,7 +935,9 @@ function Sun({
 
         <meshBasicMaterial
           color={
-            coreColor
+            lowSun
+              ? "#ffd09a"
+              : "#fff9df"
           }
           toneMapped={
             false
@@ -739,13 +949,7 @@ function Sun({
 }
 
 /* =========================================================
-   LUNA CON FASE REAL
-
-   La parte iluminada se calcula según la dirección
-   real del Sol respecto de la Luna.
-
-   No necesitamos elegir manualmente:
-   nueva / creciente / llena / menguante.
+   LUNA
 ========================================================= */
 
 function Moon({
@@ -812,13 +1016,18 @@ function Moon({
       return;
     }
 
-    material.current.uniforms
-      .lightDirection.value.copy(
+    material.current
+      .uniforms
+      .lightDirection
+      .value
+      .copy(
         lightDirection
       );
 
-    material.current.uniforms
-      .daylight.value =
+    material.current
+      .uniforms
+      .daylight
+      .value =
       daylight;
   }, [
     lightDirection,
@@ -831,8 +1040,6 @@ function Moon({
         position
       }
     >
-      {/* HALO MUY SUAVE */}
-
       <mesh>
         <sphereGeometry
           args={[
@@ -859,8 +1066,6 @@ function Moon({
           }
         />
       </mesh>
-
-      {/* LUNA */}
 
       <mesh>
         <sphereGeometry
@@ -922,13 +1127,6 @@ function Moon({
                   )
                 );
 
-              /*
-                Terminador lunar.
-
-                El borde ligeramente suave evita
-                una línea digital completamente dura.
-              */
-
               float lit =
                 smoothstep(
                   -0.035,
@@ -936,21 +1134,20 @@ function Moon({
                   sunlight
                 );
 
-              /*
-                Pequeñas variaciones de superficie
-                para que no parezca una esfera blanca.
-              */
-
               float craterA =
                 sin(
-                  vPosition.x * 4.1 +
-                  vPosition.y * 2.7
+                  vPosition.x *
+                  4.1 +
+                  vPosition.y *
+                  2.7
                 );
 
               float craterB =
                 sin(
-                  vPosition.z * 5.3 -
-                  vPosition.y * 3.4
+                  vPosition.z *
+                  5.3 -
+                  vPosition.y *
+                  3.4
                 );
 
               float surface =
@@ -975,11 +1172,6 @@ function Moon({
                   0.80
                 ) *
                 surface;
-
-              /*
-                Durante el día bajamos un poco
-                el contraste de la Luna.
-              */
 
               darkSide =
                 mix(
@@ -1043,7 +1235,7 @@ export default function DynamicSky() {
     });
 
   /* =======================================================
-     HORA DEL DISPOSITIVO
+     HORA REAL
   ======================================================= */
 
   useEffect(() => {
@@ -1064,12 +1256,7 @@ export default function DynamicSky() {
   }, []);
 
   /* =======================================================
-     UBICACIÓN REAL DEL DISPOSITIVO
-
-     Esto vuelve a estar activo.
-
-     Ya sabemos que NO era la causa
-     del flash.
+     UBICACIÓN REAL
   ======================================================= */
 
   useEffect(() => {
@@ -1098,12 +1285,7 @@ export default function DynamicSky() {
           });
         },
 
-        () => {
-          /*
-            Sin permiso:
-            seguimos con fallback.
-          */
-        },
+        () => {},
 
         {
           enableHighAccuracy:
@@ -1139,11 +1321,13 @@ export default function DynamicSky() {
     );
 
   const sunDegrees =
-    sunAstronomical.altitude /
+    sunAstronomical
+      .altitude /
     RAD;
 
   const moonDegrees =
-    moonAstronomical.altitude /
+    moonAstronomical
+      .altitude /
     RAD;
 
   const sunPosition =
@@ -1158,6 +1342,13 @@ export default function DynamicSky() {
       185
     );
 
+  const sunDirection =
+    new THREE.Vector3(
+      ...sunPosition
+    )
+      .normalize()
+      .toArray();
+
   const sunVisible =
     sunDegrees >
     -1.5;
@@ -1167,7 +1358,7 @@ export default function DynamicSky() {
     -1;
 
   /* =======================================================
-     LUZ DEL DÍA
+     DÍA / CREPÚSCULO
   ======================================================= */
 
   const daylight =
@@ -1188,6 +1379,17 @@ export default function DynamicSky() {
         12
       ) /
         12,
+      0,
+      1
+    );
+
+  const twilightDirectionalStrength =
+    THREE.MathUtils.clamp(
+      1 -
+        Math.abs(
+          sunDegrees
+        ) /
+          16,
       0,
       1
     );
@@ -1267,7 +1469,7 @@ export default function DynamicSky() {
   }
 
   /* =======================================================
-     INTENSIDADES
+     ILUMINACIÓN
   ======================================================= */
 
   const sunIntensity =
@@ -1287,314 +1489,4 @@ export default function DynamicSky() {
 
   const ambientIntensity =
     THREE.MathUtils.lerp(
-      0.06,
-      0.35,
-      daylight
-    );
-
-  const showStars =
-    sunDegrees <
-    -4;
-
-  /* =======================================================
-     BRILLO LUNAR SEGÚN FASE
-
-     Calculamos la separación angular
-     visible entre Sol y Luna.
-
-     0°   ≈ luna nueva
-     180° ≈ luna llena
-  ======================================================= */
-
-  const sunDirection =
-    new THREE.Vector3(
-      ...sunPosition
-    ).normalize();
-
-  const moonDirection =
-    new THREE.Vector3(
-      ...moonPosition
-    ).normalize();
-
-  const elongation =
-    Math.acos(
-      THREE.MathUtils.clamp(
-        sunDirection.dot(
-          moonDirection
-        ),
-        -1,
-        1
-      )
-    );
-
-  const moonIllumination =
-    (
-      1 -
-      Math.cos(
-        elongation
-      )
-    ) /
-    2;
-
-  const moonLightIntensity =
-    THREE.MathUtils.lerp(
-      0.015,
-      0.26,
-      moonIllumination
-    );
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
-
-  return (
-    <>
-      {/* FONDO */}
-
-      <color
-        attach="background"
-        args={[
-          `#${topColor.getHexString()}`,
-        ]}
-      />
-
-      <SkyDome
-        topColor={
-          `#${topColor.getHexString()}`
-        }
-        horizonColor={
-          `#${horizonColor.getHexString()}`
-        }
-      />
-
-      <fog
-        attach="fog"
-        args={[
-          `#${horizonColor.getHexString()}`,
-          170,
-          360,
-        ]}
-      />
-
-      {/* ESTRELLAS */}
-
-      {showStars && (
-        <Stars
-          radius={
-            190
-          }
-          depth={
-            90
-          }
-          count={
-            3200
-          }
-          factor={
-            2.8
-          }
-          saturation={
-            0.08
-          }
-          fade
-          speed={
-            0.08
-          }
-        />
-      )}
-
-      {/* SOL */}
-
-      {sunVisible && (
-        <Sun
-          position={
-            sunPosition
-          }
-          altitudeDegrees={
-            sunDegrees
-          }
-        />
-      )}
-
-      {/* LUNA */}
-
-      {moonVisible && (
-        <Moon
-          position={
-            moonPosition
-          }
-          sunPosition={
-            sunPosition
-          }
-          daylight={
-            daylight
-          }
-        />
-      )}
-
-      {/* NUBES */}
-
-      <CloudBank
-        position={[
-          -105,
-          44,
-          -85,
-        ]}
-        scale={
-          1.3
-        }
-        speed={
-          0.5
-        }
-        opacity={
-          0.55 +
-          daylight *
-            0.27
-        }
-      />
-
-      <CloudBank
-        position={[
-          -15,
-          55,
-          -120,
-        ]}
-        scale={
-          0.95
-        }
-        speed={
-          0.32
-        }
-        opacity={
-          0.5 +
-          daylight *
-            0.3
-        }
-      />
-
-      <CloudBank
-        position={[
-          75,
-          39,
-          -75,
-        ]}
-        scale={
-          1.15
-        }
-        speed={
-          0.42
-        }
-        opacity={
-          0.55 +
-          daylight *
-            0.27
-        }
-      />
-
-      <CloudBank
-        position={[
-          120,
-          60,
-          -145,
-        ]}
-        scale={
-          0.75
-        }
-        speed={
-          0.25
-        }
-        opacity={
-          0.48 +
-          daylight *
-            0.3
-        }
-      />
-
-      {/* LUZ SOLAR */}
-
-      {sunDegrees >
-        -5 && (
-        <directionalLight
-          position={
-            sunPosition
-          }
-          intensity={
-            sunIntensity
-          }
-          color={
-            sunDegrees <
-            10
-              ? "#ffd09b"
-              : "#fff6e2"
-          }
-          castShadow
-          shadow-mapSize-width={
-            1024
-          }
-          shadow-mapSize-height={
-            1024
-          }
-          shadow-camera-near={
-            1
-          }
-          shadow-camera-far={
-            260
-          }
-          shadow-camera-left={
-            -120
-          }
-          shadow-camera-right={
-            120
-          }
-          shadow-camera-top={
-            120
-          }
-          shadow-camera-bottom={
-            -120
-          }
-        />
-      )}
-
-      {/* LUZ LUNAR REAL SEGÚN FASE */}
-
-      {moonVisible &&
-        sunDegrees <
-          -2 && (
-          <directionalLight
-            position={
-              moonPosition
-            }
-            intensity={
-              moonLightIntensity
-            }
-            color="#9ebbe8"
-          />
-        )}
-
-      {/* LUZ AMBIENTAL */}
-
-      <hemisphereLight
-        intensity={
-          hemisphereIntensity
-        }
-        color={
-          daylight >
-          0.3
-            ? "#9bd9ff"
-            : "#52668a"
-        }
-        groundColor={
-          daylight >
-          0.3
-            ? "#53614c"
-            : "#090b10"
-        }
-      />
-
-      <ambientLight
-        intensity={
-          ambientIntensity
-        }
-      />
-    </>
-  );
-}
+      0.06
