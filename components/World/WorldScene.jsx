@@ -17,6 +17,7 @@ import {
 import WorldEnvironment from "./WorldEnvironment";
 import DynamicSky from "./DynamicSky";
 import WorldLighting from "./WorldLighting";
+import AdaptiveWorldLighting from "./AdaptiveWorldLighting";
 
 import PlayerController, {
   playerInput,
@@ -109,11 +110,11 @@ export default function WorldScene() {
     setMobile(coarse);
 
     /*
-      Móvil:
-      empezamos directamente en LOW.
+      MÓVIL:
+      arrancamos directamente LOW.
 
-      Desktop:
-      empezamos en HIGH.
+      PC:
+      arrancamos HIGH.
     */
 
     setQuality(
@@ -131,8 +132,7 @@ export default function WorldScene() {
         );
 
     if (
-      completed ===
-      "true"
+      completed === "true"
     ) {
       return;
     }
@@ -326,7 +326,7 @@ export default function WorldScene() {
         )}:00`;
 
   /* =======================================================
-     ESPERAR A SABER QUÉ DISPOSITIVO ES
+     ESPERAMOS A SABER QUÉ DISPOSITIVO ES
   ======================================================= */
 
   if (!deviceReady) {
@@ -343,19 +343,22 @@ export default function WorldScene() {
         !overlayOpen && (
           <div
             style={{
-              position: "fixed",
+              position:
+                "fixed",
 
               top:
                 mobile
                   ? 18
                   : 22,
 
-              left: "50%",
+              left:
+                "50%",
 
               transform:
                 "translateX(-50%)",
 
-              zIndex: 70,
+              zIndex:
+                70,
 
               width:
                 "min(90vw, 390px)",
@@ -363,9 +366,11 @@ export default function WorldScene() {
               padding:
                 "14px 16px",
 
-              borderRadius: 16,
+              borderRadius:
+                16,
 
-              color: "#fff",
+              color:
+                "#fff",
 
               background:
                 "rgba(5,8,12,0.82)",
@@ -376,17 +381,20 @@ export default function WorldScene() {
               border:
                 "1px solid rgba(255,255,255,0.15)",
 
-              fontSize: 13,
+              fontSize:
+                13,
             }}
           >
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
                 justifyContent:
                   "space-between",
 
-                gap: 16,
+                gap:
+                  16,
               }}
             >
               <div>
@@ -396,11 +404,14 @@ export default function WorldScene() {
 
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop:
+                      6,
 
-                    opacity: 0.72,
+                    opacity:
+                      0.72,
 
-                    lineHeight: 1.55,
+                    lineHeight:
+                      1.55,
                   }}
                 >
                   {mobile ? (
@@ -433,11 +444,14 @@ export default function WorldScene() {
                   closeTutorial
                 }
                 style={{
-                  width: 30,
+                  width:
+                    30,
 
-                  height: 30,
+                  height:
+                    30,
 
-                  border: 0,
+                  border:
+                    0,
 
                   borderRadius:
                     "50%",
@@ -445,9 +459,11 @@ export default function WorldScene() {
                   background:
                     "rgba(255,255,255,0.1)",
 
-                  color: "#fff",
+                  color:
+                    "#fff",
 
-                  fontSize: 20,
+                  fontSize:
+                    20,
                 }}
               >
                 ×
@@ -471,12 +487,17 @@ export default function WorldScene() {
               )
             }
             style={{
-              position: "fixed",
+              position:
+                "fixed",
 
-              top: 14,
-              right: 14,
+              top:
+                14,
 
-              zIndex: 80,
+              right:
+                14,
+
+              zIndex:
+                80,
 
               padding:
                 "7px 10px",
@@ -484,20 +505,28 @@ export default function WorldScene() {
               border:
                 "1px solid rgba(255,255,255,0.14)",
 
-              borderRadius: 9,
+              borderRadius:
+                9,
 
               background:
                 "rgba(0,0,0,0.48)",
 
-              color: "#fff",
+              color:
+                "#fff",
 
-              fontSize: 11,
+              fontSize:
+                11,
 
-              fontWeight: 800,
+              fontWeight:
+                800,
             }}
           >
             FPS
           </button>
+
+          {/* ===============================================
+              PANEL FPS
+          =============================================== */}
 
           {showStats &&
             stats && (
@@ -506,12 +535,17 @@ export default function WorldScene() {
                   position:
                     "fixed",
 
-                  top: 52,
-                  right: 14,
+                  top:
+                    52,
 
-                  zIndex: 80,
+                  right:
+                    14,
 
-                  width: 215,
+                  zIndex:
+                    80,
+
+                  width:
+                    215,
 
                   padding:
                     "10px 12px",
@@ -522,7 +556,8 @@ export default function WorldScene() {
                   background:
                     "rgba(0,0,0,0.76)",
 
-                  color: "#fff",
+                  color:
+                    "#fff",
 
                   fontFamily:
                     "monospace",
@@ -571,11 +606,17 @@ export default function WorldScene() {
                 Quality:{" "}
                 {quality.toUpperCase()}
 
+                {/* =========================================
+                    CONTROL CIELO
+                ========================================= */}
+
                 <div
                   style={{
-                    marginTop: 10,
+                    marginTop:
+                      10,
 
-                    paddingTop: 8,
+                    paddingTop:
+                      8,
 
                     borderTop:
                       "1px solid rgba(255,255,255,0.15)",
@@ -589,14 +630,17 @@ export default function WorldScene() {
 
                 <div
                   style={{
-                    display: "flex",
+                    display:
+                      "flex",
 
                     flexWrap:
                       "wrap",
 
-                    gap: 4,
+                    gap:
+                      4,
 
-                    marginTop: 5,
+                    marginTop:
+                      5,
                   }}
                 >
                   {SKY_TEST_HOURS.map(
@@ -661,7 +705,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          CANVAS
+          CANVAS 3D
       =================================================== */}
 
       <Canvas
@@ -681,27 +725,34 @@ export default function WorldScene() {
             6,
           ],
 
-          fov: 60,
+          fov:
+            60,
 
-          near: 0.1,
+          near:
+            0.1,
 
-          far: 420,
+          far:
+            420,
         }}
         gl={{
-          antialias: false,
+          antialias:
+            false,
 
           powerPreference:
             "high-performance",
 
-          alpha: false,
+          alpha:
+            false,
 
-          stencil: false,
+          stencil:
+            false,
 
-          depth: true,
+          depth:
+            true,
         }}
       >
         {/* =================================================
-            MONITOR ADAPTATIVO
+            MONITOR DE RENDIMIENTO
         ================================================= */}
 
         <PerformanceMonitor
@@ -720,7 +771,7 @@ export default function WorldScene() {
         />
 
         {/* =================================================
-            CIELO
+            CIELO DINÁMICO
         ================================================= */}
 
         <DynamicSky
@@ -736,10 +787,27 @@ export default function WorldScene() {
         />
 
         {/* =================================================
-            CONFIGURACIÓN DEL RENDERER
+            CONFIGURACIÓN GENERAL DEL RENDERER
         ================================================= */}
 
         <WorldLighting />
+
+        {/* =================================================
+            ILUMINACIÓN ADAPTATIVA
+
+            - iluminación nocturna global barata
+            - luz local por proximidad
+            - sombra local por zona
+        ================================================= */}
+
+        <AdaptiveWorldLighting
+          quality={
+            quality
+          }
+          testHour={
+            skyTestHour
+          }
+        />
 
         {/* =================================================
             FÍSICA
