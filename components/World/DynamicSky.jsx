@@ -24,18 +24,16 @@ import * as THREE from "three";
 const SKY_RADIUS = 220;
 
 /*
-  UBICACIÓN FIJA TEMPORAL.
+  Ubicación de respaldo.
 
-  Quitamos la geolocalización del navegador
-  para comprobar si estaba provocando
-  el flash al arrancar.
+  Solo se usa mientras conseguimos la ubicación
+  del dispositivo o si el usuario no da permiso.
 */
 
-const LATITUDE = 39.57;
-const LONGITUDE = 2.65;
+const FALLBACK_LATITUDE = 39.57;
+const FALLBACK_LONGITUDE = 2.65;
 
-const RAD =
-  Math.PI / 180;
+const RAD = Math.PI / 180;
 
 const DAY_MS =
   1000 *
@@ -47,7 +45,7 @@ const J1970 = 2440588;
 const J2000 = 2451545;
 
 /* =========================================================
-   UTILIDADES ASTRONÓMICAS
+   ASTRONOMÍA
 ========================================================= */
 
 function toJulian(date) {
@@ -353,40 +351,32 @@ function getMoonPosition(
 }
 
 /* =========================================================
-   POSICIÓN 3D DE ASTROS
+   VECTOR 3D
 ========================================================= */
 
 function celestialToVector(
-  astronomicalPosition,
+  position,
   radius = SKY_RADIUS
 ) {
-  const altitude =
-    astronomicalPosition
-      .altitude;
-
-  const azimuth =
-    astronomicalPosition
-      .azimuth;
-
   const horizontal =
     Math.cos(
-      altitude
+      position.altitude
     ) *
     radius;
 
   return [
     Math.sin(
-      azimuth
+      position.azimuth
     ) *
       horizontal,
 
     Math.sin(
-      altitude
+      position.altitude
     ) *
       radius,
 
     -Math.cos(
-      azimuth
+      position.azimuth
     ) *
       horizontal,
   ];
@@ -436,36 +426,11 @@ function CloudBank({
   const pieces =
     useMemo(
       () => [
-        [
-          -5.5,
-          0.2,
-          0,
-          4.5,
-        ],
-        [
-          -1.8,
-          1.1,
-          0.4,
-          5.2,
-        ],
-        [
-          2.3,
-          0.8,
-          -0.2,
-          4.8,
-        ],
-        [
-          5.6,
-          0.1,
-          0.3,
-          3.8,
-        ],
-        [
-          0.2,
-          -0.5,
-          0.8,
-          5.4,
-        ],
+        [-5.5, 0.2, 0, 4.5],
+        [-1.8, 1.1, 0.4, 5.2],
+        [2.3, 0.8, -0.2, 4.8],
+        [5.6, 0.1, 0.3, 3.8],
+        [0.2, -0.5, 0.8, 5.4],
       ],
       []
     );
@@ -586,7 +551,9 @@ function SkyDome({
 
   return (
     <mesh
-      scale={280}
+      scale={
+        280
+      }
     >
       <sphereGeometry
         args={[
@@ -641,7 +608,7 @@ function SkyDome({
             float mixValue =
               smoothstep(
                 -0.10,
-                0.70,
+                0.72,
                 h
               );
 
@@ -665,6 +632,388 @@ function SkyDome({
 }
 
 /* =========================================================
+   SOL VISUAL
+========================================================= */
+
+function Sun({
+  position,
+  altitudeDegrees,
+}) {
+  const lowSun =
+    altitudeDegrees <
+    12;
+
+  const coreColor =
+    lowSun
+      ? "#ffd09a"
+      : "#fff9df";
+
+  return (
+    <group
+      position={
+        position
+      }
+    >
+      {/* HALO GRANDE */}
+
+      <mesh>
+        <sphereGeometry
+          args={[
+            9,
+            24,
+            24,
+          ]}
+        />
+
+        <meshBasicMaterial
+          color={
+            lowSun
+              ? "#ffb76a"
+              : "#fff1a8"
+          }
+          transparent
+          opacity={
+            0.055
+          }
+          depthWrite={
+            false
+          }
+          toneMapped={
+            false
+          }
+        />
+      </mesh>
+
+      {/* HALO INTERMEDIO */}
+
+      <mesh>
+        <sphereGeometry
+          args={[
+            6.5,
+            24,
+            24,
+          ]}
+        />
+
+        <meshBasicMaterial
+          color={
+            lowSun
+              ? "#ffc47c"
+              : "#fff4b8"
+          }
+          transparent
+          opacity={
+            0.13
+          }
+          depthWrite={
+            false
+          }
+          toneMapped={
+            false
+          }
+        />
+      </mesh>
+
+      {/* DISCO SOLAR */}
+
+      <mesh>
+        <sphereGeometry
+          args={[
+            3.9,
+            32,
+            32,
+          ]}
+        />
+
+        <meshBasicMaterial
+          color={
+            coreColor
+          }
+          toneMapped={
+            false
+          }
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
+   LUNA CON FASE REAL
+
+   La parte iluminada se calcula según la dirección
+   real del Sol respecto de la Luna.
+
+   No necesitamos elegir manualmente:
+   nueva / creciente / llena / menguante.
+========================================================= */
+
+function Moon({
+  position,
+  sunPosition,
+  daylight,
+}) {
+  const material =
+    useRef();
+
+  const moonVector =
+    useMemo(
+      () =>
+        new THREE.Vector3(
+          ...position
+        ),
+      [position]
+    );
+
+  const sunVector =
+    useMemo(
+      () =>
+        new THREE.Vector3(
+          ...sunPosition
+        ),
+      [sunPosition]
+    );
+
+  const lightDirection =
+    useMemo(
+      () =>
+        sunVector
+          .clone()
+          .sub(
+            moonVector
+          )
+          .normalize(),
+      [
+        moonVector,
+        sunVector,
+      ]
+    );
+
+  const uniforms =
+    useMemo(
+      () => ({
+        lightDirection: {
+          value:
+            lightDirection.clone(),
+        },
+
+        daylight: {
+          value:
+            daylight,
+        },
+      }),
+      []
+    );
+
+  useEffect(() => {
+    if (
+      !material.current
+    ) {
+      return;
+    }
+
+    material.current.uniforms
+      .lightDirection.value.copy(
+        lightDirection
+      );
+
+    material.current.uniforms
+      .daylight.value =
+      daylight;
+  }, [
+    lightDirection,
+    daylight,
+  ]);
+
+  return (
+    <group
+      position={
+        position
+      }
+    >
+      {/* HALO MUY SUAVE */}
+
+      <mesh>
+        <sphereGeometry
+          args={[
+            6,
+            24,
+            24,
+          ]}
+        />
+
+        <meshBasicMaterial
+          color="#b9ccf2"
+          transparent
+          opacity={
+            daylight >
+            0.5
+              ? 0.018
+              : 0.055
+          }
+          depthWrite={
+            false
+          }
+          toneMapped={
+            false
+          }
+        />
+      </mesh>
+
+      {/* LUNA */}
+
+      <mesh>
+        <sphereGeometry
+          args={[
+            4.1,
+            48,
+            48,
+          ]}
+        />
+
+        <shaderMaterial
+          ref={
+            material
+          }
+          uniforms={
+            uniforms
+          }
+          vertexShader={`
+            varying vec3 vNormalWorld;
+            varying vec3 vPosition;
+
+            void main() {
+              vNormalWorld =
+                normalize(
+                  mat3(modelMatrix) *
+                  normal
+                );
+
+              vPosition =
+                position;
+
+              gl_Position =
+                projectionMatrix *
+                modelViewMatrix *
+                vec4(
+                  position,
+                  1.0
+                );
+            }
+          `}
+          fragmentShader={`
+            uniform vec3 lightDirection;
+            uniform float daylight;
+
+            varying vec3 vNormalWorld;
+            varying vec3 vPosition;
+
+            void main() {
+              vec3 normal =
+                normalize(
+                  vNormalWorld
+                );
+
+              float sunlight =
+                dot(
+                  normal,
+                  normalize(
+                    lightDirection
+                  )
+                );
+
+              /*
+                Terminador lunar.
+
+                El borde ligeramente suave evita
+                una línea digital completamente dura.
+              */
+
+              float lit =
+                smoothstep(
+                  -0.035,
+                  0.045,
+                  sunlight
+                );
+
+              /*
+                Pequeñas variaciones de superficie
+                para que no parezca una esfera blanca.
+              */
+
+              float craterA =
+                sin(
+                  vPosition.x * 4.1 +
+                  vPosition.y * 2.7
+                );
+
+              float craterB =
+                sin(
+                  vPosition.z * 5.3 -
+                  vPosition.y * 3.4
+                );
+
+              float surface =
+                0.92 +
+                (
+                  craterA *
+                  craterB
+                ) *
+                0.055;
+
+              vec3 darkSide =
+                vec3(
+                  0.065,
+                  0.075,
+                  0.095
+                );
+
+              vec3 lightSide =
+                vec3(
+                  0.82,
+                  0.84,
+                  0.80
+                ) *
+                surface;
+
+              /*
+                Durante el día bajamos un poco
+                el contraste de la Luna.
+              */
+
+              darkSide =
+                mix(
+                  darkSide,
+                  vec3(
+                    0.18,
+                    0.20,
+                    0.22
+                  ),
+                  daylight *
+                  0.45
+                );
+
+              vec3 finalColor =
+                mix(
+                  darkSide,
+                  lightSide,
+                  lit
+                );
+
+              gl_FragColor =
+                vec4(
+                  finalColor,
+                  1.0
+                );
+            }
+          `}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
    CIELO DINÁMICO
 ========================================================= */
 
@@ -678,11 +1027,23 @@ export default function DynamicSky() {
         new Date()
     );
 
-  /* =======================================================
-     HORA REAL
+  const [
+    location,
+    setLocation,
+  ] =
+    useState({
+      latitude:
+        FALLBACK_LATITUDE,
 
-     Actualizamos solo el tiempo.
-     NO cambiamos ubicación después del arranque.
+      longitude:
+        FALLBACK_LONGITUDE,
+
+      precise:
+        false,
+    });
+
+  /* =======================================================
+     HORA DEL DISPOSITIVO
   ======================================================= */
 
   useEffect(() => {
@@ -703,30 +1064,87 @@ export default function DynamicSky() {
   }, []);
 
   /* =======================================================
-     POSICIONES
+     UBICACIÓN REAL DEL DISPOSITIVO
+
+     Esto vuelve a estar activo.
+
+     Ya sabemos que NO era la causa
+     del flash.
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      !navigator.geolocation
+    ) {
+      return;
+    }
+
+    navigator.geolocation
+      .getCurrentPosition(
+        (
+          position
+        ) => {
+          setLocation({
+            latitude:
+              position.coords
+                .latitude,
+
+            longitude:
+              position.coords
+                .longitude,
+
+            precise:
+              true,
+          });
+        },
+
+        () => {
+          /*
+            Sin permiso:
+            seguimos con fallback.
+          */
+        },
+
+        {
+          enableHighAccuracy:
+            false,
+
+          timeout:
+            10000,
+
+          maximumAge:
+            1000 *
+            60 *
+            60,
+        }
+      );
+  }, []);
+
+  /* =======================================================
+     SOL Y LUNA
   ======================================================= */
 
   const sunAstronomical =
     getSunPosition(
       now,
-      LATITUDE,
-      LONGITUDE
+      location.latitude,
+      location.longitude
     );
 
   const moonAstronomical =
     getMoonPosition(
       now,
-      LATITUDE,
-      LONGITUDE
+      location.latitude,
+      location.longitude
     );
 
-  const sunAltitude =
-    sunAstronomical
-      .altitude;
+  const sunDegrees =
+    sunAstronomical.altitude /
+    RAD;
 
-  const moonAltitude =
-    moonAstronomical
-      .altitude;
+  const moonDegrees =
+    moonAstronomical.altitude /
+    RAD;
 
   const sunPosition =
     celestialToVector(
@@ -740,25 +1158,17 @@ export default function DynamicSky() {
       185
     );
 
-  /* =======================================================
-     ESTADO DEL DÍA
-  ======================================================= */
-
-  const sunDegrees =
-    sunAltitude /
-    RAD;
-
-  const moonDegrees =
-    moonAltitude /
-    RAD;
-
   const sunVisible =
     sunDegrees >
-    -1;
+    -1.5;
 
   const moonVisible =
     moonDegrees >
-    0;
+    -1;
+
+  /* =======================================================
+     LUZ DEL DÍA
+  ======================================================= */
 
   const daylight =
     THREE.MathUtils.clamp(
@@ -857,7 +1267,7 @@ export default function DynamicSky() {
   }
 
   /* =======================================================
-     ILUMINACIÓN
+     INTENSIDADES
   ======================================================= */
 
   const sunIntensity =
@@ -887,11 +1297,60 @@ export default function DynamicSky() {
     -4;
 
   /* =======================================================
+     BRILLO LUNAR SEGÚN FASE
+
+     Calculamos la separación angular
+     visible entre Sol y Luna.
+
+     0°   ≈ luna nueva
+     180° ≈ luna llena
+  ======================================================= */
+
+  const sunDirection =
+    new THREE.Vector3(
+      ...sunPosition
+    ).normalize();
+
+  const moonDirection =
+    new THREE.Vector3(
+      ...moonPosition
+    ).normalize();
+
+  const elongation =
+    Math.acos(
+      THREE.MathUtils.clamp(
+        sunDirection.dot(
+          moonDirection
+        ),
+        -1,
+        1
+      )
+    );
+
+  const moonIllumination =
+    (
+      1 -
+      Math.cos(
+        elongation
+      )
+    ) /
+    2;
+
+  const moonLightIntensity =
+    THREE.MathUtils.lerp(
+      0.015,
+      0.26,
+      moonIllumination
+    );
+
+  /* =======================================================
      RENDER
   ======================================================= */
 
   return (
     <>
+      {/* FONDO */}
+
       <color
         attach="background"
         args={[
@@ -928,17 +1387,17 @@ export default function DynamicSky() {
             90
           }
           count={
-            3000
+            3200
           }
           factor={
-            3
+            2.8
           }
           saturation={
-            0
+            0.08
           }
           fade
           speed={
-            0.12
+            0.08
           }
         />
       )}
@@ -946,55 +1405,30 @@ export default function DynamicSky() {
       {/* SOL */}
 
       {sunVisible && (
-        <mesh
+        <Sun
           position={
             sunPosition
           }
-        >
-          <sphereGeometry
-            args={[
-              5,
-              32,
-              32,
-            ]}
-          />
-
-          <meshBasicMaterial
-            color="#fff4b8"
-            toneMapped={
-              false
-            }
-          />
-        </mesh>
+          altitudeDegrees={
+            sunDegrees
+          }
+        />
       )}
 
       {/* LUNA */}
 
       {moonVisible && (
-        <mesh
+        <Moon
           position={
             moonPosition
           }
-        >
-          <sphereGeometry
-            args={[
-              4.5,
-              32,
-              32,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#f4f1df"
-            emissive="#d8dff5"
-            emissiveIntensity={
-              daylight >
-              0.5
-                ? 0.35
-                : 1.2
-            }
-          />
-        </mesh>
+          sunPosition={
+            sunPosition
+          }
+          daylight={
+            daylight
+          }
+        />
       )}
 
       {/* NUBES */}
@@ -1120,7 +1554,7 @@ export default function DynamicSky() {
         />
       )}
 
-      {/* LUZ LUNAR */}
+      {/* LUZ LUNAR REAL SEGÚN FASE */}
 
       {moonVisible &&
         sunDegrees <
@@ -1130,9 +1564,9 @@ export default function DynamicSky() {
               moonPosition
             }
             intensity={
-              0.22
+              moonLightIntensity
             }
-            color="#b7c9ef"
+            color="#9ebbe8"
           />
         )}
 
