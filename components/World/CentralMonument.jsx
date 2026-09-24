@@ -12,7 +12,7 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   FLECHA CALADA
+   TRIÁNGULOS DE DIRECCIÓN
 ========================================================= */
 
 function TriangleMark({
@@ -25,7 +25,7 @@ function TriangleMark({
 
     s.moveTo(
       0,
-      0.72
+      0.7
     );
 
     s.lineTo(
@@ -55,6 +55,7 @@ function TriangleMark({
       <meshStandardMaterial
         color="#010203"
         roughness={1}
+        metalness={0}
         side={
           THREE.DoubleSide
         }
@@ -92,15 +93,11 @@ export default function CentralMonument({
   );
 
   /* =======================================================
-     FORMA DE LA CRUCETA
-
-     Una sola pieza.
-
-     El círculo central es un AGUJERO REAL.
+     CONTORNO GENERAL DE LA CRUCETA
   ======================================================= */
 
-  const dpadShape =
-    useMemo(() => {
+  const createCrossShape =
+    () => {
       const shape =
         new THREE.Shape();
 
@@ -109,10 +106,6 @@ export default function CentralMonument({
 
       const length =
         4.25;
-
-      /* ===============================================
-         CONTORNO DE CRUCETA
-      =============================================== */
 
       shape.moveTo(
         -arm,
@@ -176,9 +169,34 @@ export default function CentralMonument({
 
       shape.closePath();
 
-      /* ===============================================
-         AGUJERO CIRCULAR CENTRAL
-      =============================================== */
+      return shape;
+    };
+
+  /* =======================================================
+     CRUCETA TRASERA
+
+     COMPLETA.
+     SIN AGUJERO.
+
+     Esto hace que la parte trasera
+     quede totalmente lisa.
+  ======================================================= */
+
+  const backShape =
+    useMemo(() => {
+      return createCrossShape();
+    }, []);
+
+  /* =======================================================
+     PARTE FRONTAL
+
+     SOLO esta capa tiene abertura circular.
+  ======================================================= */
+
+  const frontShape =
+    useMemo(() => {
+      const shape =
+        createCrossShape();
 
       const hole =
         new THREE.Path();
@@ -200,24 +218,55 @@ export default function CentralMonument({
     }, []);
 
   /* =======================================================
-     EXTRUSIÓN
+     EXTRUSIÓN TRASERA
 
-     El bevel suaviza todos los bordes.
+     Capa fina que CIERRA completamente
+     la cruceta por detrás.
   ======================================================= */
 
-  const extrudeSettings =
+  const backExtrude =
     useMemo(
       () => ({
-        depth: 1.45,
+        depth: 0.28,
 
         bevelEnabled:
           true,
 
         bevelThickness:
-          0.14,
+          0.08,
 
         bevelSize:
-          0.14,
+          0.08,
+
+        bevelSegments:
+          3,
+
+        curveSegments:
+          24,
+      }),
+      []
+    );
+
+  /* =======================================================
+     EXTRUSIÓN FRONTAL
+
+     Esta es la mayor parte del grosor.
+     Aquí existe la abertura para la cavidad.
+  ======================================================= */
+
+  const frontExtrude =
+    useMemo(
+      () => ({
+        depth: 1.15,
+
+        bevelEnabled:
+          true,
+
+        bevelThickness:
+          0.12,
+
+        bevelSize:
+          0.12,
 
         bevelSegments:
           4,
@@ -236,7 +285,7 @@ export default function CentralMonument({
       position={position}
     >
       {/* ===================================================
-          PLATAFORMA INFERIOR
+          PLATAFORMA
       =================================================== */}
 
       <mesh
@@ -263,10 +312,6 @@ export default function CentralMonument({
         />
       </mesh>
 
-      {/* ===================================================
-          SEGUNDO NIVEL
-      =================================================== */}
-
       <mesh
         position={[
           0,
@@ -290,10 +335,6 @@ export default function CentralMonument({
           metalness={0.08}
         />
       </mesh>
-
-      {/* ===================================================
-          CENTRO PLATAFORMA
-      =================================================== */}
 
       <mesh
         position={[
@@ -320,7 +361,7 @@ export default function CentralMonument({
       </mesh>
 
       {/* ===================================================
-          LUZ DE PLATAFORMA
+          ARO DE LUZ
       =================================================== */}
 
       <mesh
@@ -347,9 +388,7 @@ export default function CentralMonument({
         <meshStandardMaterial
           color={glow}
           emissive={glow}
-          emissiveIntensity={
-            1
-          }
+          emissiveIntensity={1}
           toneMapped={false}
         />
       </mesh>
@@ -372,25 +411,24 @@ export default function CentralMonument({
         ]}
       >
         {/* ===============================================
-            CUERPO
+            PARTE TRASERA
 
-            Está centrado en profundidad:
-            frente = +0.725
-            atrás  = -0.725
+            Cruceta completa.
+            Totalmente cerrada.
         =============================================== */}
 
         <mesh
           position={[
             0,
             0,
-            -0.725,
+            -0.72,
           ]}
           castShadow
         >
           <extrudeGeometry
             args={[
-              dpadShape,
-              extrudeSettings,
+              backShape,
+              backExtrude,
             ]}
           />
 
@@ -401,16 +439,45 @@ export default function CentralMonument({
           />
         </mesh>
 
-        {/* =================================================
+        {/* ===============================================
+            PARTE FRONTAL
+
+            Tiene el hueco SOLO en esta cara.
+        =============================================== */}
+
+        <mesh
+          position={[
+            0,
+            0,
+            -0.44,
+          ]}
+          castShadow
+        >
+          <extrudeGeometry
+            args={[
+              frontShape,
+              frontExtrude,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#07090b"
+            roughness={0.5}
+            metalness={0.14}
+          />
+        </mesh>
+
+        {/* ===============================================
             MEDIA ESFERA CÓNCAVA
 
-            El borde comienza EXACTAMENTE
-            en el plano frontal de la cruceta.
+            Apertura:
+            cara frontal.
 
-            La esfera entra hacia -Z.
+            Profundidad:
+            hacia DENTRO.
 
-            NO sobresale por detrás.
-        ================================================= */}
+            No atraviesa la parte trasera.
+        =============================================== */}
 
         <mesh
           position={[
@@ -419,7 +486,7 @@ export default function CentralMonument({
             0.70,
           ]}
           rotation={[
-            Math.PI / 2,
+            -Math.PI / 2,
             0,
             0,
           ]}
@@ -434,42 +501,42 @@ export default function CentralMonument({
               0,
               Math.PI * 2,
 
-              Math.PI / 2,
+              0,
               Math.PI / 2,
             ]}
           />
 
           <meshStandardMaterial
-            color="#030405"
+            color="#020304"
             roughness={0.82}
-            metalness={0.05}
+            metalness={0.03}
             side={
               THREE.BackSide
             }
           />
         </mesh>
 
-        {/* =================================================
-            FLECHA ARRIBA
-        ================================================= */}
+        {/* ===============================================
+            TRIÁNGULO ARRIBA
+        =============================================== */}
 
         <TriangleMark
           position={[
             0,
             2.9,
-            0.755,
+            0.725,
           ]}
         />
 
-        {/* =================================================
-            FLECHA ABAJO
-        ================================================= */}
+        {/* ===============================================
+            TRIÁNGULO ABAJO
+        =============================================== */}
 
         <TriangleMark
           position={[
             0,
             -2.9,
-            0.755,
+            0.725,
           ]}
           rotation={[
             0,
@@ -478,15 +545,15 @@ export default function CentralMonument({
           ]}
         />
 
-        {/* =================================================
-            FLECHA IZQUIERDA
-        ================================================= */}
+        {/* ===============================================
+            TRIÁNGULO IZQUIERDA
+        =============================================== */}
 
         <TriangleMark
           position={[
             -2.9,
             0,
-            0.755,
+            0.725,
           ]}
           rotation={[
             0,
@@ -495,15 +562,15 @@ export default function CentralMonument({
           ]}
         />
 
-        {/* =================================================
-            FLECHA DERECHA
-        ================================================= */}
+        {/* ===============================================
+            TRIÁNGULO DERECHA
+        =============================================== */}
 
         <TriangleMark
           position={[
             2.9,
             0,
-            0.755,
+            0.725,
           ]}
           rotation={[
             0,
@@ -514,7 +581,7 @@ export default function CentralMonument({
       </group>
 
       {/* ===================================================
-          LUZ SUAVE DESDE ABAJO
+          LUZ INFERIOR
       =================================================== */}
 
       <pointLight
