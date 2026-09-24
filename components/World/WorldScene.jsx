@@ -27,10 +27,14 @@ import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
+/* =========================================================
+   RESOLUCIÓN INTERNA POR CALIDAD
+========================================================= */
+
 const DPR_BY_QUALITY = {
-  low: [0.7, 0.9],
-  medium: [0.85, 1.1],
-  high: [1, 1.35],
+  low: 0.65,
+  medium: 0.85,
+  high: 1.15,
 };
 
 const SKY_TEST_HOURS = [
@@ -57,7 +61,7 @@ export default function WorldScene() {
   const [
     quality,
     setQuality,
-  ] = useState("high");
+  ] = useState("medium");
 
   const [
     stats,
@@ -80,6 +84,11 @@ export default function WorldScene() {
   ] = useState(false);
 
   const [
+    deviceReady,
+    setDeviceReady,
+  ] = useState(false);
+
+  const [
     skyTestHour,
     setSkyTestHour,
   ] = useState(null);
@@ -88,7 +97,7 @@ export default function WorldScene() {
     Boolean(openedGame);
 
   /* =======================================================
-     TUTORIAL
+     DETECTAR MÓVIL / DESKTOP
   ======================================================= */
 
   useEffect(() => {
@@ -99,10 +108,27 @@ export default function WorldScene() {
 
     setMobile(coarse);
 
+    /*
+      Móvil:
+      empezamos directamente en LOW.
+
+      Desktop:
+      empezamos en HIGH.
+    */
+
+    setQuality(
+      coarse
+        ? "low"
+        : "high"
+    );
+
+    setDeviceReady(true);
+
     const completed =
-      window.localStorage.getItem(
-        "freakyWorldTutorialCompleted"
-      );
+      window.localStorage
+        .getItem(
+          "freakyWorldTutorialCompleted"
+        );
 
     if (
       completed ===
@@ -118,10 +144,11 @@ export default function WorldScene() {
         () => {
           setShowTutorial(false);
 
-          window.localStorage.setItem(
-            "freakyWorldTutorialCompleted",
-            "true"
-          );
+          window.localStorage
+            .setItem(
+              "freakyWorldTutorialCompleted",
+              "true"
+            );
         },
         9000
       );
@@ -132,14 +159,19 @@ export default function WorldScene() {
       );
   }, []);
 
+  /* =======================================================
+     CERRAR TUTORIAL
+  ======================================================= */
+
   const closeTutorial =
     useCallback(() => {
       setShowTutorial(false);
 
-      window.localStorage.setItem(
-        "freakyWorldTutorialCompleted",
-        "true"
-      );
+      window.localStorage
+        .setItem(
+          "freakyWorldTutorialCompleted",
+          "true"
+        );
     }, []);
 
   /* =======================================================
@@ -192,7 +224,8 @@ export default function WorldScene() {
       playerInput.x = 0;
       playerInput.y = 0;
 
-      playerInput.dashRequested =
+      playerInput
+        .dashRequested =
         false;
 
       setOpenedGame(
@@ -212,14 +245,15 @@ export default function WorldScene() {
       playerInput.x = 0;
       playerInput.y = 0;
 
-      playerInput.dashRequested =
+      playerInput
+        .dashRequested =
         false;
 
       setOpenedGame(null);
     }, []);
 
   /* =======================================================
-     TECLADO GENERAL
+     TECLADO
   ======================================================= */
 
   useEffect(() => {
@@ -278,7 +312,7 @@ export default function WorldScene() {
   ]);
 
   /* =======================================================
-     LABEL DEL CIELO
+     CIELO
   ======================================================= */
 
   const skyLabel =
@@ -291,6 +325,14 @@ export default function WorldScene() {
           "0"
         )}:00`;
 
+  /* =======================================================
+     ESPERAR A SABER QUÉ DISPOSITIVO ES
+  ======================================================= */
+
+  if (!deviceReady) {
+    return null;
+  }
+
   return (
     <>
       {/* ===================================================
@@ -302,33 +344,48 @@ export default function WorldScene() {
           <div
             style={{
               position: "fixed",
-              top: mobile
-                ? 18
-                : 22,
+
+              top:
+                mobile
+                  ? 18
+                  : 22,
+
               left: "50%",
+
               transform:
                 "translateX(-50%)",
+
               zIndex: 70,
+
               width:
                 "min(90vw, 390px)",
+
               padding:
                 "14px 16px",
+
               borderRadius: 16,
+
               color: "#fff",
+
               background:
                 "rgba(5,8,12,0.82)",
+
               backdropFilter:
                 "blur(14px)",
+
               border:
                 "1px solid rgba(255,255,255,0.15)",
+
               fontSize: 13,
             }}
           >
             <div
               style={{
                 display: "flex",
+
                 justifyContent:
                   "space-between",
+
                 gap: 16,
               }}
             >
@@ -340,24 +397,30 @@ export default function WorldScene() {
                 <div
                   style={{
                     marginTop: 6,
+
                     opacity: 0.72,
+
                     lineHeight: 1.55,
                   }}
                 >
                   {mobile ? (
                     <>
-                      Joystick para moverte
+                      Cruceta para moverte
                       <br />
+
                       Desliza para mirar
                       <br />
+
                       Doble toque para sprint
                     </>
                   ) : (
                     <>
                       WASD para caminar
                       <br />
-                      Doble toque en cualquier dirección para sprint
+
+                      Doble toque para sprint
                       <br />
+
                       Arrastra para mirar
                     </>
                   )}
@@ -371,13 +434,19 @@ export default function WorldScene() {
                 }
                 style={{
                   width: 30,
+
                   height: 30,
+
                   border: 0,
+
                   borderRadius:
                     "50%",
+
                   background:
                     "rgba(255,255,255,0.1)",
+
                   color: "#fff",
+
                   fontSize: 20,
                 }}
               >
@@ -388,7 +457,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          FPS
+          BOTÓN FPS
       =================================================== */}
 
       {!overlayOpen && (
@@ -403,18 +472,27 @@ export default function WorldScene() {
             }
             style={{
               position: "fixed",
+
               top: 14,
               right: 14,
+
               zIndex: 80,
+
               padding:
                 "7px 10px",
+
               border:
                 "1px solid rgba(255,255,255,0.14)",
+
               borderRadius: 9,
+
               background:
                 "rgba(0,0,0,0.48)",
+
               color: "#fff",
+
               fontSize: 11,
+
               fontWeight: 800,
             }}
           >
@@ -427,39 +505,67 @@ export default function WorldScene() {
                 style={{
                   position:
                     "fixed",
+
                   top: 52,
                   right: 14,
+
                   zIndex: 80,
-                  width: 205,
+
+                  width: 215,
+
                   padding:
                     "10px 12px",
-                  borderRadius: 10,
+
+                  borderRadius:
+                    10,
+
                   background:
                     "rgba(0,0,0,0.76)",
+
                   color: "#fff",
+
                   fontFamily:
                     "monospace",
-                  fontSize: 11,
-                  lineHeight: 1.55,
+
+                  fontSize:
+                    11,
+
+                  lineHeight:
+                    1.55,
                 }}
               >
-                FPS: {stats.fps}
+                FPS:{" "}
+                {stats.fps}
+
                 <br />
 
                 Frame:{" "}
                 {stats.frameMs}ms
+
                 <br />
 
                 Draw calls:{" "}
                 {stats.calls}
+
                 <br />
 
                 Triangles:{" "}
                 {stats.triangles}
+
                 <br />
 
                 Textures:{" "}
                 {stats.textures}
+
+                <br />
+
+                DPR:{" "}
+                {
+                  DPR_BY_QUALITY[
+                    quality
+                  ]
+                }
+
                 <br />
 
                 Quality:{" "}
@@ -468,7 +574,9 @@ export default function WorldScene() {
                 <div
                   style={{
                     marginTop: 10,
+
                     paddingTop: 8,
+
                     borderTop:
                       "1px solid rgba(255,255,255,0.15)",
                   }}
@@ -482,8 +590,12 @@ export default function WorldScene() {
                 <div
                   style={{
                     display: "flex",
-                    flexWrap: "wrap",
+
+                    flexWrap:
+                      "wrap",
+
                     gap: 4,
+
                     marginTop: 5,
                   }}
                 >
@@ -508,18 +620,23 @@ export default function WorldScene() {
                           style={{
                             padding:
                               "4px 6px",
+
                             border:
                               "1px solid rgba(255,255,255,0.16)",
+
                             borderRadius:
                               5,
+
                             background:
                               active
-                                ? "#ffffff"
+                                ? "#fff"
                                 : "rgba(255,255,255,0.07)",
+
                             color:
                               active
                                 ? "#111"
                                 : "#fff",
+
                             fontSize:
                               10,
                           }}
@@ -544,11 +661,14 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          MUNDO
+          CANVAS
       =================================================== */}
 
       <Canvas
-        shadows
+        shadows={
+          quality ===
+          "high"
+        }
         dpr={
           DPR_BY_QUALITY[
             quality
@@ -560,22 +680,48 @@ export default function WorldScene() {
             3,
             6,
           ],
+
           fov: 60,
+
           near: 0.1,
-          far: 600,
+
+          far: 420,
         }}
         gl={{
-          antialias: true,
+          antialias: false,
+
           powerPreference:
             "high-performance",
+
+          alpha: false,
+
+          stencil: false,
+
+          depth: true,
         }}
       >
+        {/* =================================================
+            MONITOR ADAPTATIVO
+        ================================================= */}
+
         <PerformanceMonitor
-          onStats={setStats}
+          quality={
+            quality
+          }
+          mobile={
+            mobile
+          }
+          onStats={
+            setStats
+          }
           onQualityChange={
             setQuality
           }
         />
+
+        {/* =================================================
+            CIELO
+        ================================================= */}
 
         <DynamicSky
           key={
@@ -589,7 +735,15 @@ export default function WorldScene() {
           }
         />
 
+        {/* =================================================
+            CONFIGURACIÓN DEL RENDERER
+        ================================================= */}
+
         <WorldLighting />
+
+        {/* =================================================
+            FÍSICA
+        ================================================= */}
 
         <Physics
           gravity={[
@@ -597,7 +751,9 @@ export default function WorldScene() {
             -9.81,
             0,
           ]}
-          timeStep={1 / 60}
+          timeStep={
+            1 / 60
+          }
         >
           <WorldEnvironment />
 
@@ -608,7 +764,7 @@ export default function WorldScene() {
       </Canvas>
 
       {/* ===================================================
-          MOBILE
+          CONTROLES MÓVILES
       =================================================== */}
 
       {!overlayOpen && (
@@ -616,7 +772,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          INTERACCIÓN
+          INTERACCIÓN CON JUEGO
       =================================================== */}
 
       {nearbyGame &&
