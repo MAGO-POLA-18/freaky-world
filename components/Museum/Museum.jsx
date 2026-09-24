@@ -1,11 +1,8 @@
 import DpadWing from "./DpadWing";
+import CentralMonument from "./CentralMonument";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
-
-   PRUEBA TEMPORAL:
-   TOP 10 DESACTIVADO PARA COMPROBAR
-   SI LA CARGA DE PORTADAS PROVOCA EL FLASH.
 ========================================================= */
 
 export default function Museum() {
@@ -20,6 +17,18 @@ export default function Museum() {
         intensity={1.15}
         color="#e4eeff"
         groundColor="#596051"
+      />
+
+      {/* ===================================================
+          MONUMENTO CENTRAL
+      =================================================== */}
+
+      <CentralMonument
+        position={[
+          0,
+          0,
+          0,
+        ]}
       />
 
       {/* ===================================================
@@ -39,24 +48,6 @@ export default function Museum() {
         ]}
         variant="retro"
       />
-
-      {/* ===================================================
-          TOP 10 DESACTIVADO TEMPORALMENTE
-
-          Antes estaba acá:
-
-          <TopTenExhibition
-            position={[
-              0,
-              0,
-              -118.25,
-            ]}
-          />
-
-          Lo quitamos SOLO para probar
-          si las portadas/texturas provocan
-          el flash en móvil.
-      =================================================== */}
 
       {/* ===================================================
           SUR
