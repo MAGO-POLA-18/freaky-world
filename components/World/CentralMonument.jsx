@@ -12,125 +12,75 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   FLECHA TIPO CRUCETA RETRO
-   Contorno grabado, como mando clásico
+   FLECHA GRABADA EN LA CRUCETA
 ========================================================= */
 
-function TriangleMark({
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
+function ArrowMark({
+  x = 0,
+  y = 0,
+  rotationZ = 0,
 }) {
   const arrowShape = useMemo(() => {
-    const outer = new THREE.Shape();
+    const shape = new THREE.Shape();
 
-    /* contorno exterior */
+    shape.moveTo(0, 0.78);
 
-    outer.moveTo(0, 0.72);
-
-    outer.lineTo(
-      0.55,
-      0.12
-    );
-
-    outer.lineTo(
-      0.28,
-      0.12
-    );
-
-    outer.lineTo(
-      0.28,
-      -0.5
-    );
-
-    outer.lineTo(
-      -0.28,
-      -0.5
-    );
-
-    outer.lineTo(
-      -0.28,
-      0.12
-    );
-
-    outer.lineTo(
-      -0.55,
-      0.12
-    );
-
-    outer.closePath();
-
-    /* hueco interior */
-
-    const inner =
-      new THREE.Path();
-
-    inner.moveTo(
-      0,
-      0.47
-    );
-
-    inner.lineTo(
-      0.3,
+    shape.lineTo(
+      0.58,
       0.08
     );
 
-    inner.lineTo(
-      0.11,
+    shape.lineTo(
+      0.27,
       0.08
     );
 
-    inner.lineTo(
-      0.11,
-      -0.3
+    shape.lineTo(
+      0.27,
+      -0.52
     );
 
-    inner.lineTo(
-      -0.11,
-      -0.3
+    shape.lineTo(
+      -0.27,
+      -0.52
     );
 
-    inner.lineTo(
-      -0.11,
+    shape.lineTo(
+      -0.27,
       0.08
     );
 
-    inner.lineTo(
-      -0.3,
+    shape.lineTo(
+      -0.58,
       0.08
     );
 
-    inner.closePath();
+    shape.closePath();
 
-    outer.holes.push(inner);
-
-    return outer;
+    return shape;
   }, []);
-
-  const extrudeSettings =
-    useMemo(
-      () => ({
-        depth: 0.035,
-
-        bevelEnabled:
-          false,
-      }),
-      []
-    );
 
   return (
     <mesh
-      position={position}
-      rotation={rotation}
+      position={[
+        x,
+        y,
+        0.735,
+      ]}
+      rotation={[
+        0,
+        0,
+        rotationZ,
+      ]}
     >
-      <extrudeGeometry
+      <shapeGeometry
         args={[
           arrowShape,
-          extrudeSettings,
         ]}
       />
 
       <meshStandardMaterial
-        color="#2a2f33"
+        color="#2b3035"
         roughness={0.9}
         metalness={0}
         side={
@@ -151,10 +101,6 @@ export default function CentralMonument({
   const dpadRef =
     useRef(null);
 
-  /* =======================================================
-     ROTACIÓN
-  ======================================================= */
-
   useFrame(
     (state, delta) => {
       if (
@@ -170,7 +116,7 @@ export default function CentralMonument({
   );
 
   /* =======================================================
-     FORMA BASE DE LA CRUCETA
+     FORMA GENERAL DE CRUCETA
   ======================================================= */
 
   const createCrossShape =
@@ -251,8 +197,6 @@ export default function CentralMonument({
 
   /* =======================================================
      PARTE TRASERA
-
-     Completa y cerrada.
   ======================================================= */
 
   const backShape =
@@ -261,9 +205,7 @@ export default function CentralMonument({
     }, []);
 
   /* =======================================================
-     PARTE FRONTAL
-
-     Solo esta parte tiene el hueco circular.
+     PARTE FRONTAL CON HUECO CENTRAL
   ======================================================= */
 
   const frontShape =
@@ -291,7 +233,7 @@ export default function CentralMonument({
     }, []);
 
   /* =======================================================
-     EXTRUSIÓN TRASERA
+     EXTRUSIONES
   ======================================================= */
 
   const backExtrude =
@@ -316,10 +258,6 @@ export default function CentralMonument({
       }),
       []
     );
-
-  /* =======================================================
-     EXTRUSIÓN FRONTAL
-  ======================================================= */
 
   const frontExtrude =
     useMemo(
@@ -352,7 +290,7 @@ export default function CentralMonument({
       position={position}
     >
       {/* ===================================================
-          PLATAFORMA — BASE
+          BASE
       =================================================== */}
 
       <mesh
@@ -379,10 +317,6 @@ export default function CentralMonument({
         />
       </mesh>
 
-      {/* ===================================================
-          PLATAFORMA — NIVEL 2
-      =================================================== */}
-
       <mesh
         position={[
           0,
@@ -407,10 +341,6 @@ export default function CentralMonument({
         />
       </mesh>
 
-      {/* ===================================================
-          PLATAFORMA — CENTRO
-      =================================================== */}
-
       <mesh
         position={[
           0,
@@ -434,10 +364,6 @@ export default function CentralMonument({
           metalness={0.1}
         />
       </mesh>
-
-      {/* ===================================================
-          ARO LUMINOSO
-      =================================================== */}
 
       <mesh
         position={[
@@ -487,7 +413,6 @@ export default function CentralMonument({
       >
         {/* ===============================================
             PARTE TRASERA
-            Lisa y cerrada
         =============================================== */}
 
         <mesh
@@ -514,7 +439,6 @@ export default function CentralMonument({
 
         {/* ===============================================
             PARTE FRONTAL
-            Con el hueco central
         =============================================== */}
 
         <mesh
@@ -540,10 +464,7 @@ export default function CentralMonument({
         </mesh>
 
         {/* ===============================================
-            MEDIA ESFERA CÓNCAVA
-
-            Queda dentro de la cara frontal.
-            No atraviesa la pieza.
+            CAVIDAD CENTRAL
         =============================================== */}
 
         <mesh
@@ -561,13 +482,10 @@ export default function CentralMonument({
           <sphereGeometry
             args={[
               1.12,
-
               40,
               24,
-
               0,
               Math.PI * 2,
-
               0,
               Math.PI / 2,
             ]}
@@ -584,66 +502,46 @@ export default function CentralMonument({
         </mesh>
 
         {/* ===============================================
-            FLECHA ARRIBA
+            FLECHAS EN LAS 4 PUNTAS
+
+            Ahora están puestas bien
+            sobre la cara frontal.
         =============================================== */}
 
-        <TriangleMark
-          position={[
-            0,
-            2.85,
-            0.735,
-          ]}
+        {/* ARRIBA */}
+
+        <ArrowMark
+          x={0}
+          y={3.15}
+          rotationZ={0}
         />
 
-        {/* ===============================================
-            FLECHA ABAJO
-        =============================================== */}
+        {/* ABAJO */}
 
-        <TriangleMark
-          position={[
-            0,
-            -2.85,
-            0.735,
-          ]}
-          rotation={[
-            0,
-            0,
-            Math.PI,
-          ]}
+        <ArrowMark
+          x={0}
+          y={-3.15}
+          rotationZ={Math.PI}
         />
 
-        {/* ===============================================
-            FLECHA IZQUIERDA
-        =============================================== */}
+        {/* IZQUIERDA */}
 
-        <TriangleMark
-          position={[
-            -2.85,
-            0,
-            0.735,
-          ]}
-          rotation={[
-            0,
-            0,
-            Math.PI / 2,
-          ]}
+        <ArrowMark
+          x={-3.15}
+          y={0}
+          rotationZ={
+            Math.PI / 2
+          }
         />
 
-        {/* ===============================================
-            FLECHA DERECHA
-        =============================================== */}
+        {/* DERECHA */}
 
-        <TriangleMark
-          position={[
-            2.85,
-            0,
-            0.735,
-          ]}
-          rotation={[
-            0,
-            0,
-            -Math.PI / 2,
-          ]}
+        <ArrowMark
+          x={3.15}
+          y={0}
+          rotationZ={
+            -Math.PI / 2
+          }
         />
       </group>
 
