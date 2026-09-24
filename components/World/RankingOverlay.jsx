@@ -1,162 +1,112 @@
 "use client";
 
-/* =========================================================
-   RANKING 2D — PROTOTIPO
+import {
+  useEffect,
+} from "react";
 
-   Más adelante esto podrá conectarse
-   al Freaky Ranking real.
+/* =========================================================
+   FREAKY RANKING
 ========================================================= */
 
-const demoGames = [
-  {
-    position: 1,
-    title:
-      "The Legend of Zelda: Ocarina of Time",
-    score: "9.8",
-    year: 1998,
-  },
+const FREAKY_RANKING_URL =
+  "https://freakyranking.base44.app";
 
-  {
-    position: 2,
-    title:
-      "Metal Gear Solid",
-    score: "9.6",
-    year: 1998,
-  },
+/* =========================================================
+   OVERLAY 2D
 
-  {
-    position: 3,
-    title:
-      "Super Mario 64",
-    score: "9.5",
-    year: 1996,
-  },
+   Carga la ficha real dentro de Freaky World.
 
-  {
-    position: 4,
-    title:
-      "Half-Life 2",
-    score: "9.4",
-    year: 2004,
-  },
-
-  {
-    position: 5,
-    title:
-      "Resident Evil 4",
-    score: "9.3",
-    year: 2005,
-  },
-];
+   El mundo 3D queda vivo detrás.
+========================================================= */
 
 export default function RankingOverlay({
+  game,
   onClose,
 }) {
+  /* =======================================================
+     BLOQUEAR SCROLL EXTERNO
+  ======================================================= */
+
+  useEffect(() => {
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+    };
+  }, []);
+
+  /* =======================================================
+     SIN JUEGO
+  ======================================================= */
+
+  if (!game?.id) {
+    return null;
+  }
+
+  /* =======================================================
+     URL DE LA FICHA
+  ======================================================= */
+
+  const gameUrl =
+    `${FREAKY_RANKING_URL}/game/${game.id}`;
+
   return (
     <div
-      className="ranking-overlay"
+      className="ranking-overlay ranking-overlay-live"
       role="dialog"
       aria-modal="true"
-      aria-label="Ranking Board"
+      aria-label={
+        `Ficha de ${game.title || "juego"}`
+      }
     >
       {/* =================================================
-          CABECERA
+          BARRA SUPERIOR
       ================================================= */}
 
-      <header className="ranking-overlay-header">
-        <div>
-          <div className="ranking-overlay-kicker">
+      <div className="ranking-overlay-live-bar">
+        <div className="ranking-overlay-live-title">
+          <span className="ranking-overlay-kicker">
             FREAKY WORLD
-          </div>
+          </span>
 
-          <h1>
-            Ranking Board
-          </h1>
-
-          <p>
-            Play de Web
-          </p>
+          <strong>
+            {
+              game.title ||
+              "Ficha del juego"
+            }
+          </strong>
         </div>
 
         <button
           type="button"
           className="ranking-overlay-close"
           onClick={onClose}
-          aria-label="Cerrar Ranking"
+          aria-label="Cerrar ficha y volver al mundo"
         >
           ×
         </button>
-      </header>
+      </div>
 
       {/* =================================================
-          CONTENIDO
+          FICHA REAL
       ================================================= */}
 
-      <main className="ranking-overlay-content">
-        <section className="ranking-overlay-intro">
-          <span className="ranking-demo-badge">
-            PROTOTIPO
-          </span>
-
-          <h2>
-            Mejores puntuados
-          </h2>
-
-          <p>
-            Esta es la primera prueba
-            de navegación entre el mundo
-            3D y una interfaz 2D.
-          </p>
-        </section>
-
-        {/* =================================================
-            LISTA
-        ================================================= */}
-
-        <section className="ranking-demo-list">
-          {demoGames.map(
-            (game) => (
-              <article
-                key={
-                  game.position
-                }
-                className="ranking-demo-row"
-              >
-                <div className="ranking-demo-position">
-                  {game.position}
-                </div>
-
-                <div className="ranking-demo-game">
-                  <strong>
-                    {game.title}
-                  </strong>
-
-                  <span>
-                    {game.year}
-                  </span>
-                </div>
-
-                <div className="ranking-demo-score">
-                  {game.score}
-                </div>
-              </article>
-            )
-          )}
-        </section>
-
-        {/* =================================================
-            FUTURO
-        ================================================= */}
-
-        <section className="ranking-overlay-future">
-          <span>
-            Después podremos abrir
-            fichas reales, buscar juegos
-            y volver al mundo 3D sin
-            perder nuestra posición.
-          </span>
-        </section>
-      </main>
+      <div className="ranking-overlay-frame-wrap">
+        <iframe
+          className="ranking-overlay-frame"
+          src={gameUrl}
+          title={
+            game.title ||
+            "Freaky Ranking"
+          }
+          allow="fullscreen"
+        />
+      </div>
     </div>
   );
 }
