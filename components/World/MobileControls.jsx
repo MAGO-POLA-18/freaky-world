@@ -12,9 +12,9 @@ import {
    MOBILE CONTROLS
 
    IZQUIERDA
-   - joystick
-   - dirección
-   - velocidad analógica
+   - cruceta visual
+   - comportamiento analógico 360°
+   - deslizar para dirección / velocidad
 
    DERECHA
    - arrastrar = cámara
@@ -22,15 +22,6 @@ import {
 ========================================================= */
 
 const DOUBLE_TAP_TIME = 280;
-
-/*
-  Si el dedo se mueve demasiado,
-  consideramos que fue un gesto de cámara
-  y no un tap.
-
-  Esto evita activar dash mientras
-  simplemente estamos girando.
-*/
 
 const TAP_MOVE_LIMIT = 18;
 
@@ -54,21 +45,15 @@ export default function MobileControls() {
   const lastRightTap =
     useRef(0);
 
-  /*
-    Guardamos dónde empezó el toque.
-
-    Después podemos distinguir:
-
-    tap real
-    vs
-    arrastre de cámara.
-  */
-
   const rightTouchStart =
     useRef(null);
 
   /* =======================================================
-     JOYSTICK
+     JOYSTICK ANALÓGICO
+
+     IMPORTANTE:
+     Aunque visualmente ahora sea una cruceta,
+     la lógica sigue siendo 100 % analógica.
   ======================================================= */
 
   const updateJoystick = (
@@ -101,11 +86,6 @@ export default function MobileControls() {
       touch.clientY -
       centerY;
 
-    /*
-      Recorrido amplio para poder
-      controlar bien la velocidad.
-    */
-
     const maxDistance =
       rect.width *
       0.39;
@@ -129,9 +109,17 @@ export default function MobileControls() {
         maxDistance;
     }
 
+    /* =====================================================
+       MOVIMIENTO VISUAL DE LA CRUCETA
+    ===================================================== */
+
     knob.current
       .style.transform =
       `translate(${dx}px, ${dy}px)`;
+
+    /* =====================================================
+       INPUT ANALÓGICO REAL
+    ===================================================== */
 
     playerInput.x =
       dx /
@@ -143,7 +131,7 @@ export default function MobileControls() {
   };
 
   /* =======================================================
-     RESET JOYSTICK
+     RESET
   ======================================================= */
 
   const resetJoystick =
@@ -178,7 +166,6 @@ export default function MobileControls() {
     ) {
       /* ===================================================
          IZQUIERDA
-         JOYSTICK
       =================================================== */
 
       if (
@@ -201,7 +188,6 @@ export default function MobileControls() {
 
       /* ===================================================
          DERECHA
-         CÁMARA / TAP
       =================================================== */
 
       else {
@@ -252,7 +238,7 @@ export default function MobileControls() {
       of event.changedTouches
     ) {
       /* ===================================================
-         JOYSTICK
+         CRUCETA ANALÓGICA
       =================================================== */
 
       if (
@@ -294,10 +280,6 @@ export default function MobileControls() {
 
         lookTouch.current.y =
           touch.clientY;
-
-        /* ===============================================
-           DETECTAR SI DEJÓ DE SER TAP
-        =============================================== */
 
         if (
           rightTouchStart
@@ -349,7 +331,7 @@ export default function MobileControls() {
       of event.changedTouches
     ) {
       /* ===================================================
-         JOYSTICK
+         CRUCETA
       =================================================== */
 
       if (
@@ -368,10 +350,6 @@ export default function MobileControls() {
         touch.identifier ===
           lookTouch.current.id
       ) {
-        /* ===============================================
-           ¿FUE TAP REAL?
-        =============================================== */
-
         const touchStart =
           rightTouchStart
             .current;
@@ -389,40 +367,22 @@ export default function MobileControls() {
             now -
             lastRightTap.current;
 
-          /* =============================================
-             DOBLE TAP
-          ============================================= */
+          /* ===============================================
+             DOBLE TAP = DASH
+          =============================================== */
 
           if (
             elapsed > 0 &&
             elapsed <
               DOUBLE_TAP_TIME
           ) {
-            /*
-              Solo pedimos el dash.
-
-              PlayerController decidirá
-              si corresponde ejecutarlo.
-            */
-
             playerInput
               .dashRequested =
               true;
 
-            /*
-              Reiniciamos para evitar
-              que tres taps seguidos
-              produzcan dos dashes
-              accidentalmente.
-            */
-
             lastRightTap.current =
               0;
           }
-
-          /* =============================================
-             PRIMER TAP
-          ============================================= */
 
           else {
             lastRightTap.current =
@@ -460,26 +420,46 @@ export default function MobileControls() {
       }
     >
       {/* =================================================
-          JOYSTICK
+          ZONA ANALÓGICA IZQUIERDA
       ================================================= */}
 
       <div
         ref={joystick}
         className="mobile-joystick"
       >
+        {/* ===============================================
+            CRUCETA VISUAL
+
+            Este elemento se mueve exactamente como
+            se movía el joystick circular anterior.
+        =============================================== */}
+
         <div
           ref={knob}
-          className="joystick-knob"
-        />
+          className="joystick-knob joystick-dpad"
+        >
+          <div className="joystick-dpad-vertical" />
+
+          <div className="joystick-dpad-horizontal" />
+
+          {/* flechas */}
+
+          <div className="joystick-dpad-arrow joystick-dpad-arrow-up" />
+
+          <div className="joystick-dpad-arrow joystick-dpad-arrow-down" />
+
+          <div className="joystick-dpad-arrow joystick-dpad-arrow-left" />
+
+          <div className="joystick-dpad-arrow joystick-dpad-arrow-right" />
+
+          {/* centro hundido */}
+
+          <div className="joystick-dpad-center" />
+        </div>
       </div>
 
       {/* =================================================
           DERECHA
-
-          Sin botones.
-
-          Arrastrar = mirar
-          doble tap = dash
       ================================================= */}
 
       <div className="mobile-look">
