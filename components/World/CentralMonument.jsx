@@ -1,496 +1,330 @@
 "use client";
 
-import {
-  useRef,
-} from "react";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 
-import {
-  useFrame,
-} from "@react-three/fiber";
+export default function CentralMonument({
+  position = [0, 0, 0],
+}) {
+  const dpadRef = useRef(null);
+  const ringARef = useRef(null);
+  const ringBRef = useRef(null);
+  const ringCRef = useRef(null);
 
-import * as THREE from "three";
-
-export default function CentralMonument() {
-  const crossGroup =
-    useRef(null);
-
-  const ringOne =
-    useRef(null);
-
-  const ringTwo =
-    useRef(null);
-
-  const ringThree =
-    useRef(null);
-
-  /* =======================================================
-     ANIMACIÓN
-  ======================================================= */
-
-  useFrame(
-    (_, delta) => {
-      if (
-        crossGroup.current
-      ) {
-        crossGroup.current
-          .rotation.y +=
-          delta * 0.22;
-
-        crossGroup.current
-          .rotation.z +=
-          delta * 0.045;
-      }
-
-      if (
-        ringOne.current
-      ) {
-        ringOne.current
-          .rotation.z +=
-          delta * 0.18;
-      }
-
-      if (
-        ringTwo.current
-      ) {
-        ringTwo.current
-          .rotation.x -=
-          delta * 0.14;
-
-        ringTwo.current
-          .rotation.y +=
-          delta * 0.08;
-      }
-
-      if (
-        ringThree.current
-      ) {
-        ringThree.current
-          .rotation.y -=
-          delta * 0.12;
-
-        ringThree.current
-          .rotation.z +=
-          delta * 0.06;
-      }
+  useFrame((state, delta) => {
+    if (dpadRef.current) {
+      dpadRef.current.rotation.y += delta * 0.34;
     }
-  );
+
+    if (ringARef.current) {
+      ringARef.current.rotation.y += delta * 0.22;
+      ringARef.current.rotation.z += delta * 0.08;
+    }
+
+    if (ringBRef.current) {
+      ringBRef.current.rotation.y -= delta * 0.18;
+      ringBRef.current.rotation.x += delta * 0.06;
+    }
+
+    if (ringCRef.current) {
+      ringCRef.current.rotation.y += delta * 0.12;
+    }
+  });
+
+  const glow = "#a9ddff";
 
   return (
-    <group
-      position={[
-        0,
-        0.58,
-        0,
-      ]}
-    >
+    <group position={position}>
       {/* ===================================================
-          BASE INFERIOR
+          PLATAFORMA EXTERIOR
       =================================================== */}
 
       <mesh
-        position={[
-          0,
-          0.18,
-          0,
-        ]}
+        position={[0, 0.12, 0]}
         receiveShadow
       >
         <cylinderGeometry
-          args={[
-            3.4,
-            3.8,
-            0.36,
-            48,
-          ]}
+          args={[10.2, 10.2, 0.24, 64]}
         />
 
         <meshStandardMaterial
-          color="#181b1e"
-          roughness={0.5}
-          metalness={0.35}
+          color="#15191d"
+          roughness={0.82}
+          metalness={0.08}
         />
       </mesh>
 
       {/* ===================================================
-          SEGUNDA BASE
+          SEGUNDO NIVEL
       =================================================== */}
 
       <mesh
-        position={[
-          0,
-          0.42,
-          0,
-        ]}
+        position={[0, 0.28, 0]}
         receiveShadow
       >
         <cylinderGeometry
-          args={[
-            2.8,
-            3.2,
-            0.18,
-            48,
-          ]}
+          args={[8.6, 8.6, 0.18, 64]}
         />
 
         <meshStandardMaterial
-          color="#2a2f34"
-          roughness={0.42}
-          metalness={0.42}
+          color="#22282e"
+          roughness={0.78}
+          metalness={0.1}
         />
       </mesh>
 
       {/* ===================================================
-          SEMIPILAR
+          CENTRO DE PLATAFORMA
       =================================================== */}
 
       <mesh
-        position={[
-          0,
-          1.7,
-          0,
-        ]}
-        castShadow
+        position={[0, 0.42, 0]}
         receiveShadow
       >
         <cylinderGeometry
-          args={[
-            1.0,
-            1.45,
-            2.5,
-            32,
-          ]}
+          args={[6.9, 6.9, 0.16, 64]}
         />
 
         <meshStandardMaterial
-          color="#20252a"
-          roughness={0.38}
-          metalness={0.5}
+          color="#313a42"
+          roughness={0.72}
+          metalness={0.12}
         />
       </mesh>
 
       {/* ===================================================
-          NÚCLEO SUPERIOR
+          ARO LUMINOSO DE LA PLATAFORMA
       =================================================== */}
 
       <mesh
-        position={[
-          0,
-          3.05,
-          0,
-        ]}
-        castShadow
-      >
-        <sphereGeometry
-          args={[
-            0.72,
-            32,
-            32,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#111315"
-          roughness={0.25}
-          metalness={0.65}
-        />
-      </mesh>
-
-      {/* ===================================================
-          HALO CENTRAL
-      =================================================== */}
-
-      <mesh
-        position={[
-          0,
-          3.2,
-          0,
-        ]}
-      >
-        <sphereGeometry
-          args={[
-            2.4,
-            28,
-            28,
-          ]}
-        />
-
-        <meshBasicMaterial
-          color="#9fd8ff"
-          transparent
-          opacity={0.035}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </mesh>
-
-      {/* ===================================================
-          CRUCETA
-      =================================================== */}
-
-      <group
-        ref={
-          crossGroup
-        }
-        position={[
-          0,
-          3.35,
-          0,
-        ]}
-        rotation={[
-          0.42,
-          0,
-          Math.PI / 4,
-        ]}
-      >
-        {/* CENTRO */}
-
-        <mesh
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              1.25,
-              1.25,
-              0.55,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#050607"
-            roughness={0.28}
-            metalness={0.55}
-          />
-        </mesh>
-
-        {/* ARRIBA */}
-
-        <mesh
-          position={[
-            0,
-            1.18,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              1.25,
-              1.25,
-              0.55,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#050607"
-            roughness={0.28}
-            metalness={0.55}
-          />
-        </mesh>
-
-        {/* ABAJO */}
-
-        <mesh
-          position={[
-            0,
-            -1.18,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              1.25,
-              1.25,
-              0.55,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#050607"
-            roughness={0.28}
-            metalness={0.55}
-          />
-        </mesh>
-
-        {/* IZQUIERDA */}
-
-        <mesh
-          position={[
-            -1.18,
-            0,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              1.25,
-              1.25,
-              0.55,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#050607"
-            roughness={0.28}
-            metalness={0.55}
-          />
-        </mesh>
-
-        {/* DERECHA */}
-
-        <mesh
-          position={[
-            1.18,
-            0,
-            0,
-          ]}
-          castShadow
-        >
-          <boxGeometry
-            args={[
-              1.25,
-              1.25,
-              0.55,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#050607"
-            roughness={0.28}
-            metalness={0.55}
-          />
-        </mesh>
-      </group>
-
-      {/* ===================================================
-          ANILLO 1
-      =================================================== */}
-
-      <group
-        ref={
-          ringOne
-        }
-        position={[
-          0,
-          3.35,
-          0,
-        ]}
+        position={[0, 0.515, 0]}
         rotation={[
           Math.PI / 2,
           0,
           0,
         ]}
       >
-        <mesh>
-          <torusGeometry
+        <torusGeometry
+          args={[
+            5.55,
+            0.055,
+            10,
+            96,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={glow}
+          emissive={glow}
+          emissiveIntensity={1.5}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* ===================================================
+          CRUCETA SUSPENDIDA
+      =================================================== */}
+
+      <group
+        ref={dpadRef}
+        position={[0, 4.3, 0]}
+        rotation={[
+          0.12,
+          0,
+          Math.PI / 4,
+        ]}
+      >
+        {/* ARRIBA */}
+
+        <mesh
+          position={[0, 2.35, 0]}
+          castShadow
+        >
+          <boxGeometry
             args={[
-              3.3,
-              0.055,
-              10,
-              80,
+              3.25,
+              3.25,
+              1.55,
             ]}
           />
 
-          <meshBasicMaterial
-            color="#b7e5ff"
-            transparent
-            opacity={0.62}
-            toneMapped={false}
+          <meshStandardMaterial
+            color="#050607"
+            roughness={0.46}
+            metalness={0.12}
+          />
+        </mesh>
+
+        {/* ABAJO */}
+
+        <mesh
+          position={[0, -2.35, 0]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              3.25,
+              3.25,
+              1.55,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#050607"
+            roughness={0.46}
+            metalness={0.12}
+          />
+        </mesh>
+
+        {/* IZQUIERDA */}
+
+        <mesh
+          position={[-2.35, 0, 0]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              3.25,
+              3.25,
+              1.55,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#050607"
+            roughness={0.46}
+            metalness={0.12}
+          />
+        </mesh>
+
+        {/* DERECHA */}
+
+        <mesh
+          position={[2.35, 0, 0]}
+          castShadow
+        >
+          <boxGeometry
+            args={[
+              3.25,
+              3.25,
+              1.55,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#050607"
+            roughness={0.46}
+            metalness={0.12}
           />
         </mesh>
       </group>
 
       {/* ===================================================
-          ANILLO 2
+          AROS ORBITALES
+          NO HAY PELOTA CENTRAL
       =================================================== */}
 
       <group
-        ref={
-          ringTwo
-        }
-        position={[
-          0,
-          3.35,
-          0,
-        ]}
-        rotation={[
-          0.55,
-          0.7,
-          0.2,
-        ]}
+        position={[0, 4.3, 0]}
       >
-        <mesh>
+        {/* ARO 1 */}
+
+        <mesh
+          ref={ringARef}
+          rotation={[
+            Math.PI / 2.8,
+            0.1,
+            0.25,
+          ]}
+        >
           <torusGeometry
             args={[
-              3.85,
+              5.7,
               0.045,
-              10,
-              80,
+              8,
+              96,
             ]}
           />
 
-          <meshBasicMaterial
-            color="#91cfff"
+          <meshStandardMaterial
+            color={glow}
+            emissive={glow}
+            emissiveIntensity={1.65}
             transparent
-            opacity={0.42}
+            opacity={0.72}
             toneMapped={false}
           />
         </mesh>
-      </group>
 
-      {/* ===================================================
-          ANILLO 3
-      =================================================== */}
+        {/* ARO 2 */}
 
-      <group
-        ref={
-          ringThree
-        }
-        position={[
-          0,
-          3.35,
-          0,
-        ]}
-        rotation={[
-          1.0,
-          -0.4,
-          0.8,
-        ]}
-      >
-        <mesh>
+        <mesh
+          ref={ringBRef}
+          rotation={[
+            0.35,
+            0.25,
+            Math.PI / 2.45,
+          ]}
+        >
           <torusGeometry
             args={[
-              4.35,
+              5.2,
+              0.04,
+              8,
+              96,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#d8f1ff"
+            emissive="#d8f1ff"
+            emissiveIntensity={1.4}
+            transparent
+            opacity={0.5}
+            toneMapped={false}
+          />
+        </mesh>
+
+        {/* ARO 3 */}
+
+        <mesh
+          ref={ringCRef}
+          rotation={[
+            Math.PI / 2,
+            0,
+            0,
+          ]}
+        >
+          <torusGeometry
+            args={[
+              6.15,
               0.035,
               8,
-              72,
+              96,
             ]}
           />
 
-          <meshBasicMaterial
-            color="#d8efff"
+          <meshStandardMaterial
+            color="#7fc7ff"
+            emissive="#7fc7ff"
+            emissiveIntensity={1.3}
             transparent
-            opacity={0.26}
+            opacity={0.38}
             toneMapped={false}
           />
         </mesh>
       </group>
 
       {/* ===================================================
-          LUZ SUAVE DEL MONUMENTO
+          LUZ DEBAJO
       =================================================== */}
 
       <pointLight
-        position={[
-          0,
-          3.6,
-          0,
-        ]}
-        intensity={28}
-        distance={18}
+        position={[0, 2.8, 0]}
+        intensity={7}
+        distance={15}
         decay={2}
-        color="#a8ddff"
+        color={glow}
       />
     </group>
   );
