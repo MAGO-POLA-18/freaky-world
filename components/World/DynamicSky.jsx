@@ -1209,7 +1209,9 @@ function Moon({
    CIELO DINÁMICO
 ========================================================= */
 
-export default function DynamicSky() {
+export default function DynamicSky({
+  testHour = null,
+}) {
   const [
     now,
     setNow,
@@ -1303,19 +1305,59 @@ export default function DynamicSky() {
   }, []);
 
   /* =======================================================
+     HORA EFECTIVA
+
+     REAL si testHour === null.
+
+     Si estamos probando:
+     mantenemos la fecha real,
+     pero cambiamos solo la hora.
+  ======================================================= */
+
+  const effectiveNow =
+    useMemo(
+      () => {
+        if (
+          testHour ===
+          null
+        ) {
+          return now;
+        }
+
+        const simulated =
+          new Date(
+            now
+          );
+
+        simulated.setHours(
+          testHour,
+          0,
+          0,
+          0
+        );
+
+        return simulated;
+      },
+      [
+        now,
+        testHour,
+      ]
+    );
+
+  /* =======================================================
      SOL Y LUNA
   ======================================================= */
 
   const sunAstronomical =
     getSunPosition(
-      now,
+      effectiveNow,
       location.latitude,
       location.longitude
     );
 
   const moonAstronomical =
     getMoonPosition(
-      now,
+      effectiveNow,
       location.latitude,
       location.longitude
     );
@@ -1580,25 +1622,13 @@ export default function DynamicSky() {
 
       {showStars && (
         <Stars
-          radius={
-            190
-          }
-          depth={
-            90
-          }
-          count={
-            3200
-          }
-          factor={
-            2.8
-          }
-          saturation={
-            0.08
-          }
+          radius={190}
+          depth={90}
+          count={3200}
+          factor={2.8}
+          saturation={0.08}
           fade
-          speed={
-            0.08
-          }
+          speed={0.08}
         />
       )}
 
@@ -1639,12 +1669,8 @@ export default function DynamicSky() {
           44,
           -85,
         ]}
-        scale={
-          1.3
-        }
-        speed={
-          0.5
-        }
+        scale={1.3}
+        speed={0.5}
         opacity={
           0.55 +
           daylight *
@@ -1658,12 +1684,8 @@ export default function DynamicSky() {
           55,
           -120,
         ]}
-        scale={
-          0.95
-        }
-        speed={
-          0.32
-        }
+        scale={0.95}
+        speed={0.32}
         opacity={
           0.5 +
           daylight *
@@ -1677,12 +1699,8 @@ export default function DynamicSky() {
           39,
           -75,
         ]}
-        scale={
-          1.15
-        }
-        speed={
-          0.42
-        }
+        scale={1.15}
+        speed={0.42}
         opacity={
           0.55 +
           daylight *
@@ -1696,12 +1714,8 @@ export default function DynamicSky() {
           60,
           -145,
         ]}
-        scale={
-          0.75
-        }
-        speed={
-          0.25
-        }
+        scale={0.75}
+        speed={0.25}
         opacity={
           0.48 +
           daylight *
@@ -1709,7 +1723,7 @@ export default function DynamicSky() {
         }
       />
 
-      {/* SOLAR */}
+      {/* LUZ SOLAR */}
 
       {sunDegrees >
         -5 && (
@@ -1754,7 +1768,7 @@ export default function DynamicSky() {
         />
       )}
 
-      {/* LUNA */}
+      {/* LUZ LUNAR */}
 
       {moonVisible &&
         sunDegrees <
@@ -1770,7 +1784,7 @@ export default function DynamicSky() {
           />
         )}
 
-      {/* AMBIENTAL */}
+      {/* LUZ AMBIENTAL */}
 
       <hemisphereLight
         intensity={
