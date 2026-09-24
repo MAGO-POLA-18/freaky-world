@@ -1,8 +1,11 @@
 import DpadWing from "./DpadWing";
-import TopTenExhibition from "./TopTenExhibition";
 
 /* =========================================================
    MUSEUM / FREAKY WORLD
+
+   PRUEBA TEMPORAL:
+   TOP 10 DESACTIVADO PARA COMPROBAR
+   SI LA CARGA DE PORTADAS PROVOCA EL FLASH.
 ========================================================= */
 
 export default function Museum() {
@@ -38,24 +41,22 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          TOP 10
+          TOP 10 DESACTIVADO TEMPORALMENTE
 
-          IMPORTANTE:
+          Antes estaba acá:
 
-          Antes estaba en -119.25,
-          es decir DETRÁS de la pared
-          interior.
+          <TopTenExhibition
+            position={[
+              0,
+              0,
+              -118.25,
+            ]}
+          />
 
-          Ahora está delante.
+          Lo quitamos SOLO para probar
+          si las portadas/texturas provocan
+          el flash en móvil.
       =================================================== */}
-
-      <TopTenExhibition
-        position={[
-          0,
-          0,
-          -118.25,
-        ]}
-      />
 
       {/* ===================================================
           SUR
