@@ -12,9 +12,9 @@ import {
    MOBILE CONTROLS
 
    IZQUIERDA
-   - cruceta visual
+   - cruceta fija
    - comportamiento analógico 360°
-   - deslizar para dirección / velocidad
+   - cada brazo se hunde según la dirección
 
    DERECHA
    - arrastrar = cámara
@@ -22,14 +22,13 @@ import {
 ========================================================= */
 
 const DOUBLE_TAP_TIME = 280;
-
 const TAP_MOVE_LIMIT = 18;
 
 export default function MobileControls() {
   const joystick =
     useRef(null);
 
-  const knob =
+  const dpad =
     useRef(null);
 
   const joystickTouch =
@@ -38,10 +37,6 @@ export default function MobileControls() {
   const lookTouch =
     useRef(null);
 
-  /* =======================================================
-     DOBLE TAP
-  ======================================================= */
-
   const lastRightTap =
     useRef(0);
 
@@ -49,19 +44,81 @@ export default function MobileControls() {
     useRef(null);
 
   /* =======================================================
-     JOYSTICK ANALÓGICO
+     EFECTO VISUAL DE PRESIÓN
+  ======================================================= */
 
-     IMPORTANTE:
-     Aunque visualmente ahora sea una cruceta,
-     la lógica sigue siendo 100 % analógica.
+  const setDpadPressure = (
+    x,
+    y
+  ) => {
+    if (!dpad.current) {
+      return;
+    }
+
+    /*
+      x:
+      -1 izquierda
+       1 derecha
+
+      y:
+      -1 arriba
+       1 abajo
+    */
+
+    const left =
+      Math.max(
+        0,
+        -x
+      );
+
+    const right =
+      Math.max(
+        0,
+        x
+      );
+
+    const up =
+      Math.max(
+        0,
+        -y
+      );
+
+    const down =
+      Math.max(
+        0,
+        y
+      );
+
+    dpad.current.style.setProperty(
+      "--press-left",
+      left
+    );
+
+    dpad.current.style.setProperty(
+      "--press-right",
+      right
+    );
+
+    dpad.current.style.setProperty(
+      "--press-up",
+      up
+    );
+
+    dpad.current.style.setProperty(
+      "--press-down",
+      down
+    );
+  };
+
+  /* =======================================================
+     JOYSTICK ANALÓGICO
   ======================================================= */
 
   const updateJoystick = (
     touch
   ) => {
     if (
-      !joystick.current ||
-      !knob.current
+      !joystick.current
     ) {
       return;
     }
@@ -86,9 +143,18 @@ export default function MobileControls() {
       touch.clientY -
       centerY;
 
+    /*
+      Área útil analógica.
+
+      La cruceta NO se mueve.
+      Solo usamos la posición
+      del dedo para calcular
+      dirección e intensidad.
+    */
+
     const maxDistance =
       rect.width *
-      0.39;
+      0.42;
 
     const distance =
       Math.sqrt(
@@ -109,25 +175,36 @@ export default function MobileControls() {
         maxDistance;
     }
 
-    /* =====================================================
-       MOVIMIENTO VISUAL DE LA CRUCETA
-    ===================================================== */
-
-    knob.current
-      .style.transform =
-      `translate(${dx}px, ${dy}px)`;
-
-    /* =====================================================
-       INPUT ANALÓGICO REAL
-    ===================================================== */
-
-    playerInput.x =
+    const normalizedX =
       dx /
       maxDistance;
 
-    playerInput.y =
-      -dy /
+    const normalizedY =
+      dy /
       maxDistance;
+
+    /* =====================================================
+       MOVIMIENTO REAL DEL PERSONAJE
+    ===================================================== */
+
+    playerInput.x =
+      normalizedX;
+
+    playerInput.y =
+      -normalizedY;
+
+    /* =====================================================
+       PRESIÓN VISUAL
+
+       Aquí usamos Y normal de pantalla:
+       negativo = arriba
+       positivo = abajo
+    ===================================================== */
+
+    setDpadPressure(
+      normalizedX,
+      normalizedY
+    );
   };
 
   /* =======================================================
@@ -139,13 +216,10 @@ export default function MobileControls() {
       playerInput.x = 0;
       playerInput.y = 0;
 
-      if (
-        knob.current
-      ) {
-        knob.current
-          .style.transform =
-          "translate(0px, 0px)";
-      }
+      setDpadPressure(
+        0,
+        0
+      );
 
       joystickTouch.current =
         null;
@@ -367,10 +441,6 @@ export default function MobileControls() {
             now -
             lastRightTap.current;
 
-          /* ===============================================
-             DOBLE TAP = DASH
-          =============================================== */
-
           if (
             elapsed > 0 &&
             elapsed <
@@ -420,41 +490,44 @@ export default function MobileControls() {
       }
     >
       {/* =================================================
-          ZONA ANALÓGICA IZQUIERDA
+          CRUCETA ANALÓGICA FIJA
       ================================================= */}
 
       <div
         ref={joystick}
         className="mobile-joystick"
       >
-        {/* ===============================================
-            CRUCETA VISUAL
-
-            Este elemento se mueve exactamente como
-            se movía el joystick circular anterior.
-        =============================================== */}
-
         <div
-          ref={knob}
-          className="joystick-knob joystick-dpad"
+          ref={dpad}
+          className="mobile-dpad"
         >
-          <div className="joystick-dpad-vertical" />
+          {/* ARRIBA */}
 
-          <div className="joystick-dpad-horizontal" />
+          <div className="mobile-dpad-arm mobile-dpad-up">
+            <span />
+          </div>
 
-          {/* flechas */}
+          {/* ABAJO */}
 
-          <div className="joystick-dpad-arrow joystick-dpad-arrow-up" />
+          <div className="mobile-dpad-arm mobile-dpad-down">
+            <span />
+          </div>
 
-          <div className="joystick-dpad-arrow joystick-dpad-arrow-down" />
+          {/* IZQUIERDA */}
 
-          <div className="joystick-dpad-arrow joystick-dpad-arrow-left" />
+          <div className="mobile-dpad-arm mobile-dpad-left">
+            <span />
+          </div>
 
-          <div className="joystick-dpad-arrow joystick-dpad-arrow-right" />
+          {/* DERECHA */}
 
-          {/* centro hundido */}
+          <div className="mobile-dpad-arm mobile-dpad-right">
+            <span />
+          </div>
 
-          <div className="joystick-dpad-center" />
+          {/* CENTRO */}
+
+          <div className="mobile-dpad-center" />
         </div>
       </div>
 
