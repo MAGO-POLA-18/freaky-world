@@ -181,6 +181,9 @@ export default function WorldEnvironment() {
 
   /* =======================================================
      FRANJAS VERDES
+
+     Estas bases siguen existiendo por debajo del césped 3D.
+     Sirven para que el suelo no quede vacío entre briznas.
   ======================================================= */
 
   const gardenItems =
@@ -512,7 +515,7 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          FRANJAS VERDES
+          BASE DE LAS ZONAS DE CÉSPED
       =================================================== */}
 
       <InstancedBoxes
@@ -520,6 +523,7 @@ export default function WorldEnvironment() {
           gardenItems
         }
         color="#43583e"
+        roughness={1}
       />
 
       {/* ===================================================
@@ -536,6 +540,9 @@ export default function WorldEnvironment() {
 
       {/* ===================================================
           PLAZA CENTRAL
+
+          Se mantiene libre de vegetación para que el
+          monumento siga teniendo presencia visual.
       =================================================== */}
 
       <group
@@ -581,9 +588,18 @@ export default function WorldEnvironment() {
       </group>
 
       {/* ===================================================
-          JARDÍN Y VEGETACIÓN
+          JARDÍN CENTRAL
 
-          Todo el sistema vegetal queda aislado aquí.
+          Aquí vive ahora:
+          - césped 3D
+          - árboles
+          - follaje
+          - arbustos
+          - colisiones de troncos
+
+          IMPORTANTE:
+          CentralGarden debe existir en:
+          components/World/CentralGarden.jsx
       =================================================== */}
 
       <CentralGarden />
@@ -640,7 +656,7 @@ export default function WorldEnvironment() {
       </mesh>
 
       {/* ===================================================
-          MONUMENTO
+          MONUMENTO CENTRAL
       =================================================== */}
 
       <CentralMonument />
