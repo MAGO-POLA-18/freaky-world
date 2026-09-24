@@ -1827,3 +1827,328 @@ export default function DynamicSky({
   let horizonColor;
 
   if (sunDegrees <= -6) {
+    topColor =
+      nightTop
+        .clone()
+        .lerp(
+          dawnTop,
+          twilight
+        );
+
+    horizonColor =
+      nightHorizon
+        .clone()
+        .lerp(
+          dawnHorizon,
+          twilight
+        );
+  } else {
+    topColor =
+      dawnTop
+        .clone()
+        .lerp(
+          dayTop,
+          daylight
+        );
+
+    horizonColor =
+      dawnHorizon
+        .clone()
+        .lerp(
+          dayHorizon,
+          daylight
+        );
+  }
+
+  /* =======================================================
+     ILUMINACIÓN
+  ======================================================= */
+
+  const sunIntensity =
+    THREE.MathUtils.clamp(
+      daylight * 2.1,
+      0,
+      2.1
+    );
+
+  const hemisphereIntensity =
+    THREE.MathUtils.lerp(
+      0.12,
+      1,
+      daylight
+    );
+
+  const ambientIntensity =
+    THREE.MathUtils.lerp(
+      0.06,
+      0.35,
+      daylight
+    );
+
+  const showStars =
+    sunDegrees < -4;
+
+  /* =======================================================
+     BRILLO LUNAR SEGÚN FASE
+  ======================================================= */
+
+  const sunDirectionVector =
+    new THREE.Vector3(
+      ...sunPosition
+    ).normalize();
+
+  const moonDirectionVector =
+    new THREE.Vector3(
+      ...moonPosition
+    ).normalize();
+
+  const elongation =
+    Math.acos(
+      THREE.MathUtils.clamp(
+        sunDirectionVector.dot(
+          moonDirectionVector
+        ),
+        -1,
+        1
+      )
+    );
+
+  const moonIllumination =
+    (
+      1 -
+      Math.cos(
+        elongation
+      )
+    ) /
+    2;
+
+  const moonLightIntensity =
+    THREE.MathUtils.lerp(
+      0.015,
+      0.26,
+      moonIllumination
+    );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <>
+      <color
+        attach="background"
+        args={[
+          `#${topColor.getHexString()}`,
+        ]}
+      />
+
+      <SkyDome
+        topColor={
+          `#${topColor.getHexString()}`
+        }
+        horizonColor={
+          `#${horizonColor.getHexString()}`
+        }
+        sunDirection={
+          sunDirection
+        }
+        twilightStrength={
+          twilightDirectionalStrength
+        }
+      />
+
+      <fog
+        attach="fog"
+        args={[
+          `#${horizonColor.getHexString()}`,
+          170,
+          360,
+        ]}
+      />
+
+      {/* =========================================
+          ESTRELLAS NUEVAS
+      ========================================= */}
+
+      {showStars && (
+        <StarField
+          count={4200}
+          radius={245}
+        />
+      )}
+
+      {/* =========================================
+          SOL MEJORADO
+      ========================================= */}
+
+      {sunVisible && (
+        <Sun
+          position={
+            sunPosition
+          }
+          altitudeDegrees={
+            sunDegrees
+          }
+        />
+      )}
+
+      {/* =========================================
+          LUNA
+      ========================================= */}
+
+      {moonVisible && (
+        <Moon
+          position={
+            moonPosition
+          }
+          sunPosition={
+            sunPosition
+          }
+          daylight={
+            daylight
+          }
+        />
+      )}
+
+      {/* =========================================
+          NUBES
+      ========================================= */}
+
+      <CloudBank
+        position={[
+          -105,
+          44,
+          -85,
+        ]}
+        scale={1.3}
+        speed={0.5}
+        opacity={
+          0.55 +
+          daylight *
+            0.27
+        }
+      />
+
+      <CloudBank
+        position={[
+          -15,
+          55,
+          -120,
+        ]}
+        scale={0.95}
+        speed={0.32}
+        opacity={
+          0.5 +
+          daylight *
+            0.3
+        }
+      />
+
+      <CloudBank
+        position={[
+          75,
+          39,
+          -75,
+        ]}
+        scale={1.15}
+        speed={0.42}
+        opacity={
+          0.55 +
+          daylight *
+            0.27
+        }
+      />
+
+      <CloudBank
+        position={[
+          120,
+          60,
+          -145,
+        ]}
+        scale={0.75}
+        speed={0.25}
+        opacity={
+          0.48 +
+          daylight *
+            0.3
+        }
+      />
+
+      {/* =========================================
+          LUZ SOLAR
+      ========================================= */}
+
+      {sunDegrees > -5 && (
+        <directionalLight
+          position={
+            sunPosition
+          }
+          intensity={
+            sunIntensity
+          }
+          color={
+            sunDegrees < 10
+              ? "#ffd09b"
+              : "#fff6e2"
+          }
+          castShadow
+          shadow-mapSize-width={
+            1024
+          }
+          shadow-mapSize-height={
+            1024
+          }
+          shadow-camera-near={1}
+          shadow-camera-far={260}
+          shadow-camera-left={-120}
+          shadow-camera-right={120}
+          shadow-camera-top={120}
+          shadow-camera-bottom={-120}
+        />
+      )}
+
+      {/* =========================================
+          LUZ LUNAR
+      ========================================= */}
+
+      {moonVisible &&
+        sunDegrees < -2 && (
+          <directionalLight
+            position={
+              moonPosition
+            }
+            intensity={
+              moonLightIntensity
+            }
+            color="#9ebbe8"
+          />
+        )}
+
+      {/* =========================================
+          LUZ AMBIENTAL
+      ========================================= */}
+
+      <hemisphereLight
+        intensity={
+          hemisphereIntensity
+        }
+        color={
+          daylight > 0.3
+            ? "#9bd9ff"
+            : "#52668a"
+        }
+        groundColor={
+          daylight > 0.3
+            ? "#53614c"
+            : "#090b10"
+        }
+      />
+
+      <ambientLight
+        intensity={
+          ambientIntensity
+        }
+      />
+    </>
+  );
+}
