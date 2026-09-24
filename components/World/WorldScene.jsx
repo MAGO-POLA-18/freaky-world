@@ -176,6 +176,10 @@ export default function WorldScene() {
     };
   }, []);
 
+  /* =======================================================
+     ABRIR FICHA
+  ======================================================= */
+
   const openGame =
     useCallback(() => {
       if (
@@ -199,6 +203,10 @@ export default function WorldScene() {
       overlayOpen,
     ]);
 
+  /* =======================================================
+     CERRAR FICHA
+  ======================================================= */
+
   const closeGame =
     useCallback(() => {
       playerInput.x = 0;
@@ -209,6 +217,10 @@ export default function WorldScene() {
 
       setOpenedGame(null);
     }, []);
+
+  /* =======================================================
+     TECLADO GENERAL
+  ======================================================= */
 
   useEffect(() => {
     const handleKey =
@@ -265,9 +277,25 @@ export default function WorldScene() {
     closeGame,
   ]);
 
+  /* =======================================================
+     LABEL DEL CIELO
+  ======================================================= */
+
+  const skyLabel =
+    skyTestHour === null
+      ? "REAL"
+      : `${String(
+          skyTestHour
+        ).padStart(
+          2,
+          "0"
+        )}:00`;
+
   return (
     <>
-      {/* TUTORIAL */}
+      {/* ===================================================
+          TUTORIAL
+      =================================================== */}
 
       {showTutorial &&
         !overlayOpen && (
@@ -359,7 +387,9 @@ export default function WorldScene() {
           </div>
         )}
 
-      {/* FPS */}
+      {/* ===================================================
+          FPS
+      =================================================== */}
 
       {!overlayOpen && (
         <>
@@ -400,7 +430,7 @@ export default function WorldScene() {
                   top: 52,
                   right: 14,
                   zIndex: 80,
-                  width: 190,
+                  width: 205,
                   padding:
                     "10px 12px",
                   borderRadius: 10,
@@ -443,7 +473,10 @@ export default function WorldScene() {
                       "1px solid rgba(255,255,255,0.15)",
                   }}
                 >
-                  CIELO
+                  CIELO:{" "}
+                  <strong>
+                    {skyLabel}
+                  </strong>
                 </div>
 
                 <div
@@ -494,7 +527,12 @@ export default function WorldScene() {
                           {hour ===
                           null
                             ? "REAL"
-                            : `${hour}:00`}
+                            : `${String(
+                                hour
+                              ).padStart(
+                                2,
+                                "0"
+                              )}:00`}
                         </button>
                       );
                     }
@@ -505,7 +543,9 @@ export default function WorldScene() {
         </>
       )}
 
-      {/* MUNDO */}
+      {/* ===================================================
+          MUNDO
+      =================================================== */}
 
       <Canvas
         shadows
@@ -538,6 +578,12 @@ export default function WorldScene() {
         />
 
         <DynamicSky
+          key={
+            skyTestHour ===
+            null
+              ? "sky-real"
+              : `sky-test-${skyTestHour}`
+          }
           testHour={
             skyTestHour
           }
@@ -561,9 +607,17 @@ export default function WorldScene() {
         </Physics>
       </Canvas>
 
+      {/* ===================================================
+          MOBILE
+      =================================================== */}
+
       {!overlayOpen && (
         <MobileControls />
       )}
+
+      {/* ===================================================
+          INTERACCIÓN
+      =================================================== */}
 
       {nearbyGame &&
         !overlayOpen && (
@@ -583,13 +637,21 @@ export default function WorldScene() {
               {nearbyGame.title}
             </span>
 
-            <small>E</small>
+            <small>
+              E
+            </small>
           </button>
         )}
 
+      {/* ===================================================
+          FICHA 2D
+      =================================================== */}
+
       {openedGame && (
         <RankingOverlay
-          game={openedGame}
+          game={
+            openedGame
+          }
           onClose={
             closeGame
           }
