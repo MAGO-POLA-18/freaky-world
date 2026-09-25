@@ -32,9 +32,26 @@ import {
 ========================================================= */
 
 const ROOM_HALF_WIDTH = 18.5;
-
 const ROOM_FRONT_Z = 27;
 const ROOM_BACK_Z = -25;
+
+/* =========================================================
+   PANTALLA DE VÍDEO
+========================================================= */
+
+const FEATURED_VIDEO = {
+  id: "featured-video-screen",
+  overlayType: "video",
+  title: "FEATURED VIDEO WALL",
+  accent: "#58f1ff",
+  accent2: "#8b5cff",
+  description:
+    "Pantalla gigante de la sala principal. Al abrirla se muestra un vídeo de YouTube embebido y desde el propio reproductor se puede ampliar a pantalla completa.",
+  youtubeEmbed:
+    "https://www.youtube.com/embed/M7lc1UVf-VE?autoplay=1&rel=0&playsinline=1",
+  youtubePage:
+    "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+};
 
 /* =========================================================
    DATOS FICTICIOS
@@ -51,12 +68,11 @@ const GAMES = [
     genre: "Acción · Mundo abierto",
     platform: "PS5 · Xbox · PC",
     score: "9.4",
-    accent: "#ff5f78",
-    accent2: "#7048e8",
+    accent: "#ff4f95",
+    accent2: "#7d44ff",
     description:
       "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones y reputación.",
   },
-
   {
     id: "mock-echoes",
     mock: true,
@@ -67,12 +83,11 @@ const GAMES = [
     genre: "Aventura",
     platform: "PS5 · PC",
     score: "9.1",
-    accent: "#64c7ff",
+    accent: "#5ab8ff",
     accent2: "#275c9b",
     description:
       "Exploración narrativa en un archipiélago abandonado donde el entorno reconstruye recuerdos.",
   },
-
   {
     id: "mock-red-horizon",
     mock: true,
@@ -83,12 +98,11 @@ const GAMES = [
     genre: "RPG · Ciencia ficción",
     platform: "Xbox · PC",
     score: "8.9",
-    accent: "#ff873d",
-    accent2: "#9c3232",
+    accent: "#ff7b34",
+    accent2: "#b83a2d",
     description:
       "Una colonia marciana dividida entre corporaciones, exploradores y nuevos asentamientos.",
   },
-
   {
     id: "mock-void-runner",
     mock: true,
@@ -99,12 +113,11 @@ const GAMES = [
     genre: "Acción",
     platform: "PS5 · Xbox · PC",
     score: "8.8",
-    accent: "#46e6c8",
+    accent: "#3ee8c2",
     accent2: "#16647c",
     description:
       "Combate rápido, estaciones orbitales y recorridos que cambian en cada partida.",
   },
-
   {
     id: "mock-last-signal",
     mock: true,
@@ -115,12 +128,11 @@ const GAMES = [
     genre: "Terror",
     platform: "PS5 · PC",
     score: "8.7",
-    accent: "#d79cff",
-    accent2: "#563b79",
+    accent: "#ca8dff",
+    accent2: "#5a3b88",
     description:
       "Una señal desconocida conduce a una estación científica que debería llevar años vacía.",
   },
-
   {
     id: "mock-iron-kingdom",
     mock: true,
@@ -136,7 +148,6 @@ const GAMES = [
     description:
       "Reinos mecánicos, fortalezas móviles y un sistema de combate centrado en armas modulares.",
   },
-
   {
     id: "mock-deep-blue",
     mock: true,
@@ -152,7 +163,6 @@ const GAMES = [
     description:
       "Exploración submarina en un océano alienígena lleno de estructuras imposibles.",
   },
-
   {
     id: "mock-black-sun",
     mock: true,
@@ -168,7 +178,6 @@ const GAMES = [
     description:
       "Construcción de civilizaciones alrededor de una estrella que comienza a apagarse.",
   },
-
   {
     id: "mock-dust-road",
     mock: true,
@@ -184,43 +193,23 @@ const GAMES = [
     description:
       "Carreteras infinitas, vehículos modificables y asentamientos repartidos por el desierto.",
   },
-
-  {
-    id: "mock-lumina",
-    mock: true,
-    rank: 10,
-    title: "LUMINA",
-    subtitle: "Small Moon",
-    year: "2026",
-    genre: "Plataformas",
-    platform: "Switch 2",
-    score: "8.1",
-    accent: "#75e3ab",
-    accent2: "#3284a0",
-    description:
-      "Un viaje colorido por pequeños mundos conectados mediante portales de luz.",
-  },
 ];
 
 /* =========================================================
-   PORTADA PROCEDURAL
+   PORTADA
 ========================================================= */
 
 function createPosterTexture(
   game
 ) {
   const canvas =
-    document.createElement(
-      "canvas"
-    );
+    document.createElement("canvas");
 
   canvas.width = 512;
   canvas.height = 768;
 
   const ctx =
-    canvas.getContext(
-      "2d"
-    );
+    canvas.getContext("2d");
 
   const gradient =
     ctx.createLinearGradient(
@@ -234,93 +223,56 @@ function createPosterTexture(
     0,
     game.accent
   );
-
   gradient.addColorStop(
     0.52,
     game.accent2
   );
-
   gradient.addColorStop(
     1,
-    "#080d12"
+    "#070a10"
   );
 
-  ctx.fillStyle =
-    gradient;
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 512, 768);
 
-  ctx.fillRect(
-    0,
-    0,
-    512,
-    768
-  );
-
-  ctx.globalAlpha = 0.18;
-
-  ctx.fillStyle =
-    "#ffffff";
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = "#ffffff";
 
   ctx.beginPath();
-
   ctx.arc(
     390,
-    150,
+    160,
     150,
     0,
     Math.PI * 2
   );
-
   ctx.fill();
 
-  ctx.globalAlpha = 0.1;
-
+  ctx.globalAlpha = 0.11;
   ctx.beginPath();
-
   ctx.arc(
-    90,
-    430,
-    220,
+    110,
+    420,
+    210,
     0,
     Math.PI * 2
   );
-
   ctx.fill();
 
-  ctx.globalAlpha = 0.18;
-
+  ctx.globalAlpha = 0.15;
   ctx.beginPath();
-
-  ctx.moveTo(
-    0,
-    470
-  );
-
-  ctx.lineTo(
-    512,
-    270
-  );
-
-  ctx.lineTo(
-    512,
-    410
-  );
-
-  ctx.lineTo(
-    0,
-    610
-  );
-
+  ctx.moveTo(0, 470);
+  ctx.lineTo(512, 260);
+  ctx.lineTo(512, 410);
+  ctx.lineTo(0, 620);
   ctx.closePath();
-
   ctx.fill();
 
   ctx.globalAlpha = 1;
 
   ctx.fillStyle =
     "rgba(0,0,0,.48)";
-
   ctx.beginPath();
-
   ctx.roundRect(
     28,
     28,
@@ -328,62 +280,41 @@ function createPosterTexture(
     52,
     16
   );
-
   ctx.fill();
 
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.font =
-    "800 27px Arial";
-
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 27px Arial";
   ctx.fillText(
     `#${game.rank}`,
     46,
     63
   );
 
-  ctx.font =
-    "900 45px Arial";
-
+  ctx.font = "900 45px Arial";
   const words =
-    game.title.split(
-      " "
-    );
+    game.title.split(" ");
 
   let line = "";
   let y = 590;
 
-  words.forEach(
-    (
-      word
-    ) => {
-      const test =
-        `${line}${word} `;
-
-      if (
-        ctx.measureText(
-          test
-        ).width >
-          450 &&
-        line
-      ) {
-        ctx.fillText(
-          line.trim(),
-          28,
-          y
-        );
-
-        line =
-          `${word} `;
-
-        y += 50;
-      } else {
-        line =
-          test;
-      }
+  words.forEach((word) => {
+    const test = `${line}${word} `;
+    if (
+      ctx.measureText(test)
+        .width > 450 &&
+      line
+    ) {
+      ctx.fillText(
+        line.trim(),
+        28,
+        y
+      );
+      line = `${word} `;
+      y += 50;
+    } else {
+      line = test;
     }
-  );
+  });
 
   ctx.fillText(
     line.trim(),
@@ -391,12 +322,9 @@ function createPosterTexture(
     y
   );
 
-  ctx.font =
-    "500 20px Arial";
-
+  ctx.font = "500 20px Arial";
   ctx.fillStyle =
     "rgba(255,255,255,.75)";
-
   ctx.fillText(
     game.subtitle,
     30,
@@ -410,7 +338,131 @@ function createPosterTexture(
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
 
+  return texture;
+}
+
+/* =========================================================
+   PREVIEW DE VÍDEO
+========================================================= */
+
+function createVideoWallTexture() {
+  const canvas =
+    document.createElement("canvas");
+
+  canvas.width = 1024;
+  canvas.height = 576;
+
+  const ctx =
+    canvas.getContext("2d");
+
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      1024,
+      576
+    );
+
+  gradient.addColorStop(
+    0,
+    "#10141c"
+  );
+  gradient.addColorStop(
+    0.5,
+    "#1b1030"
+  );
+  gradient.addColorStop(
+    1,
+    "#071018"
+  );
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1024, 576);
+
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = "#58f1ff";
+  ctx.fillRect(
+    72,
+    72,
+    350,
+    190
+  );
+
+  ctx.globalAlpha = 0.15;
+  ctx.fillStyle = "#ff4f95";
+  ctx.fillRect(
+    622,
+    105,
+    280,
+    150
+  );
+
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "#5cf2ff";
+  ctx.font = "800 34px Arial";
+  ctx.fillText(
+    "FREAKY WORLD",
+    70,
+    80
+  );
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 64px Arial";
+  ctx.fillText(
+    "FEATURED VIDEO WALL",
+    70,
+    155
+  );
+
+  ctx.font = "500 28px Arial";
+  ctx.fillStyle =
+    "rgba(255,255,255,.75)";
+  ctx.fillText(
+    "Embebido de YouTube con opción de pantalla completa",
+    72,
+    205
+  );
+
+  /* play button */
+  ctx.beginPath();
+  ctx.fillStyle =
+    "rgba(255,255,255,.92)";
+  ctx.arc(
+    512,
+    330,
+    64,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.fillStyle = "#101215";
+  ctx.moveTo(535, 330);
+  ctx.lineTo(492, 302);
+  ctx.lineTo(492, 358);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle =
+    "rgba(255,255,255,.85)";
+  ctx.font = "700 26px Arial";
+  ctx.fillText(
+    "Pulsa para abrir el vídeo",
+    390,
+    455
+  );
+
+  const texture =
+    new THREE.CanvasTexture(
+      canvas
+    );
+
+  texture.colorSpace =
+    THREE.SRGBColorSpace;
   texture.anisotropy = 4;
 
   return texture;
@@ -424,6 +476,7 @@ function InstancedBoxes({
   items,
   color,
   roughness = 0.8,
+  metalness = 0,
   emissive = "#000000",
   emissiveIntensity = 0,
   receiveShadow = true,
@@ -433,8 +486,7 @@ function InstancedBoxes({
 
   const dummy =
     useMemo(
-      () =>
-        new THREE.Object3D(),
+      () => new THREE.Object3D(),
       []
     );
 
@@ -470,13 +522,9 @@ function InstancedBoxes({
       }
     );
 
-    ref.current
-      .instanceMatrix
-      .needsUpdate = true;
-  }, [
-    items,
-    dummy,
-  ]);
+    ref.current.instanceMatrix.needsUpdate =
+      true;
+  }, [items, dummy]);
 
   return (
     <instancedMesh
@@ -486,31 +534,95 @@ function InstancedBoxes({
         null,
         items.length,
       ]}
-      receiveShadow={
-        receiveShadow
-      }
+      receiveShadow={receiveShadow}
     >
       <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
+        args={[1, 1, 1]}
       />
 
       <meshStandardMaterial
         color={color}
-        roughness={
-          roughness
-        }
-        emissive={
-          emissive
-        }
+        roughness={roughness}
+        metalness={metalness}
+        emissive={emissive}
         emissiveIntensity={
           emissiveIntensity
         }
       />
     </instancedMesh>
+  );
+}
+
+/* =========================================================
+   DECORACIÓN NEÓN
+========================================================= */
+
+function NeonLine({
+  position,
+  rotation = [0, 0, 0],
+  size = [6, 0.08, 0.08],
+  color = "#58f1ff",
+}) {
+  return (
+    <mesh
+      position={position}
+      rotation={rotation}
+    >
+      <boxGeometry args={size} />
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={2.4}
+        roughness={0.15}
+        metalness={0.15}
+      />
+    </mesh>
+  );
+}
+
+function NeonSign({
+  position,
+  width = 4.5,
+  height = 1.2,
+  color = "#ff4f95",
+}) {
+  return (
+    <group position={position}>
+      <RoundedBox
+        args={[
+          width,
+          height,
+          0.1,
+        ]}
+        radius={0.12}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#0f1319"
+          emissive={color}
+          emissiveIntensity={0.12}
+          roughness={0.35}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[0, 0, 0.06]}
+        args={[
+          width * 0.83,
+          height * 0.42,
+          0.05,
+        ]}
+        radius={0.08}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={1.9}
+          roughness={0.2}
+        />
+      </RoundedBox>
+    </group>
   );
 }
 
@@ -532,35 +644,25 @@ function GameStation({
 
   const worldPosition =
     useMemo(
-      () =>
-        new THREE.Vector3(),
+      () => new THREE.Vector3(),
       []
     );
 
-  const [
-    near,
-    setNear,
-  ] =
+  const [near, setNear] =
     useState(false);
 
   const poster =
     useMemo(
       () =>
-        createPosterTexture(
-          game
-        ),
-      [
-        game,
-      ]
+        createPosterTexture(game),
+      [game]
     );
 
   useEffect(() => {
     return () => {
       poster.dispose();
     };
-  }, [
-    poster,
-  ]);
+  }, [poster]);
 
   useFrame(() => {
     if (
@@ -580,7 +682,6 @@ function GameStation({
     const dx =
       player.x -
       worldPosition.x;
-
     const dz =
       player.z -
       worldPosition.z;
@@ -588,12 +689,11 @@ function GameStation({
     const distance =
       Math.sqrt(
         dx * dx +
-        dz * dz
+          dz * dz
       );
 
     const isNear =
-      distance <
-      4.4 * scale;
+      distance < 4.6 * scale;
 
     if (
       isNear ===
@@ -602,29 +702,22 @@ function GameStation({
       return;
     }
 
-    nearRef.current =
-      isNear;
-
-    setNear(
-      isNear
-    );
+    nearRef.current = isNear;
+    setNear(isNear);
 
     window.dispatchEvent(
       new CustomEvent(
         "freaky:game-near",
         {
-          detail:
-            isNear
-              ? {
-                  near:
-                    true,
-                  game,
-                }
-              : {
-                  near:
-                    false,
-                  game,
-                },
+          detail: isNear
+            ? {
+                near: true,
+                game,
+              }
+            : {
+                near: false,
+                game,
+              },
         }
       )
     );
@@ -640,8 +733,7 @@ function GameStation({
             "freaky:game-near",
             {
               detail: {
-                near:
-                  false,
+                near: false,
                 game,
               },
             }
@@ -649,9 +741,7 @@ function GameStation({
         );
       }
     };
-  }, [
-    game,
-  ]);
+  }, [game]);
 
   return (
     <group
@@ -668,123 +758,109 @@ function GameStation({
         scale,
       ]}
     >
-      {/* BASE */}
-
+      {/* base */}
       <RoundedBox
         position={[
           0,
-          0.3,
+          0.26,
           0,
         ]}
         args={[
-          3.3,
-          0.45,
-          1.6,
+          3.5,
+          0.42,
+          1.4,
         ]}
-        radius={0.15}
+        radius={0.14}
         smoothness={3}
         castShadow
         receiveShadow
       >
         <meshStandardMaterial
-          color="#343a3e"
+          color="#171d23"
           roughness={0.62}
         />
       </RoundedBox>
 
-      {/* PEDESTAL */}
-
+      {/* soporte */}
       <RoundedBox
         position={[
           0,
-          1.3,
+          1.18,
           0,
         ]}
         args={[
-          1.9,
-          1.65,
-          0.35,
+          1.05,
+          1.55,
+          0.32,
         ]}
-        radius={0.13}
+        radius={0.12}
         smoothness={3}
         castShadow
       >
         <meshStandardMaterial
-          color="#555c60"
-          roughness={0.6}
+          color="#303a43"
+          roughness={0.55}
         />
       </RoundedBox>
 
-      {/* MARCO */}
-
+      {/* pantalla grande */}
       <RoundedBox
         position={[
           0,
-          4.15,
+          4.4,
           0,
         ]}
         args={[
-          3.05,
-          4.85,
+          3.4,
+          5.6,
           0.24,
         ]}
-        radius={0.2}
+        radius={0.22}
         smoothness={4}
         castShadow
       >
         <meshStandardMaterial
           color={
             near
-              ? game.accent
-              : "#252c31"
+              ? "#14181f"
+              : "#12161b"
           }
-          emissive={
-            game.accent
-          }
+          emissive={game.accent}
           emissiveIntensity={
-            near
-              ? 0.38
-              : 0.06
+            near ? 0.3 : 0.08
           }
-          roughness={0.32}
+          roughness={0.28}
         />
       </RoundedBox>
-
-      {/* PORTADA */}
 
       <mesh
         position={[
           0,
-          4.15,
+          4.4,
           0.135,
         ]}
       >
         <planeGeometry
           args={[
-            2.72,
-            4.48,
+            3.02,
+            5.14,
           ]}
         />
-
         <meshBasicMaterial
           map={poster}
           toneMapped={false}
         />
       </mesh>
 
-      {/* RESPLANDOR */}
-
       {near && (
         <pointLight
           position={[
             0,
-            4,
-            1.7,
+            4.25,
+            1.3,
           ]}
-          color={
-            game.accent
-          }
-          intensity={7}
+          color={game.accent}
+          intensity={8}
           distance={6}
           decay={2}
         />
@@ -794,162 +870,10 @@ function GameStation({
 }
 
 /* =========================================================
-   ISLA CENTRAL
+   HERO VIDEO WALL
 ========================================================= */
 
-function TrendIsland({
-  position,
-  title,
-  subtitle,
-  accent,
-}) {
-  return (
-    <group
-      position={position}
-    >
-      <RoundedBox
-        position={[
-          0,
-          0.38,
-          0,
-        ]}
-        args={[
-          6.5,
-          0.55,
-          3.7,
-        ]}
-        radius={0.3}
-        smoothness={4}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color="#eef0eb"
-          roughness={0.76}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        position={[
-          0,
-          1.15,
-          0,
-        ]}
-        args={[
-          5.2,
-          0.8,
-          2.6,
-        ]}
-        radius={0.24}
-        smoothness={4}
-      >
-        <meshStandardMaterial
-          color="#2e3539"
-          emissive={accent}
-          emissiveIntensity={0.08}
-          roughness={0.56}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        position={[
-          0,
-          1.62,
-          0,
-        ]}
-        args={[
-          4.2,
-          0.08,
-          2,
-        ]}
-        radius={0.04}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color={accent}
-          emissive={accent}
-          emissiveIntensity={0.8}
-        />
-      </RoundedBox>
-
-      {/* placas */}
-
-      <mesh
-        position={[
-          -1.5,
-          2.1,
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            1.6,
-            0.12,
-            1.8,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive={accent}
-          emissiveIntensity={0.12}
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          0,
-          2.1,
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            1.6,
-            0.12,
-            1.8,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive={accent}
-          emissiveIntensity={0.12}
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          1.5,
-          2.1,
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            1.6,
-            0.12,
-            1.8,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive={accent}
-          emissiveIntensity={0.12}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/* =========================================================
-   HERO TOP 1
-========================================================= */
-
-function HeroWall({
-  game,
-}) {
+function HeroVideoWall() {
   const ref =
     useRef(null);
 
@@ -958,35 +882,25 @@ function HeroWall({
 
   const worldPosition =
     useMemo(
-      () =>
-        new THREE.Vector3(),
+      () => new THREE.Vector3(),
       []
     );
 
-  const [
-    near,
-    setNear,
-  ] =
+  const [near, setNear] =
     useState(false);
 
-  const poster =
+  const screenTexture =
     useMemo(
       () =>
-        createPosterTexture(
-          game
-        ),
-      [
-        game,
-      ]
+        createVideoWallTexture(),
+      []
     );
 
   useEffect(() => {
     return () => {
-      poster.dispose();
+      screenTexture.dispose();
     };
-  }, [
-    poster,
-  ]);
+  }, [screenTexture]);
 
   useFrame(() => {
     if (
@@ -1006,7 +920,6 @@ function HeroWall({
     const dx =
       player.x -
       worldPosition.x;
-
     const dz =
       player.z -
       worldPosition.z;
@@ -1014,11 +927,11 @@ function HeroWall({
     const distance =
       Math.sqrt(
         dx * dx +
-        dz * dz
+          dz * dz
       );
 
     const isNear =
-      distance < 6;
+      distance < 7.5;
 
     if (
       isNear ===
@@ -1027,29 +940,22 @@ function HeroWall({
       return;
     }
 
-    nearRef.current =
-      isNear;
-
-    setNear(
-      isNear
-    );
+    nearRef.current = isNear;
+    setNear(isNear);
 
     window.dispatchEvent(
       new CustomEvent(
         "freaky:game-near",
         {
-          detail:
-            isNear
-              ? {
-                  near:
-                    true,
-                  game,
-                }
-              : {
-                  near:
-                    false,
-                  game,
-                },
+          detail: isNear
+            ? {
+                near: true,
+                game: FEATURED_VIDEO,
+              }
+            : {
+                near: false,
+                game: FEATURED_VIDEO,
+              },
         }
       )
     );
@@ -1061,112 +967,140 @@ function HeroWall({
       position={[
         0,
         0,
-        -23.8,
+        -22.8,
       ]}
     >
-      {/* GRAN PANEL */}
-
+      {/* estructura */}
       <RoundedBox
         position={[
           0,
-          5.9,
+          6.4,
           0,
         ]}
         args={[
-          15,
-          9,
-          0.35,
+          24,
+          10.5,
+          0.45,
         ]}
         radius={0.4}
         smoothness={4}
         castShadow
       >
         <meshStandardMaterial
-          color={
-            near
-              ? "#273944"
-              : "#1b252b"
-          }
+          color="#10161d"
           emissive={
-            game.accent
+            near
+              ? "#5cf2ff"
+              : "#8b5cff"
           }
           emissiveIntensity={
-            near
-              ? 0.24
-              : 0.08
+            near ? 0.14 : 0.06
           }
-          roughness={0.42}
+          roughness={0.32}
         />
       </RoundedBox>
 
-      {/* PORTADA GIGANTE */}
+      {/* borde neón */}
+      <RoundedBox
+        position={[
+          0,
+          6.4,
+          0.23,
+        ]}
+        args={[
+          22.8,
+          9.3,
+          0.08,
+        ]}
+        radius={0.28}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#141920"
+          emissive="#ff4f95"
+          emissiveIntensity={0.28}
+          roughness={0.22}
+        />
+      </RoundedBox>
 
+      {/* contenido */}
       <mesh
         position={[
-          -3.8,
-          5.9,
-          0.19,
+          0,
+          6.4,
+          0.28,
         ]}
       >
         <planeGeometry
           args={[
-            5,
-            7.5,
+            21,
+            7.6,
           ]}
         />
-
         <meshBasicMaterial
-          map={poster}
+          map={screenTexture}
           toneMapped={false}
         />
       </mesh>
 
-      {/* BLOQUE VISUAL DERECHO */}
-
-      <RoundedBox
-        position={[
-          3.5,
-          6.1,
-          0.2,
-        ]}
-        args={[
-          5.2,
-          5.5,
-          0.14,
-        ]}
-        radius={0.3}
-        smoothness={4}
-      >
-        <meshStandardMaterial
-          color={game.accent2}
-          emissive={game.accent}
-          emissiveIntensity={0.18}
-          roughness={0.4}
-        />
-      </RoundedBox>
-
-      {/* LÍNEA INFERIOR */}
-
-      <RoundedBox
+      {/* play neon */}
+      <mesh
         position={[
           0,
-          1.15,
-          0.2,
+          6.4,
+          0.36,
         ]}
-        args={[
-          11,
-          0.15,
-          0.14,
-        ]}
-        radius={0.05}
-        smoothness={2}
       >
-        <meshStandardMaterial
-          color={game.accent}
-          emissive={game.accent}
-          emissiveIntensity={1}
+        <circleGeometry
+          args={[0.82, 40]}
         />
-      </RoundedBox>
+        <meshStandardMaterial
+          color="#ffffff"
+          emissive="#ffffff"
+          emissiveIntensity={1.8}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          0.12,
+          6.4,
+          0.37,
+        ]}
+        rotation={[
+          0,
+          0,
+          0,
+        ]}
+      >
+        <coneGeometry
+          args={[
+            0.36,
+            0.62,
+            3,
+          ]}
+        />
+        <meshStandardMaterial
+          color="#101215"
+          emissive="#101215"
+          emissiveIntensity={0.2}
+        />
+      </mesh>
+
+      {/* glow */}
+      {near && (
+        <pointLight
+          position={[
+            0,
+            6.4,
+            2.2,
+          ]}
+          color="#5cf2ff"
+          intensity={16}
+          distance={14}
+          decay={2}
+        />
+      )}
     </group>
   );
 }
@@ -1176,209 +1110,147 @@ function HeroWall({
 ========================================================= */
 
 export default function PopularTodayHall() {
-  /* =======================================================
-     DISTRIBUCIÓN
-
-     Más libre y menos simétrica.
-  ======================================================= */
-
   const stationLayout =
     useMemo(
       () => [
         {
-          game:
-            GAMES[9],
-
+          game: GAMES[8],
           position: [
-            -12,
+            -14.5,
             0.32,
             15,
           ],
-
           rotation:
-            Math.PI / 2,
-
-          scale:
-            1.05,
+            Math.PI / 2.4,
+          scale: 1.08,
         },
-
         {
-          game:
-            GAMES[8],
-
+          game: GAMES[7],
           position: [
-            12,
+            14.5,
             0.32,
-            12,
+            15,
           ],
-
           rotation:
-            -Math.PI / 2,
-
-          scale:
-            1.05,
+            -Math.PI / 2.4,
+          scale: 1.08,
         },
-
         {
-          game:
-            GAMES[7],
-
+          game: GAMES[6],
           position: [
-            -11.5,
+            -15,
             0.32,
-            4,
+            5,
           ],
-
           rotation:
-            Math.PI / 2,
-
-          scale:
-            1.1,
+            Math.PI / 2.15,
+          scale: 1.1,
         },
-
         {
-          game:
-            GAMES[6],
-
+          game: GAMES[5],
           position: [
-            12,
+            15,
             0.32,
+            5,
+          ],
+          rotation:
+            -Math.PI / 2.15,
+          scale: 1.1,
+        },
+        {
+          game: GAMES[4],
+          position: [
+            -14.8,
+            0.32,
+            -6,
+          ],
+          rotation:
+            Math.PI / 2.05,
+          scale: 1.12,
+        },
+        {
+          game: GAMES[3],
+          position: [
+            14.8,
+            0.32,
+            -6,
+          ],
+          rotation:
+            -Math.PI / 2.05,
+          scale: 1.12,
+        },
+        {
+          game: GAMES[2],
+          position: [
+            -11.2,
+            0.32,
+            -16,
+          ],
+          rotation:
+            Math.PI / 2.65,
+          scale: 1.18,
+        },
+        {
+          game: GAMES[1],
+          position: [
+            11.2,
+            0.32,
+            -16,
+          ],
+          rotation:
+            -Math.PI / 2.65,
+          scale: 1.18,
+        },
+        {
+          game: GAMES[0],
+          position: [
             0,
-          ],
-
-          rotation:
-            -Math.PI / 2,
-
-          scale:
-            1.1,
-        },
-
-        {
-          game:
-            GAMES[5],
-
-          position: [
+            0.32,
             -11.5,
-            0.32,
-            -8,
           ],
-
-          rotation:
-            Math.PI / 2,
-
-          scale:
-            1.1,
-        },
-
-        {
-          game:
-            GAMES[4],
-
-          position: [
-            11.5,
-            0.32,
-            -9,
-          ],
-
-          rotation:
-            -Math.PI / 2,
-
-          scale:
-            1.15,
-        },
-
-        {
-          game:
-            GAMES[3],
-
-          position: [
-            -10.5,
-            0.32,
-            -17,
-          ],
-
-          rotation:
-            Math.PI / 2,
-
-          scale:
-            1.15,
-        },
-
-        {
-          game:
-            GAMES[2],
-
-          position: [
-            10.5,
-            0.32,
-            -17,
-          ],
-
-          rotation:
-            -Math.PI / 2,
-
-          scale:
-            1.2,
-        },
-
-        {
-          game:
-            GAMES[1],
-
-          position: [
-            -2.5,
-            0.32,
-            -17,
-          ],
-
-          rotation:
-            0,
-
-          scale:
-            1.2,
+          rotation: 0,
+          scale: 1.22,
         },
       ],
       []
     );
 
-  const interiorWalls =
+  const sideWalls =
     useMemo(
       () => [
         {
           position: [
             -ROOM_HALF_WIDTH,
-            5.7,
+            5.8,
             1,
           ],
           scale: [
             0.18,
-            11,
+            11.4,
             52,
           ],
         },
-
         {
           position: [
             ROOM_HALF_WIDTH,
-            5.7,
+            5.8,
             1,
           ],
           scale: [
             0.18,
-            11,
+            11.4,
             52,
           ],
         },
-
         {
           position: [
             0,
-            5.7,
+            5.8,
             ROOM_BACK_Z,
           ],
           scale: [
-            37,
-            11,
+            ROOM_HALF_WIDTH * 2,
+            11.4,
             0.18,
           ],
         },
@@ -1386,77 +1258,86 @@ export default function PopularTodayHall() {
       []
     );
 
-  const centralPath =
+  const floorZones =
     useMemo(
       () => [
         {
           position: [
             0,
-            0.37,
-            3,
+            0.05,
+            1,
           ],
           scale: [
-            6,
-            0.04,
-            44,
+            36.6,
+            0.1,
+            52,
+          ],
+        },
+        {
+          position: [
+            0,
+            0.09,
+            3.5,
+          ],
+          scale: [
+            10.5,
+            0.02,
+            33,
           ],
         },
       ],
       []
     );
 
-  const ceilingLights =
+  const ceilingLightBars =
     useMemo(
       () => [
         {
           position: [
-            -7.5,
+            -11,
             10.2,
-            10,
+            12,
           ],
           scale: [
-            0.18,
+            0.13,
             0.12,
-            26,
+            19,
           ],
         },
-
         {
           position: [
-            7.5,
+            11,
             10.2,
-            10,
+            12,
           ],
           scale: [
-            0.18,
+            0.13,
             0.12,
-            26,
+            19,
           ],
         },
-
         {
           position: [
-            -7.5,
+            -7,
             10.2,
-            -13,
+            -8,
           ],
           scale: [
-            0.18,
+            0.13,
             0.12,
-            14,
+            16,
           ],
         },
-
         {
           position: [
-            7.5,
+            7,
             10.2,
-            -13,
+            -8,
           ],
           scale: [
-            0.18,
+            0.13,
             0.12,
-            14,
+            16,
           ],
         },
       ],
@@ -1465,161 +1346,228 @@ export default function PopularTodayHall() {
 
   return (
     <group>
-      {/* ===================================================
-          PAREDES CLARAS
-      =================================================== */}
-
+      {/* paredes negras */}
       <InstancedBoxes
-        items={
-          interiorWalls
-        }
-        color="#f1efe8"
-        roughness={0.9}
+        items={sideWalls}
+        color="#070b10"
+        roughness={0.88}
       />
 
-      {/* ===================================================
-          PASILLO CENTRAL
-      =================================================== */}
-
+      {/* suelos */}
       <InstancedBoxes
-        items={
-          centralPath
-        }
-        color="#5b6266"
-        roughness={0.7}
+        items={[
+          floorZones[0],
+        ]}
+        color="#06090d"
+        roughness={0.92}
       />
 
-      {/* ===================================================
-          PORTAL
-      =================================================== */}
+      <InstancedBoxes
+        items={[
+          floorZones[1],
+        ]}
+        color="#0f141b"
+        roughness={0.55}
+        emissive="#58f1ff"
+        emissiveIntensity={0.08}
+      />
 
+      {/* puerta */}
       <RoundedBox
         position={[
-          -5.2,
-          3.2,
+          -5.3,
+          3.25,
           23,
         ]}
         args={[
-          0.6,
-          5.8,
-          0.75,
+          0.65,
+          5.9,
+          0.8,
         ]}
-        radius={0.18}
+        radius={0.2}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#40474b"
+          color="#161c23"
+          emissive="#5cf2ff"
+          emissiveIntensity={0.18}
         />
       </RoundedBox>
 
       <RoundedBox
         position={[
-          5.2,
-          3.2,
+          5.3,
+          3.25,
           23,
         ]}
         args={[
-          0.6,
-          5.8,
-          0.75,
+          0.65,
+          5.9,
+          0.8,
         ]}
-        radius={0.18}
+        radius={0.2}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#40474b"
+          color="#161c23"
+          emissive="#ff4f95"
+          emissiveIntensity={0.18}
         />
       </RoundedBox>
 
       <RoundedBox
         position={[
           0,
-          5.85,
+          5.95,
           23,
         ]}
         args={[
-          10.8,
+          11,
           0.55,
-          0.75,
+          0.8,
         ]}
-        radius={0.18}
+        radius={0.2}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#40474b"
+          color="#161c23"
+          emissive="#8b5cff"
+          emissiveIntensity={0.18}
         />
       </RoundedBox>
 
-      {/* ===================================================
-          ISLA 1
-      =================================================== */}
-
-      <TrendIsland
-        position={[
-          0,
-          0,
-          9,
-        ]}
-        title="SUBEN HOY"
-        subtitle="Tendencias"
-        accent="#69c9ff"
-      />
-
-      {/* ===================================================
-          ISLA 2
-      =================================================== */}
-
-      <TrendIsland
-        position={[
-          0,
-          0,
-          -5,
-        ]}
-        title="COMUNIDAD"
-        subtitle="Comentarios"
-        accent="#ff8f67"
-      />
-
-      {/* ===================================================
-          LUMINARIAS
-      =================================================== */}
-
+      {/* techo con barras */}
       <InstancedBoxes
-        items={
-          ceilingLights
-        }
+        items={ceilingLightBars}
         color="#ffffff"
         roughness={0.12}
         emissive="#ffffff"
-        emissiveIntensity={1.5}
+        emissiveIntensity={1.7}
         receiveShadow={false}
       />
 
-      {/* ===================================================
-          ILUMINACIÓN
-      =================================================== */}
-
-      <pointLight
+      {/* neones laterales */}
+      <NeonLine
         position={[
-          0,
-          9,
-          15,
-        ]}
-        color="#fff5e7"
-        intensity={46}
-        distance={30}
-        decay={2}
-      />
-
-      <pointLight
-        position={[
-          0,
-          9,
+          -17.7,
+          7.5,
           2,
         ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        size={[
+          18,
+          0.08,
+          0.08,
+        ]}
+        color="#5cf2ff"
+      />
+
+      <NeonLine
+        position={[
+          17.7,
+          7.5,
+          -1,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        size={[
+          18,
+          0.08,
+          0.08,
+        ]}
+        color="#ff4f95"
+      />
+
+      <NeonLine
+        position={[
+          -6,
+          9.8,
+          20,
+        ]}
+        rotation={[
+          0,
+          0,
+          0,
+        ]}
+        size={[
+          8,
+          0.08,
+          0.08,
+        ]}
+        color="#8b5cff"
+      />
+
+      <NeonLine
+        position={[
+          6,
+          9.8,
+          20,
+        ]}
+        rotation={[
+          0,
+          0,
+          0,
+        ]}
+        size={[
+          8,
+          0.08,
+          0.08,
+        ]}
+        color="#5cf2ff"
+      />
+
+      {/* “carteles” tipo arcade */}
+      <NeonSign
+        position={[
+          -10,
+          8.1,
+          20.7,
+        ]}
+        width={5.2}
+        height={1.4}
+        color="#ff4f95"
+      />
+
+      <NeonSign
+        position={[
+          10,
+          8.1,
+          20.7,
+        ]}
+        width={5.2}
+        height={1.4}
+        color="#5cf2ff"
+      />
+
+      {/* luces generales */}
+      <pointLight
+        position={[
+          0,
+          9.5,
+          17,
+        ]}
         color="#ffffff"
-        intensity={50}
-        distance={30}
+        intensity={34}
+        distance={22}
+        decay={2}
+      />
+
+      <pointLight
+        position={[
+          0,
+          9.5,
+          0,
+        ]}
+        color="#b9dfff"
+        intensity={26}
+        distance={25}
         decay={2}
       />
 
@@ -1627,85 +1575,56 @@ export default function PopularTodayHall() {
         position={[
           0,
           9,
-          -13,
+          -15,
         ]}
-        color="#e8f4ff"
-        intensity={46}
-        distance={28}
+        color="#ffc7ef"
+        intensity={24}
+        distance={22}
         decay={2}
       />
 
-      {/* ===================================================
-          ESTACIONES
-      =================================================== */}
-
+      {/* pantallas laterales */}
       {stationLayout.map(
-        (
-          station
-        ) => (
+        (station) => (
           <GameStation
-            key={
-              station.game.id
-            }
-            game={
-              station.game
-            }
+            key={station.game.id}
+            game={station.game}
             position={
               station.position
             }
             rotation={
               station.rotation
             }
-            scale={
-              station.scale
-            }
+            scale={station.scale}
           />
         )
       )}
 
-      {/* ===================================================
-          TOP 1 HERO
-      =================================================== */}
+      {/* gran pantalla final */}
+      <HeroVideoWall />
 
-      <HeroWall
-        game={
-          GAMES[0]
-        }
-      />
-
-      {/* ===================================================
-          COLISIONES
-      =================================================== */}
-
+      {/* colisiones */}
       <RigidBody
         type="fixed"
         colliders={false}
       >
         {stationLayout.map(
-          (
-            station
-          ) => (
+          (station) => (
             <CuboidCollider
               key={
                 station.game.id
               }
               args={[
-                1.7 *
+                1.8 *
                   station.scale,
-
-                0.35,
-
-                0.85 *
+                0.4,
+                0.8 *
                   station.scale,
               ]}
               position={[
-                station
-                  .position[0],
-
-                0.75,
-
-                station
-                  .position[2],
+                station.position[0],
+                0.78,
+                station.position[2],
               ]}
               rotation={[
                 0,
@@ -1716,33 +1635,16 @@ export default function PopularTodayHall() {
           )
         )}
 
-        {/* isla 1 */}
-
         <CuboidCollider
           args={[
-            3.25,
-            0.5,
-            1.85,
+            12,
+            0.6,
+            0.7,
           ]}
           position={[
             0,
-            0.8,
-            9,
-          ]}
-        />
-
-        {/* isla 2 */}
-
-        <CuboidCollider
-          args={[
-            3.25,
-            0.5,
-            1.85,
-          ]}
-          position={[
-            0,
-            0.8,
-            -5,
+            0.7,
+            -22.8,
           ]}
         />
       </RigidBody>
