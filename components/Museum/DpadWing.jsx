@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  useLayoutEffect,
   useMemo,
-  useRef,
 } from "react";
 
 import {
   RoundedBox,
+  Edges,
 } from "@react-three/drei";
 
 import {
@@ -51,267 +50,288 @@ const SIDE_FRONT_WIDTH =
 /* =========================================================
    FLECHA DEL TECHO
 
-   IMPORTANTE:
+   En coordenadas locales apunta hacia -Z.
 
-   En coordenadas locales la flecha apunta hacia -Z.
-
-   Como cada ala está rotada mirando hacia la plaza,
-   automáticamente obtenemos:
-
-   NORTE  -> norte
-   SUR    -> sur
-   ESTE   -> este
-   OESTE  -> oeste
-
-   Forma:
-
-           █
-         █ █ █
-           █
-           █
-           █
-           █
-           █
-
-   Es deliberadamente geométrica porque continúa
-   el lenguaje de la cruceta central.
+   Al rotarse cada edificio:
+   norte / sur / este / oeste
+   obtiene automáticamente su dirección.
 ========================================================= */
 
-const SKY_CELL = 3;
+function createArrowPath() {
+  const path =
+    new THREE.Path();
 
-const SKY_COLS = 5;
-const SKY_ROWS = 7;
+  /*
+              punta
+               ▲
+              / \
+             /   \
+      -------     -------
+          |         |
+          |         |
+          |         |
+          |         |
+          -----------
+  */
 
-const SKY_WIDTH =
-  SKY_COLS *
-  SKY_CELL;
+  path.moveTo(
+    0,
+    12
+  );
 
-const SKY_DEPTH =
-  SKY_ROWS *
-  SKY_CELL;
+  path.lineTo(
+    8,
+    3
+  );
+
+  path.lineTo(
+    3.2,
+    3
+  );
+
+  path.lineTo(
+    3.2,
+    -11
+  );
+
+  path.lineTo(
+    -3.2,
+    -11
+  );
+
+  path.lineTo(
+    -3.2,
+    3
+  );
+
+  path.lineTo(
+    -8,
+    3
+  );
+
+  path.lineTo(
+    0,
+    12
+  );
+
+  path.closePath();
+
+  return path;
+}
 
 /* =========================================================
-   INSTANCIAS
+   TECHO CON HUECO REAL DE FLECHA
+
+   La flecha es un agujero en la propia geometría
+   del techo.
+
+   Ya no usamos cuadrados ni celdas.
 ========================================================= */
 
-function InstancedBoxes({
-  items,
-  color,
-  roughness = 0.8,
-  metalness = 0,
-  castShadow = true,
-  receiveShadow = true,
+function ArrowRoof({
+  roofColor,
+  glassColor,
 }) {
-  const ref =
-    useRef(null);
+  const roofGeometry =
+    useMemo(() => {
+      /* ===============================================
+         CONTORNO TOTAL DEL TECHO
+      =============================================== */
 
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
+      const shape =
+        new THREE.Shape();
 
-  useLayoutEffect(() => {
-    if (!ref.current) {
-      return;
-    }
+      shape.moveTo(
+        -HALF_WIDTH,
+        -HALF_DEPTH
+      );
 
-    items.forEach(
-      (
-        item,
-        index
-      ) => {
-        dummy.position.set(
-          ...(item.position ??
-            [0, 0, 0])
+      shape.lineTo(
+        HALF_WIDTH,
+        -HALF_DEPTH
+      );
+
+      shape.lineTo(
+        HALF_WIDTH,
+        HALF_DEPTH
+      );
+
+      shape.lineTo(
+        -HALF_WIDTH,
+        HALF_DEPTH
+      );
+
+      shape.closePath();
+
+      /* ===============================================
+         AGUJERO CON FORMA DE FLECHA
+      =============================================== */
+
+      const arrow =
+        createArrowPath();
+
+      shape.holes.push(
+        arrow
+      );
+
+      const geometry =
+        new THREE.ExtrudeGeometry(
+          shape,
+          {
+            depth:
+              ROOF_THICKNESS,
+
+            bevelEnabled:
+              false,
+
+            curveSegments:
+              1,
+          }
         );
 
-        dummy.rotation.set(
-          ...(item.rotation ??
-            [0, 0, 0])
-        );
+      geometry.computeVertexNormals();
 
-        dummy.scale.set(
-          ...(item.scale ??
-            [1, 1, 1])
-        );
+      return geometry;
+    }, []);
 
-        dummy.updateMatrix();
+  const glassGeometry =
+    useMemo(() => {
+      const shape =
+        new THREE.Shape();
 
-        ref.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
-      }
-    );
+      shape.moveTo(
+        0,
+        12
+      );
 
-    ref.current
-      .instanceMatrix
-      .needsUpdate =
-      true;
+      shape.lineTo(
+        8,
+        3
+      );
 
-    ref.current
-      .computeBoundingSphere?.();
-  }, [
-    items,
-    dummy,
-  ]);
+      shape.lineTo(
+        3.2,
+        3
+      );
 
-  if (
-    items.length === 0
-  ) {
-    return null;
-  }
+      shape.lineTo(
+        3.2,
+        -11
+      );
+
+      shape.lineTo(
+        -3.2,
+        -11
+      );
+
+      shape.lineTo(
+        -3.2,
+        3
+      );
+
+      shape.lineTo(
+        -8,
+        3
+      );
+
+      shape.closePath();
+
+      return new THREE.ShapeGeometry(
+        shape
+      );
+    }, []);
 
   return (
-    <instancedMesh
-      ref={ref}
-      args={[
-        null,
-        null,
-        items.length,
-      ]}
-      castShadow={
+    <group>
+      {/* ===================================================
+          TECHO
+
+          ExtrudeGeometry nace sobre XY.
+          Lo rotamos para colocarlo horizontal.
+      =================================================== */}
+
+      <mesh
+        geometry={
+          roofGeometry
+        }
+        position={[
+          0,
+          WING_HEIGHT,
+          0,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
         castShadow
-      }
-      receiveShadow={
         receiveShadow
-      }
-    >
-      <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
-      />
+      >
+        <meshStandardMaterial
+          color={
+            roofColor
+          }
+          roughness={0.88}
+          metalness={0.02}
+        />
+      </mesh>
 
-      <meshStandardMaterial
-        color={color}
-        roughness={
-          roughness
+      {/* ===================================================
+          VIDRIO CONTINUO EN FORMA DE FLECHA
+
+          Una sola pieza.
+          Cero divisiones.
+      =================================================== */}
+
+      <mesh
+        geometry={
+          glassGeometry
         }
-        metalness={
-          metalness
-        }
-      />
-    </instancedMesh>
+        position={[
+          0,
+          WING_HEIGHT +
+            0.055,
+          0,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
+      >
+        <meshPhysicalMaterial
+          color={
+            glassColor
+          }
+          transparent
+          opacity={0.43}
+          transmission={0.55}
+          roughness={0.08}
+          metalness={0.02}
+          side={
+            THREE.DoubleSide
+          }
+        />
+
+        <Edges
+          threshold={15}
+          scale={1.004}
+          color="#182329"
+        />
+      </mesh>
+    </group>
   );
 }
 
 /* =========================================================
-   VIDRIO DE LA FLECHA
-========================================================= */
-
-function ArrowGlass({
-  items,
-  color,
-}) {
-  const ref =
-    useRef(null);
-
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
-
-  useLayoutEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-
-    items.forEach(
-      (
-        item,
-        index
-      ) => {
-        dummy.position.set(
-          ...item.position
-        );
-
-        dummy.scale.set(
-          ...item.scale
-        );
-
-        dummy.rotation.set(
-          0,
-          0,
-          0
-        );
-
-        dummy.updateMatrix();
-
-        ref.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
-      }
-    );
-
-    ref.current
-      .instanceMatrix
-      .needsUpdate =
-      true;
-
-    ref.current
-      .computeBoundingSphere?.();
-  }, [
-    items,
-    dummy,
-  ]);
-
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[
-        null,
-        null,
-        items.length,
-      ]}
-      castShadow={false}
-      receiveShadow={false}
-    >
-      <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
-      />
-
-      <meshPhysicalMaterial
-        color={color}
-        transparent
-        opacity={0.42}
-        transmission={0.58}
-        roughness={0.08}
-        metalness={0.02}
-
-        emissive="#274b58"
-        emissiveIntensity={0.13}
-
-        side={
-          THREE.DoubleSide
-        }
-      />
-    </instancedMesh>
-  );
-}
-
-/* =========================================================
-   PARED SUAVIZADA
+   PARED REDONDEADA
 ========================================================= */
 
 function RoundedWall({
   position,
   args,
   color,
-  radius = 0.18,
+  radius = 0.2,
 }) {
   return (
     <RoundedBox
@@ -349,13 +369,13 @@ export default function DpadWing({
   ],
 }) {
   /* =======================================================
-     PALETA
+     COLORES
   ======================================================= */
 
   const wallColor =
     "#1a1d20";
 
-  const wallSecondary =
+  const sideColor =
     "#22272b";
 
   const roofColor =
@@ -365,10 +385,10 @@ export default function DpadWing({
     "#24292b";
 
   const glassColor =
-    "#8fc8da";
+    "#76b8dc";
 
-  const frameColor =
-    "#07090b";
+  const entranceFrameColor =
+    "#343a40";
 
   /* =======================================================
      ENTRADA
@@ -395,437 +415,54 @@ export default function DpadWing({
       2;
 
   /* =======================================================
-     TECHO EXTERIOR
-
-     Dejamos en el centro una zona rectangular donde
-     construiremos la flecha calada.
-
-  ======================================================= */
-
-  const outerRoofItems =
-    useMemo(() => {
-      const y =
-        WING_HEIGHT +
-        ROOF_THICKNESS /
-          2;
-
-      const sideWidth =
-        (
-          WING_WIDTH -
-          SKY_WIDTH
-        ) / 2;
-
-      const frontDepth =
-        (
-          WING_DEPTH -
-          SKY_DEPTH
-        ) / 2;
-
-      return [
-        /* POSTERIOR */
-
-        {
-          position: [
-            0,
-            y,
-
-            -(
-              SKY_DEPTH /
-                2 +
-              frontDepth /
-                2
-            ),
-          ],
-
-          scale: [
-            WING_WIDTH,
-            ROOF_THICKNESS,
-            frontDepth,
-          ],
-        },
-
-        /* DELANTERO */
-
-        {
-          position: [
-            0,
-            y,
-
-            SKY_DEPTH /
-              2 +
-            frontDepth /
-              2,
-          ],
-
-          scale: [
-            WING_WIDTH,
-            ROOF_THICKNESS,
-            frontDepth,
-          ],
-        },
-
-        /* IZQUIERDO */
-
-        {
-          position: [
-            -(
-              SKY_WIDTH /
-                2 +
-              sideWidth /
-                2
-            ),
-
-            y,
-
-            0,
-          ],
-
-          scale: [
-            sideWidth,
-            ROOF_THICKNESS,
-            SKY_DEPTH,
-          ],
-        },
-
-        /* DERECHO */
-
-        {
-          position: [
-            SKY_WIDTH /
-              2 +
-            sideWidth /
-              2,
-
-            y,
-
-            0,
-          ],
-
-          scale: [
-            sideWidth,
-            ROOF_THICKNESS,
-            SKY_DEPTH,
-          ],
-        },
-      ];
-    }, []);
-
-  /* =======================================================
-     CELDAS DE LA FLECHA
-
-     row 0 = extremo exterior (-Z)
-
-     Flecha:
-
-             ■
-           ■ ■ ■
-             ■
-             ■
-             ■
-             ■
-             ■
-
-  ======================================================= */
-
-  const arrowCells =
-    useMemo(
-      () =>
-        new Set([
-          "2-0",
-
-          "1-1",
-          "2-1",
-          "3-1",
-
-          "2-2",
-          "2-3",
-          "2-4",
-          "2-5",
-          "2-6",
-        ]),
-      []
-    );
-
-  /* =======================================================
-     GENERAMOS LAS PIEZAS DEL RECTÁNGULO CENTRAL
-
-     - las celdas de flecha -> cristal
-     - el resto -> techo
-
-     Por eso la flecha está realmente recortada en
-     la composición visual del techo.
-  ======================================================= */
-
-  const {
-    roofFillItems,
-    arrowGlassItems,
-  } =
-    useMemo(() => {
-      const roof = [];
-      const glass = [];
-
-      const roofY =
-        WING_HEIGHT +
-        ROOF_THICKNESS /
-          2;
-
-      const glassY =
-        WING_HEIGHT +
-        ROOF_THICKNESS /
-          2;
-
-      for (
-        let row = 0;
-        row <
-        SKY_ROWS;
-        row++
-      ) {
-        for (
-          let col = 0;
-          col <
-          SKY_COLS;
-          col++
-        ) {
-          const x =
-            (
-              col -
-              (
-                SKY_COLS -
-                1
-              ) /
-                2
-            ) *
-            SKY_CELL;
-
-          const z =
-            (
-              row -
-              (
-                SKY_ROWS -
-                1
-              ) /
-                2
-            ) *
-            SKY_CELL;
-
-          const key =
-            `${col}-${row}`;
-
-          if (
-            arrowCells.has(
-              key
-            )
-          ) {
-            glass.push({
-              position: [
-                x,
-                glassY,
-                z,
-              ],
-
-              scale: [
-                SKY_CELL -
-                  0.12,
-
-                0.12,
-
-                SKY_CELL -
-                  0.12,
-              ],
-            });
-          } else {
-            roof.push({
-              position: [
-                x,
-                roofY,
-                z,
-              ],
-
-              scale: [
-                SKY_CELL,
-                ROOF_THICKNESS,
-                SKY_CELL,
-              ],
-            });
-          }
-        }
-      }
-
-      return {
-        roofFillItems:
-          roof,
-
-        arrowGlassItems:
-          glass,
-      };
-    }, [
-      arrowCells,
-    ]);
-
-  /* =======================================================
-     MARCO DE LA FLECHA
-
-     Le damos un pequeño borde oscuro a cada cristal
-     para que desde arriba la flecha se lea mucho mejor.
-  ======================================================= */
-
-  const arrowFrameItems =
-    useMemo(() => {
-      const result = [];
-
-      const y =
-        WING_HEIGHT +
-        ROOF_THICKNESS +
-        0.045;
-
-      const thickness =
-        0.1;
-
-      arrowGlassItems.forEach(
-        (
-          item,
-          index
-        ) => {
-          const [
-            x,
-            ,
-            z,
-          ] =
-            item.position;
-
-          const edge =
-            SKY_CELL -
-            0.08;
-
-          result.push(
-            {
-              position: [
-                x -
-                  edge /
-                    2,
-
-                y,
-
-                z,
-              ],
-
-              scale: [
-                thickness,
-                0.07,
-                edge,
-              ],
-            },
-
-            {
-              position: [
-                x +
-                  edge /
-                    2,
-
-                y,
-
-                z,
-              ],
-
-              scale: [
-                thickness,
-                0.07,
-                edge,
-              ],
-            },
-
-            {
-              position: [
-                x,
-                y,
-
-                z -
-                  edge /
-                    2,
-              ],
-
-              scale: [
-                edge,
-                0.07,
-                thickness,
-              ],
-            },
-
-            {
-              position: [
-                x,
-                y,
-
-                z +
-                  edge /
-                    2,
-              ],
-
-              scale: [
-                edge,
-                0.07,
-                thickness,
-              ],
-            }
-          );
-        }
-      );
-
-      return result;
-    }, [
-      arrowGlassItems,
-    ]);
-
-  /* =======================================================
      ESQUINAS
   ======================================================= */
 
-  const cornerPositions =
+  const corners = [
     [
-      [
-        -HALF_WIDTH +
-          0.35,
+      -HALF_WIDTH +
+        0.35,
 
-        WING_HEIGHT /
-          2,
+      WING_HEIGHT /
+        2,
 
-        -HALF_DEPTH +
-          0.35,
-      ],
+      -HALF_DEPTH +
+        0.35,
+    ],
 
-      [
-        HALF_WIDTH -
-          0.35,
+    [
+      HALF_WIDTH -
+        0.35,
 
-        WING_HEIGHT /
-          2,
+      WING_HEIGHT /
+        2,
 
-        -HALF_DEPTH +
-          0.35,
-      ],
+      -HALF_DEPTH +
+        0.35,
+    ],
 
-      [
-        -HALF_WIDTH +
-          0.35,
+    [
+      -HALF_WIDTH +
+        0.35,
 
-        WING_HEIGHT /
-          2,
+      WING_HEIGHT /
+        2,
 
-        HALF_DEPTH -
-          0.35,
-      ],
+      HALF_DEPTH -
+        0.35,
+    ],
 
-      [
-        HALF_WIDTH -
-          0.35,
+    [
+      HALF_WIDTH -
+        0.35,
 
-        WING_HEIGHT /
-          2,
+      WING_HEIGHT /
+        2,
 
-        HALF_DEPTH -
-          0.35,
-      ],
-    ];
+      HALF_DEPTH -
+        0.35,
+    ],
+  ];
 
   return (
     <group
@@ -833,7 +470,7 @@ export default function DpadWing({
       rotation={rotation}
     >
       {/* ===================================================
-          SUELO
+          SUELO LIMPIO
       =================================================== */}
 
       <mesh
@@ -862,13 +499,15 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={floorColor}
+          color={
+            floorColor
+          }
           roughness={0.94}
         />
       </mesh>
 
       {/* ===================================================
-          PARED IZQUIERDA
+          LATERAL IZQUIERDO
       =================================================== */}
 
       <RoundedWall
@@ -889,12 +528,12 @@ export default function DpadWing({
             0.7,
         ]}
         color={
-          wallSecondary
+          sideColor
         }
       />
 
       {/* ===================================================
-          PARED DERECHA
+          LATERAL DERECHO
       =================================================== */}
 
       <RoundedWall
@@ -915,7 +554,7 @@ export default function DpadWing({
             0.7,
         ]}
         color={
-          wallSecondary
+          sideColor
         }
       />
 
@@ -1014,41 +653,7 @@ export default function DpadWing({
       />
 
       {/* ===================================================
-          ESQUINAS REDONDEADAS
-      =================================================== */}
-
-      {cornerPositions.map(
-        (
-          corner,
-          index
-        ) => (
-          <mesh
-            key={`corner-${index}`}
-            position={corner}
-            castShadow
-            receiveShadow
-          >
-            <cylinderGeometry
-              args={[
-                0.72,
-                0.72,
-                WING_HEIGHT,
-                16,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color={
-                wallSecondary
-              }
-              roughness={0.84}
-            />
-          </mesh>
-        )
-      )}
-
-      {/* ===================================================
-          MARCO DE LA ENTRADA
+          MARCO DE ENTRADA
       =================================================== */}
 
       <RoundedBox
@@ -1072,7 +677,9 @@ export default function DpadWing({
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#31373c"
+          color={
+            entranceFrameColor
+          }
           roughness={0.65}
         />
       </RoundedBox>
@@ -1098,7 +705,9 @@ export default function DpadWing({
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#31373c"
+          color={
+            entranceFrameColor
+          }
           roughness={0.65}
         />
       </RoundedBox>
@@ -1125,78 +734,68 @@ export default function DpadWing({
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#31373c"
+          color={
+            entranceFrameColor
+          }
           roughness={0.65}
         />
       </RoundedBox>
 
       {/* ===================================================
-          TECHO EXTERIOR
+          ESQUINAS SUAVES
       =================================================== */}
 
-      <InstancedBoxes
-        items={
-          outerRoofItems
-        }
-        color={
-          roofColor
-        }
-        roughness={0.88}
-        castShadow
-        receiveShadow
-      />
+      {corners.map(
+        (
+          corner,
+          index
+        ) => (
+          <mesh
+            key={
+              `corner-${index}`
+            }
+            position={
+              corner
+            }
+            castShadow
+            receiveShadow
+          >
+            <cylinderGeometry
+              args={[
+                0.72,
+                0.72,
+                WING_HEIGHT,
+                18,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color={
+                sideColor
+              }
+              roughness={0.84}
+            />
+          </mesh>
+        )
+      )}
 
       {/* ===================================================
-          TECHO DENTRO DE LA ZONA DE LA FLECHA
-
-          Estas son únicamente las celdas que NO
-          pertenecen a la flecha.
+          TECHO + FLECHA REAL
       =================================================== */}
 
-      <InstancedBoxes
-        items={
-          roofFillItems
-        }
-        color={
+      <ArrowRoof
+        roofColor={
           roofColor
         }
-        roughness={0.88}
-        castShadow
-        receiveShadow
-      />
-
-      {/* ===================================================
-          FLECHA / CLARABOYA
-      =================================================== */}
-
-      <ArrowGlass
-        items={
-          arrowGlassItems
-        }
-        color={
+        glassColor={
           glassColor
         }
       />
 
       {/* ===================================================
-          MARCO OSCURO DE LA FLECHA
-      =================================================== */}
+          COLISIONES
 
-      <InstancedBoxes
-        items={
-          arrowFrameItems
-        }
-        color={
-          frameColor
-        }
-        roughness={0.55}
-        metalness={0.18}
-        castShadow={false}
-        receiveShadow={false}
-      />
-
-      {/* ===================================================
-          FÍSICA
+          La puerta queda abierta.
       =================================================== */}
 
       <RigidBody
@@ -1385,14 +984,10 @@ export default function DpadWing({
         />
 
         {/* =================================================
-            TECHO
+            TECHO FÍSICO
 
-            Para física usamos una sola placa.
-
-            Es mucho más barato que meter decenas de
-            colliders pequeños.
-
-            La flecha sigue siendo visualmente cristal.
+            Una placa invisible completa.
+            La abertura es visual y no afecta rendimiento.
         ================================================= */}
 
         <CuboidCollider
