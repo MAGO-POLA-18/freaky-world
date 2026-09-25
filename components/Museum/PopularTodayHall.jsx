@@ -11,6 +11,7 @@ import {
 import {
   Html,
   RoundedBox,
+  useTexture,
 } from "@react-three/drei";
 
 import {
@@ -22,6 +23,10 @@ import {
   CuboidCollider,
 } from "@react-three/rapier";
 
+import {
+  createPortal,
+} from "react-dom";
+
 import * as THREE from "three";
 
 import {
@@ -30,14 +35,7 @@ import {
 } from "../World/PlayerController";
 
 /* =========================================================
-   CONFIGURACIÓN GENERAL
-
-   Dejamos de usar los 60 x 70 m como una única exposición.
-
-   Dentro de la gran carcasa creamos una sala más humana:
-
-   ancho aproximado: 37 m
-   largo aproximado: 52 m
+   CONFIGURACIÓN
 ========================================================= */
 
 const ROOM_HALF_WIDTH = 18.5;
@@ -68,10 +66,13 @@ const FEATURED_GAME = {
     "—",
 
   description:
-    "Esta es la primera prueba de una ficha 2D integrada dentro de Freaky World. Después esta información llegará directamente desde Freaky Ranking.",
+    "Primera prueba de integración entre una exposición 3D y una ficha 2D dentro de Freaky World.",
 
   video:
     "https://www.youtube.com/embed/QiIebY4wmWg?rel=0",
+
+  thumbnail:
+    "https://img.youtube.com/vi/QiIebY4wmWg/maxresdefault.jpg",
 
   accent:
     "#e6b84c",
@@ -135,10 +136,12 @@ function InstancedBoxes({
       }
     );
 
-    ref.current.instanceMatrix.needsUpdate =
-      true;
+    ref.current
+      .instanceMatrix
+      .needsUpdate = true;
 
-    ref.current.computeBoundingSphere?.();
+    ref.current
+      .computeBoundingSphere?.();
   }, [
     items,
     dummy,
@@ -156,8 +159,12 @@ function InstancedBoxes({
         null,
         items.length,
       ]}
-      castShadow={castShadow}
-      receiveShadow={receiveShadow}
+      castShadow={
+        castShadow
+      }
+      receiveShadow={
+        receiveShadow
+      }
     >
       <boxGeometry
         args={[
@@ -169,9 +176,15 @@ function InstancedBoxes({
 
       <meshStandardMaterial
         color={color}
-        roughness={roughness}
-        metalness={metalness}
-        emissive={emissive}
+        roughness={
+          roughness
+        }
+        metalness={
+          metalness
+        }
+        emissive={
+          emissive
+        }
         emissiveIntensity={
           emissiveIntensity
         }
@@ -181,22 +194,15 @@ function InstancedBoxes({
 }
 
 /* =========================================================
-   ESTACIÓN NORMAL
+   CARTEL PROCEDURAL PARA ESTACIONES VACÍAS
 
-   Escala humana.
-
-   Altura total aproximada:
-   3,2 m
-
-   Ya no son torres gigantes.
+   Hasta conectar datos reales, evitamos pantallas negras.
 ========================================================= */
 
-function GameStation({
-  position,
-  rotation = 0,
+function PlaceholderScreen({
   rank,
 }) {
-  const colors = [
+  const accentColors = [
     "#e6b84c",
     "#bbc3ca",
     "#b87b50",
@@ -205,76 +211,22 @@ function GameStation({
   ];
 
   const accent =
-    colors[
+    accentColors[
       Math.min(
         rank - 1,
-        colors.length - 1
+        accentColors.length - 1
       )
     ];
 
   return (
-    <group
-      position={position}
-      rotation={[
-        0,
-        rotation,
-        0,
-      ]}
-    >
-      {/* BASE */}
-
-      <RoundedBox
-        position={[
-          0,
-          0.25,
-          0,
-        ]}
-        args={[
-          2.6,
-          0.35,
-          1.35,
-        ]}
-        radius={0.12}
-        smoothness={3}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color="#262b2f"
-          roughness={0.72}
-        />
-      </RoundedBox>
-
-      {/* SOPORTE */}
-
-      <RoundedBox
-        position={[
-          0,
-          1.15,
-          0,
-        ]}
-        args={[
-          1.75,
-          1.55,
-          0.32,
-        ]}
-        radius={0.12}
-        smoothness={3}
-        castShadow
-      >
-        <meshStandardMaterial
-          color="#363c40"
-          roughness={0.68}
-        />
-      </RoundedBox>
-
-      {/* PANTALLA */}
+    <group>
+      {/* fondo */}
 
       <RoundedBox
         position={[
           0,
           2.45,
-          0.04,
+          0.05,
         ]}
         args={[
           2.25,
@@ -285,14 +237,37 @@ function GameStation({
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#11171b"
-          emissive="#183044"
-          emissiveIntensity={0.32}
-          roughness={0.26}
+          color="#101820"
+          emissive={accent}
+          emissiveIntensity={0.12}
+          roughness={0.3}
         />
       </RoundedBox>
 
-      {/* ACENTO */}
+      {/* forma central */}
+
+      <mesh
+        position={[
+          0,
+          2.45,
+          0.15,
+        ]}
+      >
+        <planeGeometry
+          args={[
+            1.65,
+            0.92,
+          ]}
+        />
+
+        <meshBasicMaterial
+          color={accent}
+          transparent
+          opacity={0.32}
+        />
+      </mesh>
+
+      {/* banda */}
 
       <RoundedBox
         position={[
@@ -319,11 +294,75 @@ function GameStation({
 }
 
 /* =========================================================
-   TOP 1 INTERACTIVO
+   ESTACIÓN NORMAL
+========================================================= */
 
-   YA NO DEPENDE DE HOVER.
+function GameStation({
+  position,
+  rotation = 0,
+  rank,
+}) {
+  return (
+    <group
+      position={position}
+      rotation={[
+        0,
+        rotation,
+        0,
+      ]}
+    >
+      <RoundedBox
+        position={[
+          0,
+          0.25,
+          0,
+        ]}
+        args={[
+          2.6,
+          0.35,
+          1.35,
+        ]}
+        radius={0.12}
+        smoothness={3}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color="#262b2f"
+          roughness={0.72}
+        />
+      </RoundedBox>
 
-   Detectamos físicamente si el jugador está cerca.
+      <RoundedBox
+        position={[
+          0,
+          1.15,
+          0,
+        ]}
+        args={[
+          1.75,
+          1.55,
+          0.32,
+        ]}
+        radius={0.12}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#363c40"
+          roughness={0.68}
+        />
+      </RoundedBox>
+
+      <PlaceholderScreen
+        rank={rank}
+      />
+    </group>
+  );
+}
+
+/* =========================================================
+   TOP 1
 ========================================================= */
 
 function FeaturedStation({
@@ -349,7 +388,33 @@ function FeaturedStation({
     useRef(false);
 
   /* =======================================================
-     DETECCIÓN DE PROXIMIDAD
+     THUMBNAIL DE YOUTUBE COMO TEXTURA REAL
+  ======================================================= */
+
+  const thumbnail =
+    useTexture(
+      FEATURED_GAME.thumbnail
+    );
+
+  useEffect(() => {
+    if (!thumbnail) {
+      return;
+    }
+
+    thumbnail.colorSpace =
+      THREE.SRGBColorSpace;
+
+    thumbnail.anisotropy =
+      4;
+
+    thumbnail.needsUpdate =
+      true;
+  }, [
+    thumbnail,
+  ]);
+
+  /* =======================================================
+     PROXIMIDAD
   ======================================================= */
 
   useFrame(() => {
@@ -380,13 +445,6 @@ function FeaturedStation({
         dx * dx +
         dz * dz
       );
-
-    /*
-      Aproximadamente 4,5 metros.
-
-      Suficiente para que aparezca antes
-      de chocarnos con la estación.
-    */
 
     const isNear =
       distance < 4.5;
@@ -460,18 +518,20 @@ function FeaturedStation({
         />
       </RoundedBox>
 
-      {/* PANTALLA */}
+      {/* ===============================================
+          MARCO DE PANTALLA
+      =============================================== */}
 
       <RoundedBox
         position={[
           0,
           2.9,
-          0.05,
+          0.04,
         ]}
         args={[
-          3,
-          1.8,
-          0.18,
+          3.15,
+          1.95,
+          0.17,
         ]}
         radius={0.18}
         smoothness={4}
@@ -479,20 +539,71 @@ function FeaturedStation({
         <meshStandardMaterial
           color={
             near
-              ? "#193d55"
-              : "#11191f"
+              ? "#28566f"
+              : "#151b20"
           }
           emissive="#24658b"
           emissiveIntensity={
             near
-              ? 0.95
-              : 0.35
+              ? 0.55
+              : 0.12
           }
-          roughness={0.24}
+          roughness={0.28}
         />
       </RoundedBox>
 
-      {/* LÍNEA ORO */}
+      {/* ===============================================
+          IMAGEN REAL
+      =============================================== */}
+
+      <mesh
+        position={[
+          0,
+          2.9,
+          0.145,
+        ]}
+      >
+        <planeGeometry
+          args={[
+            2.82,
+            1.58,
+          ]}
+        />
+
+        <meshBasicMaterial
+          map={thumbnail}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {/* ===============================================
+          OSCURECIDO CUANDO ESTÁ LEJOS
+      =============================================== */}
+
+      {!near && (
+        <mesh
+          position={[
+            0,
+            2.9,
+            0.151,
+          ]}
+        >
+          <planeGeometry
+            args={[
+              2.82,
+              1.58,
+            ]}
+          />
+
+          <meshBasicMaterial
+            color="#000000"
+            transparent
+            opacity={0.16}
+          />
+        </mesh>
+      )}
+
+      {/* ORO */}
 
       <RoundedBox
         position={[
@@ -519,17 +630,15 @@ function FeaturedStation({
         />
       </RoundedBox>
 
-      {/* ===================================================
-          BOTÓN DE PROXIMIDAD
-
-          Esto funciona mucho mejor en móvil.
-      =================================================== */}
+      {/* ===============================================
+          BOTÓN
+      =============================================== */}
 
       {near && (
         <Html
           position={[
             0,
-            4.35,
+            4.25,
             0.3,
           ]}
           center
@@ -548,6 +657,12 @@ function FeaturedStation({
               event.stopPropagation();
             }}
 
+            onTouchStart={(
+              event
+            ) => {
+              event.stopPropagation();
+            }}
+
             onClick={(
               event
             ) => {
@@ -558,16 +673,16 @@ function FeaturedStation({
 
             style={{
               border:
-                "1px solid rgba(255,255,255,0.24)",
+                "1px solid rgba(255,255,255,0.28)",
 
               borderRadius:
                 "999px",
 
               padding:
-                "11px 17px",
+                "11px 18px",
 
               background:
-                "rgba(10,15,19,0.94)",
+                "rgba(8,13,17,0.96)",
 
               color:
                 "#ffffff",
@@ -579,16 +694,13 @@ function FeaturedStation({
                 800,
 
               letterSpacing:
-                "0.06em",
+                "0.05em",
 
               whiteSpace:
                 "nowrap",
 
               boxShadow:
-                "0 8px 30px rgba(0,0,0,0.4)",
-
-              cursor:
-                "pointer",
+                "0 8px 30px rgba(0,0,0,0.45)",
 
               touchAction:
                 "manipulation",
@@ -598,41 +710,66 @@ function FeaturedStation({
           </button>
         </Html>
       )}
-
-      {/* HALO */}
-
-      {near && (
-        <pointLight
-          position={[
-            0,
-            2.4,
-            1.4,
-          ]}
-          color="#63b9ec"
-          intensity={9}
-          distance={7}
-          decay={2}
-        />
-      )}
     </group>
   );
 }
 
 /* =========================================================
-   FICHA 2D
+   MODAL 2D
+
+   IMPORTANTE:
+
+   YA NO SE RENDERIZA DENTRO DE THREE.JS.
+
+   Se monta directamente en document.body.
 ========================================================= */
 
 function GameDetailOverlay({
   game,
   onClose,
 }) {
+  const [
+    mounted,
+    setMounted,
+  ] =
+    useState(false);
+
   useEffect(() => {
+    setMounted(true);
+
     playerInput.uiLocked =
       true;
+
+    playerInput.x = 0;
+    playerInput.y = 0;
+
+    playerInput.lookX = 0;
+    playerInput.lookY = 0;
+
+    playerInput.dashRequested =
+      false;
+
+    const previousOverflow =
+      document.body.style
+        .overflow;
+
+    document.body.style
+      .overflow =
+      "hidden";
 
     return () => {
       playerInput.uiLocked =
         false;
+
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.lookX = 0;
+      playerInput.lookY = 0;
+
+      document.body.style
+        .overflow =
+        previousOverflow;
     };
   }, []);
 
@@ -662,363 +799,414 @@ function GameDetailOverlay({
     onClose,
   ]);
 
-  return (
-    <Html
-      fullscreen
-      zIndexRange={[
-        1000,
-        1000,
-      ]}
+  if (
+    !mounted ||
+    typeof document ===
+      "undefined"
+  ) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      onPointerDown={(
+        event
+      ) => {
+        event.stopPropagation();
+
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
+
+      onTouchStart={(
+        event
+      ) => {
+        event.stopPropagation();
+      }}
+
+      style={{
+        position:
+          "fixed",
+
+        inset:
+          0,
+
+        zIndex:
+          999999,
+
+        display:
+          "flex",
+
+        alignItems:
+          "center",
+
+        justifyContent:
+          "center",
+
+        padding:
+          "12px",
+
+        boxSizing:
+          "border-box",
+
+        background:
+          "rgba(2,5,8,0.88)",
+
+        backdropFilter:
+          "blur(8px)",
+
+        WebkitBackdropFilter:
+          "blur(8px)",
+
+        touchAction:
+          "pan-y",
+      }}
     >
       <div
-        onPointerDown={
-          onClose
-        }
+        onPointerDown={(
+          event
+        ) => {
+          event.stopPropagation();
+        }}
+
         style={{
           position:
-            "fixed",
+            "relative",
 
-          inset:
-            0,
+          width:
+            "min(880px, 96vw)",
 
-          display:
-            "flex",
+          maxHeight:
+            "94vh",
 
-          alignItems:
-            "center",
+          overflowY:
+            "auto",
 
-          justifyContent:
-            "center",
+          WebkitOverflowScrolling:
+            "touch",
 
-          boxSizing:
-            "border-box",
-
-          padding:
-            "14px",
+          borderRadius:
+            "20px",
 
           background:
-            "rgba(3,7,10,0.82)",
+            "#101519",
 
-          backdropFilter:
-            "blur(9px)",
+          color:
+            "#ffffff",
 
-          WebkitBackdropFilter:
-            "blur(9px)",
+          border:
+            "1px solid rgba(255,255,255,0.14)",
+
+          boxShadow:
+            "0 30px 100px rgba(0,0,0,0.65)",
+
+          fontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
       >
-        <div
-          onPointerDown={(
-            event
-          ) => {
-            event.stopPropagation();
-          }}
+        {/* ===============================================
+            CERRAR
+        =============================================== */}
 
+        <button
+          type="button"
+          onClick={
+            onClose
+          }
           style={{
             position:
-              "relative",
+              "absolute",
+
+            top:
+              "12px",
+
+            right:
+              "12px",
+
+            zIndex:
+              20,
 
             width:
-              "min(880px, 96vw)",
+              "42px",
 
-            maxHeight:
-              "92vh",
-
-            overflow:
-              "auto",
-
-            borderRadius:
-              "20px",
-
-            background:
-              "#101519",
+            height:
+              "42px",
 
             border:
-              "1px solid rgba(255,255,255,0.13)",
+              "1px solid rgba(255,255,255,0.22)",
+
+            borderRadius:
+              "50%",
+
+            background:
+              "rgba(5,8,10,0.9)",
 
             color:
               "#ffffff",
 
-            boxShadow:
-              "0 30px 100px rgba(0,0,0,0.65)",
+            fontSize:
+              "24px",
 
-            fontFamily:
-              "system-ui, -apple-system, sans-serif",
+            cursor:
+              "pointer",
           }}
         >
-          {/* CERRAR */}
+          ×
+        </button>
 
-          <button
-            type="button"
-            onClick={
-              onClose
+        {/* ===============================================
+            VIDEO
+
+            El propio iframe muestra la miniatura antes
+            de que el usuario pulse Play.
+        =============================================== */}
+
+        <div
+          style={{
+            width:
+              "100%",
+
+            aspectRatio:
+              "16 / 9",
+
+            background:
+              "#000",
+
+            overflow:
+              "hidden",
+
+            borderRadius:
+              "20px 20px 0 0",
+          }}
+        >
+          <iframe
+            src={
+              game.video
             }
+            title={
+              `${game.title} trailer`
+            }
+            loading="lazy"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
             style={{
-              position:
-                "absolute",
+              display:
+                "block",
 
-              right:
-                "12px",
-
-              top:
-                "12px",
-
-              zIndex:
-                10,
-
-              width:
-                "40px",
-
-              height:
-                "40px",
-
-              border:
-                "1px solid rgba(255,255,255,0.18)",
-
-              borderRadius:
-                "50%",
-
-              background:
-                "rgba(7,10,12,0.9)",
-
-              color:
-                "#fff",
-
-              fontSize:
-                "23px",
-            }}
-          >
-            ×
-          </button>
-
-          {/* VIDEO */}
-
-          <div
-            style={{
               width:
                 "100%",
 
-              aspectRatio:
-                "16 / 9",
+              height:
+                "100%",
 
-              overflow:
-                "hidden",
+              border:
+                "none",
+            }}
+          />
+        </div>
 
-              background:
-                "#000",
+        {/* ===============================================
+            CONTENIDO
+        =============================================== */}
 
-              borderRadius:
-                "20px 20px 0 0",
+        <div
+          style={{
+            padding:
+              "20px",
+          }}
+        >
+          <div
+            style={{
+              color:
+                game.accent,
+
+              fontSize:
+                "12px",
+
+              fontWeight:
+                800,
+
+              letterSpacing:
+                "0.1em",
             }}
           >
-            <iframe
-              src={
-                game.video
-              }
-              title={
-                game.title
-              }
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{
-                display:
-                  "block",
-
-                width:
-                  "100%",
-
-                height:
-                  "100%",
-
-                border:
-                  0,
-              }}
-            />
+            POPULARES HOY · Nº 1
           </div>
 
-          {/* INFORMACIÓN */}
+          <h1
+            style={{
+              margin:
+                "7px 0 0",
+
+              fontSize:
+                "clamp(26px, 5vw, 42px)",
+
+              lineHeight:
+                1.05,
+            }}
+          >
+            {game.title}
+          </h1>
 
           <div
             style={{
-              padding:
+              marginTop:
+                "7px",
+
+              color:
+                "#adb7be",
+
+              fontSize:
+                "15px",
+            }}
+          >
+            {game.developer}
+          </div>
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              gap:
+                "7px",
+
+              flexWrap:
+                "wrap",
+
+              marginTop:
+                "16px",
+            }}
+          >
+            <span
+              style={{
+                padding:
+                  "7px 10px",
+
+                borderRadius:
+                  "999px",
+
+                background:
+                  "#252c31",
+
+                fontSize:
+                  "13px",
+              }}
+            >
+              {game.year}
+            </span>
+
+            <span
+              style={{
+                padding:
+                  "7px 10px",
+
+                borderRadius:
+                  "999px",
+
+                background:
+                  "#252c31",
+
+                fontSize:
+                  "13px",
+              }}
+            >
+              {game.platform}
+            </span>
+          </div>
+
+          <p
+            style={{
+              margin:
+                "17px 0 0",
+
+              color:
+                "#bac2c7",
+
+              lineHeight:
+                1.55,
+
+              fontSize:
+                "15px",
+            }}
+          >
+            {game.description}
+          </p>
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              flexWrap:
+                "wrap",
+
+              gap:
+                "9px",
+
+              marginTop:
                 "20px",
             }}
           >
-            <div
+            <button
+              type="button"
               style={{
-                color:
+                border:
+                  0,
+
+                borderRadius:
+                  "11px",
+
+                padding:
+                  "11px 16px",
+
+                background:
                   game.accent,
+
+                color:
+                  "#111",
 
                 fontWeight:
                   800,
-
-                fontSize:
-                  "12px",
-
-                letterSpacing:
-                  "0.1em",
-
-                marginBottom:
-                  "7px",
               }}
             >
-              POPULARES HOY · Nº 1
-            </div>
+              Ver ficha completa
+            </button>
 
-            <h1
+            <button
+              type="button"
+              onClick={
+                onClose
+              }
               style={{
-                margin:
-                  0,
+                border:
+                  "1px solid rgba(255,255,255,.18)",
 
-                fontSize:
-                  "clamp(25px, 5vw, 42px)",
-              }}
-            >
-              {game.title}
-            </h1>
+                borderRadius:
+                  "11px",
 
-            <div
-              style={{
-                marginTop:
-                  "7px",
+                padding:
+                  "11px 16px",
+
+                background:
+                  "transparent",
 
                 color:
-                  "#aeb8bf",
+                  "#ffffff",
               }}
             >
-              {game.developer}
-            </div>
-
-            <div
-              style={{
-                display:
-                  "flex",
-
-                flexWrap:
-                  "wrap",
-
-                gap:
-                  "7px",
-
-                marginTop:
-                  "17px",
-              }}
-            >
-              {[
-                game.year,
-                game.platform,
-              ].map(
-                (
-                  text
-                ) => (
-                  <span
-                    key={text}
-                    style={{
-                      padding:
-                        "7px 10px",
-
-                      borderRadius:
-                        "999px",
-
-                      background:
-                        "#242b30",
-
-                      color:
-                        "#d7dbde",
-
-                      fontSize:
-                        "13px",
-                    }}
-                  >
-                    {text}
-                  </span>
-                )
-              )}
-            </div>
-
-            <p
-              style={{
-                color:
-                  "#b9c1c7",
-
-                lineHeight:
-                  1.55,
-
-                margin:
-                  "18px 0 0",
-              }}
-            >
-              {game.description}
-            </p>
-
-            <div
-              style={{
-                display:
-                  "flex",
-
-                gap:
-                  "9px",
-
-                flexWrap:
-                  "wrap",
-
-                marginTop:
-                  "20px",
-              }}
-            >
-              <button
-                type="button"
-                style={{
-                  border:
-                    0,
-
-                  borderRadius:
-                    "11px",
-
-                  padding:
-                    "11px 15px",
-
-                  background:
-                    game.accent,
-
-                  color:
-                    "#111",
-
-                  fontWeight:
-                    800,
-                }}
-              >
-                Ver ficha completa
-              </button>
-
-              <button
-                type="button"
-                onClick={
-                  onClose
-                }
-                style={{
-                  border:
-                    "1px solid rgba(255,255,255,.16)",
-
-                  borderRadius:
-                    "11px",
-
-                  padding:
-                    "11px 15px",
-
-                  background:
-                    "transparent",
-
-                  color:
-                    "#fff",
-                }}
-              >
-                Volver al mundo
-              </button>
-            </div>
+              Volver al mundo
+            </button>
           </div>
         </div>
       </div>
-    </Html>
+    </div>,
+
+    document.body
   );
 }
 
@@ -1035,15 +1223,11 @@ export default function PopularTodayHall() {
 
   /* =======================================================
      PAREDES INTERIORES
-
-     Creamos una sala más pequeña dentro del ala.
   ======================================================= */
 
   const interiorWalls =
     useMemo(
       () => [
-        /* IZQUIERDA */
-
         {
           position: [
             -ROOM_HALF_WIDTH,
@@ -1059,8 +1243,6 @@ export default function PopularTodayHall() {
           ],
         },
 
-        /* DERECHA */
-
         {
           position: [
             ROOM_HALF_WIDTH,
@@ -1075,8 +1257,6 @@ export default function PopularTodayHall() {
               ROOM_BACK_Z,
           ],
         },
-
-        /* FONDO */
 
         {
           position: [
@@ -1099,7 +1279,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     FRANJAS DECORATIVAS
+     PANELES
   ======================================================= */
 
   const darkPanels =
@@ -1187,7 +1367,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     PISTA CENTRAL
+     CAMINO
   ======================================================= */
 
   const centralPath =
@@ -1196,13 +1376,13 @@ export default function PopularTodayHall() {
         {
           position: [
             0,
-            0.34,
+            0.36,
             1,
           ],
 
           scale: [
             5.5,
-            0.05,
+            0.04,
             48,
           ],
         },
@@ -1212,8 +1392,6 @@ export default function PopularTodayHall() {
 
   /* =======================================================
      ESTACIONES
-
-     Mucho más cerca unas de otras.
   ======================================================= */
 
   const stations =
@@ -1322,7 +1500,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     LUCES VISUALES
+     LUCES
   ======================================================= */
 
   const ceilingLights =
@@ -1386,7 +1564,7 @@ export default function PopularTodayHall() {
   return (
     <group>
       {/* ===================================================
-          SALA CLARA
+          INTERIOR
       =================================================== */}
 
       <InstancedBoxes
@@ -1406,7 +1584,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          PISTA CENTRAL
+          PASILLO
       =================================================== */}
 
       <InstancedBoxes
@@ -1419,9 +1597,6 @@ export default function PopularTodayHall() {
 
       {/* ===================================================
           ENTRADA INTERIOR
-
-          Dos pilares y dintel.
-          Centro completamente libre.
       =================================================== */}
 
       <RoundedBox
@@ -1485,7 +1660,7 @@ export default function PopularTodayHall() {
       </RoundedBox>
 
       {/* ===================================================
-          LUCES DE TECHO VISUALES
+          LUCES VISUALES
       =================================================== */}
 
       <InstancedBoxes
@@ -1500,9 +1675,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          ILUMINACIÓN REAL
-
-          Tres luces bastan para esta sala más pequeña.
+          ILUMINACIÓN
       =================================================== */}
 
       <pointLight
@@ -1542,7 +1715,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          ESTACIONES NORMALES
+          ESTACIONES
       =================================================== */}
 
       {stations.map(
@@ -1559,11 +1732,14 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          TOP 1 INTERACTIVO
+          TOP 1
       =================================================== */}
 
       <FeaturedStation
         onOpen={() => {
+          playerInput.x = 0;
+          playerInput.y = 0;
+
           setSelectedGame(
             FEATURED_GAME
           );
@@ -1571,7 +1747,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          PANEL DEL FONDO
+          FONDO
       =================================================== */}
 
       <RoundedBox
@@ -1596,7 +1772,7 @@ export default function PopularTodayHall() {
       </RoundedBox>
 
       {/* ===================================================
-          COLISIONES MOBILIARIO
+          COLISIONES
       =================================================== */}
 
       <RigidBody
@@ -1649,7 +1825,7 @@ export default function PopularTodayHall() {
       </RigidBody>
 
       {/* ===================================================
-          FICHA
+          MODAL 2D
       =================================================== */}
 
       {selectedGame && (
