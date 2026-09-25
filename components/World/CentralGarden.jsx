@@ -1,619 +1,159 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
-
-import {
-  useGLTF,
-} from "@react-three/drei";
-
-import {
-  RigidBody,
-  CylinderCollider,
-} from "@react-three/rapier";
-
-import * as THREE from "three";
+import { useMemo } from "react";
 
 /* =========================================================
-   RUTAS
+   CONFIGURACIÓN
+
+   FASE 1:
+   Jardín limpio y continuo.
+   Sin árboles, sin arbustos, sin césped roto.
+
+   Solo 4 zonas de césped bien definidas alrededor
+   de la plaza central.
 ========================================================= */
 
-const BASE =
-  "/models/vegetation";
-
-const COMMON_TREE_URL =
-  `${BASE}/CommonTree_1.gltf`;
-
-const TWISTED_TREE_URL =
-  `${BASE}/TwistedTree_2.gltf`;
-
-const BUSH_URL =
-  `${BASE}/Bush_Common.gltf`;
-
-const GRASS_SHORT_URL =
-  `${BASE}/Grass_Common_Short.gltf`;
-
-const GRASS_TALL_URL =
-  `${BASE}/Grass_Wispy_Tall.gltf`;
-
-/* =========================================================
-   RANDOM DETERMINISTA
-========================================================= */
-
-function seededRandom(seed) {
-  const value =
-    Math.sin(
-      seed * 9283.17
-    ) *
-    43758.5453;
-
-  return (
-    value -
-    Math.floor(value)
-  );
-}
-
-/* =========================================================
-   EXTRAER MESHES DE UN GLTF
-========================================================= */
-
-function collectMeshes(scene) {
-  const result = [];
-
-  scene.traverse(
-    (object) => {
-      if (
-        !object.isMesh
-      ) {
-        return;
-      }
-
-      result.push({
-        geometry:
-          object.geometry,
-
-        material:
-          object.material,
-      });
-    }
-  );
-
-  return result;
-}
-
-/* =========================================================
-   INSTANCIAS
-========================================================= */
-
-function InstancedModel({
-  geometry,
-  material,
-  items,
-  castShadow = false,
-  receiveShadow = true,
-}) {
-  const meshRef =
-    useRef(null);
-
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
-
-  useLayoutEffect(() => {
-    if (
-      !meshRef.current ||
-      !geometry ||
-      !material
-    ) {
-      return;
-    }
-
-    items.forEach(
-      (
-        item,
-        index
-      ) => {
-        dummy.position.set(
-          item.position[0],
-          item.position[1],
-          item.position[2]
-        );
-
-        dummy.rotation.set(
-          item.rotation?.[0] ??
-            0,
-
-          item.rotation?.[1] ??
-            0,
-
-          item.rotation?.[2] ??
-            0
-        );
-
-        const scale =
-          item.scale ?? 1;
-
-        if (
-          Array.isArray(scale)
-        ) {
-          dummy.scale.set(
-            scale[0],
-            scale[1],
-            scale[2]
-          );
-        } else {
-          dummy.scale.setScalar(
-            scale
-          );
-        }
-
-        dummy.updateMatrix();
-
-        meshRef.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
-      }
-    );
-
-    meshRef.current
-      .instanceMatrix
-      .needsUpdate =
-      true;
-
-    meshRef.current
-      .computeBoundingSphere?.();
-  }, [
-    geometry,
-    material,
-    items,
-    dummy,
-  ]);
-
-  if (
-    !geometry ||
-    !material ||
-    items.length === 0
-  ) {
-    return null;
-  }
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[
-        geometry,
-        material,
-        items.length,
-      ]}
-      castShadow={
-        castShadow
-      }
-      receiveShadow={
-        receiveShadow
-      }
-      frustumCulled
-    />
-  );
-}
-
-/* =========================================================
-   ÁRBOLES
-
-   IMPORTANTE:
-
-   Nos quedamos dentro de ±40 aproximadamente.
-
-   Así ningún árbol entra en los edificios,
-   que comienzan bastante más afuera.
-========================================================= */
-
-const TREES = [
+const LAWN_PATCHES = [
   {
-    type: "common",
-    position: [
-      -31,
-      0.4,
-      -31,
-    ],
-    scale: 1.05,
-    rotation: 0.2,
+    position: [-30, 0.43, -30],
+    scale: [29.5, 0.08, 29.5],
   },
-
   {
-    type: "twisted",
-    position: [
-      -21,
-      0.4,
-      -37,
-    ],
-    scale: 0.34,
-    rotation: 1.2,
+    position: [30, 0.43, -30],
+    scale: [29.5, 0.08, 29.5],
   },
-
   {
-    type: "common",
-    position: [
-      -38,
-      0.4,
-      -20,
-    ],
-    scale: 0.98,
-    rotation: 2.1,
+    position: [-30, 0.43, 30],
+    scale: [29.5, 0.08, 29.5],
   },
-
   {
-    type: "common",
-    position: [
-      31,
-      0.4,
-      -31,
-    ],
-    scale: 1.03,
-    rotation: 0.8,
-  },
-
-  {
-    type: "twisted",
-    position: [
-      21,
-      0.4,
-      -37,
-    ],
-    scale: 0.33,
-    rotation: 2.3,
-  },
-
-  {
-    type: "common",
-    position: [
-      38,
-      0.4,
-      -20,
-    ],
-    scale: 1,
-    rotation: 1.6,
-  },
-
-  {
-    type: "common",
-    position: [
-      -31,
-      0.4,
-      31,
-    ],
-    scale: 1.06,
-    rotation: 2.5,
-  },
-
-  {
-    type: "twisted",
-    position: [
-      -21,
-      0.4,
-      37,
-    ],
-    scale: 0.34,
-    rotation: 0.4,
-  },
-
-  {
-    type: "common",
-    position: [
-      -38,
-      0.4,
-      20,
-    ],
-    scale: 0.97,
-    rotation: 1.4,
-  },
-
-  {
-    type: "common",
-    position: [
-      31,
-      0.4,
-      31,
-    ],
-    scale: 1.04,
-    rotation: 0.15,
-  },
-
-  {
-    type: "twisted",
-    position: [
-      21,
-      0.4,
-      37,
-    ],
-    scale: 0.33,
-    rotation: 1.5,
-  },
-
-  {
-    type: "common",
-    position: [
-      38,
-      0.4,
-      20,
-    ],
-    scale: 1,
-    rotation: 2.4,
+    position: [30, 0.43, 30],
+    scale: [29.5, 0.08, 29.5],
   },
 ];
 
 /* =========================================================
-   ZONAS DE JARDÍN
+   COMPONENTE DE PARCHE DE CÉSPED
 
-   Cuatro cuadrados alrededor de la plaza.
-
-   Se evita:
-   - centro
-   - caminos
-   - edificios
+   Tiene:
+   - base oscura
+   - césped principal
+   - una ligera capa de variación
+   - bordes discretos para que se lea mejor
 ========================================================= */
 
-const LAWN_AREAS = [
-  {
-    minX: -44,
-    maxX: -15,
-    minZ: -44,
-    maxZ: -15,
-  },
+function LawnPatch({ position, scale }) {
+  const [x, y, z] = position;
+  const [sx, sy, sz] = scale;
 
-  {
-    minX: 15,
-    maxX: 44,
-    minZ: -44,
-    maxZ: -15,
-  },
+  return (
+    <group position={[x, y, z]}>
+      {/* ===============================================
+          BASE OSCURA
+      =============================================== */}
+      <mesh receiveShadow position={[0, -0.01, 0]}>
+        <boxGeometry args={[sx, sy, sz]} />
+        <meshStandardMaterial
+          color="#3f5a36"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
 
-  {
-    minX: -44,
-    maxX: -15,
-    minZ: 15,
-    maxZ: 44,
-  },
+      {/* ===============================================
+          CAPA PRINCIPAL DE CÉSPED
+      =============================================== */}
+      <mesh receiveShadow position={[0, 0.015, 0]}>
+        <boxGeometry args={[sx - 0.5, 0.03, sz - 0.5]} />
+        <meshStandardMaterial
+          color="#587645"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
 
-  {
-    minX: 15,
-    maxX: 44,
-    minZ: 15,
-    maxZ: 44,
-  },
-];
+      {/* ===============================================
+          CAPA SUAVE DE VARIACIÓN
 
-/* =========================================================
-   GENERADOR DE PASTO
-========================================================= */
+          Apenas levanta un poco el centro para que no
+          se vea tan plano y artificial.
+      =============================================== */}
+      <mesh receiveShadow position={[0, 0.04, 0]}>
+        <boxGeometry args={[sx - 2.8, 0.015, sz - 2.8]} />
+        <meshStandardMaterial
+          color="#648451"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
 
-function createGrassItems(
-  count,
-  seedStart,
-  tall = false
-) {
-  const result = [];
-
-  let seed =
-    seedStart;
-
-  for (
-    let i = 0;
-    i < count;
-    i++
-  ) {
-    const area =
-      LAWN_AREAS[
-        i %
-          LAWN_AREAS.length
-      ];
-
-    const rx =
-      seededRandom(
-        seed++
-      );
-
-    const rz =
-      seededRandom(
-        seed++
-      );
-
-    const rr =
-      seededRandom(
-        seed++
-      );
-
-    const rs =
-      seededRandom(
-        seed++
-      );
-
-    const x =
-      THREE.MathUtils.lerp(
-        area.minX,
-        area.maxX,
-        rx
-      );
-
-    const z =
-      THREE.MathUtils.lerp(
-        area.minZ,
-        area.maxZ,
-        rz
-      );
-
-    /* =====================================================
-       EVITAR PASTO EN EL TRONCO
-    ===================================================== */
-
-    const nearTree =
-      TREES.some(
-        (tree) => {
-          const dx =
-            x -
-            tree.position[0];
-
-          const dz =
-            z -
-            tree.position[2];
-
-          return (
-            dx * dx +
-              dz * dz <
-            2.2 * 2.2
-          );
-        }
-      );
-
-    if (
-      nearTree
-    ) {
-      continue;
-    }
-
-    result.push({
-      position: [
-        x,
-        0.42,
-        z,
-      ],
-
-      rotation: [
-        0,
-        rr *
-          Math.PI *
-          2,
-        0,
-      ],
-
-      scale:
-        tall
-          ? 0.28 +
-            rs * 0.16
-          : 0.34 +
-            rs * 0.22,
-    });
-  }
-
-  return result;
+      {/* ===============================================
+          BORDE SUPERIOR SUAVE
+      =============================================== */}
+      <mesh receiveShadow position={[0, 0.025, 0]}>
+        <boxGeometry args={[sx - 1.4, 0.01, sz - 1.4]} />
+        <meshStandardMaterial
+          color="#6d8d57"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+    </group>
+  );
 }
 
 /* =========================================================
-   GENERADOR DE ARBUSTOS
+   DETALLE SUTIL DE SUPERFICIE
+
+   Esto NO es el césped "AAA" todavía.
+   Solo genera ligeras placas internas de color
+   para que la zona verde no quede como una baldosa plana.
+
+   Seguimos muy livianos.
 ========================================================= */
 
-function createBushItems() {
-  const result = [];
+function GrassToneVariation() {
+  const details = useMemo(() => {
+    return [
+      [-36, 0.49, -36, 8, 0.01, 7, "#5d7c49"],
+      [-24, 0.49, -23, 7, 0.01, 6, "#537041"],
+      [-35, 0.49, 24, 8, 0.01, 7, "#5d7c49"],
+      [-22, 0.49, 36, 6, 0.01, 8, "#537041"],
 
-  let seed =
-    7200;
+      [36, 0.49, -36, 7, 0.01, 8, "#5d7c49"],
+      [23, 0.49, -24, 6, 0.01, 7, "#537041"],
+      [35, 0.49, 24, 8, 0.01, 6, "#5d7c49"],
+      [23, 0.49, 36, 7, 0.01, 8, "#537041"],
 
-  TREES.forEach(
-    (
-      tree,
-      treeIndex
-    ) => {
-      const amount =
-        treeIndex % 2 === 0
-          ? 4
-          : 3;
+      [-30, 0.49, -34, 10, 0.01, 4, "#6a8c54"],
+      [30, 0.49, -34, 10, 0.01, 4, "#6a8c54"],
+      [-30, 0.49, 34, 10, 0.01, 4, "#6a8c54"],
+      [30, 0.49, 34, 10, 0.01, 4, "#6a8c54"],
+    ];
+  }, []);
 
-      for (
-        let i = 0;
-        i < amount;
-        i++
-      ) {
-        const angle =
-          seededRandom(
-            seed++
-          ) *
-          Math.PI *
-          2;
+  return (
+    <group>
+      {details.map((item, index) => {
+        const [x, y, z, sx, sy, sz, color] = item;
 
-        const distance =
-          3 +
-          seededRandom(
-            seed++
-          ) *
-            2;
-
-        const randomScale =
-          0.75 +
-          seededRandom(
-            seed++
-          ) *
-            0.4;
-
-        const x =
-          tree.position[0] +
-          Math.cos(
-            angle
-          ) *
-            distance;
-
-        const z =
-          tree.position[2] +
-          Math.sin(
-            angle
-          ) *
-            distance;
-
-        /* =================================================
-           NO SALIR DEL PARQUE
-        ================================================= */
-
-        if (
-          Math.abs(x) >
-            43 ||
-          Math.abs(z) >
-            43
-        ) {
-          continue;
-        }
-
-        /* =================================================
-           NO INVADIR LOS CAMINOS
-        ================================================= */
-
-        if (
-          Math.abs(x) <
-            13 ||
-          Math.abs(z) <
-            13
-        ) {
-          continue;
-        }
-
-        result.push({
-          position: [
-            x,
-            0.42,
-            z,
-          ],
-
-          rotation: [
-            0,
-            angle,
-            0,
-          ],
-
-          scale:
-            0.78 *
-            randomScale,
-        });
-      }
-    }
+        return (
+          <mesh
+            key={index}
+            position={[x, y, z]}
+            receiveShadow
+          >
+            <boxGeometry args={[sx, sy, sz]} />
+            <meshStandardMaterial
+              color={color}
+              roughness={1}
+              metalness={0}
+            />
+          </mesh>
+        );
+      })}
+    </group>
   );
-
-  return result;
 }
 
 /* =========================================================
@@ -621,472 +161,23 @@ function createBushItems() {
 ========================================================= */
 
 export default function CentralGarden() {
-  /* =======================================================
-     CARGA DE MODELOS
-  ======================================================= */
-
-  const commonTree =
-    useGLTF(
-      COMMON_TREE_URL
-    );
-
-  const twistedTree =
-    useGLTF(
-      TWISTED_TREE_URL
-    );
-
-  const bush =
-    useGLTF(
-      BUSH_URL
-    );
-
-  const grassShort =
-    useGLTF(
-      GRASS_SHORT_URL
-    );
-
-  const grassTall =
-    useGLTF(
-      GRASS_TALL_URL
-    );
-
-  /* =======================================================
-     EXTRAER GEOMETRÍAS
-  ======================================================= */
-
-  const commonMeshes =
-    useMemo(
-      () =>
-        collectMeshes(
-          commonTree.scene
-        ),
-      [
-        commonTree.scene,
-      ]
-    );
-
-  const twistedMeshes =
-    useMemo(
-      () =>
-        collectMeshes(
-          twistedTree.scene
-        ),
-      [
-        twistedTree.scene,
-      ]
-    );
-
-  const bushMeshes =
-    useMemo(
-      () =>
-        collectMeshes(
-          bush.scene
-        ),
-      [
-        bush.scene,
-      ]
-    );
-
-  const shortGrassMeshes =
-    useMemo(
-      () =>
-        collectMeshes(
-          grassShort.scene
-        ),
-      [
-        grassShort.scene,
-      ]
-    );
-
-  const tallGrassMeshes =
-    useMemo(
-      () =>
-        collectMeshes(
-          grassTall.scene
-        ),
-      [
-        grassTall.scene,
-      ]
-    );
-
-  /* =======================================================
-     AJUSTE GENERAL DE MATERIALES
-  ======================================================= */
-
-  useEffect(() => {
-    const meshes = [
-      ...commonMeshes,
-      ...twistedMeshes,
-      ...bushMeshes,
-      ...shortGrassMeshes,
-      ...tallGrassMeshes,
-    ];
-
-    meshes.forEach(
-      ({
-        material,
-      }) => {
-        if (
-          !material
-        ) {
-          return;
-        }
-
-        material.side =
-          THREE.DoubleSide;
-
-        material.metalness =
-          0;
-
-        material.roughness =
-          Math.max(
-            material.roughness ??
-              0.85,
-            0.75
-          );
-
-        if (
-          material.map
-        ) {
-          material.map.colorSpace =
-            THREE.SRGBColorSpace;
-
-          material.map.anisotropy =
-            4;
-
-          material.map.needsUpdate =
-            true;
-        }
-
-        material.needsUpdate =
-          true;
-      }
-    );
-  }, [
-    commonMeshes,
-    twistedMeshes,
-    bushMeshes,
-    shortGrassMeshes,
-    tallGrassMeshes,
-  ]);
-
-  /* =======================================================
-     INSTANCIAS DE ÁRBOLES
-  ======================================================= */
-
-  const commonTreeItems =
-    useMemo(
-      () =>
-        TREES
-          .filter(
-            (tree) =>
-              tree.type ===
-              "common"
-          )
-          .map(
-            (tree) => ({
-              position:
-                tree.position,
-
-              scale:
-                tree.scale,
-
-              rotation: [
-                0,
-                tree.rotation,
-                0,
-              ],
-            })
-          ),
-      []
-    );
-
-  const twistedTreeItems =
-    useMemo(
-      () =>
-        TREES
-          .filter(
-            (tree) =>
-              tree.type ===
-              "twisted"
-          )
-          .map(
-            (tree) => ({
-              position:
-                tree.position,
-
-              scale:
-                tree.scale,
-
-              rotation: [
-                0,
-                tree.rotation,
-                0,
-              ],
-            })
-          ),
-      []
-    );
-
-  /* =======================================================
-     ARBUSTOS
-  ======================================================= */
-
-  const bushItems =
-    useMemo(
-      () =>
-        createBushItems(),
-      []
-    );
-
-  /* =======================================================
-     PASTO
-  ======================================================= */
-
-  const shortGrassItems =
-    useMemo(
-      () =>
-        createGrassItems(
-          1000,
-          1200,
-          false
-        ),
-      []
-    );
-
-  const tallGrassItems =
-    useMemo(
-      () =>
-        createGrassItems(
-          180,
-          5200,
-          true
-        ),
-      []
-    );
-
   return (
     <group>
       {/* ===================================================
-          ÁRBOLES COMUNES
+          4 ZONAS DE CÉSPED CONTINUO
       =================================================== */}
-
-      {commonMeshes.map(
-        (
-          mesh,
-          index
-        ) => (
-          <InstancedModel
-            key={`common-tree-${index}`}
-            geometry={
-              mesh.geometry
-            }
-            material={
-              mesh.material
-            }
-            items={
-              commonTreeItems
-            }
-            castShadow
-            receiveShadow
-          />
-        )
-      )}
+      {LAWN_PATCHES.map((patch, index) => (
+        <LawnPatch
+          key={index}
+          position={patch.position}
+          scale={patch.scale}
+        />
+      ))}
 
       {/* ===================================================
-          ÁRBOLES RETORCIDOS
+          VARIACIÓN SUTIL DEL TONO DEL PASTO
       =================================================== */}
-
-      {twistedMeshes.map(
-        (
-          mesh,
-          index
-        ) => (
-          <InstancedModel
-            key={`twisted-tree-${index}`}
-            geometry={
-              mesh.geometry
-            }
-            material={
-              mesh.material
-            }
-            items={
-              twistedTreeItems
-            }
-            castShadow
-            receiveShadow
-          />
-        )
-      )}
-
-      {/* ===================================================
-          ARBUSTOS
-      =================================================== */}
-
-      {bushMeshes.map(
-        (
-          mesh,
-          index
-        ) => (
-          <InstancedModel
-            key={`bush-${index}`}
-            geometry={
-              mesh.geometry
-            }
-            material={
-              mesh.material
-            }
-            items={
-              bushItems
-            }
-            castShadow={
-              false
-            }
-            receiveShadow
-          />
-        )
-      )}
-
-      {/* ===================================================
-          PASTO CORTO
-      =================================================== */}
-
-      {shortGrassMeshes.map(
-        (
-          mesh,
-          index
-        ) => (
-          <InstancedModel
-            key={`grass-short-${index}`}
-            geometry={
-              mesh.geometry
-            }
-            material={
-              mesh.material
-            }
-            items={
-              shortGrassItems
-            }
-            castShadow={
-              false
-            }
-            receiveShadow={
-              false
-            }
-          />
-        )
-      )}
-
-      {/* ===================================================
-          PASTO ALTO
-      =================================================== */}
-
-      {tallGrassMeshes.map(
-        (
-          mesh,
-          index
-        ) => (
-          <InstancedModel
-            key={`grass-tall-${index}`}
-            geometry={
-              mesh.geometry
-            }
-            material={
-              mesh.material
-            }
-            items={
-              tallGrassItems
-            }
-            castShadow={
-              false
-            }
-            receiveShadow={
-              false
-            }
-          />
-        )
-      )}
-
-      {/* ===================================================
-          COLISIONES DE ÁRBOLES
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders={
-          false
-        }
-      >
-        {TREES.map(
-          (
-            tree,
-            index
-          ) => {
-            const twisted =
-              tree.type ===
-              "twisted";
-
-            const halfHeight =
-              twisted
-                ? 3.3 *
-                  tree.scale
-                : 2 *
-                  tree.scale;
-
-            const radius =
-              twisted
-                ? 0.65 *
-                  tree.scale
-                : 0.48 *
-                  tree.scale;
-
-            return (
-              <CylinderCollider
-                key={`tree-collider-${index}`}
-                args={[
-                  halfHeight,
-                  radius,
-                ]}
-                position={[
-                  tree
-                    .position[0],
-
-                  tree
-                    .position[1] +
-                    halfHeight,
-
-                  tree
-                    .position[2],
-                ]}
-              />
-            );
-          }
-        )}
-      </RigidBody>
+      <GrassToneVariation />
     </group>
   );
 }
-
-/* =========================================================
-   PRELOAD
-========================================================= */
-
-useGLTF.preload(
-  COMMON_TREE_URL
-);
-
-useGLTF.preload(
-  TWISTED_TREE_URL
-);
-
-useGLTF.preload(
-  BUSH_URL
-);
-
-useGLTF.preload(
-  GRASS_SHORT_URL
-);
-
-useGLTF.preload(
-  GRASS_TALL_URL
-);
