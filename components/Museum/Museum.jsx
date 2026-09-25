@@ -1,30 +1,19 @@
 import DpadWing from "./DpadWing";
+import PopularTodayHall from "./PopularTodayHall";
 
 /* =========================================================
-   MUSEUM / FREAKY WORLD
+   FREAKY WORLD
 
-   ESTRUCTURA MAESTRA
+   Las cuatro alas comparten la misma carcasa.
 
-   Cuatro alas idénticas alrededor del patio.
-
-   A partir de este punto:
-   - cada ala parte de una carcasa limpia
-   - todas tienen las mismas dimensiones
-   - no existen interiores heredados
-   - no existen escaleras heredadas
-   - no existen terrazas heredadas
-
-   Primero desarrollaremos el ALA NORTE.
+   Solo desarrollamos el ala norte por ahora.
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
       {/* ===================================================
-          NORTE
-
-          Será la primera ala que construiremos
-          interiormente.
+          NORTE — POPULARES HOY
       =================================================== */}
 
       <DpadWing
@@ -38,7 +27,9 @@ export default function Museum() {
           0,
           0,
         ]}
-      />
+      >
+        <PopularTodayHall />
+      </DpadWing>
 
       {/* ===================================================
           SUR
