@@ -18,9 +18,6 @@ import CentralGarden from "./CentralGarden";
 
 /* =========================================================
    CAJAS INSTANCIADAS
-
-   Todos los objetos del mismo tipo
-   se renderizan en una sola draw call.
 ========================================================= */
 
 function InstancedBoxes({
@@ -180,10 +177,14 @@ export default function WorldEnvironment() {
     );
 
   /* =======================================================
-     FRANJAS VERDES
+     BASE VERDE DEL PARQUE
 
-     Estas bases siguen existiendo por debajo del césped 3D.
-     Sirven para que el suelo no quede vacío entre briznas.
+     Estas zonas quedan debajo del césped 3D.
+
+     IMPORTANTE:
+     ahora están limitadas al centro.
+
+     Ya NO llegan debajo de los edificios.
   ======================================================= */
 
   const gardenItems =
@@ -191,105 +192,53 @@ export default function WorldEnvironment() {
       () => [
         {
           position: [
-            -32,
+            -30,
             0.3,
-            -76,
+            -30,
           ],
           scale: [
-            12,
+            29,
             0.12,
-            96,
+            29,
           ],
         },
 
         {
           position: [
-            32,
+            30,
             0.3,
-            -76,
+            -30,
           ],
           scale: [
-            12,
+            29,
             0.12,
-            96,
+            29,
           ],
         },
 
         {
           position: [
-            -32,
+            -30,
             0.3,
-            76,
+            30,
           ],
           scale: [
-            12,
+            29,
             0.12,
-            96,
+            29,
           ],
         },
 
         {
           position: [
-            32,
+            30,
             0.3,
-            76,
+            30,
           ],
           scale: [
-            12,
+            29,
             0.12,
-            96,
-          ],
-        },
-
-        {
-          position: [
-            76,
-            0.3,
-            -32,
-          ],
-          scale: [
-            96,
-            0.12,
-            12,
-          ],
-        },
-
-        {
-          position: [
-            76,
-            0.3,
-            32,
-          ],
-          scale: [
-            96,
-            0.12,
-            12,
-          ],
-        },
-
-        {
-          position: [
-            -76,
-            0.3,
-            -32,
-          ],
-          scale: [
-            96,
-            0.12,
-            12,
-          ],
-        },
-
-        {
-          position: [
-            -76,
-            0.3,
-            32,
-          ],
-          scale: [
-            96,
-            0.12,
-            12,
+            29,
           ],
         },
       ],
@@ -297,7 +246,7 @@ export default function WorldEnvironment() {
     );
 
   /* =======================================================
-     CAMINOS
+     CAMINOS PRINCIPALES
   ======================================================= */
 
   const pathItems =
@@ -515,7 +464,9 @@ export default function WorldEnvironment() {
       </RigidBody>
 
       {/* ===================================================
-          BASE DE LAS ZONAS DE CÉSPED
+          BASE VERDE DEL JARDÍN
+
+          Solo en la plaza central.
       =================================================== */}
 
       <InstancedBoxes
@@ -540,9 +491,6 @@ export default function WorldEnvironment() {
 
       {/* ===================================================
           PLAZA CENTRAL
-
-          Se mantiene libre de vegetación para que el
-          monumento siga teniendo presencia visual.
       =================================================== */}
 
       <group
@@ -588,18 +536,13 @@ export default function WorldEnvironment() {
       </group>
 
       {/* ===================================================
-          JARDÍN CENTRAL
+          NUEVO JARDÍN
 
-          Aquí vive ahora:
-          - césped 3D
+          - modelos glTF reales
           - árboles
-          - follaje
           - arbustos
-          - colisiones de troncos
-
-          IMPORTANTE:
-          CentralGarden debe existir en:
-          components/World/CentralGarden.jsx
+          - pasto
+          - sin vegetación dentro de edificios
       =================================================== */}
 
       <CentralGarden />
@@ -656,7 +599,7 @@ export default function WorldEnvironment() {
       </mesh>
 
       {/* ===================================================
-          MONUMENTO CENTRAL
+          MONUMENTO
       =================================================== */}
 
       <CentralMonument />
