@@ -3,18 +3,28 @@ import DpadWing from "./DpadWing";
 /* =========================================================
    MUSEUM / FREAKY WORLD
 
-   IMPORTANTE:
+   ESTRUCTURA MAESTRA
 
-   - El monumento central vive en WorldEnvironment.
-   - La iluminación global vive en DynamicSky.
-   - Museum solo contiene las cuatro alas.
+   Cuatro alas idénticas alrededor del patio.
+
+   A partir de este punto:
+   - cada ala parte de una carcasa limpia
+   - todas tienen las mismas dimensiones
+   - no existen interiores heredados
+   - no existen escaleras heredadas
+   - no existen terrazas heredadas
+
+   Primero desarrollaremos el ALA NORTE.
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
       {/* ===================================================
-          NORTE — RETRO
+          NORTE
+
+          Será la primera ala que construiremos
+          interiormente.
       =================================================== */}
 
       <DpadWing
@@ -28,7 +38,6 @@ export default function Museum() {
           0,
           0,
         ]}
-        variant="retro"
       />
 
       {/* ===================================================
