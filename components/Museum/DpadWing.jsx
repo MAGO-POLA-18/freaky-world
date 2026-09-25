@@ -7,6 +7,10 @@ import {
 } from "react";
 
 import {
+  RoundedBox,
+} from "@react-three/drei";
+
+import {
   RigidBody,
   CuboidCollider,
 } from "@react-three/rapier";
@@ -14,19 +18,17 @@ import {
 import * as THREE from "three";
 
 /* =========================================================
-   MEDIDAS MAESTRAS DEL ALA
+   MEDIDAS MAESTRAS
 
-   Sistema local de cada ala:
+   Sistema local del ala:
 
    ancho:       60 m
    profundidad: 70 m
    altura:      15 m
 
-   +Z = fachada orientada hacia la plaza
-   -Z = fondo del edificio
+   +Z = fachada hacia la plaza
+   -Z = fondo
 
-   Esta será nuestra referencia estructural a partir
-   de ahora.
 ========================================================= */
 
 const WING_WIDTH = 60;
@@ -44,20 +46,24 @@ const FLOOR_THICKNESS = 0.3;
 const ROOF_THICKNESS = 0.35;
 
 /* =========================================================
-   CLARABOYA / CRUCETA
+   ENTRADA
 
-   Cruz total:
-   18 x 18 m
+   Apertura suficientemente grande para recorrer
+   cómodamente el edificio.
 
-   Grosor de cada brazo:
-   6 m
+========================================================= */
 
-             ███
-             ███
-         █████████
-         █████████
-             ███
-             ███
+const DOOR_WIDTH = 10;
+const DOOR_HEIGHT = 6;
+
+const SIDE_FRONT_WIDTH =
+  (
+    WING_WIDTH -
+    DOOR_WIDTH
+  ) / 2;
+
+/* =========================================================
+   CLARABOYA CRUCETA
 ========================================================= */
 
 const CROSS_TOTAL = 18;
@@ -70,10 +76,7 @@ const ARM_HALF =
   CROSS_ARM / 2;
 
 /* =========================================================
-   INSTANCIAS DE CAJAS
-
-   Nos permite dibujar varias piezas estructurales
-   iguales con pocas draw calls.
+   CAJAS INSTANCIADAS
 ========================================================= */
 
 function InstancedBoxes({
@@ -84,7 +87,7 @@ function InstancedBoxes({
   castShadow = true,
   receiveShadow = true,
 }) {
-  const meshRef =
+  const ref =
     useRef(null);
 
   const dummy =
@@ -95,9 +98,7 @@ function InstancedBoxes({
     );
 
   useLayoutEffect(() => {
-    if (
-      !meshRef.current
-    ) {
+    if (!ref.current) {
       return;
     }
 
@@ -106,52 +107,36 @@ function InstancedBoxes({
         item,
         index
       ) => {
-        const position =
-          item.position ??
-          [0, 0, 0];
-
-        const scale =
-          item.scale ??
-          [1, 1, 1];
-
-        const rotation =
-          item.rotation ??
-          [0, 0, 0];
-
         dummy.position.set(
-          position[0],
-          position[1],
-          position[2]
+          ...(item.position ??
+            [0, 0, 0])
         );
 
         dummy.rotation.set(
-          rotation[0],
-          rotation[1],
-          rotation[2]
+          ...(item.rotation ??
+            [0, 0, 0])
         );
 
         dummy.scale.set(
-          scale[0],
-          scale[1],
-          scale[2]
+          ...(item.scale ??
+            [1, 1, 1])
         );
 
         dummy.updateMatrix();
 
-        meshRef.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
+        ref.current.setMatrixAt(
+          index,
+          dummy.matrix
+        );
       }
     );
 
-    meshRef.current
+    ref.current
       .instanceMatrix
       .needsUpdate =
       true;
 
-    meshRef.current
+    ref.current
       .computeBoundingSphere?.();
   }, [
     items,
@@ -160,7 +145,7 @@ function InstancedBoxes({
 
   return (
     <instancedMesh
-      ref={meshRef}
+      ref={ref}
       args={[
         null,
         null,
@@ -174,11 +159,7 @@ function InstancedBoxes({
       }
     >
       <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
+        args={[1, 1, 1]}
       />
 
       <meshStandardMaterial
@@ -195,146 +176,191 @@ function InstancedBoxes({
 }
 
 /* =========================================================
+   CRISTAL DE LA CRUCETA
+========================================================= */
+
+function SkylightGlass({
+  items,
+  color,
+}) {
+  const ref =
+    useRef(null);
+
+  const dummy =
+    useMemo(
+      () =>
+        new THREE.Object3D(),
+      []
+    );
+
+  useLayoutEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+
+    items.forEach(
+      (
+        item,
+        index
+      ) => {
+        dummy.position.set(
+          ...item.position
+        );
+
+        dummy.scale.set(
+          ...item.scale
+        );
+
+        dummy.rotation.set(
+          0,
+          0,
+          0
+        );
+
+        dummy.updateMatrix();
+
+        ref.current.setMatrixAt(
+          index,
+          dummy.matrix
+        );
+      }
+    );
+
+    ref.current
+      .instanceMatrix
+      .needsUpdate =
+      true;
+
+    ref.current
+      .computeBoundingSphere?.();
+  }, [
+    items,
+    dummy,
+  ]);
+
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[
+        null,
+        null,
+        items.length,
+      ]}
+      receiveShadow
+    >
+      <boxGeometry
+        args={[1, 1, 1]}
+      />
+
+      <meshPhysicalMaterial
+        color={color}
+        transparent
+        opacity={0.34}
+        transmission={0.48}
+        roughness={0.08}
+        metalness={0.02}
+        side={
+          THREE.DoubleSide
+        }
+      />
+    </instancedMesh>
+  );
+}
+
+/* =========================================================
+   PANEL REDONDEADO
+
+   Lo usamos en las paredes visibles.
+
+   La física continúa siendo cuboid:
+   visual suave + colisión barata.
+========================================================= */
+
+function RoundedWall({
+  position,
+  args,
+  color,
+  radius = 0.18,
+}) {
+  return (
+    <RoundedBox
+      position={position}
+      args={args}
+      radius={radius}
+      smoothness={3}
+      castShadow
+      receiveShadow
+    >
+      <meshStandardMaterial
+        color={color}
+        roughness={0.86}
+        metalness={0.02}
+      />
+    </RoundedBox>
+  );
+}
+
+/* =========================================================
    ALA
 ========================================================= */
 
 export default function DpadWing({
   position = [0, 0, 0],
-
   rotation = [0, 0, 0],
 }) {
   /* =======================================================
-     MATERIALES / COLORES
-
-     Por ahora mantenemos todo sobrio.
-     Después cada ala podrá adquirir identidad propia.
+     PALETA
   ======================================================= */
 
   const wallColor =
-    "#171a1d";
+    "#1a1d20";
 
-  const sideColor =
-    "#202428";
+  const wallSecondary =
+    "#22272b";
 
   const roofColor =
-    "#111315";
+    "#121416";
 
   const floorColor =
-    "#202426";
+    "#24292b";
 
   const glassColor =
-    "#91c9dc";
+    "#8fc8da";
 
   const frameColor =
-    "#080a0c";
+    "#090b0d";
 
   /* =======================================================
-     PAREDES
+     FACHADA
 
-     Toda la caja queda completamente cerrada.
+     Ahora NO es una pared completa.
+
+        ███████████████████████
+        ███████████████████████
+        ███████         ███████
+        ███████ ENTRADA ███████
+        ███████         ███████
+
   ======================================================= */
 
-  const wallItems =
-    useMemo(
-      () => [
-        /* IZQUIERDA */
-        {
-          position: [
-            -HALF_WIDTH +
-              WALL_THICKNESS /
-                2,
+  const frontZ =
+    HALF_DEPTH -
+    WALL_THICKNESS / 2;
 
-            WING_HEIGHT /
-              2,
+  const sideFrontX =
+    DOOR_WIDTH / 2 +
+    SIDE_FRONT_WIDTH / 2;
 
-            0,
-          ],
+  const lintelHeight =
+    WING_HEIGHT -
+    DOOR_HEIGHT;
 
-          scale: [
-            WALL_THICKNESS,
-            WING_HEIGHT,
-            WING_DEPTH,
-          ],
-        },
-
-        /* DERECHA */
-        {
-          position: [
-            HALF_WIDTH -
-              WALL_THICKNESS /
-                2,
-
-            WING_HEIGHT /
-              2,
-
-            0,
-          ],
-
-          scale: [
-            WALL_THICKNESS,
-            WING_HEIGHT,
-            WING_DEPTH,
-          ],
-        },
-
-        /* FACHADA */
-        {
-          position: [
-            0,
-
-            WING_HEIGHT /
-              2,
-
-            HALF_DEPTH -
-              WALL_THICKNESS /
-                2,
-          ],
-
-          scale: [
-            WING_WIDTH -
-              WALL_THICKNESS *
-                2,
-
-            WING_HEIGHT,
-
-            WALL_THICKNESS,
-          ],
-        },
-
-        /* FONDO */
-        {
-          position: [
-            0,
-
-            WING_HEIGHT /
-              2,
-
-            -HALF_DEPTH +
-              WALL_THICKNESS /
-                2,
-          ],
-
-          scale: [
-            WING_WIDTH -
-              WALL_THICKNESS *
-                2,
-
-            WING_HEIGHT,
-
-            WALL_THICKNESS,
-          ],
-        },
-      ],
-      []
-    );
+  const lintelY =
+    DOOR_HEIGHT +
+    lintelHeight / 2;
 
   /* =======================================================
-     TECHO
-
-     No existe una gran placa atravesando la claraboya.
-
-     El techo está compuesto alrededor de la cruz,
-     así que el hueco tiene forma de cruceta real.
+     TECHO ALREDEDOR DE LA CRUZ
   ======================================================= */
 
   const roofItems =
@@ -353,11 +379,6 @@ export default function DpadWing({
         ARM_HALF;
 
       return [
-        /* ===============================================
-           FRANJA POSTERIOR
-           z = -35 → -9
-        =============================================== */
-
         {
           position: [
             0,
@@ -378,11 +399,6 @@ export default function DpadWing({
           ],
         },
 
-        /* ===============================================
-           FRANJA DELANTERA
-           z = 9 → 35
-        =============================================== */
-
         {
           position: [
             0,
@@ -403,10 +419,6 @@ export default function DpadWing({
           ],
         },
 
-        /* ===============================================
-           LATERAL IZQUIERDO CENTRAL
-        =============================================== */
-
         {
           position: [
             -(
@@ -416,7 +428,6 @@ export default function DpadWing({
               2,
 
             y,
-
             0,
           ],
 
@@ -427,10 +438,6 @@ export default function DpadWing({
           ],
         },
 
-        /* ===============================================
-           LATERAL DERECHO CENTRAL
-        =============================================== */
-
         {
           position: [
             (
@@ -440,7 +447,6 @@ export default function DpadWing({
               2,
 
             y,
-
             0,
           ],
 
@@ -451,216 +457,147 @@ export default function DpadWing({
           ],
         },
 
-        /* ===============================================
-           CUADRANTE INTERIOR
-           SUPERIOR IZQUIERDO
-        =============================================== */
-
         {
           position: [
-            -(
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
-
+            -6,
             y,
-
-            (
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
+            6,
           ],
 
           scale: [
-            middleCornerSize,
+            6,
             ROOF_THICKNESS,
-            middleCornerSize,
+            6,
           ],
         },
 
-        /* SUPERIOR DERECHO */
-
         {
           position: [
-            (
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
-
+            6,
             y,
-
-            (
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
+            6,
           ],
 
           scale: [
-            middleCornerSize,
+            6,
             ROOF_THICKNESS,
-            middleCornerSize,
+            6,
           ],
         },
 
-        /* INFERIOR IZQUIERDO */
-
         {
           position: [
-            -(
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
-
+            -6,
             y,
-
-            -(
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
+            -6,
           ],
 
           scale: [
-            middleCornerSize,
+            6,
             ROOF_THICKNESS,
-            middleCornerSize,
+            6,
           ],
         },
 
-        /* INFERIOR DERECHO */
-
         {
           position: [
-            (
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
-
+            6,
             y,
-
-            -(
-              CROSS_HALF +
-              ARM_HALF
-            ) /
-              2,
+            -6,
           ],
 
           scale: [
-            middleCornerSize,
+            6,
             ROOF_THICKNESS,
-            middleCornerSize,
+            6,
           ],
         },
       ];
     }, []);
 
   /* =======================================================
-     CRISTAL DE LA CRUCETA
-
-     5 piezas SIN superposición.
-
-     Esto evita z-fighting.
+     CRISTAL DE LA CRUZ
   ======================================================= */
 
-  const skylightGlassItems =
+  const skylightItems =
     useMemo(() => {
       const y =
         WING_HEIGHT +
         0.03;
 
       return [
-        /* CENTRO */
         {
           position: [
             0,
             y,
             0,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.08,
-            CROSS_ARM,
+            6,
           ],
         },
 
-        /* NORTE */
         {
           position: [
             0,
             y,
             -6,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.08,
-            CROSS_ARM,
+            6,
           ],
         },
 
-        /* SUR */
         {
           position: [
             0,
             y,
             6,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.08,
-            CROSS_ARM,
+            6,
           ],
         },
 
-        /* OESTE */
         {
           position: [
             -6,
             y,
             0,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.08,
-            CROSS_ARM,
+            6,
           ],
         },
 
-        /* ESTE */
         {
           position: [
             6,
             y,
             0,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.08,
-            CROSS_ARM,
+            6,
           ],
         },
       ];
     }, []);
 
   /* =======================================================
-     MARCO DE LA CLARABOYA
-
-     Líneas negras muy finas alrededor de la cruceta.
-
-     Refuerza la forma sin complicar la geometría.
+     MARCO DE LA CRUZ
   ======================================================= */
 
-  const skylightFrameItems =
+  const skylightFrame =
     useMemo(() => {
       const y =
         WING_HEIGHT +
@@ -670,47 +607,40 @@ export default function DpadWing({
         0.18;
 
       return [
-        /* BRAZO VERTICAL - laterales */
-
         {
           position: [
-            -ARM_HALF,
+            -3,
             y,
             0,
           ],
-
           scale: [
             thickness,
             0.12,
-            CROSS_TOTAL,
+            18,
           ],
         },
 
         {
           position: [
-            ARM_HALF,
+            3,
             y,
             0,
           ],
-
           scale: [
             thickness,
             0.12,
-            CROSS_TOTAL,
+            18,
           ],
         },
-
-        /* BRAZO HORIZONTAL - superior/inferior */
 
         {
           position: [
             0,
             y,
-            -ARM_HALF,
+            -3,
           ],
-
           scale: [
-            CROSS_TOTAL,
+            18,
             0.12,
             thickness,
           ],
@@ -720,27 +650,10 @@ export default function DpadWing({
           position: [
             0,
             y,
-            ARM_HALF,
+            3,
           ],
-
           scale: [
-            CROSS_TOTAL,
-            0.12,
-            thickness,
-          ],
-        },
-
-        /* EXTREMOS VERTICALES */
-
-        {
-          position: [
-            0,
-            y,
-            -CROSS_HALF,
-          ],
-
-          scale: [
-            CROSS_ARM,
+            18,
             0.12,
             thickness,
           ],
@@ -750,62 +663,106 @@ export default function DpadWing({
           position: [
             0,
             y,
-            CROSS_HALF,
+            -9,
           ],
-
           scale: [
-            CROSS_ARM,
+            6,
             0.12,
             thickness,
           ],
         },
 
-        /* EXTREMOS HORIZONTALES */
-
         {
           position: [
-            -CROSS_HALF,
-            y,
             0,
+            y,
+            9,
           ],
-
           scale: [
-            thickness,
+            6,
             0.12,
-            CROSS_ARM,
+            thickness,
           ],
         },
 
         {
           position: [
-            CROSS_HALF,
+            -9,
             y,
             0,
           ],
-
           scale: [
             thickness,
             0.12,
-            CROSS_ARM,
+            6,
+          ],
+        },
+
+        {
+          position: [
+            9,
+            y,
+            0,
+          ],
+          scale: [
+            thickness,
+            0.12,
+            6,
           ],
         },
       ];
     }, []);
 
+  /* =======================================================
+     ESQUINAS REDONDEADAS
+
+     Cuatro columnas cilíndricas integradas en la carcasa.
+
+     Desde lejos suavizan mucho la silueta cuadrada.
+  ======================================================= */
+
+  const cornerPositions =
+    [
+      [
+        -HALF_WIDTH +
+          0.35,
+        WING_HEIGHT / 2,
+        -HALF_DEPTH +
+          0.35,
+      ],
+
+      [
+        HALF_WIDTH -
+          0.35,
+        WING_HEIGHT / 2,
+        -HALF_DEPTH +
+          0.35,
+      ],
+
+      [
+        -HALF_WIDTH +
+          0.35,
+        WING_HEIGHT / 2,
+        HALF_DEPTH -
+          0.35,
+      ],
+
+      [
+        HALF_WIDTH -
+          0.35,
+        WING_HEIGHT / 2,
+        HALF_DEPTH -
+          0.35,
+      ],
+    ];
+
   return (
     <group
-      position={
-        position
-      }
-      rotation={
-        rotation
-      }
+      position={position}
+      rotation={rotation}
     >
       {/* ===================================================
-          SUELO
-
-          Una única placa.
-          Nada más existe en el interior.
+          SUELO INTERIOR
       =================================================== */}
 
       <mesh
@@ -813,7 +770,6 @@ export default function DpadWing({
           0,
           FLOOR_THICKNESS /
             2,
-
           0,
         ]}
         receiveShadow
@@ -833,119 +789,311 @@ export default function DpadWing({
         />
 
         <meshStandardMaterial
-          color={
-            floorColor
-          }
-          roughness={0.95}
+          color={floorColor}
+          roughness={0.94}
         />
       </mesh>
 
       {/* ===================================================
-          PAREDES EXTERIORES
+          PARED IZQUIERDA
       =================================================== */}
 
-      <InstancedBoxes
-        items={
-          wallItems
+      <RoundedWall
+        position={[
+          -HALF_WIDTH +
+            WALL_THICKNESS /
+              2,
+
+          WING_HEIGHT /
+            2,
+
+          0,
+        ]}
+        args={[
+          WALL_THICKNESS,
+          WING_HEIGHT,
+          WING_DEPTH -
+            0.7,
+        ]}
+        color={
+          wallSecondary
         }
+      />
+
+      {/* ===================================================
+          PARED DERECHA
+      =================================================== */}
+
+      <RoundedWall
+        position={[
+          HALF_WIDTH -
+            WALL_THICKNESS /
+              2,
+
+          WING_HEIGHT /
+            2,
+
+          0,
+        ]}
+        args={[
+          WALL_THICKNESS,
+          WING_HEIGHT,
+          WING_DEPTH -
+            0.7,
+        ]}
+        color={
+          wallSecondary
+        }
+      />
+
+      {/* ===================================================
+          FONDO
+      =================================================== */}
+
+      <RoundedWall
+        position={[
+          0,
+          WING_HEIGHT /
+            2,
+
+          -HALF_DEPTH +
+            WALL_THICKNESS /
+              2,
+        ]}
+        args={[
+          WING_WIDTH -
+            0.7,
+
+          WING_HEIGHT,
+
+          WALL_THICKNESS,
+        ]}
         color={
           wallColor
         }
+      />
+
+      {/* ===================================================
+          FACHADA IZQUIERDA
+      =================================================== */}
+
+      <RoundedWall
+        position={[
+          -sideFrontX,
+
+          WING_HEIGHT /
+            2,
+
+          frontZ,
+        ]}
+        args={[
+          SIDE_FRONT_WIDTH,
+          WING_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={
+          wallColor
+        }
+      />
+
+      {/* ===================================================
+          FACHADA DERECHA
+      =================================================== */}
+
+      <RoundedWall
+        position={[
+          sideFrontX,
+
+          WING_HEIGHT /
+            2,
+
+          frontZ,
+        ]}
+        args={[
+          SIDE_FRONT_WIDTH,
+          WING_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={
+          wallColor
+        }
+      />
+
+      {/* ===================================================
+          DINTEL SOBRE LA ENTRADA
+      =================================================== */}
+
+      <RoundedWall
+        position={[
+          0,
+          lintelY,
+          frontZ,
+        ]}
+        args={[
+          DOOR_WIDTH,
+          lintelHeight,
+          WALL_THICKNESS,
+        ]}
+        color={
+          wallColor
+        }
+        radius={0.18}
+      />
+
+      {/* ===================================================
+          ESQUINAS CURVAS
+      =================================================== */}
+
+      {cornerPositions.map(
+        (
+          corner,
+          index
+        ) => (
+          <mesh
+            key={`corner-${index}`}
+            position={corner}
+            castShadow
+            receiveShadow
+          >
+            <cylinderGeometry
+              args={[
+                0.72,
+                0.72,
+                WING_HEIGHT,
+                16,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color={
+                wallSecondary
+              }
+              roughness={0.84}
+            />
+          </mesh>
+        )
+      )}
+
+      {/* ===================================================
+          MARCO SUAVE DE ENTRADA
+
+          Visual solamente.
+          No bloquea el paso.
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          -DOOR_WIDTH /
+            2 -
+            0.18,
+
+          DOOR_HEIGHT /
+            2,
+
+          frontZ +
+            0.18,
+        ]}
+        args={[
+          0.35,
+          DOOR_HEIGHT,
+          0.35,
+        ]}
+        radius={0.14}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#31373c"
+          roughness={0.65}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          DOOR_WIDTH /
+            2 +
+            0.18,
+
+          DOOR_HEIGHT /
+            2,
+
+          frontZ +
+            0.18,
+        ]}
+        args={[
+          0.35,
+          DOOR_HEIGHT,
+          0.35,
+        ]}
+        radius={0.14}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#31373c"
+          roughness={0.65}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          0,
+
+          DOOR_HEIGHT +
+            0.18,
+
+          frontZ +
+            0.18,
+        ]}
+        args={[
+          DOOR_WIDTH +
+            0.7,
+
+          0.35,
+
+          0.35,
+        ]}
+        radius={0.14}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#31373c"
+          roughness={0.65}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          TECHO
+      =================================================== */}
+
+      <InstancedBoxes
+        items={roofItems}
+        color={roofColor}
         roughness={0.88}
         castShadow
         receiveShadow
       />
 
       {/* ===================================================
-          TECHO ALTO
-      =================================================== */}
-
-      <InstancedBoxes
-        items={
-          roofItems
-        }
-        color={
-          roofColor
-        }
-        roughness={0.9}
-        castShadow
-        receiveShadow
-      />
-
-      {/* ===================================================
-          CRISTAL DE LA CRUCETA
-      =================================================== */}
-
-      <instancedMesh
-        args={[
-          null,
-          null,
-          skylightGlassItems.length,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            1,
-            1,
-            1,
-          ]}
-        />
-
-        <meshPhysicalMaterial
-          color={
-            glassColor
-          }
-          transparent
-          opacity={0.38}
-          transmission={0.4}
-          roughness={0.12}
-          metalness={0.04}
-          side={
-            THREE.DoubleSide
-          }
-        />
-      </instancedMesh>
-
-      {/* ===================================================
-          INSTANCIAS REALES DEL CRISTAL
-
-          Necesitamos matrices porque el bloque anterior
-          define solo la geometría/material.
+          CLARABOYA CRUCETA
       =================================================== */}
 
       <SkylightGlass
-        items={
-          skylightGlassItems
-        }
-        color={
-          glassColor
-        }
+        items={skylightItems}
+        color={glassColor}
       />
 
-      {/* ===================================================
-          MARCO DE LA CRUCETA
-      =================================================== */}
-
       <InstancedBoxes
-        items={
-          skylightFrameItems
-        }
-        color={
-          frameColor
-        }
-        roughness={0.62}
-        metalness={0.16}
+        items={skylightFrame}
+        color={frameColor}
+        roughness={0.6}
+        metalness={0.14}
         castShadow
       />
 
       {/* ===================================================
-          FÍSICA COMPLETA DE LA CARCASA
+          FÍSICA
 
-          Un solo rigid body.
-          Sin interiores.
-          Sin escalera.
-          Sin terraza.
+          La entrada central NO tiene collider.
+          Por eso ya podemos atravesar la fachada.
       =================================================== */}
 
       <RigidBody
@@ -981,7 +1129,7 @@ export default function DpadWing({
           ]}
         />
 
-        {/* PARED IZQUIERDA */}
+        {/* LATERAL IZQUIERDO */}
 
         <CuboidCollider
           args={[
@@ -991,7 +1139,10 @@ export default function DpadWing({
             WING_HEIGHT /
               2,
 
-            WING_DEPTH /
+            (
+              WING_DEPTH -
+              0.7
+            ) /
               2,
           ]}
           position={[
@@ -1006,7 +1157,7 @@ export default function DpadWing({
           ]}
         />
 
-        {/* PARED DERECHA */}
+        {/* LATERAL DERECHO */}
 
         <CuboidCollider
           args={[
@@ -1016,7 +1167,10 @@ export default function DpadWing({
             WING_HEIGHT /
               2,
 
-            WING_DEPTH /
+            (
+              WING_DEPTH -
+              0.7
+            ) /
               2,
           ]}
           position={[
@@ -1031,43 +1185,13 @@ export default function DpadWing({
           ]}
         />
 
-        {/* FACHADA */}
-
-        <CuboidCollider
-          args={[
-            (
-              WING_WIDTH -
-              WALL_THICKNESS *
-                2
-            ) /
-              2,
-
-            WING_HEIGHT /
-              2,
-
-            WALL_THICKNESS /
-              2,
-          ]}
-          position={[
-            0,
-
-            WING_HEIGHT /
-              2,
-
-            HALF_DEPTH -
-              WALL_THICKNESS /
-                2,
-          ]}
-        />
-
         {/* FONDO */}
 
         <CuboidCollider
           args={[
             (
               WING_WIDTH -
-              WALL_THICKNESS *
-                2
+              0.7
             ) /
               2,
 
@@ -1089,9 +1213,73 @@ export default function DpadWing({
           ]}
         />
 
-        {/* ===============================================
-            COLISIONES DEL TECHO
-        =============================================== */}
+        {/* FACHADA IZQUIERDA */}
+
+        <CuboidCollider
+          args={[
+            SIDE_FRONT_WIDTH /
+              2,
+
+            WING_HEIGHT /
+              2,
+
+            WALL_THICKNESS /
+              2,
+          ]}
+          position={[
+            -sideFrontX,
+
+            WING_HEIGHT /
+              2,
+
+            frontZ,
+          ]}
+        />
+
+        {/* FACHADA DERECHA */}
+
+        <CuboidCollider
+          args={[
+            SIDE_FRONT_WIDTH /
+              2,
+
+            WING_HEIGHT /
+              2,
+
+            WALL_THICKNESS /
+              2,
+          ]}
+          position={[
+            sideFrontX,
+
+            WING_HEIGHT /
+              2,
+
+            frontZ,
+          ]}
+        />
+
+        {/* DINTEL */}
+
+        <CuboidCollider
+          args={[
+            DOOR_WIDTH /
+              2,
+
+            lintelHeight /
+              2,
+
+            WALL_THICKNESS /
+              2,
+          ]}
+          position={[
+            0,
+            lintelY,
+            frontZ,
+          ]}
+        />
+
+        {/* TECHO */}
 
         {roofItems.map(
           (
@@ -1099,7 +1287,7 @@ export default function DpadWing({
             index
           ) => (
             <CuboidCollider
-              key={`roof-collider-${index}`}
+              key={`roof-${index}`}
               args={[
                 item.scale[0] /
                   2,
@@ -1117,20 +1305,15 @@ export default function DpadWing({
           )
         )}
 
-        {/* ===============================================
-            CRISTAL DE LA CLARABOYA
+        {/* VIDRIO CRUCETA */}
 
-            Aunque visualmente sea vidrio,
-            sigue cerrando el edificio físicamente.
-        =============================================== */}
-
-        {skylightGlassItems.map(
+        {skylightItems.map(
           (
             item,
             index
           ) => (
             <CuboidCollider
-              key={`glass-collider-${index}`}
+              key={`glass-${index}`}
               args={[
                 item.scale[0] /
                   2,
@@ -1149,106 +1332,5 @@ export default function DpadWing({
         )}
       </RigidBody>
     </group>
-  );
-}
-
-/* =========================================================
-   CRISTAL INSTANCIADO
-
-   Separado porque necesita material físico transparente.
-========================================================= */
-
-function SkylightGlass({
-  items,
-  color,
-}) {
-  const meshRef =
-    useRef(null);
-
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
-
-  useLayoutEffect(() => {
-    if (
-      !meshRef.current
-    ) {
-      return;
-    }
-
-    items.forEach(
-      (
-        item,
-        index
-      ) => {
-        dummy.position.set(
-          ...item.position
-        );
-
-        dummy.scale.set(
-          ...item.scale
-        );
-
-        dummy.rotation.set(
-          0,
-          0,
-          0
-        );
-
-        dummy.updateMatrix();
-
-        meshRef.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
-      }
-    );
-
-    meshRef.current
-      .instanceMatrix
-      .needsUpdate =
-      true;
-
-    meshRef.current
-      .computeBoundingSphere?.();
-  }, [
-    items,
-    dummy,
-  ]);
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[
-        null,
-        null,
-        items.length,
-      ]}
-      receiveShadow
-    >
-      <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
-      />
-
-      <meshPhysicalMaterial
-        color={color}
-        transparent
-        opacity={0.36}
-        transmission={0.42}
-        roughness={0.1}
-        metalness={0.02}
-        side={
-          THREE.DoubleSide
-        }
-      />
-    </instancedMesh>
   );
 }
