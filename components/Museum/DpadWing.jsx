@@ -19,16 +19,6 @@ import * as THREE from "three";
 
 /* =========================================================
    MEDIDAS MAESTRAS
-
-   Sistema local del ala:
-
-   ancho:       60 m
-   profundidad: 70 m
-   altura:      15 m
-
-   +Z = fachada hacia la plaza
-   -Z = fondo
-
 ========================================================= */
 
 const WING_WIDTH = 60;
@@ -47,10 +37,6 @@ const ROOF_THICKNESS = 0.35;
 
 /* =========================================================
    ENTRADA
-
-   Apertura suficientemente grande para recorrer
-   cómodamente el edificio.
-
 ========================================================= */
 
 const DOOR_WIDTH = 10;
@@ -63,20 +49,49 @@ const SIDE_FRONT_WIDTH =
   ) / 2;
 
 /* =========================================================
-   CLARABOYA CRUCETA
+   FLECHA DEL TECHO
+
+   IMPORTANTE:
+
+   En coordenadas locales la flecha apunta hacia -Z.
+
+   Como cada ala está rotada mirando hacia la plaza,
+   automáticamente obtenemos:
+
+   NORTE  -> norte
+   SUR    -> sur
+   ESTE   -> este
+   OESTE  -> oeste
+
+   Forma:
+
+           █
+         █ █ █
+           █
+           █
+           █
+           █
+           █
+
+   Es deliberadamente geométrica porque continúa
+   el lenguaje de la cruceta central.
 ========================================================= */
 
-const CROSS_TOTAL = 18;
-const CROSS_ARM = 6;
+const SKY_CELL = 3;
 
-const CROSS_HALF =
-  CROSS_TOTAL / 2;
+const SKY_COLS = 5;
+const SKY_ROWS = 7;
 
-const ARM_HALF =
-  CROSS_ARM / 2;
+const SKY_WIDTH =
+  SKY_COLS *
+  SKY_CELL;
+
+const SKY_DEPTH =
+  SKY_ROWS *
+  SKY_CELL;
 
 /* =========================================================
-   CAJAS INSTANCIADAS
+   INSTANCIAS
 ========================================================= */
 
 function InstancedBoxes({
@@ -124,10 +139,11 @@ function InstancedBoxes({
 
         dummy.updateMatrix();
 
-        ref.current.setMatrixAt(
-          index,
-          dummy.matrix
-        );
+        ref.current
+          .setMatrixAt(
+            index,
+            dummy.matrix
+          );
       }
     );
 
@@ -142,6 +158,12 @@ function InstancedBoxes({
     items,
     dummy,
   ]);
+
+  if (
+    items.length === 0
+  ) {
+    return null;
+  }
 
   return (
     <instancedMesh
@@ -159,7 +181,11 @@ function InstancedBoxes({
       }
     >
       <boxGeometry
-        args={[1, 1, 1]}
+        args={[
+          1,
+          1,
+          1,
+        ]}
       />
 
       <meshStandardMaterial
@@ -176,10 +202,10 @@ function InstancedBoxes({
 }
 
 /* =========================================================
-   CRISTAL DE LA CRUCETA
+   VIDRIO DE LA FLECHA
 ========================================================= */
 
-function SkylightGlass({
+function ArrowGlass({
   items,
   color,
 }) {
@@ -219,10 +245,11 @@ function SkylightGlass({
 
         dummy.updateMatrix();
 
-        ref.current.setMatrixAt(
-          index,
-          dummy.matrix
-        );
+        ref.current
+          .setMatrixAt(
+            index,
+            dummy.matrix
+          );
       }
     );
 
@@ -246,19 +273,28 @@ function SkylightGlass({
         null,
         items.length,
       ]}
-      receiveShadow
+      castShadow={false}
+      receiveShadow={false}
     >
       <boxGeometry
-        args={[1, 1, 1]}
+        args={[
+          1,
+          1,
+          1,
+        ]}
       />
 
       <meshPhysicalMaterial
         color={color}
         transparent
-        opacity={0.34}
-        transmission={0.48}
+        opacity={0.42}
+        transmission={0.58}
         roughness={0.08}
         metalness={0.02}
+
+        emissive="#274b58"
+        emissiveIntensity={0.13}
+
         side={
           THREE.DoubleSide
         }
@@ -268,12 +304,7 @@ function SkylightGlass({
 }
 
 /* =========================================================
-   PANEL REDONDEADO
-
-   Lo usamos en las paredes visibles.
-
-   La física continúa siendo cuboid:
-   visual suave + colisión barata.
+   PARED SUAVIZADA
 ========================================================= */
 
 function RoundedWall({
@@ -305,8 +336,17 @@ function RoundedWall({
 ========================================================= */
 
 export default function DpadWing({
-  position = [0, 0, 0],
-  rotation = [0, 0, 0],
+  position = [
+    0,
+    0,
+    0,
+  ],
+
+  rotation = [
+    0,
+    0,
+    0,
+  ],
 }) {
   /* =======================================================
      PALETA
@@ -328,28 +368,22 @@ export default function DpadWing({
     "#8fc8da";
 
   const frameColor =
-    "#090b0d";
+    "#07090b";
 
   /* =======================================================
-     FACHADA
-
-     Ahora NO es una pared completa.
-
-        ███████████████████████
-        ███████████████████████
-        ███████         ███████
-        ███████ ENTRADA ███████
-        ███████         ███████
-
+     ENTRADA
   ======================================================= */
 
   const frontZ =
     HALF_DEPTH -
-    WALL_THICKNESS / 2;
+    WALL_THICKNESS /
+      2;
 
   const sideFrontX =
-    DOOR_WIDTH / 2 +
-    SIDE_FRONT_WIDTH / 2;
+    DOOR_WIDTH /
+      2 +
+    SIDE_FRONT_WIDTH /
+      2;
 
   const lintelHeight =
     WING_HEIGHT -
@@ -357,368 +391,393 @@ export default function DpadWing({
 
   const lintelY =
     DOOR_HEIGHT +
-    lintelHeight / 2;
+    lintelHeight /
+      2;
 
   /* =======================================================
-     TECHO ALREDEDOR DE LA CRUZ
+     TECHO EXTERIOR
+
+     Dejamos en el centro una zona rectangular donde
+     construiremos la flecha calada.
+
   ======================================================= */
 
-  const roofItems =
+  const outerRoofItems =
     useMemo(() => {
       const y =
         WING_HEIGHT +
         ROOF_THICKNESS /
           2;
 
-      const outerSideWidth =
-        HALF_WIDTH -
-        CROSS_HALF;
+      const sideWidth =
+        (
+          WING_WIDTH -
+          SKY_WIDTH
+        ) / 2;
 
-      const middleCornerSize =
-        CROSS_HALF -
-        ARM_HALF;
+      const frontDepth =
+        (
+          WING_DEPTH -
+          SKY_DEPTH
+        ) / 2;
 
       return [
+        /* POSTERIOR */
+
         {
           position: [
             0,
             y,
+
             -(
-              HALF_DEPTH +
-              CROSS_HALF
-            ) /
+              SKY_DEPTH /
+                2 +
+              frontDepth /
+                2
+            ),
+          ],
+
+          scale: [
+            WING_WIDTH,
+            ROOF_THICKNESS,
+            frontDepth,
+          ],
+        },
+
+        /* DELANTERO */
+
+        {
+          position: [
+            0,
+            y,
+
+            SKY_DEPTH /
+              2 +
+            frontDepth /
               2,
           ],
 
           scale: [
             WING_WIDTH,
             ROOF_THICKNESS,
-
-            HALF_DEPTH -
-              CROSS_HALF,
+            frontDepth,
           ],
         },
 
-        {
-          position: [
-            0,
-            y,
-            (
-              HALF_DEPTH +
-              CROSS_HALF
-            ) /
-              2,
-          ],
-
-          scale: [
-            WING_WIDTH,
-            ROOF_THICKNESS,
-
-            HALF_DEPTH -
-              CROSS_HALF,
-          ],
-        },
+        /* IZQUIERDO */
 
         {
           position: [
             -(
-              HALF_WIDTH +
-              CROSS_HALF
-            ) /
-              2,
+              SKY_WIDTH /
+                2 +
+              sideWidth /
+                2
+            ),
 
             y,
+
             0,
           ],
 
           scale: [
-            outerSideWidth,
+            sideWidth,
             ROOF_THICKNESS,
-            CROSS_TOTAL,
+            SKY_DEPTH,
           ],
         },
 
+        /* DERECHO */
+
         {
           position: [
+            SKY_WIDTH /
+              2 +
+            sideWidth /
+              2,
+
+            y,
+
+            0,
+          ],
+
+          scale: [
+            sideWidth,
+            ROOF_THICKNESS,
+            SKY_DEPTH,
+          ],
+        },
+      ];
+    }, []);
+
+  /* =======================================================
+     CELDAS DE LA FLECHA
+
+     row 0 = extremo exterior (-Z)
+
+     Flecha:
+
+             ■
+           ■ ■ ■
+             ■
+             ■
+             ■
+             ■
+             ■
+
+  ======================================================= */
+
+  const arrowCells =
+    useMemo(
+      () =>
+        new Set([
+          "2-0",
+
+          "1-1",
+          "2-1",
+          "3-1",
+
+          "2-2",
+          "2-3",
+          "2-4",
+          "2-5",
+          "2-6",
+        ]),
+      []
+    );
+
+  /* =======================================================
+     GENERAMOS LAS PIEZAS DEL RECTÁNGULO CENTRAL
+
+     - las celdas de flecha -> cristal
+     - el resto -> techo
+
+     Por eso la flecha está realmente recortada en
+     la composición visual del techo.
+  ======================================================= */
+
+  const {
+    roofFillItems,
+    arrowGlassItems,
+  } =
+    useMemo(() => {
+      const roof = [];
+      const glass = [];
+
+      const roofY =
+        WING_HEIGHT +
+        ROOF_THICKNESS /
+          2;
+
+      const glassY =
+        WING_HEIGHT +
+        ROOF_THICKNESS /
+          2;
+
+      for (
+        let row = 0;
+        row <
+        SKY_ROWS;
+        row++
+      ) {
+        for (
+          let col = 0;
+          col <
+          SKY_COLS;
+          col++
+        ) {
+          const x =
             (
-              HALF_WIDTH +
-              CROSS_HALF
-            ) /
-              2,
+              col -
+              (
+                SKY_COLS -
+                1
+              ) /
+                2
+            ) *
+            SKY_CELL;
 
-            y,
-            0,
-          ],
+          const z =
+            (
+              row -
+              (
+                SKY_ROWS -
+                1
+              ) /
+                2
+            ) *
+            SKY_CELL;
 
-          scale: [
-            outerSideWidth,
-            ROOF_THICKNESS,
-            CROSS_TOTAL,
-          ],
-        },
+          const key =
+            `${col}-${row}`;
 
-        {
-          position: [
-            -6,
-            y,
-            6,
-          ],
+          if (
+            arrowCells.has(
+              key
+            )
+          ) {
+            glass.push({
+              position: [
+                x,
+                glassY,
+                z,
+              ],
 
-          scale: [
-            6,
-            ROOF_THICKNESS,
-            6,
-          ],
-        },
+              scale: [
+                SKY_CELL -
+                  0.12,
 
-        {
-          position: [
-            6,
-            y,
-            6,
-          ],
+                0.12,
 
-          scale: [
-            6,
-            ROOF_THICKNESS,
-            6,
-          ],
-        },
+                SKY_CELL -
+                  0.12,
+              ],
+            });
+          } else {
+            roof.push({
+              position: [
+                x,
+                roofY,
+                z,
+              ],
 
-        {
-          position: [
-            -6,
-            y,
-            -6,
-          ],
+              scale: [
+                SKY_CELL,
+                ROOF_THICKNESS,
+                SKY_CELL,
+              ],
+            });
+          }
+        }
+      }
 
-          scale: [
-            6,
-            ROOF_THICKNESS,
-            6,
-          ],
-        },
+      return {
+        roofFillItems:
+          roof,
 
-        {
-          position: [
-            6,
-            y,
-            -6,
-          ],
-
-          scale: [
-            6,
-            ROOF_THICKNESS,
-            6,
-          ],
-        },
-      ];
-    }, []);
-
-  /* =======================================================
-     CRISTAL DE LA CRUZ
-  ======================================================= */
-
-  const skylightItems =
-    useMemo(() => {
-      const y =
-        WING_HEIGHT +
-        0.03;
-
-      return [
-        {
-          position: [
-            0,
-            y,
-            0,
-          ],
-          scale: [
-            6,
-            0.08,
-            6,
-          ],
-        },
-
-        {
-          position: [
-            0,
-            y,
-            -6,
-          ],
-          scale: [
-            6,
-            0.08,
-            6,
-          ],
-        },
-
-        {
-          position: [
-            0,
-            y,
-            6,
-          ],
-          scale: [
-            6,
-            0.08,
-            6,
-          ],
-        },
-
-        {
-          position: [
-            -6,
-            y,
-            0,
-          ],
-          scale: [
-            6,
-            0.08,
-            6,
-          ],
-        },
-
-        {
-          position: [
-            6,
-            y,
-            0,
-          ],
-          scale: [
-            6,
-            0.08,
-            6,
-          ],
-        },
-      ];
-    }, []);
+        arrowGlassItems:
+          glass,
+      };
+    }, [
+      arrowCells,
+    ]);
 
   /* =======================================================
-     MARCO DE LA CRUZ
+     MARCO DE LA FLECHA
+
+     Le damos un pequeño borde oscuro a cada cristal
+     para que desde arriba la flecha se lea mucho mejor.
   ======================================================= */
 
-  const skylightFrame =
+  const arrowFrameItems =
     useMemo(() => {
+      const result = [];
+
       const y =
         WING_HEIGHT +
-        0.11;
+        ROOF_THICKNESS +
+        0.045;
 
       const thickness =
-        0.18;
+        0.1;
 
-      return [
-        {
-          position: [
-            -3,
-            y,
-            0,
-          ],
-          scale: [
-            thickness,
-            0.12,
-            18,
-          ],
-        },
+      arrowGlassItems.forEach(
+        (
+          item,
+          index
+        ) => {
+          const [
+            x,
+            ,
+            z,
+          ] =
+            item.position;
 
-        {
-          position: [
-            3,
-            y,
-            0,
-          ],
-          scale: [
-            thickness,
-            0.12,
-            18,
-          ],
-        },
+          const edge =
+            SKY_CELL -
+            0.08;
 
-        {
-          position: [
-            0,
-            y,
-            -3,
-          ],
-          scale: [
-            18,
-            0.12,
-            thickness,
-          ],
-        },
+          result.push(
+            {
+              position: [
+                x -
+                  edge /
+                    2,
 
-        {
-          position: [
-            0,
-            y,
-            3,
-          ],
-          scale: [
-            18,
-            0.12,
-            thickness,
-          ],
-        },
+                y,
 
-        {
-          position: [
-            0,
-            y,
-            -9,
-          ],
-          scale: [
-            6,
-            0.12,
-            thickness,
-          ],
-        },
+                z,
+              ],
 
-        {
-          position: [
-            0,
-            y,
-            9,
-          ],
-          scale: [
-            6,
-            0.12,
-            thickness,
-          ],
-        },
+              scale: [
+                thickness,
+                0.07,
+                edge,
+              ],
+            },
 
-        {
-          position: [
-            -9,
-            y,
-            0,
-          ],
-          scale: [
-            thickness,
-            0.12,
-            6,
-          ],
-        },
+            {
+              position: [
+                x +
+                  edge /
+                    2,
 
-        {
-          position: [
-            9,
-            y,
-            0,
-          ],
-          scale: [
-            thickness,
-            0.12,
-            6,
-          ],
-        },
-      ];
-    }, []);
+                y,
+
+                z,
+              ],
+
+              scale: [
+                thickness,
+                0.07,
+                edge,
+              ],
+            },
+
+            {
+              position: [
+                x,
+                y,
+
+                z -
+                  edge /
+                    2,
+              ],
+
+              scale: [
+                edge,
+                0.07,
+                thickness,
+              ],
+            },
+
+            {
+              position: [
+                x,
+                y,
+
+                z +
+                  edge /
+                    2,
+              ],
+
+              scale: [
+                edge,
+                0.07,
+                thickness,
+              ],
+            }
+          );
+        }
+      );
+
+      return result;
+    }, [
+      arrowGlassItems,
+    ]);
 
   /* =======================================================
-     ESQUINAS REDONDEADAS
-
-     Cuatro columnas cilíndricas integradas en la carcasa.
-
-     Desde lejos suavizan mucho la silueta cuadrada.
+     ESQUINAS
   ======================================================= */
 
   const cornerPositions =
@@ -726,7 +785,10 @@ export default function DpadWing({
       [
         -HALF_WIDTH +
           0.35,
-        WING_HEIGHT / 2,
+
+        WING_HEIGHT /
+          2,
+
         -HALF_DEPTH +
           0.35,
       ],
@@ -734,7 +796,10 @@ export default function DpadWing({
       [
         HALF_WIDTH -
           0.35,
-        WING_HEIGHT / 2,
+
+        WING_HEIGHT /
+          2,
+
         -HALF_DEPTH +
           0.35,
       ],
@@ -742,7 +807,10 @@ export default function DpadWing({
       [
         -HALF_WIDTH +
           0.35,
-        WING_HEIGHT / 2,
+
+        WING_HEIGHT /
+          2,
+
         HALF_DEPTH -
           0.35,
       ],
@@ -750,7 +818,10 @@ export default function DpadWing({
       [
         HALF_WIDTH -
           0.35,
-        WING_HEIGHT / 2,
+
+        WING_HEIGHT /
+          2,
+
         HALF_DEPTH -
           0.35,
       ],
@@ -762,14 +833,16 @@ export default function DpadWing({
       rotation={rotation}
     >
       {/* ===================================================
-          SUELO INTERIOR
+          SUELO
       =================================================== */}
 
       <mesh
         position={[
           0,
+
           FLOOR_THICKNESS /
             2,
+
           0,
         ]}
         receiveShadow
@@ -853,6 +926,7 @@ export default function DpadWing({
       <RoundedWall
         position={[
           0,
+
           WING_HEIGHT /
             2,
 
@@ -920,7 +994,7 @@ export default function DpadWing({
       />
 
       {/* ===================================================
-          DINTEL SOBRE LA ENTRADA
+          DINTEL
       =================================================== */}
 
       <RoundedWall
@@ -937,11 +1011,10 @@ export default function DpadWing({
         color={
           wallColor
         }
-        radius={0.18}
       />
 
       {/* ===================================================
-          ESQUINAS CURVAS
+          ESQUINAS REDONDEADAS
       =================================================== */}
 
       {cornerPositions.map(
@@ -975,10 +1048,7 @@ export default function DpadWing({
       )}
 
       {/* ===================================================
-          MARCO SUAVE DE ENTRADA
-
-          Visual solamente.
-          No bloquea el paso.
+          MARCO DE LA ENTRADA
       =================================================== */}
 
       <RoundedBox
@@ -1061,39 +1131,72 @@ export default function DpadWing({
       </RoundedBox>
 
       {/* ===================================================
-          TECHO
+          TECHO EXTERIOR
       =================================================== */}
 
       <InstancedBoxes
-        items={roofItems}
-        color={roofColor}
+        items={
+          outerRoofItems
+        }
+        color={
+          roofColor
+        }
         roughness={0.88}
         castShadow
         receiveShadow
       />
 
       {/* ===================================================
-          CLARABOYA CRUCETA
+          TECHO DENTRO DE LA ZONA DE LA FLECHA
+
+          Estas son únicamente las celdas que NO
+          pertenecen a la flecha.
       =================================================== */}
 
-      <SkylightGlass
-        items={skylightItems}
-        color={glassColor}
+      <InstancedBoxes
+        items={
+          roofFillItems
+        }
+        color={
+          roofColor
+        }
+        roughness={0.88}
+        castShadow
+        receiveShadow
       />
 
+      {/* ===================================================
+          FLECHA / CLARABOYA
+      =================================================== */}
+
+      <ArrowGlass
+        items={
+          arrowGlassItems
+        }
+        color={
+          glassColor
+        }
+      />
+
+      {/* ===================================================
+          MARCO OSCURO DE LA FLECHA
+      =================================================== */}
+
       <InstancedBoxes
-        items={skylightFrame}
-        color={frameColor}
-        roughness={0.6}
-        metalness={0.14}
-        castShadow
+        items={
+          arrowFrameItems
+        }
+        color={
+          frameColor
+        }
+        roughness={0.55}
+        metalness={0.18}
+        castShadow={false}
+        receiveShadow={false}
       />
 
       {/* ===================================================
           FÍSICA
-
-          La entrada central NO tiene collider.
-          Por eso ya podemos atravesar la fachada.
       =================================================== */}
 
       <RigidBody
@@ -1123,8 +1226,10 @@ export default function DpadWing({
           ]}
           position={[
             0,
+
             FLOOR_THICKNESS /
               2,
+
             0,
           ]}
         />
@@ -1279,57 +1384,38 @@ export default function DpadWing({
           ]}
         />
 
-        {/* TECHO */}
+        {/* =================================================
+            TECHO
 
-        {roofItems.map(
-          (
-            item,
-            index
-          ) => (
-            <CuboidCollider
-              key={`roof-${index}`}
-              args={[
-                item.scale[0] /
-                  2,
+            Para física usamos una sola placa.
 
-                item.scale[1] /
-                  2,
+            Es mucho más barato que meter decenas de
+            colliders pequeños.
 
-                item.scale[2] /
-                  2,
-              ]}
-              position={
-                item.position
-              }
-            />
-          )
-        )}
+            La flecha sigue siendo visualmente cristal.
+        ================================================= */}
 
-        {/* VIDRIO CRUCETA */}
+        <CuboidCollider
+          args={[
+            WING_WIDTH /
+              2,
 
-        {skylightItems.map(
-          (
-            item,
-            index
-          ) => (
-            <CuboidCollider
-              key={`glass-${index}`}
-              args={[
-                item.scale[0] /
-                  2,
+            ROOF_THICKNESS /
+              2,
 
-                item.scale[1] /
-                  2,
+            WING_DEPTH /
+              2,
+          ]}
+          position={[
+            0,
 
-                item.scale[2] /
-                  2,
-              ]}
-              position={
-                item.position
-              }
-            />
-          )
-        )}
+            WING_HEIGHT +
+              ROOF_THICKNESS /
+                2,
+
+            0,
+          ]}
+        />
       </RigidBody>
     </group>
   );
