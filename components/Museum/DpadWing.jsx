@@ -61,19 +61,6 @@ function createArrowPath() {
   const path =
     new THREE.Path();
 
-  /*
-              punta
-               ▲
-              / \
-             /   \
-      -------     -------
-          |         |
-          |         |
-          |         |
-          |         |
-          -----------
-  */
-
   path.moveTo(
     0,
     12
@@ -121,11 +108,6 @@ function createArrowPath() {
 
 /* =========================================================
    TECHO CON HUECO REAL DE FLECHA
-
-   La flecha es un agujero en la propia geometría
-   del techo.
-
-   Ya no usamos cuadrados ni celdas.
 ========================================================= */
 
 function ArrowRoof({
@@ -134,10 +116,6 @@ function ArrowRoof({
 }) {
   const roofGeometry =
     useMemo(() => {
-      /* ===============================================
-         CONTORNO TOTAL DEL TECHO
-      =============================================== */
-
       const shape =
         new THREE.Shape();
 
@@ -162,10 +140,6 @@ function ArrowRoof({
       );
 
       shape.closePath();
-
-      /* ===============================================
-         AGUJERO CON FORMA DE FLECHA
-      =============================================== */
 
       const arrow =
         createArrowPath();
@@ -245,9 +219,6 @@ function ArrowRoof({
     <group>
       {/* ===================================================
           TECHO
-
-          ExtrudeGeometry nace sobre XY.
-          Lo rotamos para colocarlo horizontal.
       =================================================== */}
 
       <mesh
@@ -278,9 +249,6 @@ function ArrowRoof({
 
       {/* ===================================================
           VIDRIO CONTINUO EN FORMA DE FLECHA
-
-          Una sola pieza.
-          Cero divisiones.
       =================================================== */}
 
       <mesh
@@ -353,6 +321,15 @@ function RoundedWall({
 
 /* =========================================================
    ALA
+
+   children permite meter contenido distinto dentro
+   de cada ala sin duplicar la carcasa.
+
+   Ejemplo:
+
+   <DpadWing>
+     <PopularTodayHall />
+   </DpadWing>
 ========================================================= */
 
 export default function DpadWing({
@@ -367,6 +344,8 @@ export default function DpadWing({
     0,
     0,
   ],
+
+  children = null,
 }) {
   /* =======================================================
      COLORES
@@ -469,6 +448,16 @@ export default function DpadWing({
       position={position}
       rotation={rotation}
     >
+      {/* ===================================================
+          CONTENIDO DEL ALA
+
+          Acá aparecerá PopularTodayHall en el norte.
+
+          Las demás alas pueden quedar vacías.
+      =================================================== */}
+
+      {children}
+
       {/* ===================================================
           SUELO LIMPIO
       =================================================== */}
@@ -780,7 +769,7 @@ export default function DpadWing({
       )}
 
       {/* ===================================================
-          TECHO + FLECHA REAL
+          TECHO + FLECHA
       =================================================== */}
 
       <ArrowRoof
@@ -794,8 +783,6 @@ export default function DpadWing({
 
       {/* ===================================================
           COLISIONES
-
-          La puerta queda abierta.
       =================================================== */}
 
       <RigidBody
@@ -986,8 +973,11 @@ export default function DpadWing({
         {/* =================================================
             TECHO FÍSICO
 
-            Una placa invisible completa.
-            La abertura es visual y no afecta rendimiento.
+            Una placa física completa.
+
+            La flecha es visual/transparente,
+            pero no dejamos que el jugador salga
+            atravesando el techo.
         ================================================= */}
 
         <CuboidCollider
