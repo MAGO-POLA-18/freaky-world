@@ -9,7 +9,6 @@ import {
 } from "react";
 
 import {
-  Html,
   RoundedBox,
 } from "@react-three/drei";
 
@@ -29,32 +28,35 @@ import {
 } from "../World/PlayerController";
 
 /* =========================================================
-   DIMENSIONES
-
-   AHORA USAMOS CASI TODO EL EDIFICIO REAL.
-
-   Ala:
-   60 x 70 x 15 m
-
-   No hacemos una segunda caja interior.
+   SALA
 ========================================================= */
 
 const ROOM_HALF_WIDTH = 29.25;
-
-const ROOM_FRONT_Z = 34;
 const ROOM_BACK_Z = -34.25;
+
+/* =========================================================
+   VIDEO DIRECTO DE PRUEBA
+
+   IMPORTANTE:
+   este NO es YouTube.
+
+   Es un MP4 real que Three.js puede convertir
+   directamente en VideoTexture.
+========================================================= */
+
+const TEST_VIDEO_URL =
+  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
 /* =========================================================
    VIDEO DESTACADO
 
-   El mismo vídeo funciona:
-
-   1) directamente sobre la pantalla del mundo
-   2) en el overlay 2D existente
+   Seguimos enviándolo también a WorldScene
+   para conservar la opción 2D.
 ========================================================= */
 
 const FEATURED_VIDEO = {
-  id: "featured-video-screen",
+  id:
+    "featured-video-screen",
 
   overlayType:
     "video",
@@ -69,10 +71,10 @@ const FEATURED_VIDEO = {
     "#8b5cff",
 
   description:
-    "Pantalla multimedia de Freaky World. El vídeo puede reproducirse dentro de la sala mientras seguís recorriendo el mundo o abrirse en la interfaz 2D.",
+    "Pantalla multimedia principal de Freaky World.",
 
   youtubeEmbed:
-    "https://www.youtube.com/embed/M7lc1UVf-VE?autoplay=1&rel=0&playsinline=1",
+    "https://www.youtube.com/embed/M7lc1UVf-VE?rel=0&playsinline=1",
 
   youtubePage:
     "https://www.youtube.com/watch?v=M7lc1UVf-VE",
@@ -465,7 +467,7 @@ const GAMES = [
 ];
 
 /* =========================================================
-   PORTADA DE JUEGO
+   CREAR PORTADA PROCEDURAL
 ========================================================= */
 
 function createPosterTexture(
@@ -520,10 +522,12 @@ function createPosterTexture(
     768
   );
 
-  /* formas */
+  /* =======================================================
+     DECORACIÓN
+  ======================================================= */
 
   ctx.globalAlpha =
-    0.16;
+    0.17;
 
   ctx.fillStyle =
     "#ffffff";
@@ -532,7 +536,7 @@ function createPosterTexture(
 
   ctx.arc(
     390,
-    160,
+    150,
     150,
     0,
     Math.PI * 2
@@ -546,8 +550,8 @@ function createPosterTexture(
   ctx.beginPath();
 
   ctx.arc(
-    110,
-    420,
+    100,
+    440,
     210,
     0,
     Math.PI * 2
@@ -556,7 +560,7 @@ function createPosterTexture(
   ctx.fill();
 
   ctx.globalAlpha =
-    0.15;
+    0.17;
 
   ctx.beginPath();
 
@@ -587,18 +591,20 @@ function createPosterTexture(
   ctx.globalAlpha =
     1;
 
-  /* número */
+  /* =======================================================
+     RANK
+  ======================================================= */
 
   ctx.fillStyle =
-    "rgba(0,0,0,.48)";
+    "rgba(0,0,0,.5)";
 
   ctx.beginPath();
 
   ctx.roundRect(
     28,
     28,
-    86,
-    52,
+    90,
+    54,
     16
   );
 
@@ -608,18 +614,23 @@ function createPosterTexture(
     "#ffffff";
 
   ctx.font =
-    "800 27px Arial";
+    "800 28px Arial";
 
   ctx.fillText(
     `#${game.rank}`,
-    46,
-    63
+    47,
+    65
   );
 
-  /* título */
+  /* =======================================================
+     TÍTULO
+  ======================================================= */
 
   ctx.font =
     "900 45px Arial";
+
+  ctx.fillStyle =
+    "#ffffff";
 
   const words =
     game.title.split(
@@ -697,10 +708,10 @@ function createPosterTexture(
 }
 
 /* =========================================================
-   PREVIEW DEL MURO DE VIDEO
+   PREVIEW DEL VIDEO
 ========================================================= */
 
-function createVideoWallTexture() {
+function createVideoPreviewTexture() {
   const canvas =
     document.createElement(
       "canvas"
@@ -727,17 +738,17 @@ function createVideoWallTexture() {
 
   gradient.addColorStop(
     0,
-    "#071923"
+    "#061923"
   );
 
   gradient.addColorStop(
-    0.48,
-    "#21113c"
+    0.5,
+    "#24133e"
   );
 
   gradient.addColorStop(
     1,
-    "#120711"
+    "#10070e"
   );
 
   ctx.fillStyle =
@@ -750,10 +761,12 @@ function createVideoWallTexture() {
     720
   );
 
-  /* decoración */
+  /* =======================================================
+     LUCES
+  ======================================================= */
 
   ctx.globalAlpha =
-    0.14;
+    0.16;
 
   ctx.fillStyle =
     "#58f1ff";
@@ -761,9 +774,9 @@ function createVideoWallTexture() {
   ctx.beginPath();
 
   ctx.arc(
-    1060,
-    150,
-    240,
+    1050,
+    140,
+    250,
     0,
     Math.PI * 2
   );
@@ -776,8 +789,8 @@ function createVideoWallTexture() {
   ctx.beginPath();
 
   ctx.arc(
-    170,
-    610,
+    160,
+    620,
     280,
     0,
     Math.PI * 2
@@ -788,8 +801,12 @@ function createVideoWallTexture() {
   ctx.globalAlpha =
     1;
 
+  /* =======================================================
+     TEXTO
+  ======================================================= */
+
   ctx.fillStyle =
-    "#5cf2ff";
+    "#58f1ff";
 
   ctx.font =
     "800 38px Arial";
@@ -797,7 +814,7 @@ function createVideoWallTexture() {
   ctx.fillText(
     "FREAKY WORLD",
     75,
-    100
+    105
   );
 
   ctx.fillStyle =
@@ -807,7 +824,7 @@ function createVideoWallTexture() {
     "900 82px Arial";
 
   ctx.fillText(
-    "VIDEO DESTACADO",
+    "VIDEO EN EL MUNDO",
     75,
     205
   );
@@ -816,25 +833,27 @@ function createVideoWallTexture() {
     "500 31px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,.72)";
+    "rgba(255,255,255,.75)";
 
   ctx.fillText(
-    "Reproducilo acá o abrilo en pantalla completa",
+    "Tocá directamente la pantalla para reproducir",
     78,
     265
   );
 
-  /* play */
+  /* =======================================================
+     BOTÓN PLAY
+  ======================================================= */
 
   ctx.beginPath();
 
   ctx.fillStyle =
-    "rgba(255,255,255,.94)";
+    "#ffffff";
 
   ctx.arc(
     640,
-    435,
-    72,
+    440,
+    78,
     0,
     Math.PI * 2
   );
@@ -847,18 +866,18 @@ function createVideoWallTexture() {
     "#11151a";
 
   ctx.moveTo(
-    668,
-    435
+    672,
+    440
   );
 
   ctx.lineTo(
-    620,
-    402
+    618,
+    403
   );
 
   ctx.lineTo(
-    620,
-    468
+    618,
+    477
   );
 
   ctx.closePath();
@@ -880,7 +899,7 @@ function createVideoWallTexture() {
 }
 
 /* =========================================================
-   NEON TEXTURE
+   NEON TEXT
 ========================================================= */
 
 function createNeonTextTexture({
@@ -906,8 +925,8 @@ function createNeonTextTexture({
   ctx.clearRect(
     0,
     0,
-    canvas.width,
-    canvas.height
+    1024,
+    256
   );
 
   ctx.textAlign =
@@ -923,7 +942,7 @@ function createNeonTextTexture({
     color;
 
   ctx.shadowBlur =
-    40;
+    38;
 
   ctx.fillStyle =
     color;
@@ -935,7 +954,7 @@ function createNeonTextTexture({
   );
 
   ctx.shadowBlur =
-    12;
+    10;
 
   ctx.fillStyle =
     "#ffffff";
@@ -958,10 +977,7 @@ function createNeonTextTexture({
 }
 
 /* =========================================================
-   ARCADE ART
-
-   Decoración simple:
-   círculo tipo arcade + invasor pixel.
+   ARCADE ICON
 ========================================================= */
 
 function createArcadeArtTexture(
@@ -1014,8 +1030,10 @@ function createArcadeArtTexture(
       256,
       256,
       155,
-      Math.PI * 0.22,
-      Math.PI * 1.78
+      Math.PI *
+        0.22,
+      Math.PI *
+        1.78
     );
 
     ctx.closePath();
@@ -1023,7 +1041,7 @@ function createArcadeArtTexture(
     ctx.fill();
 
     ctx.fillStyle =
-      "#101015";
+      "#11151a";
 
     ctx.beginPath();
 
@@ -1032,7 +1050,8 @@ function createArcadeArtTexture(
       170,
       14,
       0,
-      Math.PI * 2
+      Math.PI *
+        2
     );
 
     ctx.fill();
@@ -1063,7 +1082,8 @@ function createArcadeArtTexture(
     const startX =
       (
         512 -
-        pattern[0].length *
+        pattern[0]
+          .length *
           pixel
       ) /
       2;
@@ -1159,7 +1179,11 @@ function InstancedBoxes({
         dummy.rotation.set(
           ...(
             item.rotation ??
-            [0, 0, 0]
+            [
+              0,
+              0,
+              0,
+            ]
           )
         );
 
@@ -1256,7 +1280,7 @@ function NeonLine({
         color={color}
         emissive={color}
         emissiveIntensity={
-          2.5
+          2.4
         }
         roughness={0.15}
       />
@@ -1385,7 +1409,7 @@ function ArcadeIcon({
 }
 
 /* =========================================================
-   ESTACIÓN
+   ESTACIÓN DE JUEGO
 ========================================================= */
 
 function GameStation({
@@ -1488,11 +1512,13 @@ function GameStation({
               ? {
                   near:
                     true,
+
                   game,
                 }
               : {
                   near:
                     false,
+
                   game,
                 },
         }
@@ -1512,6 +1538,7 @@ function GameStation({
               detail: {
                 near:
                   false,
+
                 game,
               },
             }
@@ -1659,23 +1686,29 @@ function GameStation({
 }
 
 /* =========================================================
-   GRAN PANTALLA DE VIDEO
+   PANTALLA MP4 REAL
 
-   ESTA ES LA PARTE NUEVA.
+   ESTA ES LA PRUEBA IMPORTANTE.
 
-   - preview en 3D
-   - botón REPRODUCIR AQUÍ
-   - iframe pegado al muro
-   - sigue reproduciendo aunque te alejes
-   - opción 2D sigue funcionando mediante WorldScene
+   - El video es una textura real de Three.js.
+   - No hay iframe dentro del mundo.
+   - No hay Html de Drei.
+   - Tocamos directamente la malla.
+   - Sigue reproduciendo aunque nos alejemos.
 ========================================================= */
 
 function HeroVideoWall() {
-  const ref =
+  const groupRef =
     useRef(null);
 
-  const nearRef =
-    useRef(false);
+  const screenRef =
+    useRef(null);
+
+  const videoRef =
+    useRef(null);
+
+  const videoTextureRef =
+    useRef(null);
 
   const worldPosition =
     useMemo(
@@ -1684,6 +1717,9 @@ function HeroVideoWall() {
       []
     );
 
+  const nearRef =
+    useRef(false);
+
   const [
     near,
     setNear,
@@ -1691,34 +1727,151 @@ function HeroVideoWall() {
     useState(false);
 
   const [
-    playing3D,
-    setPlaying3D,
+    playing,
+    setPlaying,
   ] =
     useState(false);
 
-  const screenTexture =
+  const [
+    videoReady,
+    setVideoReady,
+  ] =
+    useState(false);
+
+  const [
+    videoError,
+    setVideoError,
+  ] =
+    useState(false);
+
+  const previewTexture =
     useMemo(
       () =>
-        createVideoWallTexture(),
+        createVideoPreviewTexture(),
       []
     );
 
+  /* =======================================================
+     CREAR ELEMENTO VIDEO + VIDEOTEXTURE
+  ======================================================= */
+
   useEffect(() => {
-    return () =>
-      screenTexture.dispose();
-  }, [
-    screenTexture,
-  ]);
+    const video =
+      document.createElement(
+        "video"
+      );
+
+    video.src =
+      TEST_VIDEO_URL;
+
+    video.crossOrigin =
+      "anonymous";
+
+    video.playsInline =
+      true;
+
+    video.loop =
+      true;
+
+    video.preload =
+      "auto";
+
+    /*
+      Arranca con audio permitido solo después
+      del gesto del usuario.
+
+      Para evitar problemas iniciales:
+      muted = true.
+
+      Después podemos agregar control de sonido.
+    */
+
+    video.muted =
+      true;
+
+    video.setAttribute(
+      "playsinline",
+      ""
+    );
+
+    video.setAttribute(
+      "webkit-playsinline",
+      ""
+    );
+
+    video.addEventListener(
+      "canplay",
+      () => {
+        setVideoReady(
+          true
+        );
+      }
+    );
+
+    video.addEventListener(
+      "error",
+      () => {
+        setVideoError(
+          true
+        );
+      }
+    );
+
+    const texture =
+      new THREE.VideoTexture(
+        video
+      );
+
+    texture.colorSpace =
+      THREE.SRGBColorSpace;
+
+    texture.minFilter =
+      THREE.LinearFilter;
+
+    texture.magFilter =
+      THREE.LinearFilter;
+
+    texture.generateMipmaps =
+      false;
+
+    videoRef.current =
+      video;
+
+    videoTextureRef.current =
+      texture;
+
+    return () => {
+      video.pause();
+
+      video.removeAttribute(
+        "src"
+      );
+
+      video.load();
+
+      texture.dispose();
+
+      videoRef.current =
+        null;
+
+      videoTextureRef.current =
+        null;
+    };
+  }, []);
+
+  /* =======================================================
+     PROXIMIDAD
+  ======================================================= */
 
   useFrame(() => {
     if (
-      !ref.current ||
+      !groupRef.current ||
       !playerRuntime.body
     ) {
       return;
     }
 
-    ref.current.getWorldPosition(
+    groupRef.current.getWorldPosition(
       worldPosition
     );
 
@@ -1741,370 +1894,283 @@ function HeroVideoWall() {
 
     const isNear =
       distance <
-      8;
+      9;
 
     if (
-      isNear ===
+      isNear !==
       nearRef.current
     ) {
-      return;
+      nearRef.current =
+        isNear;
+
+      setNear(
+        isNear
+      );
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:game-near",
+          {
+            detail:
+              isNear
+                ? {
+                    near:
+                      true,
+
+                    game:
+                      FEATURED_VIDEO,
+                  }
+                : {
+                    near:
+                      false,
+
+                    game:
+                      FEATURED_VIDEO,
+                  },
+          }
+        )
+      );
     }
 
-    nearRef.current =
-      isNear;
+    /*
+      Forzamos actualización del material
+      cuando la textura aparece.
+    */
 
-    setNear(
-      isNear
-    );
+    if (
+      screenRef.current &&
+      videoTextureRef.current &&
+      playing
+    ) {
+      const material =
+        screenRef.current
+          .material;
 
-    window.dispatchEvent(
-      new CustomEvent(
-        "freaky:game-near",
-        {
-          detail:
-            isNear
-              ? {
-                  near:
-                    true,
-                  game:
-                    FEATURED_VIDEO,
-                }
-              : {
-                  near:
-                    false,
-                  game:
-                    FEATURED_VIDEO,
-                },
-        }
-      )
-    );
+      if (
+        material.map !==
+        videoTextureRef.current
+      ) {
+        material.map =
+          videoTextureRef.current;
+
+        material.needsUpdate =
+          true;
+      }
+    }
   });
+
+  /* =======================================================
+     PLAY / PAUSE
+  ======================================================= */
+
+  const toggleVideo =
+    async (
+      event
+    ) => {
+      event?.stopPropagation?.();
+
+      const video =
+        videoRef.current;
+
+      if (!video) {
+        return;
+      }
+
+      try {
+        if (
+          video.paused
+        ) {
+          /*
+            Esta llamada ocurre directamente
+            desde el toque/click del usuario.
+          */
+
+          await video.play();
+
+          setPlaying(
+            true
+          );
+
+          if (
+            screenRef.current &&
+            videoTextureRef.current
+          ) {
+            screenRef.current
+              .material.map =
+              videoTextureRef.current;
+
+            screenRef.current
+              .material.needsUpdate =
+              true;
+          }
+        } else {
+          video.pause();
+
+          setPlaying(
+            false
+          );
+
+          if (
+            screenRef.current
+          ) {
+            screenRef.current
+              .material.map =
+              previewTexture;
+
+            screenRef.current
+              .material.needsUpdate =
+              true;
+          }
+        }
+      } catch (
+        error
+      ) {
+        console.error(
+          "No se pudo reproducir el vídeo:",
+          error
+        );
+
+        setVideoError(
+          true
+        );
+      }
+    };
+
+  /* =======================================================
+     CURSOR
+  ======================================================= */
+
+  const onPointerEnter =
+    () => {
+      document.body.style.cursor =
+        "pointer";
+    };
+
+  const onPointerLeave =
+    () => {
+      document.body.style.cursor =
+        "";
+    };
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor =
+        "";
+
+      previewTexture.dispose();
+    };
+  }, [
+    previewTexture,
+  ]);
 
   return (
     <group
-      ref={ref}
+      ref={groupRef}
       position={[
         0,
         0,
-        -33.75,
+        -33.72,
       ]}
     >
       {/* ===================================================
-          GRAN ESTRUCTURA
-
-          Formato casi 16:9.
+          ESTRUCTURA
       =================================================== */}
 
       <RoundedBox
         position={[
           0,
-          7.25,
+          7.2,
           0,
         ]}
         args={[
-          24.5,
-          13,
-          0.48,
+          25.5,
+          13.2,
+          0.5,
         ]}
         radius={0.42}
         smoothness={4}
         castShadow
       >
         <meshStandardMaterial
-          color="#090d12"
-          emissive="#8b5cff"
+          color="#070b10"
+          emissive={
+            near
+              ? "#58f1ff"
+              : "#8b5cff"
+          }
           emissiveIntensity={
             near
               ? 0.2
               : 0.07
           }
-          roughness={0.3}
+          roughness={0.28}
         />
       </RoundedBox>
 
       {/* ===================================================
-          PREVIEW 3D
+          PANTALLA CLICKEABLE
 
-          Se oculta cuando empieza YouTube.
+          ESTA MISMA MALLA ES LA PANTALLA.
       =================================================== */}
 
-      {!playing3D && (
-        <mesh
-          position={[
-            0,
-            7.25,
-            0.27,
+      <mesh
+        ref={screenRef}
+
+        position={[
+          0,
+          7.2,
+          0.28,
+        ]}
+
+        onPointerEnter={
+          onPointerEnter
+        }
+
+        onPointerLeave={
+          onPointerLeave
+        }
+
+        onPointerDown={
+          toggleVideo
+        }
+
+        onClick={
+          toggleVideo
+        }
+      >
+        <planeGeometry
+          args={[
+            22.5,
+            12.65,
           ]}
-        >
-          <planeGeometry
-            args={[
-              21,
-              11.8,
-            ]}
-          />
+        />
 
-          <meshBasicMaterial
-            map={
-              screenTexture
-            }
-            toneMapped={
-              false
-            }
-          />
-        </mesh>
-      )}
-
-      {/* ===================================================
-          YOUTUBE DENTRO DEL MUNDO
-
-          840px x 472px
-          escalado a:
-          ~21m x 11.8m
-
-          Mantiene el iframe montado aunque caminemos.
-      =================================================== */}
-
-      {playing3D && (
-        <Html
-          transform
-          position={[
-            0,
-            7.25,
-            0.29,
-          ]}
-          scale={
-            0.025
+        <meshBasicMaterial
+          map={
+            previewTexture
           }
-          zIndexRange={[
-            30,
-            30,
-          ]}
-          style={{
-            width:
-              "840px",
-
-            height:
-              "472px",
-
-            overflow:
-              "hidden",
-
-            background:
-              "#000",
-
-            borderRadius:
-              "10px",
-
-            boxShadow:
-              "0 0 35px rgba(88,241,255,.35)",
-          }}
-        >
-          <iframe
-            src={
-              FEATURED_VIDEO
-                .youtubeEmbed
-            }
-            title="Freaky World Video Wall"
-            width="840"
-            height="472"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-            allowFullScreen
-            style={{
-              display:
-                "block",
-
-              width:
-                "840px",
-
-              height:
-                "472px",
-
-              border:
-                0,
-
-              background:
-                "#000",
-            }}
-          />
-        </Html>
-      )}
+          toneMapped={
+            false
+          }
+          side={
+            THREE.DoubleSide
+          }
+        />
+      </mesh>
 
       {/* ===================================================
-          BOTÓN SOBRE LA PANTALLA
-
-          Solo aparece:
-          - cuando estamos cerca
-          - antes de reproducir
-      =================================================== */}
-
-      {near &&
-        !playing3D && (
-          <Html
-            transform
-            position={[
-              0,
-              4.4,
-              0.5,
-            ]}
-            scale={
-              0.014
-            }
-            zIndexRange={[
-              40,
-              40,
-            ]}
-          >
-            <button
-              type="button"
-
-              onPointerDown={(
-                event
-              ) => {
-                event.stopPropagation();
-              }}
-
-              onTouchStart={(
-                event
-              ) => {
-                event.stopPropagation();
-              }}
-
-              onClick={(
-                event
-              ) => {
-                event.stopPropagation();
-
-                setPlaying3D(
-                  true
-                );
-              }}
-
-              style={{
-                width:
-                  "310px",
-
-                padding:
-                  "18px 24px",
-
-                borderRadius:
-                  "999px",
-
-                border:
-                  "2px solid rgba(255,255,255,.5)",
-
-                background:
-                  "rgba(5,9,13,.94)",
-
-                color:
-                  "#ffffff",
-
-                fontSize:
-                  "20px",
-
-                fontWeight:
-                  900,
-
-                letterSpacing:
-                  ".05em",
-
-                boxShadow:
-                  "0 10px 40px rgba(0,0,0,.5)",
-
-                touchAction:
-                  "manipulation",
-              }}
-            >
-              ▶ REPRODUCIR AQUÍ
-            </button>
-          </Html>
-        )}
-
-      {/* ===================================================
-          DETENER
-
-          Solo visible cuando nos volvemos a acercar.
-      =================================================== */}
-
-      {near &&
-        playing3D && (
-          <Html
-            transform
-            position={[
-              0,
-              1.15,
-              0.55,
-            ]}
-            scale={
-              0.011
-            }
-            zIndexRange={[
-              40,
-              40,
-            ]}
-          >
-            <button
-              type="button"
-
-              onPointerDown={(
-                event
-              ) => {
-                event.stopPropagation();
-              }}
-
-              onClick={(
-                event
-              ) => {
-                event.stopPropagation();
-
-                setPlaying3D(
-                  false
-                );
-              }}
-
-              style={{
-                width:
-                  "220px",
-
-                padding:
-                  "14px 18px",
-
-                borderRadius:
-                  "999px",
-
-                border:
-                  "1px solid rgba(255,255,255,.35)",
-
-                background:
-                  "rgba(5,9,13,.9)",
-
-                color:
-                  "#fff",
-
-                fontWeight:
-                  800,
-
-                fontSize:
-                  "17px",
-              }}
-            >
-              DETENER VIDEO
-            </button>
-          </Html>
-        )}
-
-      {/* ===================================================
-          NEON DEL MARCO
+          MARCO NEÓN
       =================================================== */}
 
       <NeonLine
         position={[
           0,
-          13.6,
+          13.58,
           0.34,
         ]}
         size={[
-          22,
-          0.09,
+          23,
+          0.1,
           0.08,
         ]}
         color="#58f1ff"
@@ -2113,16 +2179,67 @@ function HeroVideoWall() {
       <NeonLine
         position={[
           0,
-          0.9,
+          0.82,
           0.34,
         ]}
         size={[
-          22,
-          0.09,
+          23,
+          0.1,
           0.08,
         ]}
         color="#ff4f95"
       />
+
+      {/* ===================================================
+          INDICADOR DE ESTADO
+
+          Estas pequeñas luces nos ayudan a saber
+          si realmente detectó reproducción.
+      =================================================== */}
+
+      <mesh
+        position={[
+          -11.2,
+          13.1,
+          0.38,
+        ]}
+      >
+        <sphereGeometry
+          args={[
+            0.13,
+            16,
+            16,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={
+            videoError
+              ? "#ff3b30"
+              : playing
+                ? "#34ff7b"
+                : videoReady
+                  ? "#58f1ff"
+                  : "#ffca54"
+          }
+          emissive={
+            videoError
+              ? "#ff3b30"
+              : playing
+                ? "#34ff7b"
+                : videoReady
+                  ? "#58f1ff"
+                  : "#ffca54"
+          }
+          emissiveIntensity={
+            2
+          }
+        />
+      </mesh>
+
+      {/* ===================================================
+          GLOW
+      =================================================== */}
 
       {near && (
         <pointLight
@@ -2132,8 +2249,12 @@ function HeroVideoWall() {
             3,
           ]}
           color="#58f1ff"
-          intensity={16}
-          distance={16}
+          intensity={
+            playing
+              ? 18
+              : 10
+          }
+          distance={17}
           decay={2}
         />
       )}
@@ -2147,16 +2268,10 @@ function HeroVideoWall() {
 
 export default function PopularTodayHall() {
   /* =======================================================
-     PANTALLAS
+     PANTALLAS LATERALES
 
      IMPORTANTE:
-
-     GAMES[0] — NEON DISTRICT —
-     YA NO ESTÁ EN EL CENTRO.
-
-     TOP 1 queda reservado para el futuro.
-
-     Frente a la gran pantalla no hay nada.
+     no hay ninguna pantalla frente al muro de vídeo.
   ======================================================= */
 
   const stationLayout =
@@ -2311,28 +2426,24 @@ export default function PopularTodayHall() {
             GAMES[1],
 
           position: [
-            -13,
+            -14,
             0.32,
-            -25,
+            -26,
           ],
 
           rotation:
             Math.PI /
-            3,
+            3.1,
 
           scale:
-            1.16,
+            1.15,
         },
       ],
       []
     );
 
   /* =======================================================
-     REVESTIMIENTOS NEGROS
-
-     Pegados prácticamente a la carcasa real.
-
-     Ya no queda el corredor muerto detrás.
+     REVESTIMIENTO NEGRO
   ======================================================= */
 
   const blackWalls =
@@ -2385,8 +2496,6 @@ export default function PopularTodayHall() {
 
   /* =======================================================
      SUELO
-
-     Una capa mínima sobre el suelo existente.
   ======================================================= */
 
   const floor =
@@ -2410,7 +2519,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     RIELES DE TECHO
+     LUCES DEL TECHO
   ======================================================= */
 
   const ceilingLights =
@@ -2478,7 +2587,7 @@ export default function PopularTodayHall() {
   return (
     <group>
       {/* ===================================================
-          INTERIOR NEGRO
+          NEGRO
       =================================================== */}
 
       <InstancedBoxes
@@ -2498,7 +2607,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          ILUMINACIÓN DE TECHO
+          TECHO
       =================================================== */}
 
       <InstancedBoxes
@@ -2513,7 +2622,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          TÍTULOS NEÓN REALES
+          TITULO
       =================================================== */}
 
       <NeonWord
@@ -2527,6 +2636,10 @@ export default function PopularTodayHall() {
         width={15}
         height={3}
       />
+
+      {/* ===================================================
+          TEXTOS ARCADE
+      =================================================== */}
 
       <NeonWord
         text="INSERT COIN"
@@ -2583,14 +2696,14 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          ARCADE ART
+          ICONOS
       =================================================== */}
 
       <ArcadeIcon
         type="chomper"
         position={[
           -28.95,
-          5.2,
+          5,
           2,
         ]}
         rotation={[
@@ -2606,7 +2719,7 @@ export default function PopularTodayHall() {
         type="invader"
         position={[
           28.95,
-          5.5,
+          5.2,
           -12,
         ]}
         rotation={[
@@ -2615,11 +2728,11 @@ export default function PopularTodayHall() {
             2,
           0,
         ]}
-        size={5.5}
+        size={5.4}
       />
 
       {/* ===================================================
-          LÍNEAS DE NEÓN
+          NEONES
       =================================================== */}
 
       <NeonLine
@@ -2663,7 +2776,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          LUZ AMBIENTE
+          LUCES
       =================================================== */}
 
       <pointLight
@@ -2703,9 +2816,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          JUEGOS LATERALES
-
-          Ya no hay ninguno delante del video.
+          PANTALLAS DE JUEGOS
       =================================================== */}
 
       {stationLayout.map(
@@ -2733,15 +2844,13 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          VIDEO WALL
-
-          ÚNICO ELEMENTO FRONTAL DEL FONDO.
+          VIDEO MP4 REAL
       =================================================== */}
 
       <HeroVideoWall />
 
       {/* ===================================================
-          FÍSICA
+          COLISIONES
       =================================================== */}
 
       <RigidBody
