@@ -2,11 +2,11 @@ import DpadWing from "./DpadWing";
 import PopularTodayHall from "./PopularTodayHall";
 
 /* =========================================================
-   FREAKY WORLD
+   FREAKY WORLD — MUSEUM
 
-   Las cuatro alas comparten la misma carcasa.
+   Las cuatro alas conservan la misma carcasa.
 
-   Solo desarrollamos el ala norte por ahora.
+   Solo desarrollamos el ala NORTE por ahora.
 ========================================================= */
 
 export default function Museum() {
@@ -32,7 +32,7 @@ export default function Museum() {
       </DpadWing>
 
       {/* ===================================================
-          SUR
+          SUR — VACÍA
       =================================================== */}
 
       <DpadWing
@@ -49,7 +49,7 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          ESTE
+          ESTE — VACÍA
       =================================================== */}
 
       <DpadWing
@@ -66,7 +66,7 @@ export default function Museum() {
       />
 
       {/* ===================================================
-          OESTE
+          OESTE — VACÍA
       =================================================== */}
 
       <DpadWing
