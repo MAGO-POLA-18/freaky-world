@@ -1,12 +1,15 @@
 "use client";
 
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import {
+  Html,
   RoundedBox,
 } from "@react-three/drei";
 
@@ -17,18 +20,66 @@ import {
 
 import * as THREE from "three";
 
+import {
+  playerInput,
+} from "../World/PlayerController";
+
 /* =========================================================
    POPULARES HOY
 
-   Primera sala funcional de Freaky World.
+   PRIMERA PRUEBA REAL:
 
-   Coordenadas locales:
-   +Z = entrada
-   -Z = fondo
-
-   Ala disponible:
-   60 m x 70 m x 15 m
+   3D
+        ↓
+   estación
+        ↓
+   ficha 2D
+        ↓
+   video
+        ↓
+   cerrar
+        ↓
+   continuar caminando
 ========================================================= */
+
+/* =========================================================
+   JUEGO DE PRUEBA
+
+   Después esto vendrá de Freaky Ranking.
+========================================================= */
+
+const FEATURED_GAME = {
+  id: "gta-vi",
+
+  rank: 1,
+
+  title:
+    "Grand Theft Auto VI",
+
+  subtitle:
+    "Rockstar Games",
+
+  year:
+    "2026",
+
+  platform:
+    "PlayStation 5 · Xbox Series",
+
+  score:
+    "—",
+
+  community:
+    "Próximamente",
+
+  description:
+    "Primera prueba de una ficha de juego integrada dentro de Freaky World. Esta información será reemplazada después por los datos reales de Freaky Ranking.",
+
+  video:
+    "https://www.youtube.com/embed/QiIebY4wmWg?rel=0",
+
+  accent:
+    "#e5b84e",
+};
 
 /* =========================================================
    INSTANCIAS
@@ -55,7 +106,9 @@ function InstancedBoxes({
     );
 
   useLayoutEffect(() => {
-    if (!ref.current) {
+    if (
+      !ref.current
+    ) {
       return;
     }
 
@@ -65,32 +118,40 @@ function InstancedBoxes({
         index
       ) => {
         dummy.position.set(
-          ...(item.position ??
-            [0, 0, 0])
+          ...(
+            item.position ??
+            [0, 0, 0]
+          )
         );
 
         dummy.rotation.set(
-          ...(item.rotation ??
-            [0, 0, 0])
+          ...(
+            item.rotation ??
+            [0, 0, 0]
+          )
         );
 
         dummy.scale.set(
-          ...(item.scale ??
-            [1, 1, 1])
+          ...(
+            item.scale ??
+            [1, 1, 1]
+          )
         );
 
         dummy.updateMatrix();
 
-        ref.current.setMatrixAt(
-          index,
-          dummy.matrix
-        );
+        ref.current
+          .setMatrixAt(
+            index,
+            dummy.matrix
+          );
       }
     );
 
     ref.current
       .instanceMatrix
-      .needsUpdate = true;
+      .needsUpdate =
+      true;
 
     ref.current
       .computeBoundingSphere?.();
@@ -99,7 +160,9 @@ function InstancedBoxes({
     dummy,
   ]);
 
-  if (!items.length) {
+  if (
+    !items.length
+  ) {
     return null;
   }
 
@@ -111,20 +174,32 @@ function InstancedBoxes({
         null,
         items.length,
       ]}
-      castShadow={castShadow}
+      castShadow={
+        castShadow
+      }
       receiveShadow={
         receiveShadow
       }
     >
       <boxGeometry
-        args={[1, 1, 1]}
+        args={[
+          1,
+          1,
+          1,
+        ]}
       />
 
       <meshStandardMaterial
         color={color}
-        roughness={roughness}
-        metalness={metalness}
-        emissive={emissive}
+        roughness={
+          roughness
+        }
+        metalness={
+          metalness
+        }
+        emissive={
+          emissive
+        }
         emissiveIntensity={
           emissiveIntensity
         }
@@ -134,18 +209,601 @@ function InstancedBoxes({
 }
 
 /* =========================================================
-   ESTACIÓN DE JUEGO
+   FICHA 2D
 
-   Placeholder.
+   Se renderiza encima del Canvas.
 
-   Después contendrá:
-   - portada real
-   - título
-   - posición
-   - puntuación
-   - comunidad
-   - tráiler
-   - acceso a ficha 2D
+   El mundo sigue detrás.
+========================================================= */
+
+function GameDetailOverlay({
+  game,
+  onClose,
+}) {
+  /* =======================================================
+     BLOQUEAR PERSONAJE
+
+     Mientras está abierta la ficha:
+     - no camina
+     - no hace dash
+     - seguimos dentro de Freaky World
+  ======================================================= */
+
+  useEffect(() => {
+    playerInput.uiLocked =
+      true;
+
+    return () => {
+      playerInput.uiLocked =
+        false;
+    };
+  }, []);
+
+  /* =======================================================
+     ESC PARA CERRAR
+  ======================================================= */
+
+  useEffect(() => {
+    const onKeyDown =
+      (event) => {
+        if (
+          event.key ===
+          "Escape"
+        ) {
+          onClose();
+        }
+      };
+
+    window.addEventListener(
+      "keydown",
+      onKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        onKeyDown
+      );
+    };
+  }, [
+    onClose,
+  ]);
+
+  return (
+    <Html
+      fullscreen
+      zIndexRange={[
+        1000,
+        1000,
+      ]}
+    >
+      {/* ===================================================
+          FONDO
+      =================================================== */}
+
+      <div
+        onPointerDown={
+          onClose
+        }
+        style={{
+          position:
+            "fixed",
+
+          inset:
+            0,
+
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "center",
+
+          padding:
+            "18px",
+
+          background:
+            "rgba(3, 7, 10, 0.78)",
+
+          backdropFilter:
+            "blur(10px)",
+
+          WebkitBackdropFilter:
+            "blur(10px)",
+
+          boxSizing:
+            "border-box",
+        }}
+      >
+        {/* =================================================
+            FICHA
+        ================================================= */}
+
+        <div
+          onPointerDown={(
+            event
+          ) => {
+            event.stopPropagation();
+          }}
+          style={{
+            position:
+              "relative",
+
+            width:
+              "min(960px, 96vw)",
+
+            maxHeight:
+              "92vh",
+
+            overflowY:
+              "auto",
+
+            borderRadius:
+              "22px",
+
+            background:
+              "linear-gradient(145deg, #171c21 0%, #0c1014 100%)",
+
+            border:
+              "1px solid rgba(255,255,255,0.13)",
+
+            boxShadow:
+              "0 30px 100px rgba(0,0,0,0.6)",
+
+            color:
+              "#f4f5f6",
+
+            fontFamily:
+              "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+
+            boxSizing:
+              "border-box",
+          }}
+        >
+          {/* ===============================================
+              CERRAR
+          =============================================== */}
+
+          <button
+            type="button"
+            onClick={
+              onClose
+            }
+            aria-label="Cerrar ficha"
+            style={{
+              position:
+                "absolute",
+
+              top:
+                "14px",
+
+              right:
+                "14px",
+
+              zIndex:
+                20,
+
+              width:
+                "42px",
+
+              height:
+                "42px",
+
+              borderRadius:
+                "50%",
+
+              border:
+                "1px solid rgba(255,255,255,0.18)",
+
+              background:
+                "rgba(8,12,15,0.82)",
+
+              color:
+                "white",
+
+              fontSize:
+                "23px",
+
+              cursor:
+                "pointer",
+            }}
+          >
+            ×
+          </button>
+
+          {/* ===============================================
+              VIDEO
+          =============================================== */}
+
+          <div
+            style={{
+              width:
+                "100%",
+
+              aspectRatio:
+                "16 / 9",
+
+              background:
+                "#000",
+
+              borderRadius:
+                "22px 22px 0 0",
+
+              overflow:
+                "hidden",
+            }}
+          >
+            <iframe
+              src={
+                game.video
+              }
+              title={
+                `${game.title} trailer`
+              }
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{
+                width:
+                  "100%",
+
+                height:
+                  "100%",
+
+                border:
+                  "none",
+
+                display:
+                  "block",
+              }}
+            />
+          </div>
+
+          {/* ===============================================
+              INFORMACIÓN
+          =============================================== */}
+
+          <div
+            style={{
+              padding:
+                "22px",
+            }}
+          >
+            {/* =============================================
+                CABECERA
+            ============================================= */}
+
+            <div
+              style={{
+                display:
+                  "flex",
+
+                gap:
+                  "18px",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "flex-start",
+
+                flexWrap:
+                  "wrap",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize:
+                      "12px",
+
+                    fontWeight:
+                      800,
+
+                    letterSpacing:
+                      "0.14em",
+
+                    textTransform:
+                      "uppercase",
+
+                    color:
+                      game.accent,
+
+                    marginBottom:
+                      "7px",
+                  }}
+                >
+                  Popular hoy · Nº {game.rank}
+                </div>
+
+                <h1
+                  style={{
+                    margin:
+                      0,
+
+                    fontSize:
+                      "clamp(26px, 5vw, 44px)",
+
+                    lineHeight:
+                      1.04,
+                  }}
+                >
+                  {game.title}
+                </h1>
+
+                <div
+                  style={{
+                    marginTop:
+                      "8px",
+
+                    color:
+                      "#aeb7bf",
+
+                    fontSize:
+                      "15px",
+                  }}
+                >
+                  {game.subtitle}
+                </div>
+              </div>
+
+              {/* ===========================================
+                  PUNTUACIÓN
+              =========================================== */}
+
+              <div
+                style={{
+                  minWidth:
+                    "94px",
+
+                  padding:
+                    "13px 16px",
+
+                  borderRadius:
+                    "16px",
+
+                  textAlign:
+                    "center",
+
+                  background:
+                    "rgba(255,255,255,0.06)",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize:
+                      "11px",
+
+                    color:
+                      "#8e99a3",
+
+                    textTransform:
+                      "uppercase",
+
+                    letterSpacing:
+                      "0.08em",
+                  }}
+                >
+                  Puntuación
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      "3px",
+
+                    fontSize:
+                      "30px",
+
+                    fontWeight:
+                      800,
+
+                    color:
+                      game.accent,
+                  }}
+                >
+                  {game.score}
+                </div>
+              </div>
+            </div>
+
+            {/* =============================================
+                DATOS RÁPIDOS
+            ============================================= */}
+
+            <div
+              style={{
+                display:
+                  "flex",
+
+                flexWrap:
+                  "wrap",
+
+                gap:
+                  "8px",
+
+                marginTop:
+                  "20px",
+              }}
+            >
+              {[
+                game.year,
+                game.platform,
+                `Comunidad: ${game.community}`,
+              ].map(
+                (
+                  value
+                ) => (
+                  <div
+                    key={
+                      value
+                    }
+                    style={{
+                      padding:
+                        "8px 11px",
+
+                      borderRadius:
+                        "999px",
+
+                      background:
+                        "#252b30",
+
+                      border:
+                        "1px solid rgba(255,255,255,0.08)",
+
+                      fontSize:
+                        "13px",
+
+                      color:
+                        "#d1d6da",
+                    }}
+                  >
+                    {value}
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* =============================================
+                DESCRIPCIÓN
+            ============================================= */}
+
+            <p
+              style={{
+                margin:
+                  "20px 0 0",
+
+                maxWidth:
+                  "760px",
+
+                color:
+                  "#b8c0c6",
+
+                lineHeight:
+                  1.6,
+
+                fontSize:
+                  "15px",
+              }}
+            >
+              {game.description}
+            </p>
+
+            {/* =============================================
+                ACCIONES FUTURAS
+
+                Todavía visuales.
+            ============================================= */}
+
+            <div
+              style={{
+                display:
+                  "flex",
+
+                gap:
+                  "10px",
+
+                flexWrap:
+                  "wrap",
+
+                marginTop:
+                  "22px",
+              }}
+            >
+              <button
+                type="button"
+                style={{
+                  padding:
+                    "11px 17px",
+
+                  borderRadius:
+                    "12px",
+
+                  border:
+                    "none",
+
+                  background:
+                    game.accent,
+
+                  color:
+                    "#101214",
+
+                  fontWeight:
+                    800,
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Ver ficha completa
+              </button>
+
+              <button
+                type="button"
+                style={{
+                  padding:
+                    "11px 17px",
+
+                  borderRadius:
+                    "12px",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.15)",
+
+                  background:
+                    "rgba(255,255,255,0.05)",
+
+                  color:
+                    "#f1f3f4",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Calificar
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  onClose
+                }
+                style={{
+                  padding:
+                    "11px 17px",
+
+                  borderRadius:
+                    "12px",
+
+                  border:
+                    "1px solid rgba(255,255,255,0.15)",
+
+                  background:
+                    "transparent",
+
+                  color:
+                    "#c4cbd0",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                Volver al mundo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Html>
+  );
+}
+
+/* =========================================================
+   ESTACIÓN NORMAL
 ========================================================= */
 
 function GameStation({
@@ -153,26 +811,24 @@ function GameStation({
   rotation = 0,
   rank,
 }) {
-  const accentColors = [
-    "#e6b94e",
-    "#b8c3cf",
-    "#ba8055",
-    "#67a3cf",
-    "#6f9871",
-    "#7b8fa3",
-    "#7b8fa3",
-    "#7b8fa3",
-    "#7b8fa3",
-    "#7b8fa3",
+  const hero =
+    rank <= 3;
+
+  const colors = [
+    "#e5b84e",
+    "#bbc4cd",
+    "#b97f54",
+    "#6d9fca",
+    "#6f9872",
   ];
 
   const accent =
-    accentColors[
-      rank - 1
-    ] ?? "#7b8fa3";
-
-  const hero =
-    rank <= 3;
+    colors[
+      Math.min(
+        rank - 1,
+        colors.length - 1
+      )
+    ];
 
   return (
     <group
@@ -183,10 +839,6 @@ function GameStation({
         0,
       ]}
     >
-      {/* ===============================================
-          BASE
-      =============================================== */}
-
       <RoundedBox
         position={[
           0,
@@ -195,13 +847,13 @@ function GameStation({
         ]}
         args={[
           hero
-            ? 5.4
+            ? 5.1
             : 4.6,
 
-          0.65,
+          0.7,
 
           hero
-            ? 3.1
+            ? 3
             : 2.7,
         ]}
         radius={0.2}
@@ -210,8 +862,152 @@ function GameStation({
         receiveShadow
       >
         <meshStandardMaterial
-          color="#24292d"
-          roughness={0.72}
+          color="#252a2e"
+          roughness={0.75}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          0,
+          2.35,
+          0,
+        ]}
+        args={[
+          hero
+            ? 4.1
+            : 3.7,
+
+          3.25,
+
+          0.5,
+        ]}
+        radius={0.2}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#353a3f"
+          roughness={0.7}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          0,
+          5,
+          0.07,
+        ]}
+        args={[
+          hero
+            ? 4.6
+            : 4.1,
+
+          hero
+            ? 3.5
+            : 3.2,
+
+          0.22,
+        ]}
+        radius={0.23}
+        smoothness={4}
+      >
+        <meshStandardMaterial
+          color="#11161a"
+          emissive="#142631"
+          emissiveIntensity={
+            hero
+              ? 0.45
+              : 0.28
+          }
+          roughness={0.3}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          0,
+          3.22,
+          0.2,
+        ]}
+        args={[
+          3.6,
+          0.11,
+          0.12,
+        ]}
+        radius={0.04}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={0.65}
+        />
+      </RoundedBox>
+    </group>
+  );
+}
+
+/* =========================================================
+   TOP 1 INTERACTIVO
+========================================================= */
+
+function FeaturedStation({
+  onOpen,
+}) {
+  const [
+    hovered,
+    setHovered,
+  ] =
+    useState(false);
+
+  useEffect(() => {
+    if (!hovered) {
+      return;
+    }
+
+    document.body.style.cursor =
+      "pointer";
+
+    return () => {
+      document.body.style.cursor =
+        "";
+    };
+  }, [
+    hovered,
+  ]);
+
+  return (
+    <group
+      position={[
+        0,
+        0.4,
+        -28,
+      ]}
+    >
+      {/* ===============================================
+          PEDESTAL
+      =============================================== */}
+
+      <RoundedBox
+        position={[
+          0,
+          0.5,
+          0,
+        ]}
+        args={[
+          7,
+          0.8,
+          3.8,
+        ]}
+        radius={0.25}
+        smoothness={4}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color="#20252a"
+          roughness={0.68}
           metalness={0.08}
         />
       </RoundedBox>
@@ -223,147 +1019,139 @@ function GameStation({
       <RoundedBox
         position={[
           0,
-          2.45,
+          2.8,
           0,
         ]}
         args={[
-          hero
-            ? 4.2
-            : 3.7,
-
-          3.4,
-
-          0.5,
+          5.3,
+          4.2,
+          0.65,
         ]}
-        radius={0.22}
+        radius={0.3}
         smoothness={4}
         castShadow
       >
         <meshStandardMaterial
-          color="#343a3f"
-          roughness={0.68}
-          metalness={0.06}
+          color="#32383d"
+          roughness={0.62}
         />
       </RoundedBox>
 
       {/* ===============================================
-          PANTALLA / PORTADA
+          PANTALLA INTERACTIVA
+
+          ESTA ES LA ZONA CLICKEABLE.
       =============================================== */}
 
       <RoundedBox
         position={[
           0,
-          hero
-            ? 5.25
-            : 4.95,
-
+          6,
           0.08,
         ]}
         args={[
-          hero
-            ? 4.7
-            : 4.1,
-
-          hero
-            ? 3.7
-            : 3.3,
-
-          0.22,
+          6.2,
+          4.5,
+          0.25,
         ]}
-        radius={0.25}
+        radius={0.3}
         smoothness={4}
+
+        onPointerEnter={(
+          event
+        ) => {
+          event.stopPropagation();
+
+          setHovered(
+            true
+          );
+        }}
+
+        onPointerLeave={(
+          event
+        ) => {
+          event.stopPropagation();
+
+          setHovered(
+            false
+          );
+        }}
+
+        onClick={(
+          event
+        ) => {
+          event.stopPropagation();
+
+          onOpen();
+        }}
       >
         <meshStandardMaterial
-          color="#10151a"
-          emissive="#152c3c"
-          emissiveIntensity={
-            hero
-              ? 0.5
-              : 0.3
+          color={
+            hovered
+              ? "#18354a"
+              : "#11191f"
           }
-          roughness={0.26}
-          metalness={0.12}
+          emissive="#1c4965"
+          emissiveIntensity={
+            hovered
+              ? 0.9
+              : 0.4
+          }
+          roughness={0.24}
+          metalness={0.14}
         />
       </RoundedBox>
 
       {/* ===============================================
-          ACENTO DE COLOR
+          ACENTO ORO
       =============================================== */}
 
       <RoundedBox
         position={[
           0,
-          3.28,
-          0.2,
+          3.72,
+          0.28,
         ]}
         args={[
-          hero
-            ? 4.1
-            : 3.55,
-
-          0.12,
-          0.12,
+          4.8,
+          0.16,
+          0.16,
         ]}
-        radius={0.04}
+        radius={0.05}
         smoothness={2}
       >
         <meshStandardMaterial
-          color={accent}
-          emissive={accent}
+          color={
+            FEATURED_GAME
+              .accent
+          }
+          emissive={
+            FEATURED_GAME
+              .accent
+          }
           emissiveIntensity={
-            hero
-              ? 0.8
-              : 0.45
+            1
           }
         />
       </RoundedBox>
 
       {/* ===============================================
-          IDENTIFICADOR VISUAL DEL PUESTO
-
-          Después será texto real.
+          HALO AL ACERCARSE / HOVER
       =============================================== */}
 
-      <mesh
-        position={[
-          -1.45,
-          hero
-            ? 6.85
-            : 6.45,
-
-          0.22,
-        ]}
-        rotation={[
-          Math.PI / 2,
-          0,
-          0,
-        ]}
-      >
-        <cylinderGeometry
-          args={[
-            hero
-              ? 0.4
-              : 0.3,
-
-            hero
-              ? 0.4
-              : 0.3,
-
-            0.12,
-            20,
+      {hovered && (
+        <pointLight
+          position={[
+            0,
+            5,
+            2,
           ]}
+          color="#62b7ec"
+          intensity={10}
+          distance={8}
+          decay={2}
         />
-
-        <meshStandardMaterial
-          color={accent}
-          emissive={accent}
-          emissiveIntensity={
-            hero
-              ? 0.9
-              : 0.35
-          }
-        />
-      </mesh>
+      )}
     </group>
   );
 }
@@ -373,14 +1161,14 @@ function GameStation({
 ========================================================= */
 
 export default function PopularTodayHall() {
+  const [
+    selectedGame,
+    setSelectedGame,
+  ] =
+    useState(null);
+
   /* =======================================================
      REVESTIMIENTO INTERIOR
-
-     Exterior negro.
-     Interior claro.
-
-     Deja de sentirse como una cueva sin modificar
-     la estructura exterior.
   ======================================================= */
 
   const innerWallItems =
@@ -432,7 +1220,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     PANELES OSCUROS LATERALES
+     PANELES LATERALES
   ======================================================= */
 
   const wallPanels =
@@ -444,6 +1232,7 @@ export default function PopularTodayHall() {
             5,
             16,
           ],
+
           scale: [
             0.14,
             7,
@@ -457,6 +1246,7 @@ export default function PopularTodayHall() {
             5,
             0,
           ],
+
           scale: [
             0.14,
             7,
@@ -470,6 +1260,7 @@ export default function PopularTodayHall() {
             5,
             -16,
           ],
+
           scale: [
             0.14,
             7,
@@ -483,6 +1274,7 @@ export default function PopularTodayHall() {
             5,
             16,
           ],
+
           scale: [
             0.14,
             7,
@@ -496,6 +1288,7 @@ export default function PopularTodayHall() {
             5,
             0,
           ],
+
           scale: [
             0.14,
             7,
@@ -509,6 +1302,7 @@ export default function PopularTodayHall() {
             5,
             -16,
           ],
+
           scale: [
             0.14,
             7,
@@ -520,11 +1314,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     CAMINO VISUAL
-
-     Una única alfombra/pista central.
-     Está suficientemente elevada para no pelear
-     visualmente con el suelo.
+     PASILLO
   ======================================================= */
 
   const centralPath =
@@ -548,9 +1338,7 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     LUCES DE TECHO VISUALES
-
-     Las luminarias no generan sombras.
+     RIELES DE LUZ
   ======================================================= */
 
   const lightRails =
@@ -560,12 +1348,13 @@ export default function PopularTodayHall() {
           position: [
             -11,
             11.6,
-            17,
+            16,
           ],
+
           scale: [
             0.16,
             0.12,
-            20,
+            21,
           ],
         },
 
@@ -573,12 +1362,13 @@ export default function PopularTodayHall() {
           position: [
             11,
             11.6,
-            17,
+            16,
           ],
+
           scale: [
             0.16,
             0.12,
-            20,
+            21,
           ],
         },
 
@@ -586,8 +1376,9 @@ export default function PopularTodayHall() {
           position: [
             -11,
             11.6,
-            -13,
+            -14,
           ],
+
           scale: [
             0.16,
             0.12,
@@ -599,8 +1390,9 @@ export default function PopularTodayHall() {
           position: [
             11,
             11.6,
-            -13,
+            -14,
           ],
+
           scale: [
             0.16,
             0.12,
@@ -612,18 +1404,9 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     ESTACIONES
+     9 ESTACIONES NORMALES
 
-     La entrada queda despejada.
-
-     El visitante entra por +Z y avanza hacia -Z.
-
-     Izquierda y derecha:
-     4 estaciones por lado.
-
-     TOP 2 y TOP 3 más cerca del fondo.
-
-     TOP 1 frontal al final.
+     El décimo lugar es el TOP 1 interactivo.
   ======================================================= */
 
   const stations =
@@ -727,16 +1510,6 @@ export default function PopularTodayHall() {
           rotation:
             Math.PI / 2,
         },
-
-        {
-          rank: 1,
-          position: [
-            0,
-            0.4,
-            -28,
-          ],
-          rotation: 0,
-        },
       ],
       []
     );
@@ -744,27 +1517,27 @@ export default function PopularTodayHall() {
   return (
     <group>
       {/* ===================================================
-          INTERIOR CLARO
+          REVESTIMIENTO CLARO
       =================================================== */}
 
       <InstancedBoxes
-        items={innerWallItems}
-        color="#d7d5cf"
+        items={
+          innerWallItems
+        }
+        color="#d8d6d0"
         roughness={0.92}
-        castShadow={false}
-        receiveShadow
       />
 
       {/* ===================================================
-          PANELES OSCUROS
+          CONTRASTE
       =================================================== */}
 
       <InstancedBoxes
-        items={wallPanels}
+        items={
+          wallPanels
+        }
         color="#343a3f"
         roughness={0.8}
-        castShadow={false}
-        receiveShadow
       />
 
       {/* ===================================================
@@ -772,20 +1545,15 @@ export default function PopularTodayHall() {
       =================================================== */}
 
       <InstancedBoxes
-        items={centralPath}
+        items={
+          centralPath
+        }
         color="#34393d"
         roughness={0.72}
-        castShadow={false}
-        receiveShadow
       />
 
       {/* ===================================================
-          VESTÍBULO / PORTAL DE ENTRADA
-
-          Esta vez es un arco REAL:
-          dos columnas + travesaño.
-
-          El centro queda físicamente abierto.
+          PORTAL DE ENTRADA
       =================================================== */}
 
       <RoundedBox
@@ -852,51 +1620,22 @@ export default function PopularTodayHall() {
       </RoundedBox>
 
       {/* ===================================================
-          LUZ AZUL DEL PORTAL
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          0,
-          6.24,
-          27.05,
-        ]}
-        args={[
-          10.5,
-          0.1,
-          0.12,
-        ]}
-        radius={0.03}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#75b8df"
-          emissive="#75b8df"
-          emissiveIntensity={1}
-        />
-      </RoundedBox>
-
-      {/* ===================================================
-          RIELES DE LUZ
+          RIELES LUMINOSOS
       =================================================== */}
 
       <InstancedBoxes
-        items={lightRails}
+        items={
+          lightRails
+        }
         color="#eaf4ff"
         roughness={0.25}
         emissive="#dcecff"
         emissiveIntensity={1.1}
-        castShadow={false}
         receiveShadow={false}
       />
 
       {/* ===================================================
-          ILUMINACIÓN REAL
-
-          Sin castShadow.
-          Mucho más económica.
-
-          Repartida para evitar una única luz enorme.
+          ILUMINACIÓN
       =================================================== */}
 
       <pointLight
@@ -948,7 +1687,7 @@ export default function PopularTodayHall() {
       />
 
       {/* ===================================================
-          ESTACIONES
+          9 PUESTOS NORMALES
       =================================================== */}
 
       {stations.map(
@@ -959,23 +1698,27 @@ export default function PopularTodayHall() {
             key={
               station.rank
             }
-            rank={
-              station.rank
-            }
-            position={
-              station.position
-            }
-            rotation={
-              station.rotation
-            }
+            {...station}
           />
         )
       )}
 
       {/* ===================================================
-          PARED HERO TOP 1
+          TOP 1 INTERACTIVO
 
-          Punto de fuga al entrar.
+          TOCAR / CLICK EN SU PANTALLA.
+      =================================================== */}
+
+      <FeaturedStation
+        onOpen={() => {
+          setSelectedGame(
+            FEATURED_GAME
+          );
+        }}
+      />
+
+      {/* ===================================================
+          PANEL DE FONDO
       =================================================== */}
 
       <RoundedBox
@@ -1001,73 +1744,13 @@ export default function PopularTodayHall() {
       </RoundedBox>
 
       {/* ===================================================
-          ACENTO DEL Nº1
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          0,
-          2,
-          -33.94,
-        ]}
-        args={[
-          10,
-          0.16,
-          0.12,
-        ]}
-        radius={0.05}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#e5b84e"
-          emissive="#e5b84e"
-          emissiveIntensity={1}
-        />
-      </RoundedBox>
-
-      {/* ===================================================
           COLISIONES
-
-          Solo mobiliario importante.
-
-          No ponemos física en paredes internas porque
-          ya existe la carcasa estructural.
       =================================================== */}
 
       <RigidBody
         type="fixed"
         colliders={false}
       >
-        {/* PORTAL */}
-
-        <CuboidCollider
-          args={[
-            0.5,
-            3.25,
-            0.4,
-          ]}
-          position={[
-            -6,
-            3.5,
-            27.5,
-          ]}
-        />
-
-        <CuboidCollider
-          args={[
-            0.5,
-            3.25,
-            0.4,
-          ]}
-          position={[
-            6,
-            3.5,
-            27.5,
-          ]}
-        />
-
-        {/* ESTACIONES */}
-
         {stations.map(
           (
             station
@@ -1077,17 +1760,9 @@ export default function PopularTodayHall() {
                 `station-${station.rank}`
               }
               args={[
-                station.rank <=
-                3
-                  ? 2.7
-                  : 2.3,
-
+                2.4,
                 0.4,
-
-                station.rank <=
-                3
-                  ? 1.55
-                  : 1.35,
+                1.4,
               ]}
               position={[
                 station
@@ -1106,7 +1781,41 @@ export default function PopularTodayHall() {
             />
           )
         )}
+
+        {/* TOP 1 */}
+
+        <CuboidCollider
+          args={[
+            3.5,
+            0.45,
+            1.9,
+          ]}
+          position={[
+            0,
+            0.9,
+            -28,
+          ]}
+        />
       </RigidBody>
+
+      {/* ===================================================
+          FICHA 2D
+
+          Solo existe mientras está abierta.
+      =================================================== */}
+
+      {selectedGame && (
+        <GameDetailOverlay
+          game={
+            selectedGame
+          }
+          onClose={() => {
+            setSelectedGame(
+              null
+            );
+          }}
+        />
+      )}
     </group>
   );
 }
