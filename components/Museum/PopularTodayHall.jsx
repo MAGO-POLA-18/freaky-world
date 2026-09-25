@@ -19,14 +19,15 @@ import * as THREE from "three";
 
 /* =========================================================
    POPULARES HOY
-   PRIMERA SALA FUNCIONAL DE FREAKY WORLD
 
-   Coordenadas locales del ala:
-   entrada: +Z
-   fondo:   -Z
+   Primera sala funcional de Freaky World.
 
-   Ala:
-   60 x 70 x 15 m
+   Coordenadas locales:
+   +Z = entrada
+   -Z = fondo
+
+   Ala disponible:
+   60 m x 70 m x 15 m
 ========================================================= */
 
 /* =========================================================
@@ -38,6 +39,8 @@ function InstancedBoxes({
   color,
   roughness = 0.8,
   metalness = 0,
+  emissive = "#000000",
+  emissiveIntensity = 0,
   castShadow = false,
   receiveShadow = true,
 }) {
@@ -108,9 +111,7 @@ function InstancedBoxes({
         null,
         items.length,
       ]}
-      castShadow={
-        castShadow
-      }
+      castShadow={castShadow}
       receiveShadow={
         receiveShadow
       }
@@ -121,11 +122,11 @@ function InstancedBoxes({
 
       <meshStandardMaterial
         color={color}
-        roughness={
-          roughness
-        }
-        metalness={
-          metalness
+        roughness={roughness}
+        metalness={metalness}
+        emissive={emissive}
+        emissiveIntensity={
+          emissiveIntensity
         }
       />
     </instancedMesh>
@@ -135,15 +136,16 @@ function InstancedBoxes({
 /* =========================================================
    ESTACIÓN DE JUEGO
 
-   Todavía no contiene información real.
+   Placeholder.
 
-   Después acá cargaremos:
-   - portada
+   Después contendrá:
+   - portada real
+   - título
    - posición
-   - nombre
    - puntuación
-   - interacción
-   - abrir ficha 2D
+   - comunidad
+   - tráiler
+   - acceso a ficha 2D
 ========================================================= */
 
 function GameStation({
@@ -152,20 +154,25 @@ function GameStation({
   rank,
 }) {
   const accentColors = [
-    "#e3b04b",
-    "#bcc4cc",
-    "#b8784d",
-    "#72a4cc",
-    "#789b70",
+    "#e6b94e",
+    "#b8c3cf",
+    "#ba8055",
+    "#67a3cf",
+    "#6f9871",
+    "#7b8fa3",
+    "#7b8fa3",
+    "#7b8fa3",
+    "#7b8fa3",
+    "#7b8fa3",
   ];
 
   const accent =
     accentColors[
-      Math.min(
-        rank - 1,
-        accentColors.length - 1
-      )
-    ] ?? "#72a4cc";
+      rank - 1
+    ] ?? "#7b8fa3";
+
+  const hero =
+    rank <= 3;
 
   return (
     <group
@@ -187,129 +194,163 @@ function GameStation({
           0,
         ]}
         args={[
-          4.8,
-          0.8,
-          2.8,
+          hero
+            ? 5.4
+            : 4.6,
+
+          0.65,
+
+          hero
+            ? 3.1
+            : 2.7,
         ]}
-        radius={0.18}
+        radius={0.2}
         smoothness={3}
         castShadow
         receiveShadow
       >
         <meshStandardMaterial
-          color="#25292d"
-          roughness={0.78}
+          color="#24292d"
+          roughness={0.72}
+          metalness={0.08}
         />
       </RoundedBox>
 
       {/* ===============================================
-          COLUMNA
+          CUERPO
       =============================================== */}
 
       <RoundedBox
         position={[
           0,
-          2.2,
+          2.45,
           0,
         ]}
         args={[
-          3.8,
-          3,
-          0.55,
+          hero
+            ? 4.2
+            : 3.7,
+
+          3.4,
+
+          0.5,
         ]}
-        radius={0.2}
-        smoothness={3}
+        radius={0.22}
+        smoothness={4}
         castShadow
       >
         <meshStandardMaterial
-          color="#30353a"
-          roughness={0.72}
+          color="#343a3f"
+          roughness={0.68}
+          metalness={0.06}
         />
       </RoundedBox>
 
       {/* ===============================================
-          PANTALLA VACÍA
+          PANTALLA / PORTADA
       =============================================== */}
 
       <RoundedBox
         position={[
           0,
-          4.6,
-          0.05,
+          hero
+            ? 5.25
+            : 4.95,
+
+          0.08,
         ]}
         args={[
-          4.4,
-          3.1,
+          hero
+            ? 4.7
+            : 4.1,
+
+          hero
+            ? 3.7
+            : 3.3,
+
           0.22,
         ]}
-        radius={0.22}
+        radius={0.25}
         smoothness={4}
       >
         <meshStandardMaterial
           color="#10151a"
-          emissive="#172632"
-          emissiveIntensity={0.35}
-          roughness={0.28}
+          emissive="#152c3c"
+          emissiveIntensity={
+            hero
+              ? 0.5
+              : 0.3
+          }
+          roughness={0.26}
           metalness={0.12}
         />
       </RoundedBox>
 
       {/* ===============================================
-          LÍNEA DE COLOR
+          ACENTO DE COLOR
       =============================================== */}
 
       <RoundedBox
         position={[
           0,
-          3.02,
-          0.19,
+          3.28,
+          0.2,
         ]}
         args={[
-          3.7,
+          hero
+            ? 4.1
+            : 3.55,
+
           0.12,
-          0.15,
+          0.12,
         ]}
-        radius={0.05}
+        radius={0.04}
         smoothness={2}
       >
         <meshStandardMaterial
           color={accent}
           emissive={accent}
-          emissiveIntensity={0.65}
+          emissiveIntensity={
+            hero
+              ? 0.8
+              : 0.45
+          }
         />
       </RoundedBox>
 
       {/* ===============================================
-          MARCADOR DE RANKING
+          IDENTIFICADOR VISUAL DEL PUESTO
 
-          Por ahora es una forma visual.
-          Luego será número/texto real.
+          Después será texto real.
       =============================================== */}
 
       <mesh
         position={[
-          -1.55,
-          5.72,
-          0.2,
+          -1.45,
+          hero
+            ? 6.85
+            : 6.45,
+
+          0.22,
+        ]}
+        rotation={[
+          Math.PI / 2,
+          0,
+          0,
         ]}
       >
         <cylinderGeometry
           args={[
-            rank <= 3
-              ? 0.38
-              : 0.28,
+            hero
+              ? 0.4
+              : 0.3,
 
-            rank <= 3
-              ? 0.38
-              : 0.28,
+            hero
+              ? 0.4
+              : 0.3,
 
             0.12,
             20,
-          ]}
-          rotation={[
-            Math.PI / 2,
-            0,
-            0,
           ]}
         />
 
@@ -317,9 +358,9 @@ function GameStation({
           color={accent}
           emissive={accent}
           emissiveIntensity={
-            rank <= 3
-              ? 0.6
-              : 0.25
+            hero
+              ? 0.9
+              : 0.35
           }
         />
       </mesh>
@@ -333,62 +374,57 @@ function GameStation({
 
 export default function PopularTodayHall() {
   /* =======================================================
-     PANELES INTERIORES CLAROS
+     REVESTIMIENTO INTERIOR
 
-     No reemplazan la pared exterior.
-     Son un revestimiento interior.
+     Exterior negro.
+     Interior claro.
 
-     Separados de la pared para evitar z-fighting.
+     Deja de sentirse como una cueva sin modificar
+     la estructura exterior.
   ======================================================= */
 
   const innerWallItems =
     useMemo(
       () => [
-        /* IZQUIERDA */
-
         {
           position: [
-            -29.45,
-            6.5,
-            -3,
+            -29.42,
+            6.4,
+            -2,
           ],
 
           scale: [
-            0.18,
-            12.2,
-            60,
+            0.16,
+            12,
+            61,
           ],
         },
-
-        /* DERECHA */
 
         {
           position: [
-            29.45,
-            6.5,
-            -3,
+            29.42,
+            6.4,
+            -2,
           ],
 
           scale: [
-            0.18,
-            12.2,
-            60,
+            0.16,
+            12,
+            61,
           ],
         },
-
-        /* FONDO */
 
         {
           position: [
             0,
-            6.5,
-            -34.45,
+            6.4,
+            -34.4,
           ],
 
           scale: [
-            58,
-            12.2,
-            0.18,
+            58.4,
+            12,
+            0.16,
           ],
         },
       ],
@@ -396,89 +432,87 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     PANELES DECORATIVOS OSCUROS
-
-     Rompen el blanco sin llenar todo de detalles.
+     PANELES OSCUROS LATERALES
   ======================================================= */
 
-  const darkWallPanels =
+  const wallPanels =
     useMemo(
       () => [
         {
           position: [
-            -29.3,
+            -29.25,
             5,
-            14,
+            16,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
 
         {
           position: [
-            -29.3,
+            -29.25,
             5,
-            -5,
+            0,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
 
         {
           position: [
-            -29.3,
+            -29.25,
             5,
-            -24,
+            -16,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
 
         {
           position: [
-            29.3,
+            29.25,
             5,
-            14,
+            16,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
 
         {
           position: [
-            29.3,
+            29.25,
             5,
-            -5,
+            0,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
 
         {
           position: [
-            29.3,
+            29.25,
             5,
-            -24,
+            -16,
           ],
           scale: [
-            0.12,
+            0.14,
             7,
-            8,
+            7,
           ],
         },
       ],
@@ -486,35 +520,91 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     GUÍA CENTRAL DEL RECORRIDO
+     CAMINO VISUAL
+
+     Una única alfombra/pista central.
+     Está suficientemente elevada para no pelear
+     visualmente con el suelo.
   ======================================================= */
 
-  const floorGuideItems =
+  const centralPath =
     useMemo(
       () => [
         {
           position: [
             0,
             0.34,
-            19,
+            -1,
+          ],
+
+          scale: [
+            8,
+            0.055,
+            61,
+          ],
+        },
+      ],
+      []
+    );
+
+  /* =======================================================
+     LUCES DE TECHO VISUALES
+
+     Las luminarias no generan sombras.
+  ======================================================= */
+
+  const lightRails =
+    useMemo(
+      () => [
+        {
+          position: [
+            -11,
+            11.6,
+            17,
           ],
           scale: [
-            7.5,
-            0.045,
+            0.16,
+            0.12,
             20,
           ],
         },
 
         {
           position: [
-            0,
-            0.34,
-            -9,
+            11,
+            11.6,
+            17,
           ],
           scale: [
-            7.5,
-            0.045,
-            32,
+            0.16,
+            0.12,
+            20,
+          ],
+        },
+
+        {
+          position: [
+            -11,
+            11.6,
+            -13,
+          ],
+          scale: [
+            0.16,
+            0.12,
+            31,
+          ],
+        },
+
+        {
+          position: [
+            11,
+            11.6,
+            -13,
+          ],
+          scale: [
+            0.16,
+            0.12,
+            31,
           ],
         },
       ],
@@ -522,151 +612,29 @@ export default function PopularTodayHall() {
     );
 
   /* =======================================================
-     LUCES VISUALES DEL TECHO
-  ======================================================= */
+     ESTACIONES
 
-  const ceilingStrips =
-    useMemo(
-      () => [
-        {
-          position: [
-            -10,
-            11.8,
-            19,
-          ],
-          scale: [
-            0.16,
-            0.12,
-            18,
-          ],
-        },
+     La entrada queda despejada.
 
-        {
-          position: [
-            10,
-            11.8,
-            19,
-          ],
-          scale: [
-            0.16,
-            0.12,
-            18,
-          ],
-        },
+     El visitante entra por +Z y avanza hacia -Z.
 
-        {
-          position: [
-            -10,
-            11.8,
-            -9,
-          ],
-          scale: [
-            0.16,
-            0.12,
-            28,
-          ],
-        },
+     Izquierda y derecha:
+     4 estaciones por lado.
 
-        {
-          position: [
-            10,
-            11.8,
-            -9,
-          ],
-          scale: [
-            0.16,
-            0.12,
-            28,
-          ],
-        },
-      ],
-      []
-    );
+     TOP 2 y TOP 3 más cerca del fondo.
 
-  /* =======================================================
-     10 POSICIONES DE JUEGOS
-
-     5 izquierda
-     5 derecha
-
-     Dejamos un pasillo central ancho.
+     TOP 1 frontal al final.
   ======================================================= */
 
   const stations =
     useMemo(
       () => [
         {
-          rank: 6,
+          rank: 10,
           position: [
             -15,
             0.4,
-            18,
-          ],
-          rotation:
-            Math.PI / 2,
-        },
-
-        {
-          rank: 7,
-          position: [
-            15,
-            0.4,
-            18,
-          ],
-          rotation:
-            -Math.PI / 2,
-        },
-
-        {
-          rank: 4,
-          position: [
-            -15,
-            0.4,
-            7,
-          ],
-          rotation:
-            Math.PI / 2,
-        },
-
-        {
-          rank: 5,
-          position: [
-            15,
-            0.4,
-            7,
-          ],
-          rotation:
-            -Math.PI / 2,
-        },
-
-        {
-          rank: 2,
-          position: [
-            -15,
-            0.4,
-            -5,
-          ],
-          rotation:
-            Math.PI / 2,
-        },
-
-        {
-          rank: 3,
-          position: [
-            15,
-            0.4,
-            -5,
-          ],
-          rotation:
-            -Math.PI / 2,
-        },
-
-        {
-          rank: 8,
-          position: [
-            -15,
-            0.4,
-            -17,
+            17,
           ],
           rotation:
             Math.PI / 2,
@@ -677,18 +645,84 @@ export default function PopularTodayHall() {
           position: [
             15,
             0.4,
-            -17,
+            17,
           ],
           rotation:
             -Math.PI / 2,
         },
 
         {
-          rank: 10,
+          rank: 8,
           position: [
             -15,
             0.4,
-            -28,
+            6,
+          ],
+          rotation:
+            Math.PI / 2,
+        },
+
+        {
+          rank: 7,
+          position: [
+            15,
+            0.4,
+            6,
+          ],
+          rotation:
+            -Math.PI / 2,
+        },
+
+        {
+          rank: 6,
+          position: [
+            -15,
+            0.4,
+            -6,
+          ],
+          rotation:
+            Math.PI / 2,
+        },
+
+        {
+          rank: 5,
+          position: [
+            15,
+            0.4,
+            -6,
+          ],
+          rotation:
+            -Math.PI / 2,
+        },
+
+        {
+          rank: 4,
+          position: [
+            -15,
+            0.4,
+            -18,
+          ],
+          rotation:
+            Math.PI / 2,
+        },
+
+        {
+          rank: 3,
+          position: [
+            15,
+            0.4,
+            -18,
+          ],
+          rotation:
+            -Math.PI / 2,
+        },
+
+        {
+          rank: 2,
+          position: [
+            -14,
+            0.4,
+            -29,
           ],
           rotation:
             Math.PI / 2,
@@ -699,7 +733,7 @@ export default function PopularTodayHall() {
           position: [
             0,
             0.4,
-            -29,
+            -28,
           ],
           rotation: 0,
         },
@@ -710,23 +744,23 @@ export default function PopularTodayHall() {
   return (
     <group>
       {/* ===================================================
-          REVESTIMIENTO INTERIOR
+          INTERIOR CLARO
       =================================================== */}
 
       <InstancedBoxes
-        items={
-          innerWallItems
-        }
-        color="#d9d7d0"
+        items={innerWallItems}
+        color="#d7d5cf"
         roughness={0.92}
         castShadow={false}
         receiveShadow
       />
 
+      {/* ===================================================
+          PANELES OSCUROS
+      =================================================== */}
+
       <InstancedBoxes
-        items={
-          darkWallPanels
-        }
+        items={wallPanels}
         color="#343a3f"
         roughness={0.8}
         castShadow={false}
@@ -735,82 +769,123 @@ export default function PopularTodayHall() {
 
       {/* ===================================================
           PASILLO CENTRAL
-
-          No es collider.
-          Es una guía visual.
       =================================================== */}
 
       <InstancedBoxes
-        items={
-          floorGuideItems
-        }
-        color="#31373c"
-        roughness={0.74}
+        items={centralPath}
+        color="#34393d"
+        roughness={0.72}
         castShadow={false}
         receiveShadow
       />
 
       {/* ===================================================
-          ZONA DE ENTRADA
+          VESTÍBULO / PORTAL DE ENTRADA
 
-          Un pequeño portal interior que marca
-          la transición exterior -> sala.
+          Esta vez es un arco REAL:
+          dos columnas + travesaño.
+
+          El centro queda físicamente abierto.
       =================================================== */}
 
       <RoundedBox
         position={[
-          0,
-          4,
+          -6,
+          3.5,
           27.5,
         ]}
         args={[
-          14,
-          7,
-          0.6,
+          1,
+          6.5,
+          0.8,
         ]}
-        radius={0.35}
+        radius={0.22}
         smoothness={4}
         castShadow
       >
         <meshStandardMaterial
-          color="#292e32"
-          roughness={0.76}
+          color="#262b2f"
+          roughness={0.72}
         />
       </RoundedBox>
 
-      {/* HUECO visual del portal */}
+      <RoundedBox
+        position={[
+          6,
+          3.5,
+          27.5,
+        ]}
+        args={[
+          1,
+          6.5,
+          0.8,
+        ]}
+        radius={0.22}
+        smoothness={4}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#262b2f"
+          roughness={0.72}
+        />
+      </RoundedBox>
 
       <RoundedBox
         position={[
           0,
-          3.4,
-          27.15,
+          6.55,
+          27.5,
         ]}
         args={[
-          9,
-          5.3,
-          0.25,
+          13,
+          0.55,
+          0.8,
         ]}
-        radius={0.28}
+        radius={0.22}
         smoothness={4}
+        castShadow
       >
         <meshStandardMaterial
-          color="#111518"
-          emissive="#152633"
-          emissiveIntensity={0.25}
+          color="#262b2f"
+          roughness={0.72}
         />
       </RoundedBox>
 
       {/* ===================================================
-          LÍNEAS DE LUZ
+          LUZ AZUL DEL PORTAL
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          0,
+          6.24,
+          27.05,
+        ]}
+        args={[
+          10.5,
+          0.1,
+          0.12,
+        ]}
+        radius={0.03}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#75b8df"
+          emissive="#75b8df"
+          emissiveIntensity={1}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          RIELES DE LUZ
       =================================================== */}
 
       <InstancedBoxes
-        items={
-          ceilingStrips
-        }
-        color="#dcecff"
-        roughness={0.3}
+        items={lightRails}
+        color="#eaf4ff"
+        roughness={0.25}
+        emissive="#dcecff"
+        emissiveIntensity={1.1}
         castShadow={false}
         receiveShadow={false}
       />
@@ -818,18 +893,20 @@ export default function PopularTodayHall() {
       {/* ===================================================
           ILUMINACIÓN REAL
 
-          Sin sombras.
-          Es mucho más barato para móvil.
+          Sin castShadow.
+          Mucho más económica.
+
+          Repartida para evitar una única luz enorme.
       =================================================== */}
 
       <pointLight
         position={[
           0,
-          10.5,
-          21,
+          10,
+          22,
         ]}
-        color="#fff3df"
-        intensity={22}
+        color="#fff1dd"
+        intensity={28}
         distance={30}
         decay={2}
       />
@@ -837,24 +914,12 @@ export default function PopularTodayHall() {
       <pointLight
         position={[
           0,
-          10.5,
-          4,
+          10,
+          7,
         ]}
-        color="#eef5ff"
-        intensity={24}
-        distance={32}
-        decay={2}
-      />
-
-      <pointLight
-        position={[
-          0,
-          10.5,
-          -14,
-        ]}
-        color="#eef5ff"
-        intensity={24}
-        distance={32}
+        color="#edf5ff"
+        intensity={30}
+        distance={28}
         decay={2}
       />
 
@@ -862,16 +927,28 @@ export default function PopularTodayHall() {
         position={[
           0,
           10,
-          -29,
+          -9,
         ]}
-        color="#d8ecff"
-        intensity={20}
-        distance={26}
+        color="#edf5ff"
+        intensity={30}
+        distance={28}
+        decay={2}
+      />
+
+      <pointLight
+        position={[
+          0,
+          10,
+          -25,
+        ]}
+        color="#deefff"
+        intensity={28}
+        distance={27}
         decay={2}
       />
 
       {/* ===================================================
-          LAS 10 ESTACIONES
+          ESTACIONES
       =================================================== */}
 
       {stations.map(
@@ -896,65 +973,101 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          TOP 1
+          PARED HERO TOP 1
 
-          Fondo de la sala.
-          Punto visual de destino.
+          Punto de fuga al entrar.
       =================================================== */}
 
       <RoundedBox
         position={[
           0,
           7,
-          -34.1,
+          -34.15,
         ]}
         args={[
-          17,
-          8,
-          0.3,
+          18,
+          9,
+          0.28,
         ]}
-        radius={0.35}
+        radius={0.32}
         smoothness={4}
       >
         <meshStandardMaterial
           color="#151a1e"
-          emissive="#1b3444"
-          emissiveIntensity={0.36}
-          roughness={0.48}
-        />
-      </RoundedBox>
-
-      <RoundedBox
-        position={[
-          0,
-          2.1,
-          -33.8,
-        ]}
-        args={[
-          10,
-          0.18,
-          0.18,
-        ]}
-        radius={0.07}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#e0b34f"
-          emissive="#e0b34f"
-          emissiveIntensity={0.9}
+          emissive="#182c3a"
+          emissiveIntensity={0.45}
+          roughness={0.45}
         />
       </RoundedBox>
 
       {/* ===================================================
-          FÍSICA DE LAS ESTACIONES
+          ACENTO DEL Nº1
+      =================================================== */}
 
-          Para no atravesarlas.
+      <RoundedBox
+        position={[
+          0,
+          2,
+          -33.94,
+        ]}
+        args={[
+          10,
+          0.16,
+          0.12,
+        ]}
+        radius={0.05}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#e5b84e"
+          emissive="#e5b84e"
+          emissiveIntensity={1}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          COLISIONES
+
+          Solo mobiliario importante.
+
+          No ponemos física en paredes internas porque
+          ya existe la carcasa estructural.
       =================================================== */}
 
       <RigidBody
         type="fixed"
         colliders={false}
       >
+        {/* PORTAL */}
+
+        <CuboidCollider
+          args={[
+            0.5,
+            3.25,
+            0.4,
+          ]}
+          position={[
+            -6,
+            3.5,
+            27.5,
+          ]}
+        />
+
+        <CuboidCollider
+          args={[
+            0.5,
+            3.25,
+            0.4,
+          ]}
+          position={[
+            6,
+            3.5,
+            27.5,
+          ]}
+        />
+
+        {/* ESTACIONES */}
+
         {stations.map(
           (
             station
@@ -964,15 +1077,23 @@ export default function PopularTodayHall() {
                 `station-${station.rank}`
               }
               args={[
-                2.4,
+                station.rank <=
+                3
+                  ? 2.7
+                  : 2.3,
+
                 0.4,
-                1.4,
+
+                station.rank <=
+                3
+                  ? 1.55
+                  : 1.35,
               ]}
               position={[
                 station
                   .position[0],
 
-                0.85,
+                0.8,
 
                 station
                   .position[2],
