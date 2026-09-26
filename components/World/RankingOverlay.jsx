@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useState,
 } from "react";
 
 /* =========================================================
@@ -24,44 +25,131 @@ function getYouTubeId(
 
   try {
     const parsed =
-      new URL(url);
+      new URL(
+        url
+      );
 
     if (
       parsed.hostname.includes(
         "youtu.be"
       )
     ) {
-      return parsed.pathname
-        .replace("/", "")
-        .split("/")[0];
+      return (
+        parsed.pathname
+          .replace(
+            "/",
+            ""
+          )
+          .split(
+            "/"
+          )[0] ||
+        null
+      );
     }
 
     if (
-      parsed.pathname.startsWith(
-        "/shorts/"
-      )
+      parsed.pathname
+        .startsWith(
+          "/shorts/"
+        )
     ) {
-      return parsed.pathname
-        .split("/shorts/")[1]
-        ?.split("/")[0];
+      return (
+        parsed.pathname
+          .split(
+            "/shorts/"
+          )[1]
+          ?.split(
+            "/"
+          )[0] ||
+        null
+      );
     }
 
     if (
-      parsed.pathname.startsWith(
-        "/embed/"
-      )
+      parsed.pathname
+        .startsWith(
+          "/embed/"
+        )
     ) {
-      return parsed.pathname
-        .split("/embed/")[1]
-        ?.split("/")[0];
+      return (
+        parsed.pathname
+          .split(
+            "/embed/"
+          )[1]
+          ?.split(
+            "/"
+          )[0] ||
+        null
+      );
     }
 
-    return parsed.searchParams.get(
-      "v"
-    );
+    return parsed
+      .searchParams
+      .get(
+        "v"
+      );
   } catch {
     return null;
   }
+}
+
+/* =========================================================
+   VIEWPORT
+========================================================= */
+
+function useViewport() {
+  const [
+    viewport,
+    setViewport,
+  ] =
+    useState({
+      width:
+        390,
+
+      height:
+        844,
+    });
+
+  useEffect(() => {
+    const update =
+      () => {
+        setViewport({
+          width:
+            window
+              .innerWidth,
+
+          height:
+            window
+              .innerHeight,
+        });
+      };
+
+    update();
+
+    window.addEventListener(
+      "resize",
+      update
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      update
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        update
+      );
+
+      window.removeEventListener(
+        "orientationchange",
+        update
+      );
+    };
+  }, []);
+
+  return viewport;
 }
 
 /* =========================================================
@@ -72,22 +160,70 @@ function VideoOverlay({
   game,
   onClose,
 }) {
+  const viewport =
+    useViewport();
+
   const youtubeId =
     getYouTubeId(
       game.videoUrl
     );
 
-  const isYouTube =
-    game.sourceType ===
-      "youtube" ||
-    Boolean(
-      youtubeId
-    );
-
   const youtubeEmbedUrl =
     youtubeId
-      ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1`
+      ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1&playsinline=1&controls=1&rel=0`
       : null;
+
+  /*
+    Espacio disponible descontando:
+    - barra superior
+    - márgenes
+  */
+
+  const availableWidth =
+    Math.max(
+      200,
+      viewport.width -
+        24
+    );
+
+  const availableHeight =
+    Math.max(
+      160,
+      viewport.height -
+        82
+    );
+
+  /*
+    16:9 perfecto.
+
+    Limitamos primero por ancho.
+    Si excede la altura,
+    recalculamos desde la altura.
+  */
+
+  let playerWidth =
+    Math.min(
+      1200,
+      availableWidth
+    );
+
+  let playerHeight =
+    playerWidth *
+    9 /
+    16;
+
+  if (
+    playerHeight >
+    availableHeight
+  ) {
+    playerHeight =
+      availableHeight;
+
+    playerWidth =
+      playerHeight *
+      16 /
+      9;
+  }
 
   return (
     <div
@@ -95,7 +231,7 @@ function VideoOverlay({
       aria-modal="true"
       aria-label={
         game.title ||
-        "VÃ­deo"
+        "Vídeo"
       }
       style={{
         position:
@@ -113,6 +249,9 @@ function VideoOverlay({
         flexDirection:
           "column",
 
+        overflow:
+          "hidden",
+
         background:
           "#05070a",
 
@@ -124,16 +263,22 @@ function VideoOverlay({
       }}
     >
       {/* ===================================================
-          BARRA
+          CABECERA
       =================================================== */}
 
       <div
         style={{
-          minHeight:
-            "58px",
+          height:
+            58,
+
+          flex:
+            "0 0 58px",
 
           padding:
-            "10px 14px",
+            "8px 12px",
+
+          boxSizing:
+            "border-box",
 
           display:
             "flex",
@@ -145,10 +290,10 @@ function VideoOverlay({
             "space-between",
 
           gap:
-            "14px",
+            12,
 
           background:
-            "rgba(8,10,14,.96)",
+            "rgba(8,10,14,.98)",
 
           borderBottom:
             `2px solid ${
@@ -157,7 +302,12 @@ function VideoOverlay({
             }`,
         }}
       >
-        <div>
+        <div
+          style={{
+            minWidth:
+              0,
+          }}
+        >
           <div
             style={{
               color:
@@ -165,7 +315,7 @@ function VideoOverlay({
                 "#58f1ff",
 
               fontSize:
-                "10px",
+                9,
 
               fontWeight:
                 900,
@@ -177,7 +327,27 @@ function VideoOverlay({
             FREAKY WORLD
           </div>
 
-          <strong>
+          <strong
+            style={{
+              display:
+                "block",
+
+              maxWidth:
+                "70vw",
+
+              overflow:
+                "hidden",
+
+              textOverflow:
+                "ellipsis",
+
+              whiteSpace:
+                "nowrap",
+
+              fontSize:
+                14,
+            }}
+          >
             {game.title ||
               "VIDEO DESTACADO"}
           </strong>
@@ -190,10 +360,13 @@ function VideoOverlay({
           }
           style={{
             width:
-              "42px",
+              38,
 
             height:
-              "42px",
+              38,
+
+            flex:
+              "0 0 38px",
 
             border:
               "1px solid rgba(255,255,255,.18)",
@@ -208,15 +381,18 @@ function VideoOverlay({
               "#fff",
 
             fontSize:
-              "25px",
+              23,
+
+            lineHeight:
+              1,
           }}
         >
-          Ã
+          ×
         </button>
       </div>
 
       {/* ===================================================
-          CONTENIDO
+          REPRODUCTOR
       =================================================== */}
 
       <div
@@ -236,18 +412,47 @@ function VideoOverlay({
           justifyContent:
             "center",
 
+          overflow:
+            "hidden",
+
           padding:
-            "14px",
+            12,
+
+          boxSizing:
+            "border-box",
         }}
       >
         <div
           style={{
+            position:
+              "relative",
+
             width:
-              "min(1200px, 100%)",
+              playerWidth,
+
+            height:
+              playerHeight,
+
+            maxWidth:
+              "100%",
+
+            maxHeight:
+              "100%",
+
+            flex:
+              "0 0 auto",
+
+            overflow:
+              "hidden",
+
+            borderRadius:
+              12,
+
+            background:
+              "#000",
           }}
         >
-          {isYouTube &&
-          youtubeEmbedUrl ? (
+          {youtubeEmbedUrl ? (
             <iframe
               src={
                 youtubeEmbedUrl
@@ -259,26 +464,26 @@ function VideoOverlay({
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
               style={{
+                position:
+                  "absolute",
+
+                inset:
+                  0,
+
                 display:
                   "block",
 
                 width:
                   "100%",
 
-                maxHeight:
-                  "calc(100vh - 100px)",
-
-                aspectRatio:
-                  "16 / 9",
+                height:
+                  "100%",
 
                 border:
                   0,
 
                 background:
                   "#000",
-
-                borderRadius:
-                  "16px",
               }}
             />
           ) : (
@@ -286,34 +491,30 @@ function VideoOverlay({
               src={
                 game.videoUrl
               }
-
               controls
-
               autoPlay
-
               playsInline
-
               style={{
+                position:
+                  "absolute",
+
+                inset:
+                  0,
+
                 display:
                   "block",
 
                 width:
                   "100%",
 
-                maxHeight:
-                  "calc(100vh - 100px)",
-
-                aspectRatio:
-                  "16 / 9",
+                height:
+                  "100%",
 
                 objectFit:
                   "contain",
 
                 background:
                   "#000",
-
-                borderRadius:
-                  "16px",
               }}
             />
           )}
@@ -324,7 +525,7 @@ function VideoOverlay({
 }
 
 /* =========================================================
-   FICHA MOCK
+   MOCK
 ========================================================= */
 
 function MockGameCard({
@@ -359,7 +560,7 @@ function MockGameCard({
       <div
         style={{
           minHeight:
-            "58px",
+            58,
 
           padding:
             "10px 14px",
@@ -390,7 +591,7 @@ function MockGameCard({
                 game.accent,
 
               fontSize:
-                "10px",
+                10,
 
               fontWeight:
                 900,
@@ -414,10 +615,10 @@ function MockGameCard({
           }
           style={{
             width:
-              "42px",
+              42,
 
             height:
-              "42px",
+              42,
 
             borderRadius:
               "50%",
@@ -432,10 +633,10 @@ function MockGameCard({
               "#fff",
 
             fontSize:
-              "24px",
+              24,
           }}
         >
-          Ã
+          ×
         </button>
       </div>
 
@@ -448,10 +649,10 @@ function MockGameCard({
             "20px auto",
 
           padding:
-            "22px",
+            22,
 
           borderRadius:
-            "20px",
+            20,
 
           background:
             "#fff",
@@ -460,10 +661,10 @@ function MockGameCard({
         <div
           style={{
             padding:
-              "26px",
+              26,
 
             borderRadius:
-              "18px",
+              18,
 
             color:
               "#fff",
@@ -475,13 +676,13 @@ function MockGameCard({
           <div
             style={{
               fontSize:
-                "12px",
+                12,
 
               fontWeight:
                 900,
             }}
           >
-            POPULARES HOY Â· #{game.rank}
+            POPULARES HOY · #{game.rank}
           </div>
 
           <h1
@@ -526,7 +727,7 @@ function MockGameCard({
               0,
 
             borderRadius:
-              "12px",
+              12,
 
             background:
               game.accent,
@@ -552,21 +753,26 @@ export default function RankingOverlay({
 }) {
   useEffect(() => {
     const previous =
-      document.body.style
+      document.body
+        .style
         .overflow;
 
-    document.body.style
+    document.body
+      .style
       .overflow =
       "hidden";
 
     return () => {
-      document.body.style
+      document.body
+        .style
         .overflow =
         previous;
     };
   }, []);
 
-  if (!game?.id) {
+  if (
+    !game?.id
+  ) {
     return null;
   }
 
@@ -577,17 +783,27 @@ export default function RankingOverlay({
   ) {
     return (
       <VideoOverlay
-        game={game}
-        onClose={onClose}
+        game={
+          game
+        }
+        onClose={
+          onClose
+        }
       />
     );
   }
 
-  if (game.mock) {
+  if (
+    game.mock
+  ) {
     return (
       <MockGameCard
-        game={game}
-        onClose={onClose}
+        game={
+          game
+        }
+        onClose={
+          onClose
+        }
       />
     );
   }
@@ -618,14 +834,16 @@ export default function RankingOverlay({
             onClose
           }
         >
-          Ã
+          ×
         </button>
       </div>
 
       <div className="ranking-overlay-frame-wrap">
         <iframe
           className="ranking-overlay-frame"
-          src={gameUrl}
+          src={
+            gameUrl
+          }
           title={
             game.title ||
             "Freaky Ranking"
