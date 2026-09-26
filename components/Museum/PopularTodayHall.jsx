@@ -8,8 +8,13 @@ import {
   useState,
 } from "react";
 
-import { RoundedBox } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import {
+  RoundedBox,
+} from "@react-three/drei";
+
+import {
+  useFrame,
+} from "@react-three/fiber";
 
 import {
   RigidBody,
@@ -64,7 +69,7 @@ const GAMES = [
     accent: "#ff4f95",
     accent2: "#7d44ff",
     description:
-      "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones y reputación.",
+      "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones.",
   },
   {
     id: "mock-echoes",
@@ -124,7 +129,7 @@ const GAMES = [
     accent: "#ca8dff",
     accent2: "#5a3b88",
     description:
-      "Una señal desconocida conduce a una estación científica abandonada.",
+      "Una señal conduce a una estación científica abandonada.",
   },
   {
     id: "mock-iron-kingdom",
@@ -199,40 +204,64 @@ const GAMES = [
     accent: "#75e3ab",
     accent2: "#3284a0",
     description:
-      "Pequeños mundos conectados mediante portales de luz.",
+      "Mundos conectados mediante portales de luz.",
   },
 ];
 
 /* =========================================================
-   TEXTURAS
+   TEXTURA PORTADA
 ========================================================= */
 
 function createPosterTexture(game) {
-  const canvas = document.createElement("canvas");
+  const canvas =
+    document.createElement("canvas");
 
   canvas.width = 512;
   canvas.height = 768;
 
-  const ctx = canvas.getContext("2d");
+  const ctx =
+    canvas.getContext("2d");
 
-  const gradient = ctx.createLinearGradient(
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      512,
+      768
+    );
+
+  gradient.addColorStop(
+    0,
+    game.accent
+  );
+
+  gradient.addColorStop(
+    0.55,
+    game.accent2
+  );
+
+  gradient.addColorStop(
+    1,
+    "#05070a"
+  );
+
+  ctx.fillStyle =
+    gradient;
+
+  ctx.fillRect(
     0,
     0,
     512,
     768
   );
 
-  gradient.addColorStop(0, game.accent);
-  gradient.addColorStop(0.52, game.accent2);
-  gradient.addColorStop(1, "#070a10");
+  ctx.globalAlpha = 0.15;
 
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 768);
-
-  ctx.globalAlpha = 0.16;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle =
+    "#ffffff";
 
   ctx.beginPath();
+
   ctx.arc(
     390,
     150,
@@ -240,23 +269,28 @@ function createPosterTexture(game) {
     0,
     Math.PI * 2
   );
+
   ctx.fill();
 
   ctx.globalAlpha = 0.1;
 
   ctx.beginPath();
+
   ctx.arc(
     100,
-    440,
-    210,
+    420,
+    200,
     0,
     Math.PI * 2
   );
+
   ctx.fill();
 
   ctx.globalAlpha = 1;
 
-  ctx.fillStyle = "rgba(0,0,0,.48)";
+  ctx.fillStyle =
+    "rgba(0,0,0,.5)";
+
   ctx.fillRect(
     28,
     28,
@@ -264,8 +298,11 @@ function createPosterTexture(game) {
     54
   );
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "800 28px Arial";
+  ctx.fillStyle =
+    "#ffffff";
+
+  ctx.font =
+    "800 28px Arial";
 
   ctx.fillText(
     `#${game.rank}`,
@@ -273,32 +310,40 @@ function createPosterTexture(game) {
     65
   );
 
-  ctx.font = "900 44px Arial";
+  ctx.font =
+    "900 44px Arial";
 
-  const words = game.title.split(" ");
+  const words =
+    game.title.split(" ");
 
   let line = "";
   let y = 590;
 
-  words.forEach((word) => {
-    const next = `${line}${word} `;
+  words.forEach(
+    (word) => {
+      const next =
+        `${line}${word} `;
 
-    if (
-      ctx.measureText(next).width > 450 &&
-      line
-    ) {
-      ctx.fillText(
-        line.trim(),
-        28,
-        y
-      );
+      if (
+        ctx.measureText(next)
+          .width > 450 &&
+        line
+      ) {
+        ctx.fillText(
+          line.trim(),
+          28,
+          y
+        );
 
-      line = `${word} `;
-      y += 50;
-    } else {
-      line = next;
+        line =
+          `${word} `;
+
+        y += 50;
+      } else {
+        line = next;
+      }
     }
-  });
+  );
 
   ctx.fillText(
     line.trim(),
@@ -306,7 +351,8 @@ function createPosterTexture(game) {
     y
   );
 
-  ctx.font = "500 20px Arial";
+  ctx.font =
+    "500 20px Arial";
 
   ctx.fillStyle =
     "rgba(255,255,255,.75)";
@@ -318,13 +364,19 @@ function createPosterTexture(game) {
   );
 
   const texture =
-    new THREE.CanvasTexture(canvas);
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
   return texture;
 }
+
+/* =========================================================
+   PREVIEW VIDEO
+========================================================= */
 
 function createVideoPreviewTexture() {
   const canvas =
@@ -346,20 +398,21 @@ function createVideoPreviewTexture() {
 
   gradient.addColorStop(
     0,
-    "#051923"
+    "#04151d"
   );
 
   gradient.addColorStop(
-    0.5,
-    "#251441"
+    0.48,
+    "#24123c"
   );
 
   gradient.addColorStop(
     1,
-    "#140611"
+    "#10060d"
   );
 
-  ctx.fillStyle = gradient;
+  ctx.fillStyle =
+    gradient;
 
   ctx.fillRect(
     0,
@@ -367,6 +420,41 @@ function createVideoPreviewTexture() {
     1280,
     720
   );
+
+  ctx.globalAlpha =
+    0.16;
+
+  ctx.fillStyle =
+    "#58f1ff";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    1030,
+    130,
+    250,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+  ctx.fillStyle =
+    "#ff4f95";
+
+  ctx.beginPath();
+
+  ctx.arc(
+    160,
+    620,
+    280,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fill();
+
+  ctx.globalAlpha = 1;
 
   ctx.fillStyle =
     "#58f1ff";
@@ -376,7 +464,7 @@ function createVideoPreviewTexture() {
 
   ctx.fillText(
     "FREAKY WORLD",
-    75,
+    70,
     100
   );
 
@@ -384,23 +472,23 @@ function createVideoPreviewTexture() {
     "#ffffff";
 
   ctx.font =
-    "900 79px Arial";
+    "900 78px Arial";
 
   ctx.fillText(
-    "PANTALLA INTERACTIVA",
-    75,
+    "VIDEO 3D",
+    70,
     205
   );
 
   ctx.font =
-    "600 31px Arial";
+    "600 32px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,.8)";
+    "rgba(255,255,255,.78)";
 
   ctx.fillText(
-    "TOCÁ LA PANTALLA",
-    75,
+    "ACERCATE PARA REPRODUCIR",
+    72,
     275
   );
 
@@ -411,8 +499,8 @@ function createVideoPreviewTexture() {
 
   ctx.arc(
     640,
-    450,
-    85,
+    445,
+    80,
     0,
     Math.PI * 2
   );
@@ -425,18 +513,18 @@ function createVideoPreviewTexture() {
     "#11151a";
 
   ctx.moveTo(
-    677,
-    450
+    675,
+    445
   );
 
   ctx.lineTo(
-    617,
-    410
+    618,
+    407
   );
 
   ctx.lineTo(
-    617,
-    490
+    618,
+    483
   );
 
   ctx.closePath();
@@ -444,13 +532,19 @@ function createVideoPreviewTexture() {
   ctx.fill();
 
   const texture =
-    new THREE.CanvasTexture(canvas);
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
   return texture;
 }
+
+/* =========================================================
+   TEXTO NEÓN
+========================================================= */
 
 function createNeonTextTexture(
   text,
@@ -465,16 +559,23 @@ function createNeonTextTexture(
   const ctx =
     canvas.getContext("2d");
 
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
+  ctx.textAlign =
+    "center";
+
+  ctx.textBaseline =
+    "middle";
 
   ctx.font =
     "900 108px Arial";
 
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 38;
+  ctx.shadowColor =
+    color;
 
-  ctx.fillStyle = color;
+  ctx.shadowBlur =
+    35;
+
+  ctx.fillStyle =
+    color;
 
   ctx.fillText(
     text,
@@ -482,8 +583,11 @@ function createNeonTextTexture(
     128
   );
 
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = "#ffffff";
+  ctx.shadowBlur =
+    10;
+
+  ctx.fillStyle =
+    "#ffffff";
 
   ctx.fillText(
     text,
@@ -492,13 +596,19 @@ function createNeonTextTexture(
   );
 
   const texture =
-    new THREE.CanvasTexture(canvas);
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
   return texture;
 }
+
+/* =========================================================
+   ICONOS ARCADE
+========================================================= */
 
 function createArcadeTexture(type) {
   const canvas =
@@ -517,11 +627,14 @@ function createArcadeTexture(type) {
     512
   );
 
-  if (type === "chomper") {
+  if (
+    type === "chomper"
+  ) {
     ctx.shadowColor =
       "#ffe44f";
 
-    ctx.shadowBlur = 35;
+    ctx.shadowBlur =
+      35;
 
     ctx.fillStyle =
       "#ffe44f";
@@ -576,7 +689,8 @@ function createArcadeTexture(type) {
     ctx.shadowColor =
       "#7cf4ff";
 
-    ctx.shadowBlur = 25;
+    ctx.shadowBlur =
+      25;
 
     ctx.fillStyle =
       "#7cf4ff";
@@ -603,7 +717,9 @@ function createArcadeTexture(type) {
               value,
               colIndex
             ) => {
-              if (value === "1") {
+              if (
+                value === "1"
+              ) {
                 ctx.fillRect(
                   startX +
                     colIndex *
@@ -622,7 +738,9 @@ function createArcadeTexture(type) {
   }
 
   const texture =
-    new THREE.CanvasTexture(canvas);
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -641,12 +759,15 @@ function InstancedBoxes({
   emissive = "#000000",
   emissiveIntensity = 0,
 }) {
-  const ref = useRef(null);
+  const ref =
+    useRef(null);
 
-  const dummy = useMemo(
-    () => new THREE.Object3D(),
-    []
-  );
+  const dummy =
+    useMemo(
+      () =>
+        new THREE.Object3D(),
+      []
+    );
 
   useLayoutEffect(() => {
     if (!ref.current) {
@@ -682,7 +803,9 @@ function InstancedBoxes({
       }
     );
 
-    ref.current.instanceMatrix.needsUpdate =
+    ref.current
+      .instanceMatrix
+      .needsUpdate =
       true;
   }, [
     items,
@@ -719,21 +842,34 @@ function InstancedBoxes({
 
 function NeonLine({
   position,
-  rotation = [0, 0, 0],
-  size = [6, 0.08, 0.08],
-  color = "#58f1ff",
+  rotation = [
+    0,
+    0,
+    0,
+  ],
+  size = [
+    6,
+    0.08,
+    0.08,
+  ],
+  color =
+    "#58f1ff",
 }) {
   return (
     <mesh
       position={position}
       rotation={rotation}
     >
-      <boxGeometry args={size} />
+      <boxGeometry
+        args={size}
+      />
 
       <meshStandardMaterial
         color={color}
         emissive={color}
-        emissiveIntensity={2.4}
+        emissiveIntensity={
+          2.4
+        }
       />
     </mesh>
   );
@@ -743,7 +879,11 @@ function NeonWord({
   text,
   color,
   position,
-  rotation = [0, 0, 0],
+  rotation = [
+    0,
+    0,
+    0,
+  ],
   width = 8,
   height = 2,
 }) {
@@ -761,9 +901,12 @@ function NeonWord({
     );
 
   useEffect(() => {
-    return () =>
+    return () => {
       texture.dispose();
-  }, [texture]);
+    };
+  }, [
+    texture,
+  ]);
 
   return (
     <mesh
@@ -781,7 +924,9 @@ function NeonWord({
         map={texture}
         transparent
         toneMapped={false}
-        side={THREE.DoubleSide}
+        side={
+          THREE.DoubleSide
+        }
       />
     </mesh>
   );
@@ -796,14 +941,21 @@ function ArcadeIcon({
   const texture =
     useMemo(
       () =>
-        createArcadeTexture(type),
-      [type]
+        createArcadeTexture(
+          type
+        ),
+      [
+        type,
+      ]
     );
 
   useEffect(() => {
-    return () =>
+    return () => {
       texture.dispose();
-  }, [texture]);
+    };
+  }, [
+    texture,
+  ]);
 
   return (
     <mesh
@@ -811,21 +963,26 @@ function ArcadeIcon({
       rotation={rotation}
     >
       <planeGeometry
-        args={[size, size]}
+        args={[
+          size,
+          size,
+        ]}
       />
 
       <meshBasicMaterial
         map={texture}
         transparent
         toneMapped={false}
-        side={THREE.DoubleSide}
+        side={
+          THREE.DoubleSide
+        }
       />
     </mesh>
   );
 }
 
 /* =========================================================
-   JUEGOS
+   ESTACIÓN DE JUEGO
 ========================================================= */
 
 function GameStation({
@@ -847,20 +1004,30 @@ function GameStation({
       []
     );
 
-  const [near, setNear] =
+  const [
+    near,
+    setNear,
+  ] =
     useState(false);
 
   const poster =
     useMemo(
       () =>
-        createPosterTexture(game),
-      [game]
+        createPosterTexture(
+          game
+        ),
+      [
+        game,
+      ]
     );
 
   useEffect(() => {
-    return () =>
+    return () => {
       poster.dispose();
-  }, [poster]);
+    };
+  }, [
+    poster,
+  ]);
 
   useFrame(() => {
     if (
@@ -906,7 +1073,9 @@ function GameStation({
     nearRef.current =
       isNear;
 
-    setNear(isNear);
+    setNear(
+      isNear
+    );
 
     window.dispatchEvent(
       new CustomEvent(
@@ -996,7 +1165,9 @@ function GameStation({
       >
         <meshStandardMaterial
           color="#101419"
-          emissive={game.accent}
+          emissive={
+            game.accent
+          }
           emissiveIntensity={
             near
               ? 0.38
@@ -1031,15 +1202,18 @@ function GameStation({
 /* =========================================================
    VIDEO WALL
 
-   CAMBIO CLAVE:
-   SOLO onPointerUp.
+   PRUEBA DEFINITIVA:
 
-   Antes:
-   pointerDown -> play
-   click       -> pause
+   - NO TOCAR
+   - NO CLICK
+   - NO POINTER
+   - NO HTML
+   - NO IFRAME
 
-   AHORA:
-   pointerUp   -> una sola acción
+   Al acercarse el jugador:
+   video.play()
+
+   El MP4 queda como VideoTexture real.
 ========================================================= */
 
 function HeroVideoWall() {
@@ -1052,8 +1226,14 @@ function HeroVideoWall() {
   const videoRef =
     useRef(null);
 
-  const textureRef =
+  const videoTextureRef =
     useRef(null);
+
+  const startedRef =
+    useRef(false);
+
+  const startingRef =
+    useRef(false);
 
   const nearRef =
     useRef(false);
@@ -1065,16 +1245,28 @@ function HeroVideoWall() {
       []
     );
 
-  const [near, setNear] =
+  const [
+    near,
+    setNear,
+  ] =
     useState(false);
 
-  const [playing, setPlaying] =
+  const [
+    playing,
+    setPlaying,
+  ] =
     useState(false);
 
-  const [videoReady, setVideoReady] =
+  const [
+    ready,
+    setReady,
+  ] =
     useState(false);
 
-  const [videoError, setVideoError] =
+  const [
+    error,
+    setError,
+  ] =
     useState(false);
 
   const previewTexture =
@@ -1085,7 +1277,7 @@ function HeroVideoWall() {
     );
 
   /* =======================================================
-     VIDEO REAL
+     CREAR VIDEO
   ======================================================= */
 
   useEffect(() => {
@@ -1097,52 +1289,109 @@ function HeroVideoWall() {
     video.src =
       TEST_VIDEO_URL;
 
-    video.crossOrigin =
-      "anonymous";
-
-    video.playsInline =
-      true;
+    /*
+      Muy importante para iPhone/Safari.
+    */
 
     video.muted =
+      true;
+
+    video.defaultMuted =
+      true;
+
+    video.volume =
+      0;
+
+    video.playsInline =
       true;
 
     video.loop =
       true;
 
+    video.autoplay =
+      false;
+
     video.preload =
       "auto";
 
+    video.crossOrigin =
+      "anonymous";
+
+    video.setAttribute(
+      "muted",
+      ""
+    );
+
     video.setAttribute(
       "playsinline",
-      "true"
+      ""
     );
 
     video.setAttribute(
       "webkit-playsinline",
-      "true"
+      ""
     );
 
-    const onCanPlay =
+    video.setAttribute(
+      "crossorigin",
+      "anonymous"
+    );
+
+    const handleLoadedData =
       () => {
-        setVideoReady(true);
+        setReady(true);
       };
 
-    const onError =
+    const handleCanPlay =
       () => {
-        setVideoError(true);
+        setReady(true);
+      };
+
+    const handlePlaying =
+      () => {
+        setPlaying(true);
+        setError(false);
+      };
+
+    const handlePause =
+      () => {
+        if (
+          startedRef.current
+        ) {
+          setPlaying(false);
+        }
+      };
+
+    const handleError =
+      () => {
+        setError(true);
+        setPlaying(false);
       };
 
     video.addEventListener(
+      "loadeddata",
+      handleLoadedData
+    );
+
+    video.addEventListener(
       "canplay",
-      onCanPlay
+      handleCanPlay
+    );
+
+    video.addEventListener(
+      "playing",
+      handlePlaying
+    );
+
+    video.addEventListener(
+      "pause",
+      handlePause
     );
 
     video.addEventListener(
       "error",
-      onError
+      handleError
     );
-
-    video.load();
 
     const texture =
       new THREE.VideoTexture(
@@ -1164,20 +1413,41 @@ function HeroVideoWall() {
     videoRef.current =
       video;
 
-    textureRef.current =
+    videoTextureRef.current =
       texture;
+
+    /*
+      Empezamos a cargarlo ya.
+    */
+
+    video.load();
 
     return () => {
       video.pause();
 
       video.removeEventListener(
+        "loadeddata",
+        handleLoadedData
+      );
+
+      video.removeEventListener(
         "canplay",
-        onCanPlay
+        handleCanPlay
+      );
+
+      video.removeEventListener(
+        "playing",
+        handlePlaying
+      );
+
+      video.removeEventListener(
+        "pause",
+        handlePause
       );
 
       video.removeEventListener(
         "error",
-        onError
+        handleError
       );
 
       video.removeAttribute(
@@ -1191,7 +1461,7 @@ function HeroVideoWall() {
       videoRef.current =
         null;
 
-      textureRef.current =
+      videoTextureRef.current =
         null;
     };
   }, []);
@@ -1200,7 +1470,133 @@ function HeroVideoWall() {
     return () => {
       previewTexture.dispose();
     };
-  }, [previewTexture]);
+  }, [
+    previewTexture,
+  ]);
+
+  /* =======================================================
+     INTENTAR REPRODUCIR
+
+     Se ejecuta automáticamente al acercarnos.
+  ======================================================= */
+
+  const startVideo =
+    () => {
+      if (
+        startedRef.current ||
+        startingRef.current
+      ) {
+        return;
+      }
+
+      const video =
+        videoRef.current;
+
+      const texture =
+        videoTextureRef.current;
+
+      const screen =
+        screenRef.current;
+
+      if (
+        !video ||
+        !texture ||
+        !screen
+      ) {
+        return;
+      }
+
+      startingRef.current =
+        true;
+
+      setError(false);
+
+      /*
+        Primero ponemos la VideoTexture
+        en la pantalla.
+      */
+
+      screen.material.map =
+        texture;
+
+      screen.material.needsUpdate =
+        true;
+
+      /*
+        Nos aseguramos de que Safari
+        siga viendo el vídeo como muted.
+      */
+
+      video.muted =
+        true;
+
+      video.defaultMuted =
+        true;
+
+      video.volume =
+        0;
+
+      const playPromise =
+        video.play();
+
+      if (
+        playPromise &&
+        typeof playPromise.then ===
+          "function"
+      ) {
+        playPromise
+          .then(() => {
+            startedRef.current =
+              true;
+
+            startingRef.current =
+              false;
+
+            setPlaying(true);
+            setError(false);
+          })
+          .catch(
+            (playError) => {
+              console.error(
+                "FREAKY VIDEO PLAY ERROR:",
+                playError
+              );
+
+              startingRef.current =
+                false;
+
+              setPlaying(false);
+              setError(true);
+
+              /*
+                Volvemos al preview si Safari
+                bloquea el play.
+              */
+
+              if (
+                screenRef.current
+              ) {
+                screenRef.current
+                  .material.map =
+                  previewTexture;
+
+                screenRef.current
+                  .material
+                  .needsUpdate =
+                  true;
+              }
+            }
+          );
+      } else {
+        startedRef.current =
+          true;
+
+        startingRef.current =
+          false;
+
+        setPlaying(true);
+      }
+    };
 
   /* =======================================================
      PROXIMIDAD
@@ -1235,126 +1631,80 @@ function HeroVideoWall() {
         dz * dz
       );
 
+    /*
+      12 metros:
+      queremos que arranque antes de
+      tener la nariz pegada a la pantalla.
+    */
+
     const isNear =
-      distance < 9;
+      distance < 12;
 
     if (
-      isNear ===
+      isNear !==
       nearRef.current
     ) {
-      return;
-    }
+      nearRef.current =
+        isNear;
 
-    nearRef.current =
-      isNear;
+      setNear(
+        isNear
+      );
 
-    setNear(isNear);
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:game-near",
+          {
+            detail:
+              isNear
+                ? {
+                    near:
+                      true,
+                    game:
+                      FEATURED_VIDEO,
+                  }
+                : {
+                    near:
+                      false,
+                    game:
+                      FEATURED_VIDEO,
+                  },
+          }
+        )
+      );
 
-    window.dispatchEvent(
-      new CustomEvent(
-        "freaky:game-near",
-        {
-          detail:
-            isNear
-              ? {
-                  near: true,
-                  game:
-                    FEATURED_VIDEO,
-                }
-              : {
-                  near: false,
-                  game:
-                    FEATURED_VIDEO,
-                },
-        }
-      )
-    );
-  });
-
-  /* =======================================================
-     PLAY / PAUSE
-  ======================================================= */
-
-  const toggleVideo =
-    async (event) => {
       /*
-        Muy importante:
+        ESTA ES LA PRUEBA.
 
-        Este es el ÚNICO evento que
-        reproduce/pausa el vídeo.
+        Nada de tocar la pantalla.
+
+        Entramos en rango -> play.
       */
 
-      event.stopPropagation();
-
-      const video =
-        videoRef.current;
-
-      const texture =
-        textureRef.current;
-
-      const screen =
-        screenRef.current;
-
       if (
-        !video ||
-        !texture ||
-        !screen
+        isNear &&
+        !startedRef.current
       ) {
-        return;
+        startVideo();
       }
+    }
 
-      setVideoError(false);
+    /*
+      Si entramos muy rápido antes de que
+      el video termine de cargar,
+      volvemos a intentar cuando esté listo.
+    */
 
-      try {
-        if (video.paused) {
-          /*
-            Cambiamos la textura PRIMERO.
-            Así vemos inmediatamente
-            que el toque fue detectado.
-          */
-
-          screen.material.map =
-            texture;
-
-          screen.material.needsUpdate =
-            true;
-
-          /*
-            Como esto ocurre dentro del
-            gesto real del usuario,
-            Safari permite play().
-          */
-
-          await video.play();
-
-          setPlaying(true);
-        } else {
-          video.pause();
-
-          screen.material.map =
-            previewTexture;
-
-          screen.material.needsUpdate =
-            true;
-
-          setPlaying(false);
-        }
-      } catch (error) {
-        console.error(
-          "VIDEO PLAY ERROR",
-          error
-        );
-
-        screen.material.map =
-          previewTexture;
-
-        screen.material.needsUpdate =
-          true;
-
-        setPlaying(false);
-        setVideoError(true);
-      }
-    };
+    if (
+      isNear &&
+      ready &&
+      !startedRef.current &&
+      !startingRef.current &&
+      !error
+    ) {
+      startVideo();
+    }
+  });
 
   return (
     <group
@@ -1365,7 +1715,9 @@ function HeroVideoWall() {
         -33.72,
       ]}
     >
-      {/* MARCO */}
+      {/* ===================================================
+          MARCO
+      =================================================== */}
 
       <RoundedBox
         position={[
@@ -1384,31 +1736,26 @@ function HeroVideoWall() {
         <meshStandardMaterial
           color="#070b10"
           emissive={
-            videoError
-              ? "#ff3030"
+            error
+              ? "#ff2020"
               : playing
-                ? "#36ff86"
+                ? "#35ff7d"
                 : near
                   ? "#58f1ff"
                   : "#8b5cff"
           }
           emissiveIntensity={
-            near
+            playing
               ? 0.22
-              : 0.07
+              : 0.08
           }
         />
       </RoundedBox>
 
       {/* ===================================================
-          PANTALLA REAL
+          PANTALLA
 
-          SIN:
-          onPointerDown
-          onClick
-
-          SOLO:
-          onPointerUp
+          No tiene ningún evento táctil.
       =================================================== */}
 
       <mesh
@@ -1418,9 +1765,6 @@ function HeroVideoWall() {
           7.2,
           0.28,
         ]}
-        onPointerUp={
-          toggleVideo
-        }
       >
         <planeGeometry
           args={[
@@ -1430,13 +1774,19 @@ function HeroVideoWall() {
         />
 
         <meshBasicMaterial
-          map={previewTexture}
+          map={
+            previewTexture
+          }
           toneMapped={false}
-          side={THREE.DoubleSide}
+          side={
+            THREE.DoubleSide
+          }
         />
       </mesh>
 
-      {/* BORDE SUPERIOR */}
+      {/* ===================================================
+          MARCO NEÓN
+      =================================================== */}
 
       <NeonLine
         position={[
@@ -1451,12 +1801,10 @@ function HeroVideoWall() {
         ]}
         color={
           playing
-            ? "#36ff86"
+            ? "#35ff7d"
             : "#58f1ff"
         }
       />
-
-      {/* BORDE INFERIOR */}
 
       <NeonLine
         position={[
@@ -1470,24 +1818,31 @@ function HeroVideoWall() {
           0.08,
         ]}
         color={
-          videoError
-            ? "#ff3030"
+          error
+            ? "#ff2020"
             : "#ff4f95"
         }
       />
 
-      {/* TESTIGO */}
+      {/* ===================================================
+          INDICADORES
+
+          AMARILLO = cargando
+          CELESTE  = listo
+          VERDE    = reproduciendo
+          ROJO     = error
+      =================================================== */}
 
       <mesh
         position={[
-          -11.2,
-          13.05,
-          0.38,
+          -11.15,
+          13,
+          0.4,
         ]}
       >
         <sphereGeometry
           args={[
-            0.17,
+            0.18,
             16,
             16,
           ]}
@@ -1495,16 +1850,20 @@ function HeroVideoWall() {
 
         <meshBasicMaterial
           color={
-            videoError
+            error
               ? "#ff0000"
               : playing
                 ? "#00ff62"
-                : videoReady
+                : ready
                   ? "#00dfff"
                   : "#ffc400"
           }
         />
       </mesh>
+
+      {/* ===================================================
+          LUZ LOCAL
+      =================================================== */}
 
       {near && (
         <pointLight
@@ -1515,15 +1874,15 @@ function HeroVideoWall() {
           ]}
           color={
             playing
-              ? "#36ff86"
+              ? "#35ff7d"
               : "#58f1ff"
           }
           intensity={
             playing
-              ? 17
-              : 10
+              ? 16
+              : 8
           }
-          distance={17}
+          distance={18}
           decay={2}
         />
       )}
@@ -1761,33 +2120,43 @@ export default function PopularTodayHall() {
 
   return (
     <group>
-      {/* PAREDES */}
+      {/* ===================================================
+          PAREDES Y SUELO
+      =================================================== */}
 
       <InstancedBoxes
-        items={blackWalls}
+        items={
+          blackWalls
+        }
         color="#05080c"
         roughness={0.9}
       />
 
-      {/* SUELO */}
-
       <InstancedBoxes
-        items={floor}
+        items={
+          floor
+        }
         color="#080c11"
         roughness={0.7}
       />
 
-      {/* LUZ DE TECHO */}
+      {/* ===================================================
+          TECHO
+      =================================================== */}
 
       <InstancedBoxes
-        items={ceilingLights}
+        items={
+          ceilingLights
+        }
         color="#ffffff"
         roughness={0.1}
         emissive="#ffffff"
         emissiveIntensity={1.6}
       />
 
-      {/* TITULO */}
+      {/* ===================================================
+          TITULO
+      =================================================== */}
 
       <NeonWord
         text="POPULARES HOY"
@@ -1801,7 +2170,9 @@ export default function PopularTodayHall() {
         height={3}
       />
 
-      {/* TEXTOS */}
+      {/* ===================================================
+          TEXTOS ARCADE
+      =================================================== */}
 
       <NeonWord
         text="INSERT COIN"
@@ -1854,7 +2225,9 @@ export default function PopularTodayHall() {
         height={2}
       />
 
-      {/* ICONOS */}
+      {/* ===================================================
+          ICONOS
+      =================================================== */}
 
       <ArcadeIcon
         type="chomper"
@@ -1886,7 +2259,9 @@ export default function PopularTodayHall() {
         size={5.4}
       />
 
-      {/* NEONES */}
+      {/* ===================================================
+          NEONES
+      =================================================== */}
 
       <NeonLine
         position={[
@@ -1926,7 +2301,9 @@ export default function PopularTodayHall() {
         color="#ff4f95"
       />
 
-      {/* ILUMINACIÓN */}
+      {/* ===================================================
+          ILUMINACIÓN
+      =================================================== */}
 
       <pointLight
         position={[
@@ -1964,7 +2341,9 @@ export default function PopularTodayHall() {
         decay={2}
       />
 
-      {/* PANTALLAS */}
+      {/* ===================================================
+          PANTALLAS DE JUEGOS
+      =================================================== */}
 
       {stationLayout.map(
         (
@@ -1990,11 +2369,15 @@ export default function PopularTodayHall() {
         )
       )}
 
-      {/* VIDEO */}
+      {/* ===================================================
+          PANTALLA MP4
+      =================================================== */}
 
       <HeroVideoWall />
 
-      {/* COLISIONES */}
+      {/* ===================================================
+          COLISIONES
+      =================================================== */}
 
       <RigidBody
         type="fixed"
