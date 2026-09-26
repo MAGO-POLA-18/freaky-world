@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
@@ -28,11 +27,6 @@ import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
-import YouTubeScreen3D from "./YouTubeScreen3D";
-
-import {
-  FEATURED_VIDEO_URL,
-} from "./featuredVideoConfig";
 
 /* =========================================================
    CALIDAD
@@ -59,12 +53,6 @@ const SKY_TEST_HOURS = [
 ========================================================= */
 
 export default function WorldScene() {
-  const youtubeScreenRef =
-    useRef(null);
-
-  const css3dPortalRef =
-    useRef(null);
-
   const [
     nearbyGame,
     setNearbyGame,
@@ -81,9 +69,7 @@ export default function WorldScene() {
     quality,
     setQuality,
   ] =
-    useState(
-      "medium"
-    );
+    useState("medium");
 
   const [
     stats,
@@ -121,42 +107,6 @@ export default function WorldScene() {
   ] =
     useState(null);
 
-  /* =======================================================
-     VIDEO
-  ======================================================= */
-
-  const [
-    videoStatus,
-    setVideoStatus,
-  ] =
-    useState(
-      "loading"
-    );
-
-  const [
-    videoWallPlaying,
-    setVideoWallPlaying,
-  ] =
-    useState(false);
-
-  const [
-    videoError,
-    setVideoError,
-  ] =
-    useState(false);
-
-  const [
-    videoCurrentTime,
-    setVideoCurrentTime,
-  ] =
-    useState(0);
-
-  const [
-    videoDuration,
-    setVideoDuration,
-  ] =
-    useState(0);
-
   const overlayOpen =
     Boolean(
       openedGame
@@ -172,11 +122,9 @@ export default function WorldScene() {
 
   useEffect(() => {
     const coarse =
-      window
-        .matchMedia(
-          "(pointer: coarse)"
-        )
-        .matches;
+      window.matchMedia(
+        "(pointer: coarse)"
+      ).matches;
 
     setMobile(
       coarse
@@ -237,20 +185,17 @@ export default function WorldScene() {
   ======================================================= */
 
   const closeTutorial =
-    useCallback(
-      () => {
-        setShowTutorial(
-          false
-        );
+    useCallback(() => {
+      setShowTutorial(
+        false
+      );
 
-        window.localStorage
-          .setItem(
-            "freakyWorldTutorialCompleted",
-            "true"
-          );
-      },
-      []
-    );
+      window.localStorage
+        .setItem(
+          "freakyWorldTutorialCompleted",
+          "true"
+        );
+    }, []);
 
   /* =======================================================
      OBJETO CERCANO
@@ -268,8 +213,7 @@ export default function WorldScene() {
             ?.game
         ) {
           setNearbyGame(
-            event.detail
-              .game
+            event.detail.game
           );
 
           return;
@@ -294,225 +238,52 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ESTADO YOUTUBE
-  ======================================================= */
-
-  const handleVideoStatusChange =
-    useCallback(
-      (
-        status
-      ) => {
-        setVideoStatus(
-          status
-        );
-
-        if (
-          status !==
-          "error"
-        ) {
-          setVideoError(
-            false
-          );
-        }
-      },
-      []
-    );
-
-  const handleVideoPlayingChange =
-    useCallback(
-      (
-        playing
-      ) => {
-        setVideoWallPlaying(
-          Boolean(
-            playing
-          )
-        );
-      },
-      []
-    );
-
-  const handleVideoTimeChange =
-    useCallback(
-      (
-        {
-          currentTime,
-          duration,
-        }
-      ) => {
-        setVideoCurrentTime(
-          Number.isFinite(
-            currentTime
-          )
-            ? currentTime
-            : 0
-        );
-
-        setVideoDuration(
-          Number.isFinite(
-            duration
-          )
-            ? duration
-            : 0
-        );
-      },
-      []
-    );
-
-  const handleVideoError =
-    useCallback(
-      (
-        error
-      ) => {
-        console.error(
-          "FREAKY YOUTUBE ERROR:",
-          error
-        );
-
-        setVideoStatus(
-          "error"
-        );
-
-        setVideoError(
-          true
-        );
-
-        setVideoWallPlaying(
-          false
-        );
-      },
-      []
-    );
-
-  /* =======================================================
-     PLAY / PAUSA
-  ======================================================= */
-
-  const toggleWorldVideo =
-    useCallback(
-      () => {
-        setVideoError(
-          false
-        );
-
-        if (
-          videoWallPlaying
-        ) {
-          youtubeScreenRef
-            .current
-            ?.pause?.();
-
-          return;
-        }
-
-        /*
-          No intentamos reproducir
-          si YouTube todavía no
-          confirmó onReady.
-        */
-
-        if (
-          videoStatus !==
-            "ready" &&
-          videoStatus !==
-            "paused" &&
-          videoStatus !==
-            "buffering"
-        ) {
-          return;
-        }
-
-        const started =
-          youtubeScreenRef
-            .current
-            ?.play?.();
-
-        if (
-          started ===
-          false
-        ) {
-          setVideoStatus(
-            "loading"
-          );
-        }
-      },
-      [
-        videoWallPlaying,
-        videoStatus,
-      ]
-    );
-
-  const pauseWorldVideo =
-    useCallback(
-      () => {
-        youtubeScreenRef
-          .current
-          ?.pause?.();
-      },
-      []
-    );
-
-  /* =======================================================
      ABRIR 2D
   ======================================================= */
 
   const openGame =
-    useCallback(
-      () => {
-        if (
-          !nearbyGame?.id ||
-          overlayOpen
-        ) {
-          return;
-        }
+    useCallback(() => {
+      if (
+        !nearbyGame?.id ||
+        overlayOpen
+      ) {
+        return;
+      }
 
-        if (
-          nearbyGame.id ===
-          "featured-video-screen"
-        ) {
-          pauseWorldVideo();
-        }
+      playerInput.x =
+        0;
 
-        playerInput.x =
-          0;
+      playerInput.y =
+        0;
 
-        playerInput.y =
-          0;
+      playerInput
+        .dashRequested =
+        false;
 
-        playerInput
-          .dashRequested =
-          false;
-
-        setOpenedGame(
-          nearbyGame
-        );
-      },
-      [
-        nearbyGame,
-        overlayOpen,
-        pauseWorldVideo,
-      ]
-    );
+      setOpenedGame(
+        nearbyGame
+      );
+    }, [
+      nearbyGame,
+      overlayOpen,
+    ]);
 
   const closeGame =
-    useCallback(
-      () => {
-        playerInput.x =
-          0;
+    useCallback(() => {
+      playerInput.x =
+        0;
 
-        playerInput.y =
-          0;
+      playerInput.y =
+        0;
 
-        playerInput
-          .dashRequested =
-          false;
+      playerInput
+        .dashRequested =
+        false;
 
-        setOpenedGame(
-          null
-        );
-      },
-      []
-    );
+      setOpenedGame(
+        null
+      );
+    }, []);
 
   /* =======================================================
      TECLADO
@@ -545,14 +316,7 @@ export default function WorldScene() {
           event
             .preventDefault();
 
-          if (
-            nearbyGame.id ===
-            "featured-video-screen"
-          ) {
-            toggleWorldVideo();
-          } else {
-            openGame();
-          }
+          openGame();
         }
 
         if (
@@ -584,114 +348,7 @@ export default function WorldScene() {
     overlayOpen,
     openGame,
     closeGame,
-    toggleWorldVideo,
   ]);
-
-  /* =======================================================
-     TIEMPO
-  ======================================================= */
-
-  const formatVideoTime =
-    useCallback(
-      (
-        value
-      ) => {
-        const safe =
-          Number.isFinite(
-            value
-          )
-            ? Math.max(
-                0,
-                Math.floor(
-                  value
-                )
-              )
-            : 0;
-
-        const minutes =
-          Math.floor(
-            safe /
-              60
-          );
-
-        const seconds =
-          safe %
-          60;
-
-        return `${minutes}:${String(
-          seconds
-        ).padStart(
-          2,
-          "0"
-        )}`;
-      },
-      []
-    );
-
-  /* =======================================================
-     TEXTO ESTADO
-  ======================================================= */
-
-  let videoStatusLabel =
-    "Cargando vídeo…";
-
-  if (
-    videoStatus ===
-    "creating"
-  ) {
-    videoStatusLabel =
-      "Preparando reproductor…";
-  }
-
-  if (
-    videoStatus ===
-    "ready"
-  ) {
-    videoStatusLabel =
-      "Vídeo listo";
-  }
-
-  if (
-    videoStatus ===
-    "playing"
-  ) {
-    videoStatusLabel =
-      "Reproduciendo";
-  }
-
-  if (
-    videoStatus ===
-    "paused"
-  ) {
-    videoStatusLabel =
-      "Pausado";
-  }
-
-  if (
-    videoStatus ===
-    "buffering"
-  ) {
-    videoStatusLabel =
-      "Cargando vídeo…";
-  }
-
-  if (
-    videoStatus ===
-    "error"
-  ) {
-    videoStatusLabel =
-      "Error al cargar vídeo";
-  }
-
-  const videoReady =
-    videoStatus ===
-      "ready" ||
-    videoStatus ===
-      "paused" ||
-    videoStatus ===
-      "playing" ||
-    videoStatus ===
-      "buffering";
 
   /* =======================================================
      CIELO
@@ -803,7 +460,7 @@ export default function WorldScene() {
                       Desliza para mirar
                       <br />
 
-                      Doble toque para sprint
+                      Toca las pantallas para interactuar
                     </>
                   ) : (
                     <>
@@ -811,6 +468,9 @@ export default function WorldScene() {
                       <br />
 
                       Arrastra para mirar
+                      <br />
+
+                      E para abrir en 2D
                     </>
                   )}
                 </div>
@@ -1043,33 +703,16 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          CAPA CSS3D
-      =================================================== */}
+          MUNDO 3D
 
-      <div
-        ref={
-          css3dPortalRef
-        }
-        style={{
-          position:
-            "fixed",
+          Ya NO existe:
+          - CSS3DRenderer externo
+          - YouTubeScreen3D
+          - iframe global
+          - controles de vídeo flotantes
 
-          inset:
-            0,
-
-          zIndex:
-            20,
-
-          overflow:
-            "hidden",
-
-          pointerEvents:
-            "none",
-        }}
-      />
-
-      {/* ===================================================
-          MUNDO WEBGL
+          La pantalla YouTube vive dentro
+          de PopularTodayHall.
       =================================================== */}
 
       <Canvas
@@ -1105,8 +748,14 @@ export default function WorldScene() {
           powerPreference:
             "high-performance",
 
+          /*
+            Necesario para que el modo
+            occlude="blending" de <Html>
+            pueda convivir con WebGL.
+          */
+
           alpha:
-            false,
+            true,
 
           stencil:
             false,
@@ -1160,8 +809,7 @@ export default function WorldScene() {
             0,
           ]}
           timeStep={
-            1 /
-            60
+            1 / 60
           }
         >
           <WorldEnvironment />
@@ -1170,37 +818,10 @@ export default function WorldScene() {
 
           <CameraRig />
         </Physics>
-
-        <YouTubeScreen3D
-          ref={
-            youtubeScreenRef
-          }
-          url={
-            FEATURED_VIDEO_URL
-          }
-          portalRef={
-            css3dPortalRef
-          }
-          visible={
-            !overlayOpen
-          }
-          onStatusChange={
-            handleVideoStatusChange
-          }
-          onPlayingChange={
-            handleVideoPlayingChange
-          }
-          onTimeChange={
-            handleVideoTimeChange
-          }
-          onError={
-            handleVideoError
-          }
-        />
       </Canvas>
 
       {/* ===================================================
-          MÓVIL
+          CONTROLES MÓVILES
       =================================================== */}
 
       {!overlayOpen && (
@@ -1227,9 +848,7 @@ export default function WorldScene() {
 
             <span>
               Abrir{" "}
-              {
-                nearbyGame.title
-              }
+              {nearbyGame.title}
             </span>
 
             <small>
@@ -1239,209 +858,79 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          VIDEO
+          PANTALLA VIDEO
 
-          Panel pequeño ARRIBA.
-          No bloquea cruceta ni cámara.
+          No ponemos PLAY acá.
+
+          PLAY/PAUSA/BARRA/VOLUMEN son
+          los controles nativos de YouTube
+          dentro de la pantalla.
+
+          Este botón solamente permite
+          abrir el mismo contenido en 2D.
       =================================================== */}
 
       {isVideoWall &&
         !overlayOpen && (
-          <div
+          <button
+            type="button"
+            onClick={
+              openGame
+            }
             style={{
               position:
                 "fixed",
 
               top:
                 mobile
-                  ? 74
+                  ? 72
                   : 64,
 
-              left:
-                "50%",
-
-              transform:
-                "translateX(-50%)",
+              right:
+                mobile
+                  ? 12
+                  : 72,
 
               zIndex:
                 90,
 
-              display:
-                "flex",
-
-              alignItems:
-                "center",
-
-              gap:
-                8,
-
-              maxWidth:
-                "94vw",
+              minHeight:
+                38,
 
               padding:
-                "7px 8px",
-
-              borderRadius:
-                14,
-
-              background:
-                "rgba(5,8,12,.88)",
-
-              backdropFilter:
-                "blur(12px)",
+                "7px 12px",
 
               border:
-                "1px solid rgba(255,255,255,.16)",
+                "1px solid rgba(255,255,255,.22)",
 
-              pointerEvents:
-                "auto",
+              borderRadius:
+                11,
+
+              background:
+                "rgba(5,8,12,.84)",
+
+              backdropFilter:
+                "blur(10px)",
+
+              color:
+                "#fff",
+
+              fontSize:
+                12,
+
+              fontWeight:
+                850,
+
+              touchAction:
+                "manipulation",
             }}
           >
-            {/* ESTADO */}
-
-            <div
-              style={{
-                padding:
-                  "0 8px",
-
-                color:
-                  videoError
-                    ? "#ff7474"
-                    : videoStatus ===
-                        "playing"
-                      ? "#62ff9a"
-                      : "#cbd5dc",
-
-                fontSize:
-                  11,
-
-                fontWeight:
-                  800,
-
-                whiteSpace:
-                  "nowrap",
-              }}
-            >
-              {videoStatusLabel}
-
-              {videoDuration >
-                0 &&
-                videoStatus !==
-                  "loading" &&
-                videoStatus !==
-                  "creating" && (
-                  <>
-                    {" · "}
-
-                    {formatVideoTime(
-                      videoCurrentTime
-                    )}
-                  </>
-                )}
-            </div>
-
-            {/* PLAY */}
-
-            <button
-              type="button"
-              disabled={
-                !videoReady ||
-                videoError
-              }
-              onClick={
-                toggleWorldVideo
-              }
-              style={{
-                minHeight:
-                  38,
-
-                padding:
-                  "6px 12px",
-
-                border:
-                  "1px solid rgba(255,255,255,.2)",
-
-                borderRadius:
-                  10,
-
-                background:
-                  !videoReady
-                    ? "rgba(255,255,255,.05)"
-                    : videoWallPlaying
-                      ? "rgba(145,20,35,.95)"
-                      : "rgba(12,79,91,.95)",
-
-                color:
-                  !videoReady
-                    ? "rgba(255,255,255,.45)"
-                    : "#fff",
-
-                fontSize:
-                  12,
-
-                fontWeight:
-                  850,
-
-                whiteSpace:
-                  "nowrap",
-
-                touchAction:
-                  "manipulation",
-              }}
-            >
-              {!videoReady
-                ? "Cargando…"
-                : videoWallPlaying
-                  ? "❚❚ Pausar"
-                  : "▶ Reproducir"}
-            </button>
-
-            {/* 2D */}
-
-            <button
-              type="button"
-              onClick={
-                openGame
-              }
-              style={{
-                minHeight:
-                  38,
-
-                padding:
-                  "6px 12px",
-
-                border:
-                  "1px solid rgba(255,255,255,.2)",
-
-                borderRadius:
-                  10,
-
-                background:
-                  "rgba(8,18,23,.96)",
-
-                color:
-                  "#fff",
-
-                fontSize:
-                  12,
-
-                fontWeight:
-                  850,
-
-                whiteSpace:
-                  "nowrap",
-
-                touchAction:
-                  "manipulation",
-              }}
-            >
-              ↗ 2D
-            </button>
-          </div>
+            ↗ Abrir en 2D
+          </button>
         )}
 
       {/* ===================================================
-          OVERLAY
+          2D
       =================================================== */}
 
       {openedGame && (
