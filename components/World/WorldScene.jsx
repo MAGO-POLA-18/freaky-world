@@ -29,13 +29,7 @@ import RankingOverlay from "./RankingOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
 /* =========================================================
-   RESOLUCIÓN INTERNA POR CALIDAD
-
-   OBJETIVO:
-   - evitar dientes de sierra exagerados
-   - LOW sigue siendo ligero, pero ya no destruye la imagen
-   - MEDIUM recupera resolución prácticamente nativa
-   - HIGH conserva buena nitidez
+   CALIDAD
 ========================================================= */
 
 const DPR_BY_QUALITY = {
@@ -54,57 +48,84 @@ const SKY_TEST_HOURS = [
   23,
 ];
 
+/* =========================================================
+   WORLD
+========================================================= */
+
 export default function WorldScene() {
   const [
     nearbyGame,
     setNearbyGame,
-  ] = useState(null);
+  ] =
+    useState(null);
 
   const [
     openedGame,
     setOpenedGame,
-  ] = useState(null);
+  ] =
+    useState(null);
 
   const [
     quality,
     setQuality,
-  ] = useState("medium");
+  ] =
+    useState(
+      "medium"
+    );
 
   const [
     stats,
     setStats,
-  ] = useState(null);
+  ] =
+    useState(null);
 
   const [
     showStats,
     setShowStats,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     showTutorial,
     setShowTutorial,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     mobile,
     setMobile,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     deviceReady,
     setDeviceReady,
-  ] = useState(false);
+  ] =
+    useState(false);
 
   const [
     skyTestHour,
     setSkyTestHour,
-  ] = useState(null);
+  ] =
+    useState(null);
+
+  const [
+    videoWallPlaying,
+    setVideoWallPlaying,
+  ] =
+    useState(false);
 
   const overlayOpen =
-    Boolean(openedGame);
+    Boolean(
+      openedGame
+    );
+
+  const isVideoWall =
+    nearbyGame?.id ===
+    "featured-video-screen";
 
   /* =======================================================
-     DETECTAR MÓVIL / DESKTOP
+     DEVICE
   ======================================================= */
 
   useEffect(() => {
@@ -113,18 +134,9 @@ export default function WorldScene() {
         "(pointer: coarse)"
       ).matches;
 
-    setMobile(coarse);
-
-    /*
-      MÓVIL:
-      arrancamos directamente LOW.
-
-      PC:
-      arrancamos HIGH.
-
-      El PerformanceMonitor puede bajar/subir
-      posteriormente según rendimiento real.
-    */
+    setMobile(
+      coarse
+    );
 
     setQuality(
       coarse
@@ -132,7 +144,9 @@ export default function WorldScene() {
         : "high"
     );
 
-    setDeviceReady(true);
+    setDeviceReady(
+      true
+    );
 
     const completed =
       window.localStorage
@@ -141,17 +155,22 @@ export default function WorldScene() {
         );
 
     if (
-      completed === "true"
+      completed ===
+      "true"
     ) {
       return;
     }
 
-    setShowTutorial(true);
+    setShowTutorial(
+      true
+    );
 
     const timer =
       window.setTimeout(
         () => {
-          setShowTutorial(false);
+          setShowTutorial(
+            false
+          );
 
           window.localStorage
             .setItem(
@@ -162,19 +181,22 @@ export default function WorldScene() {
         9000
       );
 
-    return () =>
+    return () => {
       window.clearTimeout(
         timer
       );
+    };
   }, []);
 
   /* =======================================================
-     CERRAR TUTORIAL
+     TUTORIAL
   ======================================================= */
 
   const closeTutorial =
     useCallback(() => {
-      setShowTutorial(false);
+      setShowTutorial(
+        false
+      );
 
       window.localStorage
         .setItem(
@@ -184,24 +206,31 @@ export default function WorldScene() {
     }, []);
 
   /* =======================================================
-     EVENTOS 3D
+     OBJETO CERCANO
   ======================================================= */
 
   useEffect(() => {
     const handleGameNear =
-      (event) => {
+      (
+        event
+      ) => {
         if (
-          event.detail?.near &&
-          event.detail?.game
+          event.detail
+            ?.near &&
+          event.detail
+            ?.game
         ) {
           setNearbyGame(
-            event.detail.game
+            event.detail
+              .game
           );
 
           return;
         }
 
-        setNearbyGame(null);
+        setNearbyGame(
+          null
+        );
       };
 
     window.addEventListener(
@@ -218,7 +247,59 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR FICHA
+     ESTADO VIDEO
+  ======================================================= */
+
+  useEffect(() => {
+    const handleVideoState =
+      (
+        event
+      ) => {
+        setVideoWallPlaying(
+          Boolean(
+            event.detail
+              ?.playing
+          )
+        );
+      };
+
+    window.addEventListener(
+      "freaky:video-wall-state",
+      handleVideoState
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:video-wall-state",
+        handleVideoState
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     PLAY / STOP EN EL MUNDO
+  ======================================================= */
+
+  const toggleWorldVideo =
+    useCallback(() => {
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:video-wall-toggle"
+        )
+      );
+    }, []);
+
+  const stopWorldVideo =
+    useCallback(() => {
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:video-wall-stop"
+        )
+      );
+    }, []);
+
+  /* =======================================================
+     ABRIR FICHA / VIDEO 2D
   ======================================================= */
 
   const openGame =
@@ -230,8 +311,24 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x = 0;
-      playerInput.y = 0;
+      /*
+        Si estaba reproduciendo
+        en el mundo, lo detenemos
+        antes de abrir 2D.
+      */
+
+      if (
+        nearbyGame.id ===
+        "featured-video-screen"
+      ) {
+        stopWorldVideo();
+      }
+
+      playerInput.x =
+        0;
+
+      playerInput.y =
+        0;
 
       playerInput
         .dashRequested =
@@ -243,22 +340,24 @@ export default function WorldScene() {
     }, [
       nearbyGame,
       overlayOpen,
+      stopWorldVideo,
     ]);
-
-  /* =======================================================
-     CERRAR FICHA
-  ======================================================= */
 
   const closeGame =
     useCallback(() => {
-      playerInput.x = 0;
-      playerInput.y = 0;
+      playerInput.x =
+        0;
+
+      playerInput.y =
+        0;
 
       playerInput
         .dashRequested =
         false;
 
-      setOpenedGame(null);
+      setOpenedGame(
+        null
+      );
     }, []);
 
   /* =======================================================
@@ -267,7 +366,9 @@ export default function WorldScene() {
 
   useEffect(() => {
     const handleKey =
-      (event) => {
+      (
+        event
+      ) => {
         if (
           event.code ===
             "Escape" &&
@@ -288,7 +389,14 @@ export default function WorldScene() {
         ) {
           event.preventDefault();
 
-          openGame();
+          if (
+            nearbyGame.id ===
+            "featured-video-screen"
+          ) {
+            toggleWorldVideo();
+          } else {
+            openGame();
+          }
         }
 
         if (
@@ -296,7 +404,9 @@ export default function WorldScene() {
           "KeyP"
         ) {
           setShowStats(
-            (current) =>
+            (
+              current
+            ) =>
               !current
           );
         }
@@ -318,14 +428,12 @@ export default function WorldScene() {
     overlayOpen,
     openGame,
     closeGame,
+    toggleWorldVideo,
   ]);
 
-  /* =======================================================
-     CIELO
-  ======================================================= */
-
   const skyLabel =
-    skyTestHour === null
+    skyTestHour ===
+    null
       ? "REAL"
       : `${String(
           skyTestHour
@@ -333,10 +441,6 @@ export default function WorldScene() {
           2,
           "0"
         )}:00`;
-
-  /* =======================================================
-     ESPERAMOS A SABER QUÉ DISPOSITIVO ES
-  ======================================================= */
 
   if (!deviceReady) {
     return null;
@@ -370,7 +474,7 @@ export default function WorldScene() {
                 70,
 
               width:
-                "min(90vw, 390px)",
+                "min(90vw,390px)",
 
               padding:
                 "14px 16px",
@@ -382,13 +486,13 @@ export default function WorldScene() {
                 "#fff",
 
               background:
-                "rgba(5,8,12,0.82)",
+                "rgba(5,8,12,.82)",
 
               backdropFilter:
                 "blur(14px)",
 
               border:
-                "1px solid rgba(255,255,255,0.15)",
+                "1px solid rgba(255,255,255,.15)",
 
               fontSize:
                 13,
@@ -438,9 +542,6 @@ export default function WorldScene() {
                       WASD para caminar
                       <br />
 
-                      Doble toque para sprint
-                      <br />
-
                       Arrastra para mirar
                     </>
                   )}
@@ -466,7 +567,7 @@ export default function WorldScene() {
                     "50%",
 
                   background:
-                    "rgba(255,255,255,0.1)",
+                    "rgba(255,255,255,.1)",
 
                   color:
                     "#fff",
@@ -482,7 +583,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          BOTÓN FPS
+          FPS
       =================================================== */}
 
       {!overlayOpen && (
@@ -491,8 +592,10 @@ export default function WorldScene() {
             type="button"
             onClick={() =>
               setShowStats(
-                (value) =>
-                  !value
+                (
+                  current
+                ) =>
+                  !current
               )
             }
             style={{
@@ -512,13 +615,13 @@ export default function WorldScene() {
                 "7px 10px",
 
               border:
-                "1px solid rgba(255,255,255,0.14)",
+                "1px solid rgba(255,255,255,.14)",
 
               borderRadius:
                 9,
 
               background:
-                "rgba(0,0,0,0.48)",
+                "rgba(0,0,0,.48)",
 
               color:
                 "#fff",
@@ -532,10 +635,6 @@ export default function WorldScene() {
           >
             FPS
           </button>
-
-          {/* ===============================================
-              PANEL FPS
-          =============================================== */}
 
           {showStats &&
             stats && (
@@ -563,7 +662,7 @@ export default function WorldScene() {
                     10,
 
                   background:
-                    "rgba(0,0,0,0.76)",
+                    "rgba(0,0,0,.76)",
 
                   color:
                     "#fff",
@@ -578,8 +677,7 @@ export default function WorldScene() {
                     1.55,
                 }}
               >
-                FPS:{" "}
-                {stats.fps}
+                FPS: {stats.fps}
 
                 <br />
 
@@ -603,32 +701,13 @@ export default function WorldScene() {
 
                 <br />
 
-                DPR:{" "}
-                {
-                  DPR_BY_QUALITY[
-                    quality
-                  ]
-                }
-
-                <br />
-
                 Quality:{" "}
                 {quality.toUpperCase()}
-
-                {/* =========================================
-                    CONTROL CIELO
-                ========================================= */}
 
                 <div
                   style={{
                     marginTop:
                       10,
-
-                    paddingTop:
-                      8,
-
-                    borderTop:
-                      "1px solid rgba(255,255,255,0.15)",
                   }}
                 >
                   CIELO:{" "}
@@ -653,59 +732,39 @@ export default function WorldScene() {
                   }}
                 >
                   {SKY_TEST_HOURS.map(
-                    (hour) => {
-                      const active =
-                        skyTestHour ===
-                        hour;
+                    (
+                      hour
+                    ) => (
+                      <button
+                        key={
+                          hour ??
+                          "real"
+                        }
+                        type="button"
+                        onClick={() =>
+                          setSkyTestHour(
+                            hour
+                          )
+                        }
+                        style={{
+                          padding:
+                            "4px 6px",
 
-                      return (
-                        <button
-                          key={
-                            hour ??
-                            "real"
-                          }
-                          type="button"
-                          onClick={() =>
-                            setSkyTestHour(
+                          fontSize:
+                            10,
+                        }}
+                      >
+                        {hour ===
+                        null
+                          ? "REAL"
+                          : `${String(
                               hour
-                            )
-                          }
-                          style={{
-                            padding:
-                              "4px 6px",
-
-                            border:
-                              "1px solid rgba(255,255,255,0.16)",
-
-                            borderRadius:
-                              5,
-
-                            background:
-                              active
-                                ? "#fff"
-                                : "rgba(255,255,255,0.07)",
-
-                            color:
-                              active
-                                ? "#111"
-                                : "#fff",
-
-                            fontSize:
-                              10,
-                          }}
-                        >
-                          {hour ===
-                          null
-                            ? "REAL"
-                            : `${String(
-                                hour
-                              ).padStart(
-                                2,
-                                "0"
-                              )}:00`}
-                        </button>
-                      );
-                    }
+                            ).padStart(
+                              2,
+                              "0"
+                            )}:00`}
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -714,19 +773,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          CANVAS 3D
-
-          IMPORTANTE:
-          MSAA ACTIVADO.
-
-          Antes:
-          antialias: false
-
-          Ahora:
-          antialias: true
-
-          Recuperamos bordes suaves sin aumentar
-          geometría, sombras ni cantidad de luces.
+          3D
       =================================================== */}
 
       <Canvas
@@ -746,14 +793,11 @@ export default function WorldScene() {
             6,
           ],
 
-          fov:
-            60,
+          fov: 60,
 
-          near:
-            0.1,
+          near: 0.1,
 
-          far:
-            420,
+          far: 420,
         }}
         gl={{
           antialias:
@@ -772,10 +816,6 @@ export default function WorldScene() {
             true,
         }}
       >
-        {/* =================================================
-            MONITOR DE RENDIMIENTO
-        ================================================= */}
-
         <PerformanceMonitor
           quality={
             quality
@@ -791,10 +831,6 @@ export default function WorldScene() {
           }
         />
 
-        {/* =================================================
-            CIELO DINÁMICO
-        ================================================= */}
-
         <DynamicSky
           key={
             skyTestHour ===
@@ -807,19 +843,7 @@ export default function WorldScene() {
           }
         />
 
-        {/* =================================================
-            CONFIGURACIÓN GENERAL DEL RENDERER
-        ================================================= */}
-
         <WorldLighting />
-
-        {/* =================================================
-            ILUMINACIÓN ADAPTATIVA
-
-            - iluminación nocturna global barata
-            - luz local por proximidad
-            - sombra local por zona
-        ================================================= */}
 
         <AdaptiveWorldLighting
           quality={
@@ -829,10 +853,6 @@ export default function WorldScene() {
             skyTestHour
           }
         />
-
-        {/* =================================================
-            FÍSICA
-        ================================================= */}
 
         <Physics
           gravity={[
@@ -861,11 +881,12 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          INTERACCIÓN CON JUEGO
+          INTERACCIÓN NORMAL DE JUEGO
       =================================================== */}
 
       {nearbyGame &&
-        !overlayOpen && (
+        !overlayOpen &&
+        !isVideoWall && (
           <button
             type="button"
             className="world-interaction-button"
@@ -889,7 +910,134 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          FICHA 2D
+          CONTROLES DE VIDEO
+
+          DOS BOTONES
+      =================================================== */}
+
+      {isVideoWall &&
+        !overlayOpen && (
+          <div
+            style={{
+              position:
+                "fixed",
+
+              left:
+                "50%",
+
+              bottom:
+                mobile
+                  ? 24
+                  : 34,
+
+              transform:
+                "translateX(-50%)",
+
+              zIndex:
+                60,
+
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "center",
+
+              gap:
+                8,
+
+              width:
+                "min(94vw,500px)",
+            }}
+          >
+            {/* PLAY / STOP */}
+
+            <button
+              type="button"
+              onClick={
+                toggleWorldVideo
+              }
+              style={{
+                minHeight:
+                  52,
+
+                padding:
+                  "10px 15px",
+
+                border:
+                  "1px solid rgba(255,255,255,.24)",
+
+                borderRadius:
+                  15,
+
+                background:
+                  videoWallPlaying
+                    ? "rgba(145,20,35,.92)"
+                    : "rgba(8,18,23,.94)",
+
+                color:
+                  "#fff",
+
+                fontSize:
+                  14,
+
+                fontWeight:
+                  800,
+
+                backdropFilter:
+                  "blur(14px)",
+              }}
+            >
+              {videoWallPlaying
+                ? "■ Detener"
+                : "▶ Reproducir"}
+            </button>
+
+            {/* ABRIR 2D */}
+
+            <button
+              type="button"
+              onClick={
+                openGame
+              }
+              style={{
+                minHeight:
+                  52,
+
+                padding:
+                  "10px 15px",
+
+                border:
+                  "1px solid rgba(255,255,255,.24)",
+
+                borderRadius:
+                  15,
+
+                background:
+                  "rgba(8,18,23,.94)",
+
+                color:
+                  "#fff",
+
+                fontSize:
+                  14,
+
+                fontWeight:
+                  800,
+
+                backdropFilter:
+                  "blur(14px)",
+              }}
+            >
+              ↗ Abrir en 2D
+            </button>
+          </div>
+        )}
+
+      {/* ===================================================
+          OVERLAY
       =================================================== */}
 
       {openedGame && (
