@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -29,6 +30,18 @@ import RankingOverlay from "./RankingOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
 /* =========================================================
+   VIDEO ÚNICO
+
+   ESTE MISMO ARCHIVO LO USA:
+   - el elemento VIDEO HTML
+   - la textura 3D
+   - la ficha 2D
+========================================================= */
+
+const FEATURED_VIDEO_URL =
+  "https://media.w3.org/2010/05/sintel/trailer.mp4";
+
+/* =========================================================
    CALIDAD
 ========================================================= */
 
@@ -53,6 +66,9 @@ const SKY_TEST_HOURS = [
 ========================================================= */
 
 export default function WorldScene() {
+  const featuredVideoRef =
+    useRef(null);
+
   const [
     nearbyGame,
     setNearbyGame,
@@ -69,9 +85,7 @@ export default function WorldScene() {
     quality,
     setQuality,
   ] =
-    useState(
-      "medium"
-    );
+    useState("medium");
 
   const [
     stats,
@@ -112,6 +126,12 @@ export default function WorldScene() {
   const [
     videoWallPlaying,
     setVideoWallPlaying,
+  ] =
+    useState(false);
+
+  const [
+    videoError,
+    setVideoError,
   ] =
     useState(false);
 
@@ -189,6 +209,119 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
+     VIDEO HTML REAL
+
+     El sonido sale de este elemento.
+
+     La pantalla 3D utiliza exactamente
+     este mismo elemento como VideoTexture.
+  ======================================================= */
+
+  useEffect(() => {
+    const video =
+      featuredVideoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    const handlePlay =
+      () => {
+        setVideoWallPlaying(
+          true
+        );
+
+        setVideoError(
+          false
+        );
+      };
+
+    const handlePause =
+      () => {
+        setVideoWallPlaying(
+          false
+        );
+      };
+
+    const handleEnded =
+      () => {
+        setVideoWallPlaying(
+          false
+        );
+
+        try {
+          video.currentTime =
+            0;
+        } catch {
+          // nada
+        }
+      };
+
+    const handleError =
+      () => {
+        setVideoWallPlaying(
+          false
+        );
+
+        setVideoError(
+          true
+        );
+      };
+
+    video.addEventListener(
+      "play",
+      handlePlay
+    );
+
+    video.addEventListener(
+      "playing",
+      handlePlay
+    );
+
+    video.addEventListener(
+      "pause",
+      handlePause
+    );
+
+    video.addEventListener(
+      "ended",
+      handleEnded
+    );
+
+    video.addEventListener(
+      "error",
+      handleError
+    );
+
+    return () => {
+      video.removeEventListener(
+        "play",
+        handlePlay
+      );
+
+      video.removeEventListener(
+        "playing",
+        handlePlay
+      );
+
+      video.removeEventListener(
+        "pause",
+        handlePause
+      );
+
+      video.removeEventListener(
+        "ended",
+        handleEnded
+      );
+
+      video.removeEventListener(
+        "error",
+        handleError
+      );
+    };
+  }, []);
+
+  /* =======================================================
      TUTORIAL
   ======================================================= */
 
@@ -247,59 +380,124 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ESTADO VIDEO
-  ======================================================= */
+     REPRODUCIR / DETENER
 
-  useEffect(() => {
-    const handleVideoState =
-      (
-        event
-      ) => {
-        setVideoWallPlaying(
-          Boolean(
-            event.detail
-              ?.playing
-          )
-        );
-      };
+     IMPORTANTE:
 
-    window.addEventListener(
-      "freaky:video-wall-state",
-      handleVideoState
-    );
+     video.play() ocurre DIRECTAMENTE dentro
+     del click del botón HTML.
 
-    return () => {
-      window.removeEventListener(
-        "freaky:video-wall-state",
-        handleVideoState
-      );
-    };
-  }, []);
-
-  /* =======================================================
-     PLAY / STOP EN EL MUNDO
+     No hay CustomEvent.
+     No hay intermediarios.
   ======================================================= */
 
   const toggleWorldVideo =
-    useCallback(() => {
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:video-wall-toggle"
-        )
-      );
-    }, []);
+    useCallback(
+      async () => {
+        const video =
+          featuredVideoRef.current;
+
+        if (!video) {
+          return;
+        }
+
+        setVideoError(
+          false
+        );
+
+        /*
+          SI YA ESTÁ REPRODUCIENDO:
+          STOP.
+        */
+
+        if (
+          !video.paused &&
+          !video.ended
+        ) {
+          video.pause();
+
+          try {
+            video.currentTime =
+              0;
+          } catch {
+            // nada
+          }
+
+          setVideoWallPlaying(
+            false
+          );
+
+          return;
+        }
+
+        /*
+          REPRODUCCIÓN CON AUDIO.
+
+          ESTA LLAMADA OCURRE DIRECTAMENTE
+          DESDE EL BOTÓN DEL USUARIO.
+        */
+
+        try {
+          video.muted =
+            false;
+
+          video.volume =
+            1;
+
+          await video.play();
+
+          setVideoWallPlaying(
+            true
+          );
+        } catch (
+          error
+        ) {
+          console.error(
+            "FREAKY DIRECT VIDEO PLAY ERROR:",
+            error
+          );
+
+          setVideoError(
+            true
+          );
+
+          setVideoWallPlaying(
+            false
+          );
+        }
+      },
+      []
+    );
+
+  /* =======================================================
+     STOP
+  ======================================================= */
 
   const stopWorldVideo =
     useCallback(() => {
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:video-wall-stop"
-        )
+      const video =
+        featuredVideoRef.current;
+
+      if (!video) {
+        return;
+      }
+
+      video.pause();
+
+      try {
+        video.currentTime =
+          0;
+      } catch {
+        // nada
+      }
+
+      setVideoWallPlaying(
+        false
       );
     }, []);
 
   /* =======================================================
-     ABRIR FICHA / VIDEO 2D
+     ABRIR 2D
   ======================================================= */
 
   const openGame =
@@ -312,9 +510,7 @@ export default function WorldScene() {
       }
 
       /*
-        Si estaba reproduciendo
-        en el mundo, lo detenemos
-        antes de abrir 2D.
+        Evitamos dos audios simultáneos.
       */
 
       if (
@@ -448,6 +644,51 @@ export default function WorldScene() {
 
   return (
     <>
+      {/* ===================================================
+          VIDEO HTML REAL
+
+          NO USAMOS display:none.
+
+          Lo dejamos fuera de pantalla para que
+          Android/iOS sigan tratándolo como
+          un elemento multimedia normal.
+      =================================================== */}
+
+      <video
+        id="freaky-featured-video"
+        ref={
+          featuredVideoRef
+        }
+        src={
+          FEATURED_VIDEO_URL
+        }
+        crossOrigin="anonymous"
+        preload="auto"
+        playsInline
+        style={{
+          position:
+            "fixed",
+
+          left:
+            "-10000px",
+
+          top:
+            "-10000px",
+
+          width:
+            "2px",
+
+          height:
+            "2px",
+
+          opacity:
+            0,
+
+          pointerEvents:
+            "none",
+        }}
+      />
+
       {/* ===================================================
           TUTORIAL
       =================================================== */}
@@ -677,7 +918,8 @@ export default function WorldScene() {
                     1.55,
                 }}
               >
-                FPS: {stats.fps}
+                FPS:{" "}
+                {stats.fps}
 
                 <br />
 
@@ -793,11 +1035,14 @@ export default function WorldScene() {
             6,
           ],
 
-          fov: 60,
+          fov:
+            60,
 
-          near: 0.1,
+          near:
+            0.1,
 
-          far: 420,
+          far:
+            420,
         }}
         gl={{
           antialias:
@@ -881,7 +1126,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          INTERACCIÓN NORMAL DE JUEGO
+          JUEGOS NORMALES
       =================================================== */}
 
       {nearbyGame &&
@@ -910,9 +1155,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          CONTROLES DE VIDEO
-
-          DOS BOTONES
+          VIDEO
       =================================================== */}
 
       {isVideoWall &&
@@ -939,20 +1182,20 @@ export default function WorldScene() {
               display:
                 "flex",
 
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
               gap:
                 8,
 
               width:
                 "min(94vw,500px)",
+
+              justifyContent:
+                "center",
+
+              pointerEvents:
+                "auto",
             }}
           >
-            {/* PLAY / STOP */}
+            {/* REPRODUCIR */}
 
             <button
               type="button"
@@ -964,18 +1207,20 @@ export default function WorldScene() {
                   52,
 
                 padding:
-                  "10px 15px",
+                  "10px 16px",
 
                 border:
-                  "1px solid rgba(255,255,255,.24)",
+                  videoError
+                    ? "1px solid #ff4b4b"
+                    : "1px solid rgba(255,255,255,.24)",
 
                 borderRadius:
                   15,
 
                 background:
                   videoWallPlaying
-                    ? "rgba(145,20,35,.92)"
-                    : "rgba(8,18,23,.94)",
+                    ? "rgba(145,20,35,.95)"
+                    : "rgba(8,18,23,.96)",
 
                 color:
                   "#fff",
@@ -984,18 +1229,23 @@ export default function WorldScene() {
                   14,
 
                 fontWeight:
-                  800,
+                  850,
 
-                backdropFilter:
-                  "blur(14px)",
+                touchAction:
+                  "manipulation",
+
+                pointerEvents:
+                  "auto",
               }}
             >
-              {videoWallPlaying
-                ? "■ Detener"
-                : "▶ Reproducir"}
+              {videoError
+                ? "⚠ Error de vídeo"
+                : videoWallPlaying
+                  ? "■ Detener"
+                  : "▶ Reproducir"}
             </button>
 
-            {/* ABRIR 2D */}
+            {/* 2D */}
 
             <button
               type="button"
@@ -1007,7 +1257,7 @@ export default function WorldScene() {
                   52,
 
                 padding:
-                  "10px 15px",
+                  "10px 16px",
 
                 border:
                   "1px solid rgba(255,255,255,.24)",
@@ -1016,7 +1266,7 @@ export default function WorldScene() {
                   15,
 
                 background:
-                  "rgba(8,18,23,.94)",
+                  "rgba(8,18,23,.96)",
 
                 color:
                   "#fff",
@@ -1025,10 +1275,13 @@ export default function WorldScene() {
                   14,
 
                 fontWeight:
-                  800,
+                  850,
 
-                backdropFilter:
-                  "blur(14px)",
+                touchAction:
+                  "manipulation",
+
+                pointerEvents:
+                  "auto",
               }}
             >
               ↗ Abrir en 2D
@@ -1037,7 +1290,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          OVERLAY
+          2D
       =================================================== */}
 
       {openedGame && (
