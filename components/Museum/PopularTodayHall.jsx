@@ -31,16 +31,11 @@ import {
    CONFIG
 ========================================================= */
 
-const ROOM_HALF_WIDTH = 29.25;
-const ROOM_BACK_Z = -34.25;
+const ROOM_HALF_WIDTH =
+  29.25;
 
-/*
-  UNA ÚNICA FUENTE.
-
-  Esta URL la usa:
-  - la pantalla 3D
-  - el reproductor 2D
-*/
+const ROOM_BACK_Z =
+  -34.25;
 
 const FEATURED_VIDEO_URL =
   "https://media.w3.org/2010/05/sintel/trailer.mp4";
@@ -455,7 +450,7 @@ const GAMES = [
 ];
 
 /* =========================================================
-   PORTADA
+   POSTER
 ========================================================= */
 
 function createPosterTexture(
@@ -644,7 +639,7 @@ function createPosterTexture(
 }
 
 /* =========================================================
-   PREVIEW DEL VIDEO
+   VIDEO PREVIEW
 ========================================================= */
 
 function createVideoPreviewTexture() {
@@ -820,7 +815,7 @@ function createVideoPreviewTexture() {
 }
 
 /* =========================================================
-   TEXTO NEÓN
+   NEON TEXT
 ========================================================= */
 
 function createNeonTextTexture(
@@ -1030,7 +1025,6 @@ function createArcadeTexture(
                       pixel,
 
                   pixel,
-
                   pixel
                 );
               }
@@ -1153,7 +1147,7 @@ function InstancedBoxes({
 }
 
 /* =========================================================
-   DECORACIÓN
+   NEON
 ========================================================= */
 
 function NeonLine({
@@ -1322,7 +1316,7 @@ function ArcadeIcon({
 }
 
 /* =========================================================
-   ESTACIÓN
+   GAME STATION
 ========================================================= */
 
 function GameStation({
@@ -1428,13 +1422,11 @@ function GameStation({
               ? {
                   near:
                     true,
-
                   game,
                 }
               : {
                   near:
                     false,
-
                   game,
                 },
         }
@@ -1444,7 +1436,9 @@ function GameStation({
 
   return (
     <group
-      ref={ref}
+      ref={
+        ref
+      }
       position={
         position
       }
@@ -1565,6 +1559,11 @@ function GameStation({
 
 /* =========================================================
    VIDEO WALL
+
+   YA NO CREA UN VIDEO.
+
+   BUSCA EL VIDEO HTML REAL DE WorldScene
+   Y CREA LA TEXTURA CON ESE MISMO ELEMENTO.
 ========================================================= */
 
 function HeroVideoWall() {
@@ -1622,73 +1621,68 @@ function HeroVideoWall() {
     );
 
   /* =======================================================
-     VIDEO
+     CONECTAR VIDEO DOM → THREE
   ======================================================= */
 
   useEffect(() => {
     const video =
-      document.createElement(
-        "video"
+      document.getElementById(
+        "freaky-featured-video"
       );
 
-    video.src =
-      FEATURED_VIDEO_URL;
+    if (
+      !video ||
+      !(video instanceof HTMLVideoElement)
+    ) {
+      setError(
+        true
+      );
 
-    video.playsInline =
-      true;
+      return;
+    }
 
-    video.preload =
-      "auto";
+    videoRef.current =
+      video;
 
-    video.loop =
+    const texture =
+      new THREE.VideoTexture(
+        video
+      );
+
+    texture.colorSpace =
+      THREE.SRGBColorSpace;
+
+    texture.minFilter =
+      THREE.LinearFilter;
+
+    texture.magFilter =
+      THREE.LinearFilter;
+
+    texture.generateMipmaps =
       false;
 
-    video.autoplay =
-      false;
+    videoTextureRef.current =
+      texture;
 
-    video.crossOrigin =
-      "anonymous";
+    /* =====================================================
+       CAMBIAR PANTALLA A VIDEO
+    ===================================================== */
 
-    /*
-      AHORA QUEREMOS SONIDO.
-
-      play() será llamado desde el botón HTML,
-      es decir desde una acción real del usuario.
-    */
-
-    video.muted =
-      false;
-
-    video.defaultMuted =
-      false;
-
-    video.volume =
-      1;
-
-    video.setAttribute(
-      "playsinline",
-      ""
-    );
-
-    video.setAttribute(
-      "webkit-playsinline",
-      ""
-    );
-
-    video.setAttribute(
-      "crossorigin",
-      "anonymous"
-    );
-
-    const handleCanPlay =
+    const showVideo =
       () => {
-        setReady(
-          true
-        );
-      };
+        if (
+          screenRef.current
+        ) {
+          screenRef.current
+            .material.map =
+            texture;
 
-    const handlePlaying =
-      () => {
+          screenRef.current
+            .material
+            .needsUpdate =
+            true;
+        }
+
         setPlaying(
           true
         );
@@ -1696,48 +1690,14 @@ function HeroVideoWall() {
         setError(
           false
         );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  true,
-              },
-            }
-          )
-        );
       };
 
-    const handlePause =
+    /* =====================================================
+       VOLVER A PREVIEW
+    ===================================================== */
+
+    const showPreview =
       () => {
-        setPlaying(
-          false
-        );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  false,
-              },
-            }
-          )
-        );
-      };
-
-    const handleEnded =
-      () => {
-        setPlaying(
-          false
-        );
-
-        video.currentTime =
-          0;
-
         if (
           screenRef.current
         ) {
@@ -1751,45 +1711,60 @@ function HeroVideoWall() {
             true;
         }
 
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  false,
-              },
-            }
-          )
+        setPlaying(
+          false
         );
+      };
+
+    const handleCanPlay =
+      () => {
+        setReady(
+          true
+        );
+      };
+
+    const handlePlay =
+      () => {
+        showVideo();
+      };
+
+    const handlePlaying =
+      () => {
+        showVideo();
+      };
+
+    const handlePause =
+      () => {
+        showPreview();
+      };
+
+    const handleEnded =
+      () => {
+        showPreview();
       };
 
     const handleError =
       () => {
+        showPreview();
+
         setError(
           true
-        );
-
-        setPlaying(
-          false
-        );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  false,
-              },
-            }
-          )
         );
       };
 
     video.addEventListener(
       "canplay",
       handleCanPlay
+    );
+
+    video.addEventListener(
+      "loadeddata",
+      handleCanPlay
+    );
+
+    video.addEventListener(
+      "play",
+      handlePlay
     );
 
     video.addEventListener(
@@ -1812,37 +1787,36 @@ function HeroVideoWall() {
       handleError
     );
 
-    const texture =
-      new THREE.VideoTexture(
-        video
+    if (
+      video.readyState >=
+      3
+    ) {
+      setReady(
+        true
       );
+    }
 
-    texture.colorSpace =
-      THREE.SRGBColorSpace;
-
-    texture.minFilter =
-      THREE.LinearFilter;
-
-    texture.magFilter =
-      THREE.LinearFilter;
-
-    texture.generateMipmaps =
-      false;
-
-    videoRef.current =
-      video;
-
-    videoTextureRef.current =
-      texture;
-
-    video.load();
+    if (
+      !video.paused &&
+      !video.ended
+    ) {
+      showVideo();
+    }
 
     return () => {
-      video.pause();
-
       video.removeEventListener(
         "canplay",
         handleCanPlay
+      );
+
+      video.removeEventListener(
+        "loadeddata",
+        handleCanPlay
+      );
+
+      video.removeEventListener(
+        "play",
+        handlePlay
       );
 
       video.removeEventListener(
@@ -1865,18 +1839,12 @@ function HeroVideoWall() {
         handleError
       );
 
-      video.removeAttribute(
-        "src"
-      );
-
-      video.load();
-
       texture.dispose();
 
-      videoRef.current =
+      videoTextureRef.current =
         null;
 
-      videoTextureRef.current =
+      videoRef.current =
         null;
     };
   }, [
@@ -1892,209 +1860,10 @@ function HeroVideoWall() {
   ]);
 
   /* =======================================================
-     PLAY
-  ======================================================= */
-
-  const playVideo =
-    async () => {
-      const video =
-        videoRef.current;
-
-      const texture =
-        videoTextureRef.current;
-
-      const screen =
-        screenRef.current;
-
-      if (
-        !video ||
-        !texture ||
-        !screen
-      ) {
-        return;
-      }
-
-      setError(
-        false
-      );
-
-      screen.material.map =
-        texture;
-
-      screen.material
-        .needsUpdate =
-        true;
-
-      video.muted =
-        false;
-
-      video.volume =
-        1;
-
-      try {
-        await video.play();
-
-        setPlaying(
-          true
-        );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  true,
-              },
-            }
-          )
-        );
-      } catch (
-        playError
-      ) {
-        console.error(
-          "FREAKY VIDEO PLAY ERROR:",
-          playError
-        );
-
-        screen.material.map =
-          previewTexture;
-
-        screen.material
-          .needsUpdate =
-          true;
-
-        setPlaying(
-          false
-        );
-
-        setError(
-          true
-        );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:video-wall-state",
-            {
-              detail: {
-                playing:
-                  false,
-              },
-            }
-          )
-        );
-      }
-    };
-
-  /* =======================================================
-     STOP
-  ======================================================= */
-
-  const stopVideo =
-    () => {
-      const video =
-        videoRef.current;
-
-      if (video) {
-        video.pause();
-
-        try {
-          video.currentTime =
-            0;
-        } catch {
-          // nada
-        }
-      }
-
-      if (
-        screenRef.current
-      ) {
-        screenRef.current
-          .material.map =
-          previewTexture;
-
-        screenRef.current
-          .material
-          .needsUpdate =
-          true;
-      }
-
-      setPlaying(
-        false
-      );
-
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:video-wall-state",
-          {
-            detail: {
-              playing:
-                false,
-            },
-          }
-        )
-      );
-    };
-
-  /* =======================================================
-     BOTÓN EXTERNO PLAY / STOP
-  ======================================================= */
-
-  useEffect(() => {
-    const handleToggle =
-      () => {
-        const video =
-          videoRef.current;
-
-        if (!video) {
-          return;
-        }
-
-        if (
-          !video.paused &&
-          !video.ended
-        ) {
-          stopVideo();
-
-          return;
-        }
-
-        playVideo();
-      };
-
-    const handleStop =
-      () => {
-        stopVideo();
-      };
-
-    window.addEventListener(
-      "freaky:video-wall-toggle",
-      handleToggle
-    );
-
-    window.addEventListener(
-      "freaky:video-wall-stop",
-      handleStop
-    );
-
-    return () => {
-      window.removeEventListener(
-        "freaky:video-wall-toggle",
-        handleToggle
-      );
-
-      window.removeEventListener(
-        "freaky:video-wall-stop",
-        handleStop
-      );
-    };
-  });
-
-  /* =======================================================
      PROXIMIDAD
 
-     SOLO muestra las opciones.
-     NO reproduce.
+     SOLO MUESTRA BOTONES.
+     NO REPRODUCE.
   ======================================================= */
 
   useFrame(() => {
@@ -2253,7 +2022,7 @@ function HeroVideoWall() {
         />
       </mesh>
 
-      {/* NEÓN */}
+      {/* NEONES */}
 
       <NeonLine
         position={[
@@ -2655,8 +2424,6 @@ export default function PopularTodayHall() {
 
   return (
     <group>
-      {/* PAREDES */}
-
       <InstancedBoxes
         items={
           blackWalls
@@ -2667,8 +2434,6 @@ export default function PopularTodayHall() {
         }
       />
 
-      {/* SUELO */}
-
       <InstancedBoxes
         items={
           floor
@@ -2678,8 +2443,6 @@ export default function PopularTodayHall() {
           0.7
         }
       />
-
-      {/* TECHO */}
 
       <InstancedBoxes
         items={
@@ -2694,8 +2457,6 @@ export default function PopularTodayHall() {
           1.6
         }
       />
-
-      {/* TITULO */}
 
       <NeonWord
         text="POPULARES HOY"
@@ -2712,8 +2473,6 @@ export default function PopularTodayHall() {
           3
         }
       />
-
-      {/* TEXTOS */}
 
       <NeonWord
         text="INSERT COIN"
@@ -2778,8 +2537,6 @@ export default function PopularTodayHall() {
         }
       />
 
-      {/* ICONOS */}
-
       <ArcadeIcon
         type="chomper"
         position={[
@@ -2813,8 +2570,6 @@ export default function PopularTodayHall() {
           5.4
         }
       />
-
-      {/* NEONES */}
 
       <NeonLine
         position={[
@@ -2853,8 +2608,6 @@ export default function PopularTodayHall() {
         ]}
         color="#ff4f95"
       />
-
-      {/* LUCES */}
 
       <pointLight
         position={[
@@ -2910,8 +2663,6 @@ export default function PopularTodayHall() {
         }
       />
 
-      {/* JUEGOS */}
-
       {stationLayout.map(
         (
           station
@@ -2942,11 +2693,7 @@ export default function PopularTodayHall() {
         )
       )}
 
-      {/* VIDEO */}
-
       <HeroVideoWall />
-
-      {/* COLISIONES */}
 
       <RigidBody
         type="fixed"
