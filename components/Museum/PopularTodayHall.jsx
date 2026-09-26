@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import {
+  Html,
   RoundedBox,
 } from "@react-three/drei";
 
@@ -38,7 +39,7 @@ const ROOM_BACK_Z =
   -34.25;
 
 const FEATURED_VIDEO_URL =
-  "https://media.w3.org/2010/05/sintel/trailer.mp4";
+  "https://www.youtube.com/watch?v=M7lc1UVf-VE";
 
 const FEATURED_VIDEO = {
   id:
@@ -46,6 +47,9 @@ const FEATURED_VIDEO = {
 
   overlayType:
     "video",
+
+  sourceType:
+    "youtube",
 
   title:
     "VIDEO DESTACADO",
@@ -62,6 +66,55 @@ const FEATURED_VIDEO = {
   videoUrl:
     FEATURED_VIDEO_URL,
 };
+
+function getYouTubeId(
+  url
+) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed =
+      new URL(url);
+
+    if (
+      parsed.hostname.includes(
+        "youtu.be"
+      )
+    ) {
+      return parsed.pathname
+        .replace("/", "")
+        .split("/")[0];
+    }
+
+    if (
+      parsed.pathname.startsWith(
+        "/shorts/"
+      )
+    ) {
+      return parsed.pathname
+        .split("/shorts/")[1]
+        ?.split("/")[0];
+    }
+
+    if (
+      parsed.pathname.startsWith(
+        "/embed/"
+      )
+    ) {
+      return parsed.pathname
+        .split("/embed/")[1]
+        ?.split("/")[0];
+    }
+
+    return parsed.searchParams.get(
+      "v"
+    );
+  } catch {
+    return null;
+  }
+}
 
 /* =========================================================
    JUEGOS
@@ -1573,6 +1626,13 @@ function HeroVideoWall() {
   const screenRef =
     useRef(null);
 
+  const youtubeContainerRef =
+    useRef(null);
+
+  const youtubePlayerRef =
+    useRef(null);
+
+
   const videoRef =
     useRef(null);
 
@@ -1620,15 +1680,341 @@ function HeroVideoWall() {
       []
     );
 
+  const isYouTube =
+    FEATURED_VIDEO.sourceType ===
+    "youtube";
+
+  const youtubeId =
+    useMemo(
+      () =>
+        getYouTubeId(
+          FEATURED_VIDEO.videoUrl
+        ),
+      []
+    );
+
+  /* =======================================================
+     YOUTUBE PLAYER
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      !isYouTube ||
+      !youtubeId ||
+      !youtubeContainerRef.current
+    ) {
+      return;
+    }
+
+    let cancelled =
+      false;
+
+    const createPlayer =
+      () => {
+        if (
+          cancelled ||
+          !window.YT?.Player ||
+          !youtubeContainerRef.current
+        ) {
+          return;
+        }
+
+        youtubePlayerRef.current =
+          new window.YT.Player(
+            youtubeContainerRef.current,
+            {
+              videoId:
+                youtubeId,
+
+              width:
+                "1280",
+
+              height:
+                "720",
+
+              playerVars: {
+                autoplay:
+                  0,
+
+                controls:
+                  0,
+
+                playsinline:
+                  1,
+
+                rel:
+                  0,
+
+                modestbranding:
+                  1,
+              },
+
+              events: {
+                onReady:
+                  () => {
+                    setReady(
+                      true
+                    );
+
+                    setError(
+                      false
+                    );
+                  },
+
+                onStateChange:
+                  (
+                    event
+                  ) => {
+                    const state =
+                      event.data;
+
+                    /*
+                      1 = PLAYING
+                    */
+
+                    if (
+                      state === 1
+                    ) {
+                      setPlaying(
+                        true
+                      );
+
+                      window.dispatchEvent(
+                        new CustomEvent(
+                          "freaky:youtube-state",
+                          {
+                            detail: {
+                              playing:
+                                true,
+                            },
+                          }
+                        )
+                      );
+
+                      return;
+                    }
+
+                    /*
+                      0 = TERMINADO
+                    */
+
+                    if (
+                      state === 0
+                    ) {
+                      try {
+                        event.target.seekTo(
+                          0,
+                          true
+                        );
+                      } catch {
+                        // nada
+                      }
+
+                      setPlaying(
+                        false
+                      );
+
+                      window.dispatchEvent(
+                        new CustomEvent(
+                          "freaky:youtube-state",
+                          {
+                            detail: {
+                              playing:
+                                false,
+
+                              ended:
+                                true,
+                            },
+                          }
+                        )
+                      );
+
+                      return;
+                    }
+
+                    /*
+                      2 = PAUSA
+                      5 = PREPARADO
+                    */
+
+                    if (
+                      state === 2 ||
+                      state === 5
+                    ) {
+                      setPlaying(
+                        false
+                      );
+
+                      window.dispatchEvent(
+                        new CustomEvent(
+                          "freaky:youtube-state",
+                          {
+                            detail: {
+                              playing:
+                                false,
+                            },
+                          }
+                        )
+                      );
+                    }
+                  },
+
+                onError:
+                  () => {
+                    setPlaying(
+                      false
+                    );
+
+                    setError(
+                      true
+                    );
+                  },
+              },
+            }
+          );
+      };
+
+    /*
+      SI LA API YA EXISTE
+    */
+
+    if (
+      window.YT?.Player
+    ) {
+      createPlayer();
+    } else {
+      /*
+        CARGAMOS API YOUTUBE
+      */
+
+      const existingScript =
+        document.getElementById(
+          "youtube-iframe-api"
+        );
+
+      const previousCallback =
+        window.onYouTubeIframeAPIReady;
+
+      window.onYouTubeIframeAPIReady =
+        () => {
+          if (
+            typeof previousCallback ===
+            "function"
+          ) {
+            previousCallback();
+          }
+
+          createPlayer();
+        };
+
+      if (
+        !existingScript
+      ) {
+        const script =
+          document.createElement(
+            "script"
+          );
+
+        script.id =
+          "youtube-iframe-api";
+
+        script.src =
+          "https://www.youtube.com/iframe_api";
+
+        document.head.appendChild(
+          script
+        );
+      }
+    }
+
+    /*
+      ÓRDENES DESDE LOS BOTONES
+    */
+
+    const handleCommand =
+      (
+        event
+      ) => {
+        const player =
+          youtubePlayerRef.current;
+
+        if (!player) {
+          return;
+        }
+
+        if (
+          event.detail
+            ?.command ===
+          "play"
+        ) {
+          player.playVideo?.();
+
+          return;
+        }
+
+        if (
+          event.detail
+            ?.command ===
+          "stop"
+        ) {
+          player.stopVideo?.();
+
+          try {
+            player.seekTo?.(
+              0,
+              true
+            );
+          } catch {
+            // nada
+          }
+
+          setPlaying(
+            false
+          );
+        }
+      };
+
+    window.addEventListener(
+      "freaky:youtube-command",
+      handleCommand
+    );
+
+    return () => {
+      cancelled =
+        true;
+
+      window.removeEventListener(
+        "freaky:youtube-command",
+        handleCommand
+      );
+
+      try {
+        youtubePlayerRef.current
+          ?.destroy?.();
+      } catch {
+        // nada
+      }
+
+      youtubePlayerRef.current =
+        null;
+    };
+  }, [
+    isYouTube,
+    youtubeId,
+  ]);
   /* =======================================================
      CONECTAR VIDEO DOM → THREE
   ======================================================= */
 
-  useEffect(() => {
-    const video =
-      document.getElementById(
-        "freaky-featured-video"
-      );
+ useEffect(() => {
+  if (isYouTube) {
+    return;
+  }
+
+  const video =
+    document.getElementById(
+      "freaky-featured-video"
+    );
 
     if (
       !video ||
@@ -1849,6 +2235,7 @@ function HeroVideoWall() {
     };
   }, [
     previewTexture,
+    isYouTube,
   ]);
 
   useEffect(() => {
@@ -2021,6 +2408,47 @@ function HeroVideoWall() {
           }
         />
       </mesh>
+
+      {isYouTube &&
+        youtubeId && (
+          <Html
+            transform
+            position={[
+              0,
+              7.2,
+              0.34,
+            ]}
+            scale={
+              0.0176
+            }
+            style={{
+              pointerEvents:
+                "none",
+            }}
+          >
+            <div
+              style={{
+                width:
+                  "1280px",
+
+                height:
+                  "720px",
+
+                overflow:
+                  "hidden",
+
+                background:
+                  "#000",
+              }}
+            >
+              <div
+                ref={
+                  youtubeContainerRef
+                }
+              />
+            </div>
+          </Html>
+        )}
 
       {/* NEONES */}
 
