@@ -388,6 +388,40 @@ export default function WorldScene() {
         );
     }, []);
 
+    /* =======================================================
+     ESTADO YOUTUBE
+  ======================================================= */
+
+  useEffect(() => {
+    const handleYouTubeState =
+      (
+        event
+      ) => {
+        setVideoWallPlaying(
+          Boolean(
+            event.detail
+              ?.playing
+          )
+        );
+
+        setVideoError(
+          false
+        );
+      };
+
+    window.addEventListener(
+      "freaky:youtube-state",
+      handleYouTubeState
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:youtube-state",
+        handleYouTubeState
+      );
+    };
+  }, []);
+
   /* =======================================================
      OBJETO CERCANO
   ======================================================= */
@@ -505,106 +539,126 @@ export default function WorldScene() {
      No hay intermediarios.
   ======================================================= */
 
-const toggleWorldVideo =
-  useCallback(
-    async () => {
-      const video =
-        featuredVideoRef.current;
+  const toggleWorldVideo =
+    useCallback(
+      async () => {
+        /*
+          YOUTUBE
+        */
 
-      if (!video) {
-        return;
-      }
+        if (
+          nearbyGame
+            ?.sourceType ===
+          "youtube"
+        ) {
+          window.dispatchEvent(
+            new CustomEvent(
+              "freaky:youtube-command",
+              {
+                detail: {
+                  command:
+                    videoWallPlaying
+                      ? "stop"
+                      : "play",
+                },
+              }
+            )
+          );
 
-      setVideoError(
-        false
-      );
-
-      const finished =
-        video.ended ||
-        (
-          Number.isFinite(
-            video.duration
-          ) &&
-          video.duration > 0 &&
-          video.currentTime >=
-            video.duration - 0.1
-        );
-
-      /*
-        SI TERMINÓ,
-        LO REINICIAMOS.
-      */
-
-      if (finished) {
-        try {
-          video.currentTime =
-            0;
-        } catch {
-          // nada
-        }
-      }
-
-      /*
-        SI ESTÁ REPRODUCIENDO:
-        DETENER.
-      */
-
-      if (
-        !video.paused &&
-        !finished
-      ) {
-        video.pause();
-
-        try {
-          video.currentTime =
-            0;
-        } catch {
-          // nada
+          return;
         }
 
-        setVideoWallPlaying(
-          false
-        );
+        /*
+          VIDEO LOCAL
+        */
 
-        return;
-      }
+        const video =
+          featuredVideoRef.current;
 
-      /*
-        SI ESTÁ DETENIDO:
-        REPRODUCIR.
-      */
-
-      try {
-        video.muted =
-          false;
-
-        video.volume =
-          1;
-
-        await video.play();
-
-        setVideoWallPlaying(
-          true
-        );
-      } catch (
-        error
-      ) {
-        console.error(
-          "FREAKY DIRECT VIDEO PLAY ERROR:",
-          error
-        );
+        if (!video) {
+          return;
+        }
 
         setVideoError(
-          true
-        );
-
-        setVideoWallPlaying(
           false
         );
-      }
-    },
-    []
-  );
+
+        const finished =
+          video.ended ||
+          (
+            Number.isFinite(
+              video.duration
+            ) &&
+            video.duration >
+              0 &&
+            video.currentTime >=
+              video.duration -
+                0.1
+          );
+
+        if (finished) {
+          try {
+            video.currentTime =
+              0;
+          } catch {
+            // nada
+          }
+        }
+
+        if (
+          !video.paused &&
+          !finished
+        ) {
+          video.pause();
+
+          try {
+            video.currentTime =
+              0;
+          } catch {
+            // nada
+          }
+
+          setVideoWallPlaying(
+            false
+          );
+
+          return;
+        }
+
+        try {
+          video.muted =
+            false;
+
+          video.volume =
+            1;
+
+          await video.play();
+
+          setVideoWallPlaying(
+            true
+          );
+        } catch (
+          error
+        ) {
+          console.error(
+            "FREAKY DIRECT VIDEO PLAY ERROR:",
+            error
+          );
+
+          setVideoError(
+            true
+          );
+
+          setVideoWallPlaying(
+            false
+          );
+        }
+      },
+      [
+        nearbyGame,
+        videoWallPlaying,
+      ]
+    );
 
   /* =======================================================
      STOP
@@ -612,6 +666,30 @@ const toggleWorldVideo =
 
   const stopWorldVideo =
     useCallback(() => {
+      if (
+        nearbyGame
+          ?.sourceType ===
+        "youtube"
+      ) {
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:youtube-command",
+            {
+              detail: {
+                command:
+                  "stop",
+              },
+            }
+          )
+        );
+
+        setVideoWallPlaying(
+          false
+        );
+
+        return;
+      }
+
       const video =
         featuredVideoRef.current;
 
@@ -631,7 +709,9 @@ const toggleWorldVideo =
       setVideoWallPlaying(
         false
       );
-    }, []);
+    }, [
+      nearbyGame,
+    ]);
 
   /* =======================================================
      ABRIR 2D
