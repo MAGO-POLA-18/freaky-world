@@ -12,23 +12,90 @@ const FREAKY_RANKING_URL =
   "https://freakyranking.base44.app";
 
 /* =========================================================
-   VIDEO 2D
+   YOUTUBE
+========================================================= */
 
-   Usa exactamente game.videoUrl,
-   la misma fuente que usa la pantalla 3D.
+function getYouTubeId(
+  url
+) {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed =
+      new URL(url);
+
+    if (
+      parsed.hostname.includes(
+        "youtu.be"
+      )
+    ) {
+      return parsed.pathname
+        .replace("/", "")
+        .split("/")[0];
+    }
+
+    if (
+      parsed.pathname.startsWith(
+        "/shorts/"
+      )
+    ) {
+      return parsed.pathname
+        .split("/shorts/")[1]
+        ?.split("/")[0];
+    }
+
+    if (
+      parsed.pathname.startsWith(
+        "/embed/"
+      )
+    ) {
+      return parsed.pathname
+        .split("/embed/")[1]
+        ?.split("/")[0];
+    }
+
+    return parsed.searchParams.get(
+      "v"
+    );
+  } catch {
+    return null;
+  }
+}
+
+/* =========================================================
+   VIDEO 2D
 ========================================================= */
 
 function VideoOverlay({
   game,
   onClose,
 }) {
+  const youtubeId =
+    getYouTubeId(
+      game.videoUrl
+    );
+
+  const isYouTube =
+    game.sourceType ===
+      "youtube" ||
+    Boolean(
+      youtubeId
+    );
+
+  const youtubeEmbedUrl =
+    youtubeId
+      ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1`
+      : null;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={
         game.title ||
-        "Vídeo"
+        "VÃ­deo"
       }
       style={{
         position:
@@ -144,7 +211,7 @@ function VideoOverlay({
               "25px",
           }}
         >
-          ×
+          Ã
         </button>
       </div>
 
@@ -179,40 +246,77 @@ function VideoOverlay({
               "min(1200px, 100%)",
           }}
         >
-          <video
-            src={
-              game.videoUrl
-            }
+          {isYouTube &&
+          youtubeEmbedUrl ? (
+            <iframe
+              src={
+                youtubeEmbedUrl
+              }
+              title={
+                game.title ||
+                "Video de YouTube"
+              }
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              style={{
+                display:
+                  "block",
 
-            controls
+                width:
+                  "100%",
 
-            autoPlay
+                maxHeight:
+                  "calc(100vh - 100px)",
 
-            playsInline
+                aspectRatio:
+                  "16 / 9",
 
-            style={{
-              display:
-                "block",
+                border:
+                  0,
 
-              width:
-                "100%",
+                background:
+                  "#000",
 
-              maxHeight:
-                "calc(100vh - 100px)",
+                borderRadius:
+                  "16px",
+              }}
+            />
+          ) : (
+            <video
+              src={
+                game.videoUrl
+              }
 
-              aspectRatio:
-                "16 / 9",
+              controls
 
-              objectFit:
-                "contain",
+              autoPlay
 
-              background:
-                "#000",
+              playsInline
 
-              borderRadius:
-                "16px",
-            }}
-          />
+              style={{
+                display:
+                  "block",
+
+                width:
+                  "100%",
+
+                maxHeight:
+                  "calc(100vh - 100px)",
+
+                aspectRatio:
+                  "16 / 9",
+
+                objectFit:
+                  "contain",
+
+                background:
+                  "#000",
+
+                borderRadius:
+                  "16px",
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -331,7 +435,7 @@ function MockGameCard({
               "24px",
           }}
         >
-          ×
+          Ã
         </button>
       </div>
 
@@ -377,7 +481,7 @@ function MockGameCard({
                 900,
             }}
           >
-            POPULARES HOY · #{game.rank}
+            POPULARES HOY Â· #{game.rank}
           </div>
 
           <h1
@@ -514,7 +618,7 @@ export default function RankingOverlay({
             onClose
           }
         >
-          ×
+          Ã
         </button>
       </div>
 
