@@ -121,6 +121,18 @@ export default function WorldScene() {
   ] =
     useState(null);
 
+  /* =======================================================
+     VIDEO
+  ======================================================= */
+
+  const [
+    videoStatus,
+    setVideoStatus,
+  ] =
+    useState(
+      "loading"
+    );
+
   const [
     videoWallPlaying,
     setVideoWallPlaying,
@@ -256,7 +268,8 @@ export default function WorldScene() {
             ?.game
         ) {
           setNearbyGame(
-            event.detail.game
+            event.detail
+              .game
           );
 
           return;
@@ -281,75 +294,29 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     PLAY / PAUSA
+     ESTADO YOUTUBE
   ======================================================= */
 
-  const toggleWorldVideo =
+  const handleVideoStatusChange =
     useCallback(
-      () => {
-        setVideoError(
-          false
+      (
+        status
+      ) => {
+        setVideoStatus(
+          status
         );
 
         if (
-          videoWallPlaying
+          status !==
+          "error"
         ) {
-          youtubeScreenRef.current
-            ?.pause?.();
-
-          return;
+          setVideoError(
+            false
+          );
         }
-
-        youtubeScreenRef.current
-          ?.play?.();
-      },
-      [
-        videoWallPlaying,
-      ]
-    );
-
-  const pauseWorldVideo =
-    useCallback(
-      () => {
-        youtubeScreenRef.current
-          ?.pause?.();
       },
       []
     );
-
-  /* =======================================================
-     SEEK
-  ======================================================= */
-
-  const seekWorldVideoBy =
-    useCallback(
-      (
-        seconds
-      ) => {
-        youtubeScreenRef.current
-          ?.seekBy?.(
-            seconds
-          );
-      },
-      []
-    );
-
-  const seekWorldVideoTo =
-    useCallback(
-      (
-        value
-      ) => {
-        youtubeScreenRef.current
-          ?.seekTo?.(
-            value
-          );
-      },
-      []
-    );
-
-  /* =======================================================
-     ESTADO DEL PLAYER
-  ======================================================= */
 
   const handleVideoPlayingChange =
     useCallback(
@@ -361,14 +328,6 @@ export default function WorldScene() {
             playing
           )
         );
-
-        if (
-          playing
-        ) {
-          setVideoError(
-            false
-          );
-        }
       },
       []
     );
@@ -406,8 +365,12 @@ export default function WorldScene() {
         error
       ) => {
         console.error(
-          "FREAKY YOUTUBE PLAYER ERROR:",
+          "FREAKY YOUTUBE ERROR:",
           error
+        );
+
+        setVideoStatus(
+          "error"
         );
 
         setVideoError(
@@ -417,6 +380,74 @@ export default function WorldScene() {
         setVideoWallPlaying(
           false
         );
+      },
+      []
+    );
+
+  /* =======================================================
+     PLAY / PAUSA
+  ======================================================= */
+
+  const toggleWorldVideo =
+    useCallback(
+      () => {
+        setVideoError(
+          false
+        );
+
+        if (
+          videoWallPlaying
+        ) {
+          youtubeScreenRef
+            .current
+            ?.pause?.();
+
+          return;
+        }
+
+        /*
+          No intentamos reproducir
+          si YouTube todavía no
+          confirmó onReady.
+        */
+
+        if (
+          videoStatus !==
+            "ready" &&
+          videoStatus !==
+            "paused" &&
+          videoStatus !==
+            "buffering"
+        ) {
+          return;
+        }
+
+        const started =
+          youtubeScreenRef
+            .current
+            ?.play?.();
+
+        if (
+          started ===
+          false
+        ) {
+          setVideoStatus(
+            "loading"
+          );
+        }
+      },
+      [
+        videoWallPlaying,
+        videoStatus,
+      ]
+    );
+
+  const pauseWorldVideo =
+    useCallback(
+      () => {
+        youtubeScreenRef
+          .current
+          ?.pause?.();
       },
       []
     );
@@ -434,11 +465,6 @@ export default function WorldScene() {
         ) {
           return;
         }
-
-        /*
-          Pausamos el mismo video
-          antes de abrir el 2D.
-        */
 
         if (
           nearbyGame.id ===
@@ -502,7 +528,8 @@ export default function WorldScene() {
             "Escape" &&
           overlayOpen
         ) {
-          event.preventDefault();
+          event
+            .preventDefault();
 
           closeGame();
 
@@ -515,7 +542,8 @@ export default function WorldScene() {
           nearbyGame &&
           !overlayOpen
         ) {
-          event.preventDefault();
+          event
+            .preventDefault();
 
           if (
             nearbyGame.id ===
@@ -599,6 +627,75 @@ export default function WorldScene() {
       },
       []
     );
+
+  /* =======================================================
+     TEXTO ESTADO
+  ======================================================= */
+
+  let videoStatusLabel =
+    "Cargando vídeo…";
+
+  if (
+    videoStatus ===
+    "creating"
+  ) {
+    videoStatusLabel =
+      "Preparando reproductor…";
+  }
+
+  if (
+    videoStatus ===
+    "ready"
+  ) {
+    videoStatusLabel =
+      "Vídeo listo";
+  }
+
+  if (
+    videoStatus ===
+    "playing"
+  ) {
+    videoStatusLabel =
+      "Reproduciendo";
+  }
+
+  if (
+    videoStatus ===
+    "paused"
+  ) {
+    videoStatusLabel =
+      "Pausado";
+  }
+
+  if (
+    videoStatus ===
+    "buffering"
+  ) {
+    videoStatusLabel =
+      "Cargando vídeo…";
+  }
+
+  if (
+    videoStatus ===
+    "error"
+  ) {
+    videoStatusLabel =
+      "Error al cargar vídeo";
+  }
+
+  const videoReady =
+    videoStatus ===
+      "ready" ||
+    videoStatus ===
+      "paused" ||
+    videoStatus ===
+      "playing" ||
+    videoStatus ===
+      "buffering";
+
+  /* =======================================================
+     CIELO
+  ======================================================= */
 
   const skyLabel =
     skyTestHour ===
@@ -904,42 +1001,41 @@ export default function WorldScene() {
                       5,
                   }}
                 >
-                  {SKY_TEST_HOURS
-                    .map(
-                      (
-                        hour
-                      ) => (
-                        <button
-                          key={
-                            hour ??
-                            "real"
-                          }
-                          type="button"
-                          onClick={() =>
-                            setSkyTestHour(
-                              hour
-                            )
-                          }
-                          style={{
-                            padding:
-                              "4px 6px",
+                  {SKY_TEST_HOURS.map(
+                    (
+                      hour
+                    ) => (
+                      <button
+                        key={
+                          hour ??
+                          "real"
+                        }
+                        type="button"
+                        onClick={() =>
+                          setSkyTestHour(
+                            hour
+                          )
+                        }
+                        style={{
+                          padding:
+                            "4px 6px",
 
-                            fontSize:
-                              10,
-                          }}
-                        >
-                          {hour ===
-                          null
-                            ? "REAL"
-                            : `${String(
-                                hour
-                              ).padStart(
-                                2,
-                                "0"
-                              )}:00`}
-                        </button>
-                      )
-                    )}
+                          fontSize:
+                            10,
+                        }}
+                      >
+                        {hour ===
+                        null
+                          ? "REAL"
+                          : `${String(
+                              hour
+                            ).padStart(
+                              2,
+                              "0"
+                            )}:00`}
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             )}
@@ -964,11 +1060,11 @@ export default function WorldScene() {
           zIndex:
             20,
 
-          pointerEvents:
-            "none",
-
           overflow:
             "hidden",
+
+          pointerEvents:
+            "none",
         }}
       />
 
@@ -1075,10 +1171,6 @@ export default function WorldScene() {
           <CameraRig />
         </Physics>
 
-        {/* ===============================================
-            YOUTUBE COMO OBJETO 3D REAL
-        =============================================== */}
-
         <YouTubeScreen3D
           ref={
             youtubeScreenRef
@@ -1091,6 +1183,9 @@ export default function WorldScene() {
           }
           visible={
             !overlayOpen
+          }
+          onStatusChange={
+            handleVideoStatusChange
           }
           onPlayingChange={
             handleVideoPlayingChange
@@ -1105,7 +1200,7 @@ export default function WorldScene() {
       </Canvas>
 
       {/* ===================================================
-          CONTROLES MÓVILES
+          MÓVIL
       =================================================== */}
 
       {!overlayOpen && (
@@ -1144,7 +1239,10 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          CONTROLES VIDEO
+          VIDEO
+
+          Panel pequeño ARRIBA.
+          No bloquea cruceta ni cámara.
       =================================================== */}
 
       {isVideoWall &&
@@ -1154,156 +1252,172 @@ export default function WorldScene() {
               position:
                 "fixed",
 
+              top:
+                mobile
+                  ? 74
+                  : 64,
+
               left:
                 "50%",
-
-              bottom:
-                mobile
-                  ? 18
-                  : 28,
 
               transform:
                 "translateX(-50%)",
 
               zIndex:
-                60,
+                90,
 
               display:
                 "flex",
 
-              flexWrap:
-                "wrap",
-
               alignItems:
-                "center",
-
-              justifyContent:
                 "center",
 
               gap:
                 8,
 
-              width:
-                "min(96vw,760px)",
+              maxWidth:
+                "94vw",
 
               padding:
-                10,
+                "7px 8px",
 
               borderRadius:
-                18,
+                14,
 
               background:
-                "rgba(5,8,12,.78)",
+                "rgba(5,8,12,.88)",
 
               backdropFilter:
-                "blur(14px)",
+                "blur(12px)",
 
               border:
-                "1px solid rgba(255,255,255,.14)",
+                "1px solid rgba(255,255,255,.16)",
 
               pointerEvents:
                 "auto",
             }}
           >
-            <button
-              type="button"
-              onClick={() =>
-                seekWorldVideoBy(
-                  -10
-                )
-              }
-              style={
-                videoButtonStyle
-              }
+            {/* ESTADO */}
+
+            <div
+              style={{
+                padding:
+                  "0 8px",
+
+                color:
+                  videoError
+                    ? "#ff7474"
+                    : videoStatus ===
+                        "playing"
+                      ? "#62ff9a"
+                      : "#cbd5dc",
+
+                fontSize:
+                  11,
+
+                fontWeight:
+                  800,
+
+                whiteSpace:
+                  "nowrap",
+              }}
             >
-              −10 s
-            </button>
+              {videoStatusLabel}
+
+              {videoDuration >
+                0 &&
+                videoStatus !==
+                  "loading" &&
+                videoStatus !==
+                  "creating" && (
+                  <>
+                    {" · "}
+
+                    {formatVideoTime(
+                      videoCurrentTime
+                    )}
+                  </>
+                )}
+            </div>
+
+            {/* PLAY */}
 
             <button
               type="button"
+              disabled={
+                !videoReady ||
+                videoError
+              }
               onClick={
                 toggleWorldVideo
               }
               style={{
-                ...videoButtonStyle,
+                minHeight:
+                  38,
 
-                minWidth:
-                  138,
+                padding:
+                  "6px 12px",
 
                 border:
-                  videoError
-                    ? "1px solid #ff4b4b"
-                    : "1px solid rgba(255,255,255,.24)",
+                  "1px solid rgba(255,255,255,.2)",
+
+                borderRadius:
+                  10,
 
                 background:
-                  videoWallPlaying
-                    ? "rgba(145,20,35,.95)"
-                    : "rgba(8,18,23,.96)",
+                  !videoReady
+                    ? "rgba(255,255,255,.05)"
+                    : videoWallPlaying
+                      ? "rgba(145,20,35,.95)"
+                      : "rgba(12,79,91,.95)",
+
+                color:
+                  !videoReady
+                    ? "rgba(255,255,255,.45)"
+                    : "#fff",
+
+                fontSize:
+                  12,
+
+                fontWeight:
+                  850,
+
+                whiteSpace:
+                  "nowrap",
+
+                touchAction:
+                  "manipulation",
               }}
             >
-              {videoError
-                ? "⚠ Error de vídeo"
+              {!videoReady
+                ? "Cargando…"
                 : videoWallPlaying
                   ? "❚❚ Pausar"
                   : "▶ Reproducir"}
             </button>
 
+            {/* 2D */}
+
             <button
               type="button"
-              onClick={() =>
-                seekWorldVideoBy(
-                  10
-                )
-              }
-              style={
-                videoButtonStyle
-              }
-            >
-              +10 s
-            </button>
-
-            <input
-              type="range"
-              min="0"
-              max={
-                videoDuration >
-                0
-                  ? videoDuration
-                  : 1
-              }
-              step="0.1"
-              value={
-                Math.min(
-                  videoCurrentTime,
-
-                  videoDuration >
-                    0
-                    ? videoDuration
-                    : 1
-                )
-              }
-              onChange={
-                (
-                  event
-                ) =>
-                  seekWorldVideoTo(
-                    event.target
-                      .value
-                  )
+              onClick={
+                openGame
               }
               style={{
-                flex:
-                  "1 1 180px",
+                minHeight:
+                  38,
 
-                maxWidth:
-                  300,
-              }}
-            />
+                padding:
+                  "6px 12px",
 
-            <span
-              style={{
-                minWidth:
-                  86,
+                border:
+                  "1px solid rgba(255,255,255,.2)",
+
+                borderRadius:
+                  10,
+
+                background:
+                  "rgba(8,18,23,.96)",
 
                 color:
                   "#fff",
@@ -1312,42 +1426,22 @@ export default function WorldScene() {
                   12,
 
                 fontWeight:
-                  800,
+                  850,
 
-                fontVariantNumeric:
-                  "tabular-nums",
+                whiteSpace:
+                  "nowrap",
 
-                textAlign:
-                  "center",
+                touchAction:
+                  "manipulation",
               }}
             >
-              {formatVideoTime(
-                videoCurrentTime
-              )}
-
-              {" / "}
-
-              {formatVideoTime(
-                videoDuration
-              )}
-            </span>
-
-            <button
-              type="button"
-              onClick={
-                openGame
-              }
-              style={
-                videoButtonStyle
-              }
-            >
-              ↗ Abrir en 2D
+              ↗ 2D
             </button>
           </div>
         )}
 
       {/* ===================================================
-          OVERLAY 2D
+          OVERLAY
       =================================================== */}
 
       {openedGame && (
@@ -1363,36 +1457,3 @@ export default function WorldScene() {
     </>
   );
 }
-
-/* =========================================================
-   ESTILO BOTONES VIDEO
-========================================================= */
-
-const videoButtonStyle = {
-  minHeight:
-    46,
-
-  padding:
-    "8px 12px",
-
-  border:
-    "1px solid rgba(255,255,255,.2)",
-
-  borderRadius:
-    12,
-
-  background:
-    "rgba(255,255,255,.08)",
-
-  color:
-    "#fff",
-
-  fontSize:
-    14,
-
-  fontWeight:
-    850,
-
-  touchAction:
-    "manipulation",
-};
