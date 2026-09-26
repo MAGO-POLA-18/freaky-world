@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import {
+  Html,
   RoundedBox,
 } from "@react-three/drei";
 
@@ -17,8 +18,8 @@ import {
 } from "@react-three/fiber";
 
 import {
-  CuboidCollider,
   RigidBody,
+  CuboidCollider,
 } from "@react-three/rapier";
 
 import * as THREE from "three";
@@ -29,7 +30,13 @@ import {
 
 import {
   FEATURED_VIDEO,
+  FEATURED_VIDEO_URL,
+  getYouTubeId,
 } from "../World/featuredVideoConfig";
+
+/* =========================================================
+   CONFIG
+========================================================= */
 
 const ROOM_HALF_WIDTH =
   29.25;
@@ -424,7 +431,7 @@ const GAMES = [
 ];
 
 /* =========================================================
-   POSTERS
+   POSTER
 ========================================================= */
 
 function createPosterTexture(
@@ -492,8 +499,7 @@ function createPosterTexture(
     150,
     150,
     0,
-    Math.PI *
-      2
+    Math.PI * 2
   );
 
   ctx.fill();
@@ -508,8 +514,7 @@ function createPosterTexture(
     420,
     200,
     0,
-    Math.PI *
-      2
+    Math.PI * 2
   );
 
   ctx.fill();
@@ -528,7 +533,7 @@ function createPosterTexture(
   );
 
   ctx.fillStyle =
-    "#fff";
+    "#ffffff";
 
   ctx.font =
     "800 28px Arial";
@@ -543,10 +548,9 @@ function createPosterTexture(
     "900 44px Arial";
 
   const words =
-    game.title
-      .split(
-        " "
-      );
+    game.title.split(
+      " "
+    );
 
   let line =
     "";
@@ -605,10 +609,9 @@ function createPosterTexture(
   );
 
   const texture =
-    new THREE
-      .CanvasTexture(
-        canvas
-      );
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -617,7 +620,7 @@ function createPosterTexture(
 }
 
 /* =========================================================
-   PREVIEW PANTALLA
+   VIDEO PREVIEW
 ========================================================= */
 
 function createVideoPreviewTexture() {
@@ -683,8 +686,7 @@ function createVideoPreviewTexture() {
     130,
     250,
     0,
-    Math.PI *
-      2
+    Math.PI * 2
   );
 
   ctx.fill();
@@ -699,8 +701,7 @@ function createVideoPreviewTexture() {
     620,
     280,
     0,
-    Math.PI *
-      2
+    Math.PI * 2
   );
 
   ctx.fill();
@@ -721,7 +722,7 @@ function createVideoPreviewTexture() {
   );
 
   ctx.fillStyle =
-    "#fff";
+    "#ffffff";
 
   ctx.font =
     "900 78px Arial";
@@ -739,31 +740,30 @@ function createVideoPreviewTexture() {
     "rgba(255,255,255,.78)";
 
   ctx.fillText(
-    "ACERCATE PARA INTERACTUAR",
+    "TOCA LA PANTALLA PARA REPRODUCIR",
     72,
     275
   );
 
-  ctx.fillStyle =
-    "#fff";
-
   ctx.beginPath();
+
+  ctx.fillStyle =
+    "#ffffff";
 
   ctx.arc(
     640,
     445,
     80,
     0,
-    Math.PI *
-      2
+    Math.PI * 2
   );
 
   ctx.fill();
 
+  ctx.beginPath();
+
   ctx.fillStyle =
     "#11151a";
-
-  ctx.beginPath();
 
   ctx.moveTo(
     675,
@@ -785,10 +785,9 @@ function createVideoPreviewTexture() {
   ctx.fill();
 
   const texture =
-    new THREE
-      .CanvasTexture(
-        canvas
-      );
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -797,7 +796,7 @@ function createVideoPreviewTexture() {
 }
 
 /* =========================================================
-   NEON
+   NEON TEXT
 ========================================================= */
 
 function createNeonTextTexture(
@@ -857,16 +856,19 @@ function createNeonTextTexture(
   );
 
   const texture =
-    new THREE
-      .CanvasTexture(
-        canvas
-      );
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
   return texture;
 }
+
+/* =========================================================
+   ARCADE ICON
+========================================================= */
 
 function createArcadeTexture(
   type
@@ -911,10 +913,8 @@ function createArcadeTexture(
       256,
       256,
       155,
-      Math.PI *
-        0.22,
-      Math.PI *
-        1.78
+      Math.PI * 0.22,
+      Math.PI * 1.78
     );
 
     ctx.closePath();
@@ -931,8 +931,7 @@ function createArcadeTexture(
       170,
       14,
       0,
-      Math.PI *
-        2
+      Math.PI * 2
     );
 
     ctx.fill();
@@ -1008,10 +1007,9 @@ function createArcadeTexture(
   }
 
   const texture =
-    new THREE
-      .CanvasTexture(
-        canvas
-      );
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -1020,7 +1018,7 @@ function createArcadeTexture(
 }
 
 /* =========================================================
-   INSTANCED
+   INSTANCED BOXES
 ========================================================= */
 
 function InstancedBoxes({
@@ -1036,8 +1034,7 @@ function InstancedBoxes({
   const dummy =
     useMemo(
       () =>
-        new THREE
-          .Object3D(),
+        new THREE.Object3D(),
       []
     );
 
@@ -1053,30 +1050,26 @@ function InstancedBoxes({
         item,
         index
       ) => {
-        dummy.position
-          .set(
-            ...item.position
-          );
+        dummy.position.set(
+          ...item.position
+        );
 
-        dummy.rotation
-          .set(
-            ...(
-              item.rotation ??
-              [
-                0,
-                0,
-                0,
-              ]
-            )
-          );
+        dummy.rotation.set(
+          ...(
+            item.rotation ??
+            [
+              0,
+              0,
+              0,
+            ]
+          )
+        );
 
-        dummy.scale
-          .set(
-            ...item.scale
-          );
+        dummy.scale.set(
+          ...item.scale
+        );
 
-        dummy
-          .updateMatrix();
+        dummy.updateMatrix();
 
         ref.current
           .setMatrixAt(
@@ -1319,8 +1312,7 @@ function GameStation({
   const worldPosition =
     useMemo(
       () =>
-        new THREE
-          .Vector3(),
+        new THREE.Vector3(),
       []
     );
 
@@ -1377,10 +1369,8 @@ function GameStation({
 
     const distance =
       Math.sqrt(
-        dx *
-          dx +
-        dz *
-          dz
+        dx * dx +
+        dz * dz
       );
 
     const isNear =
@@ -1411,13 +1401,11 @@ function GameStation({
               ? {
                   near:
                     true,
-
                   game,
                 }
               : {
                   near:
                     false,
-
                   game,
                 },
         }
@@ -1549,13 +1537,15 @@ function GameStation({
 }
 
 /* =========================================================
-   PANTALLA FÍSICA
+   PANTALLA YOUTUBE
 
-   El vídeo NO está acá.
+   Esta es la parte nueva.
 
-   El iframe YouTube real vive en
-   YouTubeScreen3D.jsx y ocupa exactamente
-   estas mismas coordenadas.
+   El iframe está DENTRO del mismo group
+   que la pantalla física.
+
+   Por eso hereda automáticamente:
+   Museum → DpadWing → Hall → Screen.
 ========================================================= */
 
 function HeroVideoWall() {
@@ -1568,8 +1558,7 @@ function HeroVideoWall() {
   const worldPosition =
     useMemo(
       () =>
-        new THREE
-          .Vector3(),
+        new THREE.Vector3(),
       []
     );
 
@@ -1586,15 +1575,32 @@ function HeroVideoWall() {
       []
     );
 
+  const youtubeId =
+    useMemo(
+      () =>
+        getYouTubeId(
+          FEATURED_VIDEO_URL
+        ),
+      []
+    );
+
+  const embedUrl =
+    youtubeId
+      ? `https://www.youtube.com/embed/${youtubeId}?playsinline=1&controls=1&rel=0&modestbranding=1`
+      : null;
+
   useEffect(
     () =>
       () =>
-        previewTexture
-          .dispose(),
+        previewTexture.dispose(),
     [
       previewTexture,
     ]
   );
+
+  /* =======================================================
+     PROXIMIDAD
+  ======================================================= */
 
   useFrame(() => {
     if (
@@ -1623,10 +1629,8 @@ function HeroVideoWall() {
 
     const distance =
       Math.sqrt(
-        dx *
-          dx +
-        dz *
-          dz
+        dx * dx +
+        dz * dz
       );
 
     const isNear =
@@ -1683,6 +1687,10 @@ function HeroVideoWall() {
         -33.72,
       ]}
     >
+      {/* ===================================================
+          MARCO
+      =================================================== */}
+
       <RoundedBox
         position={[
           0,
@@ -1716,11 +1724,18 @@ function HeroVideoWall() {
         />
       </RoundedBox>
 
+      {/* ===================================================
+          PREVIEW WEBGL
+
+          Queda detrás como respaldo visual
+          mientras carga YouTube.
+      =================================================== */}
+
       <mesh
         position={[
           0,
           7.2,
-          0.28,
+          0.275,
         ]}
       >
         <planeGeometry
@@ -1742,6 +1757,116 @@ function HeroVideoWall() {
           }
         />
       </mesh>
+
+      {/* ===================================================
+          YOUTUBE
+
+          1280x720 CSS pixels.
+
+          22.5 / 1280 = 0.017578125
+
+          Esa escala convierte exactamente
+          el reproductor 16:9 en nuestra
+          pantalla 22.5 × 12.65.
+      =================================================== */}
+
+      {embedUrl && (
+        <Html
+          transform
+          occlude="blending"
+          position={[
+            0,
+            7.2,
+            0.32,
+          ]}
+          scale={
+            0.017578125
+          }
+          zIndexRange={[
+            10,
+            0,
+          ]}
+          style={{
+            width:
+              "1280px",
+
+            height:
+              "720px",
+
+            pointerEvents:
+              near
+                ? "auto"
+                : "none",
+          }}
+        >
+          <div
+            style={{
+              width:
+                "1280px",
+
+              height:
+                "720px",
+
+              overflow:
+                "hidden",
+
+              background:
+                "#000",
+
+              borderRadius:
+                "8px",
+
+              pointerEvents:
+                near
+                  ? "auto"
+                  : "none",
+            }}
+          >
+            <iframe
+              src={
+                embedUrl
+              }
+              title="Freaky World YouTube"
+              width="1280"
+              height="720"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              playsInline
+              style={{
+                display:
+                  "block",
+
+                width:
+                  "1280px",
+
+                height:
+                  "720px",
+
+                margin:
+                  0,
+
+                padding:
+                  0,
+
+                border:
+                  0,
+
+                background:
+                  "#000",
+
+                pointerEvents:
+                  near
+                    ? "auto"
+                    : "none",
+              }}
+            />
+          </div>
+        </Html>
+      )}
+
+      {/* ===================================================
+          MARCO NEÓN
+      =================================================== */}
 
       <NeonLine
         position={[
@@ -1770,6 +1895,10 @@ function HeroVideoWall() {
         ]}
         color="#ff4f95"
       />
+
+      {/* ===================================================
+          LUZ DE PROXIMIDAD
+      =================================================== */}
 
       {near && (
         <pointLight
@@ -2123,11 +2252,11 @@ export default function PopularTodayHall() {
         items={
           ceilingLights
         }
-        color="#fff"
+        color="#ffffff"
         roughness={
           0.1
         }
-        emissive="#fff"
+        emissive="#ffffff"
         emissiveIntensity={
           1.6
         }
@@ -2159,8 +2288,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
         width={
@@ -2181,8 +2309,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          -Math.PI /
-            2,
+          -Math.PI / 2,
           0,
         ]}
         width={
@@ -2203,8 +2330,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
         width={
@@ -2224,8 +2350,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
         size={
@@ -2242,8 +2367,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          -Math.PI /
-            2,
+          -Math.PI / 2,
           0,
         ]}
         size={
@@ -2259,8 +2383,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
         size={[
@@ -2279,8 +2402,7 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI /
-            2,
+          Math.PI / 2,
           0,
         ]}
         size={[
@@ -2345,36 +2467,35 @@ export default function PopularTodayHall() {
         }
       />
 
-      {stationLayout
-        .map(
-          (
-            station
-          ) => (
-            <GameStation
-              key={
-                station
-                  .game
-                  .id
-              }
-              game={
-                station
-                  .game
-              }
-              position={
-                station
-                  .position
-              }
-              rotation={
-                station
-                  .rotation
-              }
-              scale={
-                station
-                  .scale
-              }
-            />
-          )
-        )}
+      {stationLayout.map(
+        (
+          station
+        ) => (
+          <GameStation
+            key={
+              station
+                .game
+                .id
+            }
+            game={
+              station
+                .game
+            }
+            position={
+              station
+                .position
+            }
+            rotation={
+              station
+                .rotation
+            }
+            scale={
+              station
+                .scale
+            }
+          />
+        )
+      )}
 
       <HeroVideoWall />
 
@@ -2384,48 +2505,47 @@ export default function PopularTodayHall() {
           false
         }
       >
-        {stationLayout
-          .map(
-            (
-              station
-            ) => (
-              <CuboidCollider
-                key={
+        {stationLayout.map(
+          (
+            station
+          ) => (
+            <CuboidCollider
+              key={
+                station
+                  .game
+                  .id
+              }
+              args={[
+                1.9 *
                   station
-                    .game
-                    .id
-                }
-                args={[
-                  1.9 *
-                    station
-                      .scale,
+                    .scale,
 
-                  0.42,
+                0.42,
 
-                  0.8 *
-                    station
-                      .scale,
-                ]}
-                position={[
+                0.8 *
                   station
-                    .position[0],
+                    .scale,
+              ]}
+              position={[
+                station
+                  .position[0],
 
-                  0.8,
+                0.8,
 
-                  station
-                    .position[2],
-                ]}
-                rotation={[
-                  0,
+                station
+                  .position[2],
+              ]}
+              rotation={[
+                0,
 
-                  station
-                    .rotation,
+                station
+                  .rotation,
 
-                  0,
-                ]}
-              />
-            )
-          )}
+                0,
+              ]}
+            />
+          )
+        )}
       </RigidBody>
     </group>
   );
