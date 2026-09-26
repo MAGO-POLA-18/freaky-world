@@ -403,10 +403,74 @@ export default function WorldScene() {
           event.detail
             ?.game
         ) {
+          const game =
+            event.detail.game;
+
           setNearbyGame(
-            event.detail
-              .game
+            game
           );
+
+          /*
+            SI ES LA PANTALLA DE VIDEO,
+            SINCRONIZAMOS EL BOTÓN CON
+            EL ESTADO REAL DEL VIDEO.
+          */
+
+          if (
+            game.id ===
+            "featured-video-screen"
+          ) {
+            const video =
+              featuredVideoRef.current;
+
+            if (video) {
+              const finished =
+                video.ended ||
+                (
+                  Number.isFinite(
+                    video.duration
+                  ) &&
+                  video.duration >
+                    0 &&
+                  video.currentTime >=
+                    video.duration -
+                      0.1
+                );
+
+              /*
+                SI TERMINÓ:
+                BOTÓN = REPRODUCIR
+                Y REINICIAMOS A 0.
+              */
+
+              if (
+                finished
+              ) {
+                try {
+                  video.currentTime =
+                    0;
+                } catch {
+                  // nada
+                }
+
+                setVideoWallPlaying(
+                  false
+                );
+
+                return;
+              }
+
+              /*
+                SI NO TERMINÓ:
+                CONSULTAMOS SI REALMENTE
+                ESTÁ REPRODUCIENDO.
+              */
+
+              setVideoWallPlaying(
+                !video.paused
+              );
+            }
+          }
 
           return;
         }
