@@ -34,21 +34,38 @@ import {
 const ROOM_HALF_WIDTH = 29.25;
 const ROOM_BACK_Z = -34.25;
 
-const TEST_VIDEO_URL =
-  "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+/*
+  UNA ÚNICA FUENTE.
+
+  Esta URL la usa:
+  - la pantalla 3D
+  - el reproductor 2D
+*/
+
+const FEATURED_VIDEO_URL =
+  "https://media.w3.org/2010/05/sintel/trailer.mp4";
 
 const FEATURED_VIDEO = {
-  id: "featured-video-screen",
-  overlayType: "video",
-  title: "VIDEO DESTACADO",
-  accent: "#58f1ff",
-  accent2: "#8b5cff",
+  id:
+    "featured-video-screen",
+
+  overlayType:
+    "video",
+
+  title:
+    "VIDEO DESTACADO",
+
+  accent:
+    "#58f1ff",
+
+  accent2:
+    "#8b5cff",
+
   description:
     "Pantalla multimedia principal de Freaky World.",
-  youtubeEmbed:
-    "https://www.youtube.com/embed/M7lc1UVf-VE?rel=0&playsinline=1",
-  youtubePage:
-    "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+
+  videoUrl:
+    FEATURED_VIDEO_URL,
 };
 
 /* =========================================================
@@ -57,170 +74,408 @@ const FEATURED_VIDEO = {
 
 const GAMES = [
   {
-    id: "mock-neon-district",
-    mock: true,
-    rank: 1,
-    title: "NEON DISTRICT",
-    subtitle: "Nightfall Studios",
-    year: "2027",
-    genre: "Acción · Mundo abierto",
-    platform: "PS5 · Xbox · PC",
-    score: "9.4",
-    accent: "#ff4f95",
-    accent2: "#7d44ff",
+    id:
+      "mock-neon-district",
+
+    mock:
+      true,
+
+    rank:
+      1,
+
+    title:
+      "NEON DISTRICT",
+
+    subtitle:
+      "Nightfall Studios",
+
+    year:
+      "2027",
+
+    genre:
+      "Acción · Mundo abierto",
+
+    platform:
+      "PS5 · Xbox · PC",
+
+    score:
+      "9.4",
+
+    accent:
+      "#ff4f95",
+
+    accent2:
+      "#7d44ff",
+
     description:
       "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones.",
   },
+
   {
-    id: "mock-echoes",
-    mock: true,
-    rank: 2,
-    title: "ECHOES",
-    subtitle: "North Shore Games",
-    year: "2026",
-    genre: "Aventura",
-    platform: "PS5 · PC",
-    score: "9.1",
-    accent: "#5ab8ff",
-    accent2: "#275c9b",
+    id:
+      "mock-echoes",
+
+    mock:
+      true,
+
+    rank:
+      2,
+
+    title:
+      "ECHOES",
+
+    subtitle:
+      "North Shore Games",
+
+    year:
+      "2026",
+
+    genre:
+      "Aventura",
+
+    platform:
+      "PS5 · PC",
+
+    score:
+      "9.1",
+
+    accent:
+      "#5ab8ff",
+
+    accent2:
+      "#275c9b",
+
     description:
       "Exploración narrativa en un archipiélago abandonado.",
   },
+
   {
-    id: "mock-red-horizon",
-    mock: true,
-    rank: 3,
-    title: "RED HORIZON",
-    subtitle: "Atlas Interactive",
-    year: "2026",
-    genre: "RPG · Ciencia ficción",
-    platform: "Xbox · PC",
-    score: "8.9",
-    accent: "#ff7b34",
-    accent2: "#b83a2d",
+    id:
+      "mock-red-horizon",
+
+    mock:
+      true,
+
+    rank:
+      3,
+
+    title:
+      "RED HORIZON",
+
+    subtitle:
+      "Atlas Interactive",
+
+    year:
+      "2026",
+
+    genre:
+      "RPG · Ciencia ficción",
+
+    platform:
+      "Xbox · PC",
+
+    score:
+      "8.9",
+
+    accent:
+      "#ff7b34",
+
+    accent2:
+      "#b83a2d",
+
     description:
       "Una colonia marciana dividida entre corporaciones y exploradores.",
   },
+
   {
-    id: "mock-void-runner",
-    mock: true,
-    rank: 4,
-    title: "VOID RUNNER",
-    subtitle: "Pulse Works",
-    year: "2026",
-    genre: "Acción",
-    platform: "PS5 · Xbox · PC",
-    score: "8.8",
-    accent: "#3ee8c2",
-    accent2: "#16647c",
+    id:
+      "mock-void-runner",
+
+    mock:
+      true,
+
+    rank:
+      4,
+
+    title:
+      "VOID RUNNER",
+
+    subtitle:
+      "Pulse Works",
+
+    year:
+      "2026",
+
+    genre:
+      "Acción",
+
+    platform:
+      "PS5 · Xbox · PC",
+
+    score:
+      "8.8",
+
+    accent:
+      "#3ee8c2",
+
+    accent2:
+      "#16647c",
+
     description:
       "Combate rápido y estaciones orbitales.",
   },
+
   {
-    id: "mock-last-signal",
-    mock: true,
-    rank: 5,
-    title: "THE LAST SIGNAL",
-    subtitle: "Silent Peak",
-    year: "2026",
-    genre: "Terror",
-    platform: "PS5 · PC",
-    score: "8.7",
-    accent: "#ca8dff",
-    accent2: "#5a3b88",
+    id:
+      "mock-last-signal",
+
+    mock:
+      true,
+
+    rank:
+      5,
+
+    title:
+      "THE LAST SIGNAL",
+
+    subtitle:
+      "Silent Peak",
+
+    year:
+      "2026",
+
+    genre:
+      "Terror",
+
+    platform:
+      "PS5 · PC",
+
+    score:
+      "8.7",
+
+    accent:
+      "#ca8dff",
+
+    accent2:
+      "#5a3b88",
+
     description:
       "Una señal conduce a una estación científica abandonada.",
   },
+
   {
-    id: "mock-iron-kingdom",
-    mock: true,
-    rank: 6,
-    title: "IRON KINGDOM",
-    subtitle: "Oak Forge",
-    year: "2025",
-    genre: "RPG",
-    platform: "Switch 2 · PC",
-    score: "8.6",
-    accent: "#e6bd59",
-    accent2: "#705f32",
+    id:
+      "mock-iron-kingdom",
+
+    mock:
+      true,
+
+    rank:
+      6,
+
+    title:
+      "IRON KINGDOM",
+
+    subtitle:
+      "Oak Forge",
+
+    year:
+      "2025",
+
+    genre:
+      "RPG",
+
+    platform:
+      "Switch 2 · PC",
+
+    score:
+      "8.6",
+
+    accent:
+      "#e6bd59",
+
+    accent2:
+      "#705f32",
+
     description:
       "Reinos mecánicos y fortalezas móviles.",
   },
+
   {
-    id: "mock-deep-blue",
-    mock: true,
-    rank: 7,
-    title: "DEEP BLUE",
-    subtitle: "Drift Studios",
-    year: "2026",
-    genre: "Exploración",
-    platform: "PS5 · Xbox",
-    score: "8.5",
-    accent: "#45b8ff",
-    accent2: "#15456e",
+    id:
+      "mock-deep-blue",
+
+    mock:
+      true,
+
+    rank:
+      7,
+
+    title:
+      "DEEP BLUE",
+
+    subtitle:
+      "Drift Studios",
+
+    year:
+      "2026",
+
+    genre:
+      "Exploración",
+
+    platform:
+      "PS5 · Xbox",
+
+    score:
+      "8.5",
+
+    accent:
+      "#45b8ff",
+
+    accent2:
+      "#15456e",
+
     description:
       "Exploración submarina en un océano alienígena.",
   },
+
   {
-    id: "mock-black-sun",
-    mock: true,
-    rank: 8,
-    title: "BLACK SUN",
-    subtitle: "Orbital Games",
-    year: "2026",
-    genre: "Estrategia",
-    platform: "PC",
-    score: "8.4",
-    accent: "#ffca54",
-    accent2: "#903b42",
+    id:
+      "mock-black-sun",
+
+    mock:
+      true,
+
+    rank:
+      8,
+
+    title:
+      "BLACK SUN",
+
+    subtitle:
+      "Orbital Games",
+
+    year:
+      "2026",
+
+    genre:
+      "Estrategia",
+
+    platform:
+      "PC",
+
+    score:
+      "8.4",
+
+    accent:
+      "#ffca54",
+
+    accent2:
+      "#903b42",
+
     description:
       "Civilizaciones alrededor de una estrella que se apaga.",
   },
+
   {
-    id: "mock-dust-road",
-    mock: true,
-    rank: 9,
-    title: "DUST ROAD",
-    subtitle: "Nomad Interactive",
-    year: "2025",
-    genre: "Supervivencia",
-    platform: "Xbox · PC",
-    score: "8.2",
-    accent: "#d69255",
-    accent2: "#714433",
+    id:
+      "mock-dust-road",
+
+    mock:
+      true,
+
+    rank:
+      9,
+
+    title:
+      "DUST ROAD",
+
+    subtitle:
+      "Nomad Interactive",
+
+    year:
+      "2025",
+
+    genre:
+      "Supervivencia",
+
+    platform:
+      "Xbox · PC",
+
+    score:
+      "8.2",
+
+    accent:
+      "#d69255",
+
+    accent2:
+      "#714433",
+
     description:
       "Vehículos modificables y carreteras infinitas.",
   },
+
   {
-    id: "mock-lumina",
-    mock: true,
-    rank: 10,
-    title: "LUMINA",
-    subtitle: "Small Moon",
-    year: "2026",
-    genre: "Plataformas",
-    platform: "Switch 2",
-    score: "8.1",
-    accent: "#75e3ab",
-    accent2: "#3284a0",
+    id:
+      "mock-lumina",
+
+    mock:
+      true,
+
+    rank:
+      10,
+
+    title:
+      "LUMINA",
+
+    subtitle:
+      "Small Moon",
+
+    year:
+      "2026",
+
+    genre:
+      "Plataformas",
+
+    platform:
+      "Switch 2",
+
+    score:
+      "8.1",
+
+    accent:
+      "#75e3ab",
+
+    accent2:
+      "#3284a0",
+
     description:
       "Mundos conectados mediante portales de luz.",
   },
 ];
 
 /* =========================================================
-   TEXTURA PORTADA
+   PORTADA
 ========================================================= */
 
-function createPosterTexture(game) {
+function createPosterTexture(
+  game
+) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
-  canvas.width = 512;
-  canvas.height = 768;
+  canvas.width =
+    512;
+
+  canvas.height =
+    768;
 
   const ctx =
-    canvas.getContext("2d");
+    canvas.getContext(
+      "2d"
+    );
 
   const gradient =
     ctx.createLinearGradient(
@@ -255,7 +510,8 @@ function createPosterTexture(game) {
     768
   );
 
-  ctx.globalAlpha = 0.15;
+  ctx.globalAlpha =
+    0.15;
 
   ctx.fillStyle =
     "#ffffff";
@@ -272,7 +528,8 @@ function createPosterTexture(game) {
 
   ctx.fill();
 
-  ctx.globalAlpha = 0.1;
+  ctx.globalAlpha =
+    0.1;
 
   ctx.beginPath();
 
@@ -286,7 +543,8 @@ function createPosterTexture(game) {
 
   ctx.fill();
 
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha =
+    1;
 
   ctx.fillStyle =
     "rgba(0,0,0,.5)";
@@ -314,19 +572,28 @@ function createPosterTexture(game) {
     "900 44px Arial";
 
   const words =
-    game.title.split(" ");
+    game.title.split(
+      " "
+    );
 
-  let line = "";
-  let y = 590;
+  let line =
+    "";
+
+  let y =
+    590;
 
   words.forEach(
-    (word) => {
+    (
+      word
+    ) => {
       const next =
         `${line}${word} `;
 
       if (
-        ctx.measureText(next)
-          .width > 450 &&
+        ctx.measureText(
+          next
+        ).width >
+          450 &&
         line
       ) {
         ctx.fillText(
@@ -338,9 +605,11 @@ function createPosterTexture(game) {
         line =
           `${word} `;
 
-        y += 50;
+        y +=
+          50;
       } else {
-        line = next;
+        line =
+          next;
       }
     }
   );
@@ -375,18 +644,25 @@ function createPosterTexture(game) {
 }
 
 /* =========================================================
-   PREVIEW VIDEO
+   PREVIEW DEL VIDEO
 ========================================================= */
 
 function createVideoPreviewTexture() {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
-  canvas.width = 1280;
-  canvas.height = 720;
+  canvas.width =
+    1280;
+
+  canvas.height =
+    720;
 
   const ctx =
-    canvas.getContext("2d");
+    canvas.getContext(
+      "2d"
+    );
 
   const gradient =
     ctx.createLinearGradient(
@@ -454,7 +730,8 @@ function createVideoPreviewTexture() {
 
   ctx.fill();
 
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha =
+    1;
 
   ctx.fillStyle =
     "#58f1ff";
@@ -475,19 +752,19 @@ function createVideoPreviewTexture() {
     "900 78px Arial";
 
   ctx.fillText(
-    "VIDEO 3D",
+    "VIDEO DESTACADO",
     70,
     205
   );
 
   ctx.font =
-    "600 32px Arial";
+    "600 30px Arial";
 
   ctx.fillStyle =
     "rgba(255,255,255,.78)";
 
   ctx.fillText(
-    "ACERCATE PARA REPRODUCIR",
+    "ACERCATE PARA INTERACTUAR",
     72,
     275
   );
@@ -551,13 +828,20 @@ function createNeonTextTexture(
   color
 ) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
-  canvas.width = 1024;
-  canvas.height = 256;
+  canvas.width =
+    1024;
+
+  canvas.height =
+    256;
 
   const ctx =
-    canvas.getContext("2d");
+    canvas.getContext(
+      "2d"
+    );
 
   ctx.textAlign =
     "center";
@@ -607,18 +891,27 @@ function createNeonTextTexture(
 }
 
 /* =========================================================
-   ICONOS ARCADE
+   ARCADE
 ========================================================= */
 
-function createArcadeTexture(type) {
+function createArcadeTexture(
+  type
+) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width =
+    512;
+
+  canvas.height =
+    512;
 
   const ctx =
-    canvas.getContext("2d");
+    canvas.getContext(
+      "2d"
+    );
 
   ctx.clearRect(
     0,
@@ -628,7 +921,8 @@ function createArcadeTexture(type) {
   );
 
   if (
-    type === "chomper"
+    type ===
+    "chomper"
   ) {
     ctx.shadowColor =
       "#ffe44f";
@@ -650,8 +944,10 @@ function createArcadeTexture(type) {
       256,
       256,
       155,
-      Math.PI * 0.22,
-      Math.PI * 1.78
+      Math.PI *
+        0.22,
+      Math.PI *
+        1.78
     );
 
     ctx.closePath();
@@ -673,7 +969,8 @@ function createArcadeTexture(type) {
 
     ctx.fill();
   } else {
-    const pixel = 34;
+    const pixel =
+      34;
 
     const pattern = [
       "00100100",
@@ -698,12 +995,14 @@ function createArcadeTexture(type) {
     const startX =
       (
         512 -
-        pattern[0].length *
+        pattern[0]
+          .length *
           pixel
       ) /
       2;
 
-    const startY = 120;
+    const startY =
+      120;
 
     pattern.forEach(
       (
@@ -718,16 +1017,20 @@ function createArcadeTexture(type) {
               colIndex
             ) => {
               if (
-                value === "1"
+                value ===
+                "1"
               ) {
                 ctx.fillRect(
                   startX +
                     colIndex *
                       pixel,
+
                   startY +
                     rowIndex *
                       pixel,
+
                   pixel,
+
                   pixel
                 );
               }
@@ -770,7 +1073,9 @@ function InstancedBoxes({
     );
 
   useLayoutEffect(() => {
-    if (!ref.current) {
+    if (
+      !ref.current
+    ) {
       return;
     }
 
@@ -786,7 +1091,11 @@ function InstancedBoxes({
         dummy.rotation.set(
           ...(
             item.rotation ??
-            [0, 0, 0]
+            [
+              0,
+              0,
+              0,
+            ]
           )
         );
 
@@ -796,10 +1105,11 @@ function InstancedBoxes({
 
         dummy.updateMatrix();
 
-        ref.current.setMatrixAt(
-          index,
-          dummy.matrix
-        );
+        ref.current
+          .setMatrixAt(
+            index,
+            dummy.matrix
+          );
       }
     );
 
@@ -825,9 +1135,15 @@ function InstancedBoxes({
       <boxGeometry />
 
       <meshStandardMaterial
-        color={color}
-        roughness={roughness}
-        emissive={emissive}
+        color={
+          color
+        }
+        roughness={
+          roughness
+        }
+        emissive={
+          emissive
+        }
         emissiveIntensity={
           emissiveIntensity
         }
@@ -857,16 +1173,24 @@ function NeonLine({
 }) {
   return (
     <mesh
-      position={position}
-      rotation={rotation}
+      position={
+        position
+      }
+      rotation={
+        rotation
+      }
     >
       <boxGeometry
         args={size}
       />
 
       <meshStandardMaterial
-        color={color}
-        emissive={color}
+        color={
+          color
+        }
+        emissive={
+          color
+        }
         emissiveIntensity={
           2.4
         }
@@ -910,8 +1234,12 @@ function NeonWord({
 
   return (
     <mesh
-      position={position}
-      rotation={rotation}
+      position={
+        position
+      }
+      rotation={
+        rotation
+      }
     >
       <planeGeometry
         args={[
@@ -921,9 +1249,13 @@ function NeonWord({
       />
 
       <meshBasicMaterial
-        map={texture}
+        map={
+          texture
+        }
         transparent
-        toneMapped={false}
+        toneMapped={
+          false
+        }
         side={
           THREE.DoubleSide
         }
@@ -959,8 +1291,12 @@ function ArcadeIcon({
 
   return (
     <mesh
-      position={position}
-      rotation={rotation}
+      position={
+        position
+      }
+      rotation={
+        rotation
+      }
     >
       <planeGeometry
         args={[
@@ -970,9 +1306,13 @@ function ArcadeIcon({
       />
 
       <meshBasicMaterial
-        map={texture}
+        map={
+          texture
+        }
         transparent
-        toneMapped={false}
+        toneMapped={
+          false
+        }
         side={
           THREE.DoubleSide
         }
@@ -982,7 +1322,7 @@ function ArcadeIcon({
 }
 
 /* =========================================================
-   ESTACIÓN DE JUEGO
+   ESTACIÓN
 ========================================================= */
 
 function GameStation({
@@ -1037,12 +1377,14 @@ function GameStation({
       return;
     }
 
-    ref.current.getWorldPosition(
-      worldPosition
-    );
+    ref.current
+      .getWorldPosition(
+        worldPosition
+      );
 
     const player =
-      playerRuntime.body.translation();
+      playerRuntime.body
+        .translation();
 
     const dx =
       player.x -
@@ -1084,11 +1426,15 @@ function GameStation({
           detail:
             isNear
               ? {
-                  near: true,
+                  near:
+                    true,
+
                   game,
                 }
               : {
-                  near: false,
+                  near:
+                    false,
+
                   game,
                 },
         }
@@ -1099,7 +1445,9 @@ function GameStation({
   return (
     <group
       ref={ref}
-      position={position}
+      position={
+        position
+      }
       rotation={[
         0,
         rotation,
@@ -1122,8 +1470,12 @@ function GameStation({
           0.45,
           1.45,
         ]}
-        radius={0.15}
-        smoothness={3}
+        radius={
+          0.15
+        }
+        smoothness={
+          3
+        }
       >
         <meshStandardMaterial
           color="#151a20"
@@ -1141,8 +1493,12 @@ function GameStation({
           1.55,
           0.34,
         ]}
-        radius={0.12}
-        smoothness={3}
+        radius={
+          0.12
+        }
+        smoothness={
+          3
+        }
       >
         <meshStandardMaterial
           color="#303942"
@@ -1160,8 +1516,12 @@ function GameStation({
           6.1,
           0.25,
         ]}
-        radius={0.22}
-        smoothness={4}
+        radius={
+          0.22
+        }
+        smoothness={
+          4
+        }
       >
         <meshStandardMaterial
           color="#101419"
@@ -1191,8 +1551,12 @@ function GameStation({
         />
 
         <meshBasicMaterial
-          map={poster}
-          toneMapped={false}
+          map={
+            poster
+          }
+          toneMapped={
+            false
+          }
         />
       </mesh>
     </group>
@@ -1201,19 +1565,6 @@ function GameStation({
 
 /* =========================================================
    VIDEO WALL
-
-   PRUEBA DEFINITIVA:
-
-   - NO TOCAR
-   - NO CLICK
-   - NO POINTER
-   - NO HTML
-   - NO IFRAME
-
-   Al acercarse el jugador:
-   video.play()
-
-   El MP4 queda como VideoTexture real.
 ========================================================= */
 
 function HeroVideoWall() {
@@ -1228,12 +1579,6 @@ function HeroVideoWall() {
 
   const videoTextureRef =
     useRef(null);
-
-  const startedRef =
-    useRef(false);
-
-  const startingRef =
-    useRef(false);
 
   const nearRef =
     useRef(false);
@@ -1277,7 +1622,7 @@ function HeroVideoWall() {
     );
 
   /* =======================================================
-     CREAR VIDEO
+     VIDEO
   ======================================================= */
 
   useEffect(() => {
@@ -1287,40 +1632,38 @@ function HeroVideoWall() {
       );
 
     video.src =
-      TEST_VIDEO_URL;
-
-    /*
-      Muy importante para iPhone/Safari.
-    */
-
-    video.muted =
-      true;
-
-    video.defaultMuted =
-      true;
-
-    video.volume =
-      0;
+      FEATURED_VIDEO_URL;
 
     video.playsInline =
       true;
 
+    video.preload =
+      "auto";
+
     video.loop =
-      true;
+      false;
 
     video.autoplay =
       false;
 
-    video.preload =
-      "auto";
-
     video.crossOrigin =
       "anonymous";
 
-    video.setAttribute(
-      "muted",
-      ""
-    );
+    /*
+      AHORA QUEREMOS SONIDO.
+
+      play() será llamado desde el botón HTML,
+      es decir desde una acción real del usuario.
+    */
+
+    video.muted =
+      false;
+
+    video.defaultMuted =
+      false;
+
+    video.volume =
+      1;
 
     video.setAttribute(
       "playsinline",
@@ -1337,41 +1680,112 @@ function HeroVideoWall() {
       "anonymous"
     );
 
-    const handleLoadedData =
-      () => {
-        setReady(true);
-      };
-
     const handleCanPlay =
       () => {
-        setReady(true);
+        setReady(
+          true
+        );
       };
 
     const handlePlaying =
       () => {
-        setPlaying(true);
-        setError(false);
+        setPlaying(
+          true
+        );
+
+        setError(
+          false
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  true,
+              },
+            }
+          )
+        );
       };
 
     const handlePause =
       () => {
+        setPlaying(
+          false
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  false,
+              },
+            }
+          )
+        );
+      };
+
+    const handleEnded =
+      () => {
+        setPlaying(
+          false
+        );
+
+        video.currentTime =
+          0;
+
         if (
-          startedRef.current
+          screenRef.current
         ) {
-          setPlaying(false);
+          screenRef.current
+            .material.map =
+            previewTexture;
+
+          screenRef.current
+            .material
+            .needsUpdate =
+            true;
         }
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  false,
+              },
+            }
+          )
+        );
       };
 
     const handleError =
       () => {
-        setError(true);
-        setPlaying(false);
-      };
+        setError(
+          true
+        );
 
-    video.addEventListener(
-      "loadeddata",
-      handleLoadedData
-    );
+        setPlaying(
+          false
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  false,
+              },
+            }
+          )
+        );
+      };
 
     video.addEventListener(
       "canplay",
@@ -1386,6 +1800,11 @@ function HeroVideoWall() {
     video.addEventListener(
       "pause",
       handlePause
+    );
+
+    video.addEventListener(
+      "ended",
+      handleEnded
     );
 
     video.addEventListener(
@@ -1416,19 +1835,10 @@ function HeroVideoWall() {
     videoTextureRef.current =
       texture;
 
-    /*
-      Empezamos a cargarlo ya.
-    */
-
     video.load();
 
     return () => {
       video.pause();
-
-      video.removeEventListener(
-        "loadeddata",
-        handleLoadedData
-      );
 
       video.removeEventListener(
         "canplay",
@@ -1443,6 +1853,11 @@ function HeroVideoWall() {
       video.removeEventListener(
         "pause",
         handlePause
+      );
+
+      video.removeEventListener(
+        "ended",
+        handleEnded
       );
 
       video.removeEventListener(
@@ -1464,7 +1879,9 @@ function HeroVideoWall() {
       videoTextureRef.current =
         null;
     };
-  }, []);
+  }, [
+    previewTexture,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -1475,20 +1892,11 @@ function HeroVideoWall() {
   ]);
 
   /* =======================================================
-     INTENTAR REPRODUCIR
-
-     Se ejecuta automáticamente al acercarnos.
+     PLAY
   ======================================================= */
 
-  const startVideo =
-    () => {
-      if (
-        startedRef.current ||
-        startingRef.current
-      ) {
-        return;
-      }
-
+  const playVideo =
+    async () => {
       const video =
         videoRef.current;
 
@@ -1506,100 +1914,187 @@ function HeroVideoWall() {
         return;
       }
 
-      startingRef.current =
-        true;
-
-      setError(false);
-
-      /*
-        Primero ponemos la VideoTexture
-        en la pantalla.
-      */
+      setError(
+        false
+      );
 
       screen.material.map =
         texture;
 
-      screen.material.needsUpdate =
+      screen.material
+        .needsUpdate =
         true;
-
-      /*
-        Nos aseguramos de que Safari
-        siga viendo el vídeo como muted.
-      */
 
       video.muted =
-        true;
-
-      video.defaultMuted =
-        true;
+        false;
 
       video.volume =
-        0;
+        1;
 
-      const playPromise =
-        video.play();
+      try {
+        await video.play();
 
-      if (
-        playPromise &&
-        typeof playPromise.then ===
-          "function"
-      ) {
-        playPromise
-          .then(() => {
-            startedRef.current =
-              true;
+        setPlaying(
+          true
+        );
 
-            startingRef.current =
-              false;
-
-            setPlaying(true);
-            setError(false);
-          })
-          .catch(
-            (playError) => {
-              console.error(
-                "FREAKY VIDEO PLAY ERROR:",
-                playError
-              );
-
-              startingRef.current =
-                false;
-
-              setPlaying(false);
-              setError(true);
-
-              /*
-                Volvemos al preview si Safari
-                bloquea el play.
-              */
-
-              if (
-                screenRef.current
-              ) {
-                screenRef.current
-                  .material.map =
-                  previewTexture;
-
-                screenRef.current
-                  .material
-                  .needsUpdate =
-                  true;
-              }
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  true,
+              },
             }
-          );
-      } else {
-        startedRef.current =
+          )
+        );
+      } catch (
+        playError
+      ) {
+        console.error(
+          "FREAKY VIDEO PLAY ERROR:",
+          playError
+        );
+
+        screen.material.map =
+          previewTexture;
+
+        screen.material
+          .needsUpdate =
           true;
 
-        startingRef.current =
-          false;
+        setPlaying(
+          false
+        );
 
-        setPlaying(true);
+        setError(
+          true
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:video-wall-state",
+            {
+              detail: {
+                playing:
+                  false,
+              },
+            }
+          )
+        );
       }
     };
 
   /* =======================================================
+     STOP
+  ======================================================= */
+
+  const stopVideo =
+    () => {
+      const video =
+        videoRef.current;
+
+      if (video) {
+        video.pause();
+
+        try {
+          video.currentTime =
+            0;
+        } catch {
+          // nada
+        }
+      }
+
+      if (
+        screenRef.current
+      ) {
+        screenRef.current
+          .material.map =
+          previewTexture;
+
+        screenRef.current
+          .material
+          .needsUpdate =
+          true;
+      }
+
+      setPlaying(
+        false
+      );
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:video-wall-state",
+          {
+            detail: {
+              playing:
+                false,
+            },
+          }
+        )
+      );
+    };
+
+  /* =======================================================
+     BOTÓN EXTERNO PLAY / STOP
+  ======================================================= */
+
+  useEffect(() => {
+    const handleToggle =
+      () => {
+        const video =
+          videoRef.current;
+
+        if (!video) {
+          return;
+        }
+
+        if (
+          !video.paused &&
+          !video.ended
+        ) {
+          stopVideo();
+
+          return;
+        }
+
+        playVideo();
+      };
+
+    const handleStop =
+      () => {
+        stopVideo();
+      };
+
+    window.addEventListener(
+      "freaky:video-wall-toggle",
+      handleToggle
+    );
+
+    window.addEventListener(
+      "freaky:video-wall-stop",
+      handleStop
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:video-wall-toggle",
+        handleToggle
+      );
+
+      window.removeEventListener(
+        "freaky:video-wall-stop",
+        handleStop
+      );
+    };
+  });
+
+  /* =======================================================
      PROXIMIDAD
+
+     SOLO muestra las opciones.
+     NO reproduce.
   ======================================================= */
 
   useFrame(() => {
@@ -1610,12 +2105,14 @@ function HeroVideoWall() {
       return;
     }
 
-    groupRef.current.getWorldPosition(
-      worldPosition
-    );
+    groupRef.current
+      .getWorldPosition(
+        worldPosition
+      );
 
     const player =
-      playerRuntime.body.translation();
+      playerRuntime.body
+        .translation();
 
     const dx =
       player.x -
@@ -1631,93 +2128,61 @@ function HeroVideoWall() {
         dz * dz
       );
 
-    /*
-      12 metros:
-      queremos que arranque antes de
-      tener la nariz pegada a la pantalla.
-    */
-
     const isNear =
-      distance < 12;
+      distance <
+      12;
 
     if (
-      isNear !==
+      isNear ===
       nearRef.current
     ) {
-      nearRef.current =
-        isNear;
-
-      setNear(
-        isNear
-      );
-
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:game-near",
-          {
-            detail:
-              isNear
-                ? {
-                    near:
-                      true,
-                    game:
-                      FEATURED_VIDEO,
-                  }
-                : {
-                    near:
-                      false,
-                    game:
-                      FEATURED_VIDEO,
-                  },
-          }
-        )
-      );
-
-      /*
-        ESTA ES LA PRUEBA.
-
-        Nada de tocar la pantalla.
-
-        Entramos en rango -> play.
-      */
-
-      if (
-        isNear &&
-        !startedRef.current
-      ) {
-        startVideo();
-      }
+      return;
     }
 
-    /*
-      Si entramos muy rápido antes de que
-      el video termine de cargar,
-      volvemos a intentar cuando esté listo.
-    */
+    nearRef.current =
+      isNear;
 
-    if (
-      isNear &&
-      ready &&
-      !startedRef.current &&
-      !startingRef.current &&
-      !error
-    ) {
-      startVideo();
-    }
+    setNear(
+      isNear
+    );
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "freaky:game-near",
+        {
+          detail:
+            isNear
+              ? {
+                  near:
+                    true,
+
+                  game:
+                    FEATURED_VIDEO,
+                }
+              : {
+                  near:
+                    false,
+
+                  game:
+                    FEATURED_VIDEO,
+                },
+        }
+      )
+    );
   });
 
   return (
     <group
-      ref={groupRef}
+      ref={
+        groupRef
+      }
       position={[
         0,
         0,
         -33.72,
       ]}
     >
-      {/* ===================================================
-          MARCO
-      =================================================== */}
+      {/* MARCO */}
 
       <RoundedBox
         position={[
@@ -1730,8 +2195,12 @@ function HeroVideoWall() {
           13.2,
           0.5,
         ]}
-        radius={0.42}
-        smoothness={4}
+        radius={
+          0.42
+        }
+        smoothness={
+          4
+        }
       >
         <meshStandardMaterial
           color="#070b10"
@@ -1752,14 +2221,12 @@ function HeroVideoWall() {
         />
       </RoundedBox>
 
-      {/* ===================================================
-          PANTALLA
-
-          No tiene ningún evento táctil.
-      =================================================== */}
+      {/* PANTALLA */}
 
       <mesh
-        ref={screenRef}
+        ref={
+          screenRef
+        }
         position={[
           0,
           7.2,
@@ -1777,16 +2244,16 @@ function HeroVideoWall() {
           map={
             previewTexture
           }
-          toneMapped={false}
+          toneMapped={
+            false
+          }
           side={
             THREE.DoubleSide
           }
         />
       </mesh>
 
-      {/* ===================================================
-          MARCO NEÓN
-      =================================================== */}
+      {/* NEÓN */}
 
       <NeonLine
         position={[
@@ -1824,14 +2291,7 @@ function HeroVideoWall() {
         }
       />
 
-      {/* ===================================================
-          INDICADORES
-
-          AMARILLO = cargando
-          CELESTE  = listo
-          VERDE    = reproduciendo
-          ROJO     = error
-      =================================================== */}
+      {/* INDICADOR */}
 
       <mesh
         position={[
@@ -1861,10 +2321,6 @@ function HeroVideoWall() {
         />
       </mesh>
 
-      {/* ===================================================
-          LUZ LOCAL
-      =================================================== */}
-
       {near && (
         <pointLight
           position={[
@@ -1882,8 +2338,12 @@ function HeroVideoWall() {
               ? 16
               : 8
           }
-          distance={18}
-          decay={2}
+          distance={
+            18
+          }
+          decay={
+            2
+          }
         />
       )}
     </group>
@@ -1899,103 +2359,165 @@ export default function PopularTodayHall() {
     useMemo(
       () => [
         {
-          game: GAMES[9],
+          game:
+            GAMES[9],
+
           position: [
             -22,
             0.32,
             22,
           ],
+
           rotation:
-            Math.PI / 2.25,
-          scale: 1.05,
+            Math.PI /
+            2.25,
+
+          scale:
+            1.05,
         },
+
         {
-          game: GAMES[8],
+          game:
+            GAMES[8],
+
           position: [
             22,
             0.32,
             22,
           ],
+
           rotation:
-            -Math.PI / 2.25,
-          scale: 1.05,
+            -Math.PI /
+            2.25,
+
+          scale:
+            1.05,
         },
+
         {
-          game: GAMES[7],
+          game:
+            GAMES[7],
+
           position: [
             -23,
             0.32,
             10,
           ],
+
           rotation:
-            Math.PI / 2.12,
-          scale: 1.08,
+            Math.PI /
+            2.12,
+
+          scale:
+            1.08,
         },
+
         {
-          game: GAMES[6],
+          game:
+            GAMES[6],
+
           position: [
             23,
             0.32,
             10,
           ],
+
           rotation:
-            -Math.PI / 2.12,
-          scale: 1.08,
+            -Math.PI /
+            2.12,
+
+          scale:
+            1.08,
         },
+
         {
-          game: GAMES[5],
+          game:
+            GAMES[5],
+
           position: [
             -23,
             0.32,
             -3,
           ],
+
           rotation:
-            Math.PI / 2.08,
-          scale: 1.1,
+            Math.PI /
+            2.08,
+
+          scale:
+            1.1,
         },
+
         {
-          game: GAMES[4],
+          game:
+            GAMES[4],
+
           position: [
             23,
             0.32,
             -3,
           ],
+
           rotation:
-            -Math.PI / 2.08,
-          scale: 1.1,
+            -Math.PI /
+            2.08,
+
+          scale:
+            1.1,
         },
+
         {
-          game: GAMES[3],
+          game:
+            GAMES[3],
+
           position: [
             -21,
             0.32,
             -17,
           ],
+
           rotation:
-            Math.PI / 2.3,
-          scale: 1.13,
+            Math.PI /
+            2.3,
+
+          scale:
+            1.13,
         },
+
         {
-          game: GAMES[2],
+          game:
+            GAMES[2],
+
           position: [
             21,
             0.32,
             -17,
           ],
+
           rotation:
-            -Math.PI / 2.3,
-          scale: 1.13,
+            -Math.PI /
+            2.3,
+
+          scale:
+            1.13,
         },
+
         {
-          game: GAMES[1],
+          game:
+            GAMES[1],
+
           position: [
             -14,
             0.32,
             -26,
           ],
+
           rotation:
-            Math.PI / 3.1,
-          scale: 1.15,
+            Math.PI /
+            3.1,
+
+          scale:
+            1.15,
         },
       ],
       []
@@ -2010,30 +2532,35 @@ export default function PopularTodayHall() {
             7,
             0,
           ],
+
           scale: [
             0.14,
             13.5,
             68,
           ],
         },
+
         {
           position: [
             ROOM_HALF_WIDTH,
             7,
             0,
           ],
+
           scale: [
             0.14,
             13.5,
             68,
           ],
         },
+
         {
           position: [
             0,
             7,
             ROOM_BACK_Z,
           ],
+
           scale: [
             58.5,
             13.5,
@@ -2053,6 +2580,7 @@ export default function PopularTodayHall() {
             0.325,
             0,
           ],
+
           scale: [
             58.2,
             0.025,
@@ -2072,42 +2600,49 @@ export default function PopularTodayHall() {
             12.3,
             13,
           ],
+
           scale: [
             0.16,
             0.12,
             34,
           ],
         },
+
         {
           position: [
             15,
             12.3,
             13,
           ],
+
           scale: [
             0.16,
             0.12,
             34,
           ],
         },
+
         {
           position: [
             -8,
             12.3,
             -20,
           ],
+
           scale: [
             0.16,
             0.12,
             20,
           ],
         },
+
         {
           position: [
             8,
             12.3,
             -20,
           ],
+
           scale: [
             0.16,
             0.12,
@@ -2120,43 +2655,47 @@ export default function PopularTodayHall() {
 
   return (
     <group>
-      {/* ===================================================
-          PAREDES Y SUELO
-      =================================================== */}
+      {/* PAREDES */}
 
       <InstancedBoxes
         items={
           blackWalls
         }
         color="#05080c"
-        roughness={0.9}
+        roughness={
+          0.9
+        }
       />
+
+      {/* SUELO */}
 
       <InstancedBoxes
         items={
           floor
         }
         color="#080c11"
-        roughness={0.7}
+        roughness={
+          0.7
+        }
       />
 
-      {/* ===================================================
-          TECHO
-      =================================================== */}
+      {/* TECHO */}
 
       <InstancedBoxes
         items={
           ceilingLights
         }
         color="#ffffff"
-        roughness={0.1}
+        roughness={
+          0.1
+        }
         emissive="#ffffff"
-        emissiveIntensity={1.6}
+        emissiveIntensity={
+          1.6
+        }
       />
 
-      {/* ===================================================
-          TITULO
-      =================================================== */}
+      {/* TITULO */}
 
       <NeonWord
         text="POPULARES HOY"
@@ -2166,13 +2705,15 @@ export default function PopularTodayHall() {
           10.8,
           29,
         ]}
-        width={15}
-        height={3}
+        width={
+          15
+        }
+        height={
+          3
+        }
       />
 
-      {/* ===================================================
-          TEXTOS ARCADE
-      =================================================== */}
+      {/* TEXTOS */}
 
       <NeonWord
         text="INSERT COIN"
@@ -2187,8 +2728,12 @@ export default function PopularTodayHall() {
           Math.PI / 2,
           0,
         ]}
-        width={8}
-        height={2}
+        width={
+          8
+        }
+        height={
+          2
+        }
       />
 
       <NeonWord
@@ -2204,8 +2749,12 @@ export default function PopularTodayHall() {
           -Math.PI / 2,
           0,
         ]}
-        width={7}
-        height={2}
+        width={
+          7
+        }
+        height={
+          2
+        }
       />
 
       <NeonWord
@@ -2221,13 +2770,15 @@ export default function PopularTodayHall() {
           Math.PI / 2,
           0,
         ]}
-        width={5}
-        height={2}
+        width={
+          5
+        }
+        height={
+          2
+        }
       />
 
-      {/* ===================================================
-          ICONOS
-      =================================================== */}
+      {/* ICONOS */}
 
       <ArcadeIcon
         type="chomper"
@@ -2241,7 +2792,9 @@ export default function PopularTodayHall() {
           Math.PI / 2,
           0,
         ]}
-        size={5}
+        size={
+          5
+        }
       />
 
       <ArcadeIcon
@@ -2256,12 +2809,12 @@ export default function PopularTodayHall() {
           -Math.PI / 2,
           0,
         ]}
-        size={5.4}
+        size={
+          5.4
+        }
       />
 
-      {/* ===================================================
-          NEONES
-      =================================================== */}
+      {/* NEONES */}
 
       <NeonLine
         position={[
@@ -2301,9 +2854,7 @@ export default function PopularTodayHall() {
         color="#ff4f95"
       />
 
-      {/* ===================================================
-          ILUMINACIÓN
-      =================================================== */}
+      {/* LUCES */}
 
       <pointLight
         position={[
@@ -2312,9 +2863,15 @@ export default function PopularTodayHall() {
           22,
         ]}
         color="#dff8ff"
-        intensity={30}
-        distance={28}
-        decay={2}
+        intensity={
+          30
+        }
+        distance={
+          28
+        }
+        decay={
+          2
+        }
       />
 
       <pointLight
@@ -2324,9 +2881,15 @@ export default function PopularTodayHall() {
           2,
         ]}
         color="#59eaff"
-        intensity={18}
-        distance={20}
-        decay={2}
+        intensity={
+          18
+        }
+        distance={
+          20
+        }
+        decay={
+          2
+        }
       />
 
       <pointLight
@@ -2336,14 +2899,18 @@ export default function PopularTodayHall() {
           -6,
         ]}
         color="#ff62ad"
-        intensity={18}
-        distance={20}
-        decay={2}
+        intensity={
+          18
+        }
+        distance={
+          20
+        }
+        decay={
+          2
+        }
       />
 
-      {/* ===================================================
-          PANTALLAS DE JUEGOS
-      =================================================== */}
+      {/* JUEGOS */}
 
       {stationLayout.map(
         (
@@ -2351,37 +2918,41 @@ export default function PopularTodayHall() {
         ) => (
           <GameStation
             key={
-              station.game.id
+              station
+                .game
+                .id
             }
             game={
-              station.game
+              station
+                .game
             }
             position={
-              station.position
+              station
+                .position
             }
             rotation={
-              station.rotation
+              station
+                .rotation
             }
             scale={
-              station.scale
+              station
+                .scale
             }
           />
         )
       )}
 
-      {/* ===================================================
-          PANTALLA MP4
-      =================================================== */}
+      {/* VIDEO */}
 
       <HeroVideoWall />
 
-      {/* ===================================================
-          COLISIONES
-      =================================================== */}
+      {/* COLISIONES */}
 
       <RigidBody
         type="fixed"
-        colliders={false}
+        colliders={
+          false
+        }
       >
         {stationLayout.map(
           (
@@ -2389,23 +2960,36 @@ export default function PopularTodayHall() {
           ) => (
             <CuboidCollider
               key={
-                station.game.id
+                station
+                  .game
+                  .id
               }
               args={[
                 1.9 *
-                  station.scale,
+                  station
+                    .scale,
+
                 0.42,
+
                 0.8 *
-                  station.scale,
+                  station
+                    .scale,
               ]}
               position={[
-                station.position[0],
+                station
+                  .position[0],
+
                 0.8,
-                station.position[2],
+
+                station
+                  .position[2],
               ]}
               rotation={[
                 0,
-                station.rotation,
+
+                station
+                  .rotation,
+
                 0,
               ]}
             />
