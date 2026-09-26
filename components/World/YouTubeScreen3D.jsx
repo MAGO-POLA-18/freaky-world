@@ -24,11 +24,20 @@ import {
   getYouTubeId,
 } from "./featuredVideoConfig";
 
+/* =========================================================
+   PANTALLA
+========================================================= */
+
 const PLAYER_WIDTH =
   1280;
 
 const PLAYER_HEIGHT =
   720;
+
+/*
+  Tamaño físico exacto
+  de la pantalla WebGL.
+*/
 
 const SCREEN_WIDTH =
   22.5;
@@ -37,17 +46,26 @@ const SCREEN_HEIGHT =
   12.65;
 
 /*
-  Posición REAL de la pantalla
-  dentro de Freaky World.
+  HeroVideoWall:
+  group z = -33.72
+  pantalla z local = +0.28
+
+  Resultado:
+  -33.44
+
+  Dejamos el CSS3D apenas por delante.
 */
+
 const SCREEN_POSITION = [
   0,
   7.2,
-  -33.38,
+  -33.40,
 ];
 
 /* =========================================================
-   YOUTUBE API
+   CARGAR API YOUTUBE
+
+   Una sola Promise global.
 ========================================================= */
 
 function loadYouTubeApi() {
@@ -57,7 +75,7 @@ function loadYouTubeApi() {
   ) {
     return Promise.reject(
       new Error(
-        "YouTube API solo está disponible en el navegador."
+        "YouTube API no disponible."
       )
     );
   }
@@ -71,19 +89,21 @@ function loadYouTubeApi() {
   }
 
   if (
-    window.__freakyYouTubeApiPromise
+    window
+      .__freakyYouTubeApiPromise
   ) {
     return window
       .__freakyYouTubeApiPromise;
   }
 
-  window.__freakyYouTubeApiPromise =
+  window
+    .__freakyYouTubeApiPromise =
     new Promise(
       (
         resolve,
         reject
       ) => {
-        const previous =
+        const previousCallback =
           window
             .onYouTubeIframeAPIReady;
 
@@ -91,7 +111,7 @@ function loadYouTubeApi() {
           .onYouTubeIframeAPIReady =
           () => {
             try {
-              previous?.();
+              previousCallback?.();
             } catch {
               // nada
             }
@@ -103,51 +123,62 @@ function loadYouTubeApi() {
               resolve(
                 window.YT
               );
-            } else {
-              reject(
-                new Error(
-                  "La API de YouTube no se inicializó."
-                )
-              );
+
+              return;
             }
+
+            reject(
+              new Error(
+                "La API de YouTube cargó pero YT.Player no existe."
+              )
+            );
           };
 
-        let script =
+        const existing =
           document
             .getElementById(
               "youtube-iframe-api"
             );
 
-        if (!script) {
-          script =
-            document
-              .createElement(
-                "script"
-              );
+        if (
+          existing
+        ) {
+          /*
+            Ya existe el script.
+            Esperamos que llame al callback.
+          */
 
-          script.id =
-            "youtube-iframe-api";
-
-          script.src =
-            "https://www.youtube.com/iframe_api";
-
-          script.async =
-            true;
-
-          script.onerror =
-            () => {
-              reject(
-                new Error(
-                  "No se pudo cargar la API de YouTube."
-                )
-              );
-            };
-
-          document.head
-            .appendChild(
-              script
-            );
+          return;
         }
+
+        const script =
+          document
+            .createElement(
+              "script"
+            );
+
+        script.id =
+          "youtube-iframe-api";
+
+        script.src =
+          "https://www.youtube.com/iframe_api";
+
+        script.async =
+          true;
+
+        script.onerror =
+          () => {
+            reject(
+              new Error(
+                "No se pudo descargar la API de YouTube."
+              )
+            );
+          };
+
+        document.head
+          .appendChild(
+            script
+          );
       }
     );
 
@@ -156,7 +187,7 @@ function loadYouTubeApi() {
 }
 
 /* =========================================================
-   PANTALLA YOUTUBE 3D
+   COMPONENTE
 ========================================================= */
 
 const YouTubeScreen3D =
@@ -166,6 +197,8 @@ const YouTubeScreen3D =
         url,
         portalRef,
         visible = true,
+
+        onStatusChange,
         onPlayingChange,
         onTimeChange,
         onError,
@@ -190,8 +223,8 @@ const YouTubeScreen3D =
       const playerRef =
         useRef(null);
 
-      const hostRef =
-        useRef(null);
+      const playerReadyRef =
+        useRef(false);
 
       const intervalRef =
         useRef(null);
@@ -208,20 +241,64 @@ const YouTubeScreen3D =
         );
 
       /* =====================================================
-         API QUE USA WorldScene
+         API PÚBLICA PARA WORLDSCENE
       ===================================================== */
 
       useImperativeHandle(
         ref,
         () => ({
+          isReady() {
+            return (
+              playerReadyRef
+                .current &&
+              Boolean(
+                playerRef
+                  .current
+              )
+            );
+          },
+
           play() {
-            playerRef.current
-              ?.playVideo?.();
+            if (
+              !playerReadyRef
+                .current ||
+              !playerRef.current
+            ) {
+              return false;
+            }
+
+            try {
+              playerRef.current
+                .playVideo();
+
+              return true;
+            } catch (
+              error
+            ) {
+              console.error(
+                "FREAKY YOUTUBE PLAY:",
+                error
+              );
+
+              return false;
+            }
           },
 
           pause() {
-            playerRef.current
-              ?.pauseVideo?.();
+            if (
+              !playerRef.current
+            ) {
+              return false;
+            }
+
+            try {
+              playerRef.current
+                .pauseVideo();
+
+              return true;
+            } catch {
+              return false;
+            }
           },
 
           seekBy(
@@ -230,40 +307,51 @@ const YouTubeScreen3D =
             const player =
               playerRef.current;
 
-            if (!player) {
-              return;
+            if (
+              !player ||
+              !playerReadyRef
+                .current
+            ) {
+              return false;
             }
 
-            const current =
-              player
-                .getCurrentTime?.() ??
-              0;
+            try {
+              const current =
+                player
+                  .getCurrentTime() ||
+                0;
 
-            const duration =
-              player
-                .getDuration?.() ??
-              0;
+              const duration =
+                player
+                  .getDuration() ||
+                0;
 
-            const next =
-              THREE.MathUtils
-                .clamp(
-                  current +
-                    seconds,
-                  0,
-                  duration >
-                    0
-                    ? duration
-                    : current +
-                      Math.abs(
+              const next =
+                THREE.MathUtils
+                  .clamp(
+                    current +
+                      Number(
                         seconds
-                      ) +
-                      1
-                );
+                      ),
+                    0,
+                    duration >
+                      0
+                      ? duration
+                      : current +
+                        Math.abs(
+                          seconds
+                        )
+                  );
 
-            player.seekTo?.(
-              next,
-              true
-            );
+              player.seekTo(
+                next,
+                true
+              );
+
+              return true;
+            } catch {
+              return false;
+            }
           },
 
           seekTo(
@@ -272,59 +360,93 @@ const YouTubeScreen3D =
             const player =
               playerRef.current;
 
-            if (!player) {
-              return;
+            if (
+              !player ||
+              !playerReadyRef
+                .current
+            ) {
+              return false;
             }
 
-            const duration =
-              player
-                .getDuration?.() ??
-              0;
+            try {
+              const duration =
+                player
+                  .getDuration() ||
+                0;
 
-            const raw =
-              Number(
-                seconds
-              ) ||
-              0;
-
-            const next =
-              THREE.MathUtils
-                .clamp(
-                  raw,
+              const target =
+                Math.max(
                   0,
-                  duration >
+                  Number(
+                    seconds
+                  ) ||
                     0
-                    ? duration
-                    : raw
                 );
 
-            player.seekTo?.(
-              next,
-              true
-            );
+              player.seekTo(
+                duration >
+                  0
+                  ? Math.min(
+                      duration,
+                      target
+                    )
+                  : target,
+                true
+              );
+
+              return true;
+            } catch {
+              return false;
+            }
           },
         }),
         []
       );
 
       /* =====================================================
-         CSS3D RENDERER
+         CREACIÓN COMPLETA
 
-         Esto es lo importante:
-         ya no calculamos manualmente dónde
-         debería estar el iframe.
+         IMPORTANTE:
 
-         CSS3DRenderer utiliza la MISMA cámara
-         que Three.js.
+         renderer
+            ↓
+         CSS3DObject
+            ↓
+         host
+            ↓
+         API YouTube
+            ↓
+         YT.Player
+
+         Todo ocurre dentro del MISMO useEffect.
+         No dependemos de hostRef.
       ===================================================== */
 
       useEffect(() => {
         const portal =
-          portalRef.current;
+          portalRef
+            ?.current;
 
-        if (!portal) {
+        if (
+          !portal ||
+          !youtubeId
+        ) {
           return;
         }
+
+        let cancelled =
+          false;
+
+        playerReadyRef.current =
+          false;
+
+        onStatusChange?.(
+          "loading"
+        );
+
+        /* ===============================================
+           CSS3D RENDERER
+        =============================================== */
 
         const renderer =
           new CSS3DRenderer();
@@ -335,7 +457,8 @@ const YouTubeScreen3D =
         );
 
         Object.assign(
-          renderer.domElement
+          renderer
+            .domElement
             .style,
           {
             position:
@@ -350,34 +473,38 @@ const YouTubeScreen3D =
             height:
               "100%",
 
-            pointerEvents:
-              "none",
-
             overflow:
               "hidden",
+
+            pointerEvents:
+              "none",
           }
         );
 
         portal.appendChild(
-          renderer.domElement
+          renderer
+            .domElement
         );
+
+        /* ===============================================
+           ESCENA CSS3D
+        =============================================== */
 
         const cssScene =
           new THREE.Scene();
 
         /*
-          Este DIV es literalmente
-          nuestra pantalla virtual.
+          Contenedor 1280 × 720.
         */
 
-        const element =
+        const screenElement =
           document
             .createElement(
               "div"
             );
 
         Object.assign(
-          element.style,
+          screenElement.style,
           {
             width:
               `${PLAYER_WIDTH}px`,
@@ -385,11 +512,11 @@ const YouTubeScreen3D =
             height:
               `${PLAYER_HEIGHT}px`,
 
-            background:
-              "#000",
-
             overflow:
               "hidden",
+
+            background:
+              "#000",
 
             pointerEvents:
               "none",
@@ -399,57 +526,62 @@ const YouTubeScreen3D =
 
             WebkitBackfaceVisibility:
               "hidden",
+
+            /*
+              Importante para evitar
+              bordes raros del iframe.
+            */
+
+            lineHeight:
+              "0",
           }
         );
 
-        const host =
+        /*
+          Host que YouTube sustituirá
+          por su iframe.
+        */
+
+        const youtubeHost =
           document
             .createElement(
               "div"
             );
 
-        host.style.width =
-          "100%";
+        youtubeHost.style.width =
+          `${PLAYER_WIDTH}px`;
 
-        host.style.height =
-          "100%";
+        youtubeHost.style.height =
+          `${PLAYER_HEIGHT}px`;
 
-        element.appendChild(
-          host
-        );
-
-        const object =
-          new CSS3DObject(
-            element
+        screenElement
+          .appendChild(
+            youtubeHost
           );
 
-        /*
-          Misma posición que la
-          pantalla de la pared.
-        */
+        const cssObject =
+          new CSS3DObject(
+            screenElement
+          );
 
-        object.position.set(
-          ...SCREEN_POSITION
-        );
+        cssObject.position
+          .set(
+            ...SCREEN_POSITION
+          );
 
-        /*
-          1280x720 píxeles
-          convertidos a las dimensiones
-          físicas de la pantalla 3D.
-        */
+        cssObject.scale
+          .set(
+            SCREEN_WIDTH /
+              PLAYER_WIDTH,
 
-        object.scale.set(
-          SCREEN_WIDTH /
-            PLAYER_WIDTH,
+            SCREEN_HEIGHT /
+              PLAYER_HEIGHT,
 
-          SCREEN_HEIGHT /
-            PLAYER_HEIGHT,
-
-          1
-        );
+            1
+          );
 
         cssScene.add(
-          object
+          cssObject
         );
 
         rendererRef.current =
@@ -459,12 +591,373 @@ const YouTubeScreen3D =
           cssScene;
 
         cssObjectRef.current =
-          object;
+          cssObject;
 
-        hostRef.current =
-          host;
+        /* ===============================================
+           AHORA YOUTUBE
+        =============================================== */
+
+        loadYouTubeApi()
+          .then(
+            (
+              YT
+            ) => {
+              if (
+                cancelled
+              ) {
+                return;
+              }
+
+              onStatusChange?.(
+                "creating"
+              );
+
+              const player =
+                new YT.Player(
+                  youtubeHost,
+                  {
+                    width:
+                      PLAYER_WIDTH,
+
+                    height:
+                      PLAYER_HEIGHT,
+
+                    videoId:
+                      youtubeId,
+
+                    playerVars: {
+                      autoplay:
+                        0,
+
+                      controls:
+                        1,
+
+                      playsinline:
+                        1,
+
+                      rel:
+                        0,
+
+                      fs:
+                        1,
+
+                      disablekb:
+                        0,
+
+                      iv_load_policy:
+                        3,
+
+                      origin:
+                        window
+                          .location
+                          .origin,
+                    },
+
+                    events: {
+                      /* =================================
+                         LISTO
+                      ================================= */
+
+                      onReady(
+                        event
+                      ) {
+                        if (
+                          cancelled
+                        ) {
+                          return;
+                        }
+
+                        playerReadyRef
+                          .current =
+                          true;
+
+                        playerRef.current =
+                          event.target;
+
+                        onStatusChange?.(
+                          "ready"
+                        );
+
+                        onPlayingChange?.(
+                          false
+                        );
+
+                        try {
+                          const iframe =
+                            event.target
+                              .getIframe();
+
+                          Object.assign(
+                            iframe.style,
+                            {
+                              display:
+                                "block",
+
+                              width:
+                                `${PLAYER_WIDTH}px`,
+
+                              height:
+                                `${PLAYER_HEIGHT}px`,
+
+                              border:
+                                "0",
+
+                              margin:
+                                "0",
+
+                              padding:
+                                "0",
+
+                              pointerEvents:
+                                "none",
+                            }
+                          );
+                        } catch {
+                          // nada
+                        }
+
+                        onTimeChange?.({
+                          currentTime:
+                            event.target
+                              .getCurrentTime?.() ??
+                            0,
+
+                          duration:
+                            event.target
+                              .getDuration?.() ??
+                            0,
+                        });
+                      },
+
+                      /* =================================
+                         ESTADO
+                      ================================= */
+
+                      onStateChange(
+                        event
+                      ) {
+                        if (
+                          cancelled
+                        ) {
+                          return;
+                        }
+
+                        switch (
+                          event.data
+                        ) {
+                          case YT
+                            .PlayerState
+                            .PLAYING:
+                            onStatusChange?.(
+                              "playing"
+                            );
+
+                            onPlayingChange?.(
+                              true
+                            );
+
+                            break;
+
+                          case YT
+                            .PlayerState
+                            .PAUSED:
+                            onStatusChange?.(
+                              "paused"
+                            );
+
+                            onPlayingChange?.(
+                              false
+                            );
+
+                            break;
+
+                          case YT
+                            .PlayerState
+                            .BUFFERING:
+                            onStatusChange?.(
+                              "buffering"
+                            );
+
+                            break;
+
+                          case YT
+                            .PlayerState
+                            .CUED:
+                            onStatusChange?.(
+                              "ready"
+                            );
+
+                            onPlayingChange?.(
+                              false
+                            );
+
+                            break;
+
+                          case YT
+                            .PlayerState
+                            .ENDED:
+                            try {
+                              event.target
+                                .seekTo(
+                                  0,
+                                  true
+                                );
+
+                              event.target
+                                .pauseVideo();
+                            } catch {
+                              // nada
+                            }
+
+                            onStatusChange?.(
+                              "ready"
+                            );
+
+                            onPlayingChange?.(
+                              false
+                            );
+
+                            onTimeChange?.({
+                              currentTime:
+                                0,
+
+                              duration:
+                                event.target
+                                  .getDuration?.() ??
+                                0,
+                            });
+
+                            break;
+
+                          default:
+                            break;
+                        }
+                      },
+
+                      /* =================================
+                         ERROR
+                      ================================= */
+
+                      onError(
+                        event
+                      ) {
+                        playerReadyRef
+                          .current =
+                          false;
+
+                        onStatusChange?.(
+                          "error"
+                        );
+
+                        onPlayingChange?.(
+                          false
+                        );
+
+                        onError?.(
+                          event.data
+                        );
+                      },
+
+                      /* =================================
+                         AUTOPLAY BLOQUEADO
+                      ================================= */
+
+                      onAutoplayBlocked() {
+                        onStatusChange?.(
+                          "ready"
+                        );
+
+                        onPlayingChange?.(
+                          false
+                        );
+                      },
+                    },
+                  }
+                );
+
+              playerRef.current =
+                player;
+
+              /* =========================================
+                 TIEMPO
+              ========================================= */
+
+              intervalRef.current =
+                window
+                  .setInterval(
+                    () => {
+                      if (
+                        cancelled ||
+                        !playerReadyRef
+                          .current ||
+                        !playerRef
+                          .current
+                      ) {
+                        return;
+                      }
+
+                      try {
+                        onTimeChange?.({
+                          currentTime:
+                            playerRef
+                              .current
+                              .getCurrentTime?.() ??
+                            0,
+
+                          duration:
+                            playerRef
+                              .current
+                              .getDuration?.() ??
+                            0,
+                        });
+                      } catch {
+                        // nada
+                      }
+                    },
+                    300
+                  );
+            }
+          )
+          .catch(
+            (
+              error
+            ) => {
+              if (
+                cancelled
+              ) {
+                return;
+              }
+
+              console.error(
+                "FREAKY YOUTUBE LOAD ERROR:",
+                error
+              );
+
+              playerReadyRef
+                .current =
+                false;
+
+              onStatusChange?.(
+                "error"
+              );
+
+              onError?.(
+                error
+              );
+            }
+          );
+
+        /* ===============================================
+           CLEANUP
+        =============================================== */
 
         return () => {
+          cancelled =
+            true;
+
+          playerReadyRef.current =
+            false;
+
           if (
             intervalRef.current
           ) {
@@ -487,14 +980,28 @@ const YouTubeScreen3D =
           playerRef.current =
             null;
 
-          cssScene.remove(
-            object
-          );
+          try {
+            cssScene.remove(
+              cssObject
+            );
+          } catch {
+            // nada
+          }
 
-          element.remove();
+          try {
+            screenElement
+              .remove();
+          } catch {
+            // nada
+          }
 
-          renderer.domElement
-            .remove();
+          try {
+            renderer
+              .domElement
+              .remove();
+          } catch {
+            // nada
+          }
 
           rendererRef.current =
             null;
@@ -504,12 +1011,14 @@ const YouTubeScreen3D =
 
           cssObjectRef.current =
             null;
-
-          hostRef.current =
-            null;
         };
       }, [
+        youtubeId,
         portalRef,
+        onStatusChange,
+        onPlayingChange,
+        onTimeChange,
+        onError,
       ]);
 
       /* =====================================================
@@ -528,311 +1037,9 @@ const YouTubeScreen3D =
       ]);
 
       /* =====================================================
-         VISIBILIDAD
-      ===================================================== */
+         RENDER
 
-      useEffect(() => {
-        if (
-          cssObjectRef.current
-        ) {
-          cssObjectRef.current
-            .visible =
-            visible;
-        }
-      }, [
-        visible,
-      ]);
-
-      /* =====================================================
-         CREAR PLAYER YOUTUBE
-      ===================================================== */
-
-      useEffect(() => {
-        if (
-          !youtubeId ||
-          !hostRef.current
-        ) {
-          return;
-        }
-
-        let cancelled =
-          false;
-
-        loadYouTubeApi()
-          .then(
-            (
-              YT
-            ) => {
-              if (
-                cancelled ||
-                !hostRef.current
-              ) {
-                return;
-              }
-
-              const player =
-                new YT.Player(
-                  hostRef.current,
-                  {
-                    width:
-                      PLAYER_WIDTH,
-
-                    height:
-                      PLAYER_HEIGHT,
-
-                    videoId:
-                      youtubeId,
-
-                    playerVars: {
-                      autoplay:
-                        0,
-
-                      /*
-                        Dejamos los controles
-                        oficiales de YouTube
-                        directamente en la
-                        pantalla 3D.
-                      */
-                      controls:
-                        1,
-
-                      playsinline:
-                        1,
-
-                      rel:
-                        0,
-
-                      modestbranding:
-                        1,
-
-                      fs:
-                        1,
-
-                      disablekb:
-                        0,
-
-                      iv_load_policy:
-                        3,
-                    },
-
-                    events: {
-                      onReady(
-                        event
-                      ) {
-                        if (
-                          cancelled
-                        ) {
-                          return;
-                        }
-
-                        try {
-                          const iframe =
-                            event.target
-                              .getIframe();
-
-                          Object.assign(
-                            iframe.style,
-                            {
-                              width:
-                                "100%",
-
-                              height:
-                                "100%",
-
-                              display:
-                                "block",
-
-                              border:
-                                "0",
-
-                              /*
-                                Esto permite
-                                tocar directamente
-                                los controles
-                                dentro de la pantalla.
-                              */
-                              pointerEvents:
-                                "auto",
-                            }
-                          );
-                        } catch {
-                          // nada
-                        }
-
-                        onPlayingChange?.(
-                          false
-                        );
-
-                        onTimeChange?.({
-                          currentTime:
-                            0,
-
-                          duration:
-                            event.target
-                              .getDuration?.() ??
-                            0,
-                        });
-                      },
-
-                      onStateChange(
-                        event
-                      ) {
-                        if (
-                          cancelled
-                        ) {
-                          return;
-                        }
-
-                        const playing =
-                          event.data ===
-                          YT.PlayerState
-                            .PLAYING;
-
-                        onPlayingChange?.(
-                          playing
-                        );
-
-                        /*
-                          Cuando termina
-                          volvemos a 0.
-                        */
-
-                        if (
-                          event.data ===
-                          YT.PlayerState
-                            .ENDED
-                        ) {
-                          try {
-                            event.target
-                              .seekTo(
-                                0,
-                                true
-                              );
-
-                            event.target
-                              .pauseVideo();
-                          } catch {
-                            // nada
-                          }
-
-                          onPlayingChange?.(
-                            false
-                          );
-
-                          onTimeChange?.({
-                            currentTime:
-                              0,
-
-                            duration:
-                              event.target
-                                .getDuration?.() ??
-                              0,
-                          });
-                        }
-                      },
-
-                      onError(
-                        event
-                      ) {
-                        onPlayingChange?.(
-                          false
-                        );
-
-                        onError?.(
-                          event.data
-                        );
-                      },
-                    },
-                  }
-                );
-
-              playerRef.current =
-                player;
-
-              /*
-                Actualizamos barra y tiempo.
-              */
-
-              intervalRef.current =
-                window
-                  .setInterval(
-                    () => {
-                      if (
-                        cancelled
-                      ) {
-                        return;
-                      }
-
-                      onTimeChange?.({
-                        currentTime:
-                          player
-                            .getCurrentTime?.() ??
-                          0,
-
-                        duration:
-                          player
-                            .getDuration?.() ??
-                          0,
-                      });
-                    },
-                    250
-                  );
-            }
-          )
-          .catch(
-            (
-              error
-            ) => {
-              console.error(
-                "FREAKY YOUTUBE API ERROR:",
-                error
-              );
-
-              onError?.(
-                error
-              );
-            }
-          );
-
-        return () => {
-          cancelled =
-            true;
-
-          if (
-            intervalRef.current
-          ) {
-            window
-              .clearInterval(
-                intervalRef.current
-              );
-
-            intervalRef.current =
-              null;
-          }
-
-          try {
-            playerRef.current
-              ?.destroy?.();
-          } catch {
-            // nada
-          }
-
-          playerRef.current =
-            null;
-        };
-      }, [
-        youtubeId,
-        onPlayingChange,
-        onTimeChange,
-        onError,
-      ]);
-
-      /* =====================================================
-         RENDER CSS3D
-
-         MISMA cámara.
-         MISMA perspectiva.
-         MISMO movimiento.
+         MISMA cámara que R3F.
       ===================================================== */
 
       useFrame(() => {
@@ -854,11 +1061,11 @@ const YouTubeScreen3D =
         }
 
         /*
-          La pantalla mira hacia +Z.
+          En esta sala la pantalla
+          mira hacia +Z.
 
-          Si por alguna razón
-          la cámara pasa detrás,
-          ocultamos el iframe.
+          Si estamos detrás,
+          ocultamos CSS3D.
         */
 
         const inFront =
