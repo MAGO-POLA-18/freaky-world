@@ -1686,6 +1686,12 @@ function HeroVideoWall() {
     useState(false);
 
   const [
+    started,
+    setStarted,
+  ] =
+    useState(false);
+
+  const [
     ready,
     setReady,
   ] =
@@ -1696,6 +1702,18 @@ function HeroVideoWall() {
     setError,
   ] =
     useState(false);
+
+  const [
+    currentTime,
+    setCurrentTime,
+  ] =
+    useState(0);
+
+  const [
+    duration,
+    setDuration,
+  ] =
+    useState(0);
 
   const [
     youtubeMountEl,
@@ -1722,6 +1740,400 @@ function HeroVideoWall() {
         ),
       []
     );
+
+  const formatTime =
+    (
+      value
+    ) => {
+      const safe =
+        Number.isFinite(
+          value
+        )
+          ? Math.max(
+              0,
+              Math.floor(
+                value
+              )
+            )
+          : 0;
+
+      const minutes =
+        Math.floor(
+          safe / 60
+        );
+
+      const seconds =
+        safe % 60;
+
+      return `${minutes}:${String(
+        seconds
+      ).padStart(
+        2,
+        "0"
+      )}`;
+    };
+
+  const solvePerspective =
+    (
+      destination
+    ) => {
+      const source = [
+        [
+          0,
+          0,
+        ],
+        [
+          1280,
+          0,
+        ],
+        [
+          1280,
+          720,
+        ],
+        [
+          0,
+          720,
+        ],
+      ];
+
+      const matrix =
+        [];
+
+      for (
+        let index = 0;
+        index < 4;
+        index += 1
+      ) {
+        const [
+          x,
+          y,
+        ] =
+          source[
+            index
+          ];
+
+        const [
+          u,
+          v,
+        ] =
+          destination[
+            index
+          ];
+
+        matrix.push([
+          x,
+          y,
+          1,
+          0,
+          0,
+          0,
+          -u * x,
+          -u * y,
+          u,
+        ]);
+
+        matrix.push([
+          0,
+          0,
+          0,
+          x,
+          y,
+          1,
+          -v * x,
+          -v * y,
+          v,
+        ]);
+      }
+
+      for (
+        let column = 0;
+        column < 8;
+        column += 1
+      ) {
+        let pivot =
+          column;
+
+        for (
+          let row =
+            column + 1;
+          row < 8;
+          row += 1
+        ) {
+          if (
+            Math.abs(
+              matrix[row][column]
+            ) >
+            Math.abs(
+              matrix[pivot][column]
+            )
+          ) {
+            pivot =
+              row;
+          }
+        }
+
+        if (
+          Math.abs(
+            matrix[pivot][column]
+          ) <
+          1e-8
+        ) {
+          return null;
+        }
+
+        if (
+          pivot !==
+          column
+        ) {
+          const temp =
+            matrix[column];
+
+          matrix[column] =
+            matrix[pivot];
+
+          matrix[pivot] =
+            temp;
+        }
+
+        const divisor =
+          matrix[column][column];
+
+        for (
+          let col =
+            column;
+          col < 9;
+          col += 1
+        ) {
+          matrix[column][col] /=
+            divisor;
+        }
+
+        for (
+          let row = 0;
+          row < 8;
+          row += 1
+        ) {
+          if (
+            row ===
+            column
+          ) {
+            continue;
+          }
+
+          const factor =
+            matrix[row][column];
+
+          for (
+            let col =
+              column;
+            col < 9;
+            col += 1
+          ) {
+            matrix[row][col] -=
+              factor *
+              matrix[column][col];
+          }
+        }
+      }
+
+      const values =
+        matrix.map(
+          (
+            row
+          ) =>
+            row[8]
+        );
+
+      const [
+        a,
+        b,
+        c,
+        d,
+        e,
+        f,
+        g,
+        h,
+      ] =
+        values;
+
+      return `matrix3d(${[
+        a,
+        d,
+        0,
+        g,
+
+        b,
+        e,
+        0,
+        h,
+
+        0,
+        0,
+        1,
+        0,
+
+        c,
+        f,
+        0,
+        1,
+      ].join(
+        ","
+      )})`;
+    };
+
+  const publishYouTubeState =
+    (
+      isPlaying,
+      ended = false
+    ) => {
+      setPlaying(
+        isPlaying
+      );
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:youtube-state",
+          {
+            detail: {
+              playing:
+                isPlaying,
+
+              ended,
+            },
+          }
+        )
+      );
+    };
+
+  const playYouTube =
+    () => {
+      const player =
+        youtubePlayerRef.current;
+
+      if (!player) {
+        return;
+      }
+
+      setStarted(
+        true
+      );
+
+      publishYouTubeState(
+        true
+      );
+
+      try {
+        player.playVideo();
+      } catch {
+        publishYouTubeState(
+          false
+        );
+      }
+    };
+
+  const pauseYouTube =
+    () => {
+      const player =
+        youtubePlayerRef.current;
+
+      if (!player) {
+        return;
+      }
+
+      try {
+        player.pauseVideo();
+      } catch {
+        // nada
+      }
+
+      publishYouTubeState(
+        false
+      );
+    };
+
+  const seekYouTubeBy =
+    (
+      seconds
+    ) => {
+      const player =
+        youtubePlayerRef.current;
+
+      if (!player) {
+        return;
+      }
+
+      try {
+        const now =
+          player.getCurrentTime?.() ??
+          0;
+
+        const total =
+          player.getDuration?.() ??
+          0;
+
+        const next =
+          Math.max(
+            0,
+            total > 0
+              ? Math.min(
+                  total,
+                  now +
+                    seconds
+                )
+              : now +
+                seconds
+          );
+
+        player.seekTo(
+          next,
+          true
+        );
+
+        setCurrentTime(
+          next
+        );
+      } catch {
+        // nada
+      }
+    };
+
+  const seekYouTubeTo =
+    (
+      value
+    ) => {
+      const player =
+        youtubePlayerRef.current;
+
+      if (!player) {
+        return;
+      }
+
+      const next =
+        Number(
+          value
+        );
+
+      if (
+        !Number.isFinite(
+          next
+        )
+      ) {
+        return;
+      }
+
+      try {
+        player.seekTo(
+          next,
+          true
+        );
+
+        setCurrentTime(
+          next
+        );
+      } catch {
+        // nada
+      }
+    };
 
   /* =======================================================
      VIDEO LOCAL
@@ -1955,13 +2367,7 @@ function HeroVideoWall() {
   ]);
 
   /* =======================================================
-     YOUTUBE
-
-     IMPORTANTE:
-     El iframe se crea como HTML 2D normal.
-     No usamos CSS 3D transform para el video,
-     porque Safari/iOS puede reproducir el audio
-     pero no componer correctamente la imagen.
+     YOUTUBE PLAYER
   ======================================================= */
 
   useEffect(() => {
@@ -1981,34 +2387,6 @@ function HeroVideoWall() {
 
     let waitForApi =
       null;
-
-    const publishState =
-      (
-        isPlaying,
-        ended = false
-      ) => {
-        if (cancelled) {
-          return;
-        }
-
-        setPlaying(
-          isPlaying
-        );
-
-        window.dispatchEvent(
-          new CustomEvent(
-            "freaky:youtube-state",
-            {
-              detail: {
-                playing:
-                  isPlaying,
-
-                ended,
-              },
-            }
-          )
-        );
-      };
 
     const createPlayer =
       () => {
@@ -2078,6 +2456,20 @@ function HeroVideoWall() {
                       );
 
                       try {
+                        const total =
+                          event.target
+                            .getDuration?.();
+
+                        if (
+                          Number.isFinite(
+                            total
+                          )
+                        ) {
+                          setDuration(
+                            total
+                          );
+                        }
+
                         const iframe =
                           event.target
                             .getIframe();
@@ -2118,6 +2510,10 @@ function HeroVideoWall() {
                         state ===
                         window.YT.PlayerState.PLAYING
                       ) {
+                        setStarted(
+                          true
+                        );
+
                         setReady(
                           true
                         );
@@ -2126,7 +2522,7 @@ function HeroVideoWall() {
                           false
                         );
 
-                        publishState(
+                        publishYouTubeState(
                           true
                         );
 
@@ -2148,7 +2544,15 @@ function HeroVideoWall() {
                           // nada
                         }
 
-                        publishState(
+                        setCurrentTime(
+                          0
+                        );
+
+                        setStarted(
+                          false
+                        );
+
+                        publishYouTubeState(
                           false,
                           true
                         );
@@ -2162,7 +2566,7 @@ function HeroVideoWall() {
                         state ===
                           window.YT.PlayerState.CUED
                       ) {
-                        publishState(
+                        publishYouTubeState(
                           false
                         );
                       }
@@ -2176,24 +2580,12 @@ function HeroVideoWall() {
                         return;
                       }
 
-                      setPlaying(
-                        false
-                      );
-
                       setError(
                         true
                       );
 
-                      window.dispatchEvent(
-                        new CustomEvent(
-                          "freaky:youtube-state",
-                          {
-                            detail: {
-                              playing:
-                                false,
-                            },
-                          }
-                        )
+                      publishYouTubeState(
+                        false
                       );
                     },
                 },
@@ -2217,13 +2609,6 @@ function HeroVideoWall() {
       (
         event
       ) => {
-        const player =
-          youtubePlayerRef.current;
-
-        if (!player) {
-          return;
-        }
-
         const command =
           event.detail
             ?.command;
@@ -2232,27 +2617,25 @@ function HeroVideoWall() {
           command ===
           "play"
         ) {
-          /*
-            Cambiamos el botÃ³n inmediatamente.
-            El evento real del reproductor
-            lo confirmarÃ¡ despuÃ©s.
-          */
+          const player =
+            youtubePlayerRef.current;
 
-          publishState(
+          if (!player) {
+            return;
+          }
+
+          setStarted(
+            true
+          );
+
+          publishYouTubeState(
             true
           );
 
           try {
             player.playVideo();
-          } catch (
-            playError
-          ) {
-            console.error(
-              "FREAKY YOUTUBE PLAY ERROR:",
-              playError
-            );
-
-            publishState(
+          } catch {
+            publishYouTubeState(
               false
             );
 
@@ -2268,18 +2651,20 @@ function HeroVideoWall() {
           command ===
           "stop"
         ) {
+          const player =
+            youtubePlayerRef.current;
+
+          if (!player) {
+            return;
+          }
+
           try {
             player.pauseVideo();
-
-            player.seekTo(
-              0,
-              true
-            );
           } catch {
             // nada
           }
 
-          publishState(
+          publishYouTubeState(
             false
           );
         }
@@ -2400,6 +2785,68 @@ function HeroVideoWall() {
     youtubeMountEl,
   ]);
 
+  /* =======================================================
+     TIEMPO / BARRA
+  ======================================================= */
+
+  useEffect(() => {
+    if (!isYouTube) {
+      return;
+    }
+
+    const timer =
+      window.setInterval(
+        () => {
+          const player =
+            youtubePlayerRef.current;
+
+          if (!player) {
+            return;
+          }
+
+          try {
+            const now =
+              player.getCurrentTime?.();
+
+            const total =
+              player.getDuration?.();
+
+            if (
+              Number.isFinite(
+                now
+              )
+            ) {
+              setCurrentTime(
+                now
+              );
+            }
+
+            if (
+              Number.isFinite(
+                total
+              ) &&
+              total > 0
+            ) {
+              setDuration(
+                total
+              );
+            }
+          } catch {
+            // nada
+          }
+        },
+        300
+      );
+
+    return () => {
+      window.clearInterval(
+        timer
+      );
+    };
+  }, [
+    isYouTube,
+  ]);
+
   useEffect(() => {
     return () => {
       previewTexture.dispose();
@@ -2410,9 +2857,6 @@ function HeroVideoWall() {
 
   /* =======================================================
      FRAME
-
-     1. PROXIMIDAD
-     2. POSICIONAR EL VIDEO HTML SOBRE LA PANTALLA
   ======================================================= */
 
   useFrame(() => {
@@ -2456,17 +2900,8 @@ function HeroVideoWall() {
         localZ
       );
 
-      let minX =
-        Infinity;
-
-      let maxX =
-        -Infinity;
-
-      let minY =
-        Infinity;
-
-      let maxY =
-        -Infinity;
+      const destination =
+        [];
 
       for (
         let index = 0;
@@ -2488,45 +2923,21 @@ function HeroVideoWall() {
           camera
         );
 
-        const px =
+        destination.push([
           (
             point.x *
               0.5 +
             0.5
           ) *
-          size.width;
+            size.width,
 
-        const py =
           (
             -point.y *
               0.5 +
             0.5
           ) *
-          size.height;
-
-        minX =
-          Math.min(
-            minX,
-            px
-          );
-
-        maxX =
-          Math.max(
-            maxX,
-            px
-          );
-
-        minY =
-          Math.min(
-            minY,
-            py
-          );
-
-        maxY =
-          Math.max(
-            maxY,
-            py
-          );
+            size.height,
+        ]);
       }
 
       screenCenter.set(
@@ -2544,53 +2955,33 @@ function HeroVideoWall() {
         camera
       );
 
-      const width =
-        maxX -
-        minX;
-
-      const height =
-        maxY -
-        minY;
-
-      const visible =
-        playing &&
-        screenCenter.z >
-          -1 &&
-        screenCenter.z <
-          1 &&
-        width >
-          20 &&
-        height >
-          20 &&
-        maxX >
-          0 &&
-        minX <
-          size.width &&
-        maxY >
-          0 &&
-        minY <
-          size.height;
+      const transform =
+        solvePerspective(
+          destination
+        );
 
       const overlay =
         youtubeOverlayRef.current;
+
+      const visible =
+        started &&
+        transform &&
+        screenCenter.z >
+          -1 &&
+        screenCenter.z <
+          1;
 
       overlay.style.display =
         visible
           ? "block"
           : "none";
 
-      if (visible) {
-        overlay.style.left =
-          `${minX}px`;
-
-        overlay.style.top =
-          `${minY}px`;
-
-        overlay.style.width =
-          `${width}px`;
-
-        overlay.style.height =
-          `${height}px`;
+      if (
+        visible &&
+        transform
+      ) {
+        overlay.style.transform =
+          transform;
       }
     }
 
@@ -2666,13 +3057,6 @@ function HeroVideoWall() {
       )
     );
 
-    /*
-      WorldScene todavÃ­a conserva compatibilidad
-      con el video local. Al entrar en rango,
-      reafirmamos el estado real de YouTube
-      despuÃ©s del evento de proximidad.
-    */
-
     if (
       isNear &&
       isYouTube
@@ -2701,8 +3085,6 @@ function HeroVideoWall() {
         -33.72,
       ]}
     >
-      {/* MARCO */}
-
       <RoundedBox
         position={[
           0,
@@ -2740,8 +3122,6 @@ function HeroVideoWall() {
         />
       </RoundedBox>
 
-      {/* PANTALLA BASE */}
-
       <mesh
         ref={
           screenRef
@@ -2772,8 +3152,6 @@ function HeroVideoWall() {
         />
       </mesh>
 
-      {/* YOUTUBE COMO OVERLAY 2D PROYECTADO */}
-
       {isYouTube &&
         youtubeId && (
           <Html
@@ -2795,8 +3173,23 @@ function HeroVideoWall() {
                 position:
                   "absolute",
 
+                left:
+                  0,
+
+                top:
+                  0,
+
+                width:
+                  "1280px",
+
+                height:
+                  "720px",
+
                 display:
                   "none",
+
+                transformOrigin:
+                  "0 0",
 
                 overflow:
                   "hidden",
@@ -2807,8 +3200,8 @@ function HeroVideoWall() {
                 pointerEvents:
                   "none",
 
-                borderRadius:
-                  "2px",
+                willChange:
+                  "transform",
               }}
             >
               <div
@@ -2816,6 +3209,12 @@ function HeroVideoWall() {
                   setYoutubeMountEl
                 }
                 style={{
+                  position:
+                    "absolute",
+
+                  inset:
+                    0,
+
                   width:
                     "100%",
 
@@ -2826,11 +3225,251 @@ function HeroVideoWall() {
                     "none",
                 }}
               />
+
+              {near && (
+                <div
+                  style={{
+                    position:
+                      "absolute",
+
+                    left:
+                      "28px",
+
+                    right:
+                      "28px",
+
+                    bottom:
+                      "24px",
+
+                    padding:
+                      "18px 20px",
+
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    gap:
+                      "14px",
+
+                    borderRadius:
+                      "16px",
+
+                    background:
+                      "rgba(5,8,12,.78)",
+
+                    backdropFilter:
+                      "blur(12px)",
+
+                    WebkitBackdropFilter:
+                      "blur(12px)",
+
+                    border:
+                      "1px solid rgba(255,255,255,.18)",
+
+                    pointerEvents:
+                      "auto",
+                  }}
+                  onPointerDown={
+                    (
+                      event
+                    ) => {
+                      event.stopPropagation();
+                    }
+                  }
+                  onClick={
+                    (
+                      event
+                    ) => {
+                      event.stopPropagation();
+                    }
+                  }
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      seekYouTubeBy(
+                        -10
+                      )
+                    }
+                    style={{
+                      height:
+                        "46px",
+
+                      padding:
+                        "0 16px",
+
+                      border:
+                        "1px solid rgba(255,255,255,.2)",
+
+                      borderRadius:
+                        "12px",
+
+                      background:
+                        "rgba(255,255,255,.08)",
+
+                      color:
+                        "#fff",
+
+                      fontWeight:
+                        800,
+                    }}
+                  >
+                    â10 s
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        playing
+                      ) {
+                        pauseYouTube();
+                      } else {
+                        playYouTube();
+                      }
+                    }}
+                    style={{
+                      height:
+                        "46px",
+
+                      minWidth:
+                        "150px",
+
+                      padding:
+                        "0 18px",
+
+                      border:
+                        "1px solid rgba(255,255,255,.25)",
+
+                      borderRadius:
+                        "12px",
+
+                      background:
+                        playing
+                          ? "rgba(145,20,35,.94)"
+                          : "rgba(18,90,105,.94)",
+
+                      color:
+                        "#fff",
+
+                      fontWeight:
+                        900,
+                    }}
+                  >
+                    {playing
+                      ? "ââ Pausar"
+                      : "â¶ Reproducir"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      seekYouTubeBy(
+                        10
+                      )
+                    }
+                    style={{
+                      height:
+                        "46px",
+
+                      padding:
+                        "0 16px",
+
+                      border:
+                        "1px solid rgba(255,255,255,.2)",
+
+                      borderRadius:
+                        "12px",
+
+                      background:
+                        "rgba(255,255,255,.08)",
+
+                      color:
+                        "#fff",
+
+                      fontWeight:
+                        800,
+                    }}
+                  >
+                    +10 s
+                  </button>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max={
+                      duration >
+                      0
+                        ? duration
+                        : 1
+                    }
+                    step="0.1"
+                    value={
+                      Math.min(
+                        currentTime,
+                        duration >
+                          0
+                          ? duration
+                          : 1
+                      )
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        seekYouTubeTo(
+                          event.target
+                            .value
+                        )
+                    }
+                    style={{
+                      flex:
+                        "1 1 auto",
+
+                      minWidth:
+                        "180px",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      minWidth:
+                        "112px",
+
+                      textAlign:
+                        "right",
+
+                      color:
+                        "#fff",
+
+                      fontSize:
+                        "18px",
+
+                      fontWeight:
+                        800,
+
+                      fontVariantNumeric:
+                        "tabular-nums",
+
+                      whiteSpace:
+                        "nowrap",
+                    }}
+                  >
+                    {formatTime(
+                      currentTime
+                    )}
+                    {" / "}
+                    {formatTime(
+                      duration
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </Html>
         )}
-
-      {/* NEONES */}
 
       <NeonLine
         position={[
@@ -2867,8 +3506,6 @@ function HeroVideoWall() {
             : "#ff4f95"
         }
       />
-
-      {/* INDICADOR */}
 
       <mesh
         position={[
@@ -2926,7 +3563,6 @@ function HeroVideoWall() {
     </group>
   );
 }
-
 
 /* =========================================================
    SALA
