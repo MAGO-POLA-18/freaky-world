@@ -218,108 +218,158 @@ export default function WorldScene() {
   ======================================================= */
 
   useEffect(() => {
-    const video =
-      featuredVideoRef.current;
+  const video =
+    featuredVideoRef.current;
 
-    if (!video) {
-      return;
-    }
+  if (!video) {
+    return;
+  }
 
-    const handlePlay =
-      () => {
-        setVideoWallPlaying(
-          true
+  const syncVideoState =
+    () => {
+      const finished =
+        video.ended ||
+        (
+          Number.isFinite(
+            video.duration
+          ) &&
+          video.duration > 0 &&
+          video.currentTime >=
+            video.duration - 0.1
         );
 
-        setVideoError(
-          false
-        );
-      };
-
-    const handlePause =
-      () => {
-        setVideoWallPlaying(
-          false
-        );
-      };
-
-    const handleEnded =
-      () => {
-        setVideoWallPlaying(
-          false
-        );
-
-        try {
-          video.currentTime =
-            0;
-        } catch {
-          // nada
-        }
-      };
-
-    const handleError =
-      () => {
+      if (finished) {
         setVideoWallPlaying(
           false
         );
 
         setVideoError(
-          true
+          false
         );
-      };
 
-    video.addEventListener(
+        return;
+      }
+
+      setVideoWallPlaying(
+        !video.paused
+      );
+    };
+
+  const handlePlay =
+    () => {
+      setVideoWallPlaying(
+        true
+      );
+
+      setVideoError(
+        false
+      );
+    };
+
+  const handlePause =
+    () => {
+      syncVideoState();
+    };
+
+  const handleEnded =
+    () => {
+      setVideoWallPlaying(
+        false
+      );
+
+      setVideoError(
+        false
+      );
+
+      try {
+        video.currentTime =
+          0;
+      } catch {
+        // nada
+      }
+    };
+
+  const handleTimeUpdate =
+    () => {
+      syncVideoState();
+    };
+
+  const handleError =
+    () => {
+      setVideoWallPlaying(
+        false
+      );
+
+      setVideoError(
+        true
+      );
+    };
+
+  video.addEventListener(
+    "play",
+    handlePlay
+  );
+
+  video.addEventListener(
+    "playing",
+    handlePlay
+  );
+
+  video.addEventListener(
+    "pause",
+    handlePause
+  );
+
+  video.addEventListener(
+    "ended",
+    handleEnded
+  );
+
+  video.addEventListener(
+    "timeupdate",
+    handleTimeUpdate
+  );
+
+  video.addEventListener(
+    "error",
+    handleError
+  );
+
+  syncVideoState();
+
+  return () => {
+    video.removeEventListener(
       "play",
       handlePlay
     );
 
-    video.addEventListener(
+    video.removeEventListener(
       "playing",
       handlePlay
     );
 
-    video.addEventListener(
+    video.removeEventListener(
       "pause",
       handlePause
     );
 
-    video.addEventListener(
+    video.removeEventListener(
       "ended",
       handleEnded
     );
 
-    video.addEventListener(
+    video.removeEventListener(
+      "timeupdate",
+      handleTimeUpdate
+    );
+
+    video.removeEventListener(
       "error",
       handleError
     );
-
-    return () => {
-      video.removeEventListener(
-        "play",
-        handlePlay
-      );
-
-      video.removeEventListener(
-        "playing",
-        handlePlay
-      );
-
-      video.removeEventListener(
-        "pause",
-        handlePause
-      );
-
-      video.removeEventListener(
-        "ended",
-        handleEnded
-      );
-
-      video.removeEventListener(
-        "error",
-        handleError
-      );
-    };
-  }, []);
+  };
+}, []);
+ 
 
   /* =======================================================
      TUTORIAL
@@ -391,83 +441,106 @@ export default function WorldScene() {
      No hay intermediarios.
   ======================================================= */
 
-  const toggleWorldVideo =
-    useCallback(
-      async () => {
-        const video =
-          featuredVideoRef.current;
+const toggleWorldVideo =
+  useCallback(
+    async () => {
+      const video =
+        featuredVideoRef.current;
 
-        if (!video) {
-          return;
+      if (!video) {
+        return;
+      }
+
+      setVideoError(
+        false
+      );
+
+      const finished =
+        video.ended ||
+        (
+          Number.isFinite(
+            video.duration
+          ) &&
+          video.duration > 0 &&
+          video.currentTime >=
+            video.duration - 0.1
+        );
+
+      /*
+        SI TERMINÓ,
+        LO REINICIAMOS.
+      */
+
+      if (finished) {
+        try {
+          video.currentTime =
+            0;
+        } catch {
+          // nada
+        }
+      }
+
+      /*
+        SI ESTÁ REPRODUCIENDO:
+        DETENER.
+      */
+
+      if (
+        !video.paused &&
+        !finished
+      ) {
+        video.pause();
+
+        try {
+          video.currentTime =
+            0;
+        } catch {
+          // nada
         }
 
-        setVideoError(
+        setVideoWallPlaying(
           false
         );
 
-        /*
-          SI YA ESTÁ REPRODUCIENDO:
-          STOP.
-        */
+        return;
+      }
 
-        if (
-          !video.paused &&
-          !video.ended
-        ) {
-          video.pause();
+      /*
+        SI ESTÁ DETENIDO:
+        REPRODUCIR.
+      */
 
-          try {
-            video.currentTime =
-              0;
-          } catch {
-            // nada
-          }
+      try {
+        video.muted =
+          false;
 
-          setVideoWallPlaying(
-            false
-          );
+        video.volume =
+          1;
 
-          return;
-        }
+        await video.play();
 
-        /*
-          REPRODUCCIÓN CON AUDIO.
-
-          ESTA LLAMADA OCURRE DIRECTAMENTE
-          DESDE EL BOTÓN DEL USUARIO.
-        */
-
-        try {
-          video.muted =
-            false;
-
-          video.volume =
-            1;
-
-          await video.play();
-
-          setVideoWallPlaying(
-            true
-          );
-        } catch (
+        setVideoWallPlaying(
+          true
+        );
+      } catch (
+        error
+      ) {
+        console.error(
+          "FREAKY DIRECT VIDEO PLAY ERROR:",
           error
-        ) {
-          console.error(
-            "FREAKY DIRECT VIDEO PLAY ERROR:",
-            error
-          );
+        );
 
-          setVideoError(
-            true
-          );
+        setVideoError(
+          true
+        );
 
-          setVideoWallPlaying(
-            false
-          );
-        }
-      },
-      []
-    );
+        setVideoWallPlaying(
+          false
+        );
+      }
+    },
+    []
+  );
 
   /* =======================================================
      STOP
