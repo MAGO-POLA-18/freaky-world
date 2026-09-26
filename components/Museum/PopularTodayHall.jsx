@@ -1612,11 +1612,6 @@ function GameStation({
 
 /* =========================================================
    VIDEO WALL
-
-   YA NO CREA UN VIDEO.
-
-   BUSCA EL VIDEO HTML REAL DE WorldScene
-   Y CREA LA TEXTURA CON ESE MISMO ELEMENTO.
 ========================================================= */
 
 function HeroVideoWall() {
@@ -1626,12 +1621,8 @@ function HeroVideoWall() {
   const screenRef =
     useRef(null);
 
-  const youtubeContainerRef =
+  const youtubeIframeRef =
     useRef(null);
-
-  const youtubePlayerRef =
-    useRef(null);
-
 
   const videoRef =
     useRef(null);
@@ -1693,332 +1684,31 @@ function HeroVideoWall() {
       []
     );
 
+  const youtubeEmbedUrl =
+    youtubeId
+      ? `https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&playsinline=1&controls=0&rel=0&autoplay=0`
+      : null;
+
   /* =======================================================
-     YOUTUBE PLAYER
+     VIDEO LOCAL
   ======================================================= */
 
   useEffect(() => {
-    if (
-      !isYouTube ||
-      !youtubeId ||
-      !youtubeContainerRef.current
-    ) {
+    if (isYouTube) {
       return;
     }
 
-    let cancelled =
-      false;
-
-    const createPlayer =
-      () => {
-        if (
-          cancelled ||
-          !window.YT?.Player ||
-          !youtubeContainerRef.current
-        ) {
-          return;
-        }
-
-        youtubePlayerRef.current =
-          new window.YT.Player(
-            youtubeContainerRef.current,
-            {
-              videoId:
-                youtubeId,
-
-              width:
-                "1280",
-
-              height:
-                "720",
-
-              playerVars: {
-                autoplay:
-                  0,
-
-                controls:
-                  0,
-
-                playsinline:
-                  1,
-
-                rel:
-                  0,
-
-                modestbranding:
-                  1,
-              },
-
-              events: {
-                onReady:
-                  () => {
-                    setReady(
-                      true
-                    );
-
-                    setError(
-                      false
-                    );
-                  },
-
-                onStateChange:
-                  (
-                    event
-                  ) => {
-                    const state =
-                      event.data;
-
-                    /*
-                      1 = PLAYING
-                    */
-
-                    if (
-                      state === 1
-                    ) {
-                      setPlaying(
-                        true
-                      );
-
-                      window.dispatchEvent(
-                        new CustomEvent(
-                          "freaky:youtube-state",
-                          {
-                            detail: {
-                              playing:
-                                true,
-                            },
-                          }
-                        )
-                      );
-
-                      return;
-                    }
-
-                    /*
-                      0 = TERMINADO
-                    */
-
-                    if (
-                      state === 0
-                    ) {
-                      try {
-                        event.target.seekTo(
-                          0,
-                          true
-                        );
-                      } catch {
-                        // nada
-                      }
-
-                      setPlaying(
-                        false
-                      );
-
-                      window.dispatchEvent(
-                        new CustomEvent(
-                          "freaky:youtube-state",
-                          {
-                            detail: {
-                              playing:
-                                false,
-
-                              ended:
-                                true,
-                            },
-                          }
-                        )
-                      );
-
-                      return;
-                    }
-
-                    /*
-                      2 = PAUSA
-                      5 = PREPARADO
-                    */
-
-                    if (
-                      state === 2 ||
-                      state === 5
-                    ) {
-                      setPlaying(
-                        false
-                      );
-
-                      window.dispatchEvent(
-                        new CustomEvent(
-                          "freaky:youtube-state",
-                          {
-                            detail: {
-                              playing:
-                                false,
-                            },
-                          }
-                        )
-                      );
-                    }
-                  },
-
-                onError:
-                  () => {
-                    setPlaying(
-                      false
-                    );
-
-                    setError(
-                      true
-                    );
-                  },
-              },
-            }
-          );
-      };
-
-    /*
-      SI LA API YA EXISTE
-    */
-
-    if (
-      window.YT?.Player
-    ) {
-      createPlayer();
-    } else {
-      /*
-        CARGAMOS API YOUTUBE
-      */
-
-      const existingScript =
-        document.getElementById(
-          "youtube-iframe-api"
-        );
-
-      const previousCallback =
-        window.onYouTubeIframeAPIReady;
-
-      window.onYouTubeIframeAPIReady =
-        () => {
-          if (
-            typeof previousCallback ===
-            "function"
-          ) {
-            previousCallback();
-          }
-
-          createPlayer();
-        };
-
-      if (
-        !existingScript
-      ) {
-        const script =
-          document.createElement(
-            "script"
-          );
-
-        script.id =
-          "youtube-iframe-api";
-
-        script.src =
-          "https://www.youtube.com/iframe_api";
-
-        document.head.appendChild(
-          script
-        );
-      }
-    }
-
-    /*
-      ÓRDENES DESDE LOS BOTONES
-    */
-
-    const handleCommand =
-      (
-        event
-      ) => {
-        const player =
-          youtubePlayerRef.current;
-
-        if (!player) {
-          return;
-        }
-
-        if (
-          event.detail
-            ?.command ===
-          "play"
-        ) {
-          player.playVideo?.();
-
-          return;
-        }
-
-        if (
-          event.detail
-            ?.command ===
-          "stop"
-        ) {
-          player.stopVideo?.();
-
-          try {
-            player.seekTo?.(
-              0,
-              true
-            );
-          } catch {
-            // nada
-          }
-
-          setPlaying(
-            false
-          );
-        }
-      };
-
-    window.addEventListener(
-      "freaky:youtube-command",
-      handleCommand
-    );
-
-    return () => {
-      cancelled =
-        true;
-
-      window.removeEventListener(
-        "freaky:youtube-command",
-        handleCommand
+    const video =
+      document.getElementById(
+        "freaky-featured-video"
       );
-
-      try {
-        youtubePlayerRef.current
-          ?.destroy?.();
-      } catch {
-        // nada
-      }
-
-      youtubePlayerRef.current =
-        null;
-    };
-  }, [
-    isYouTube,
-    youtubeId,
-  ]);
-  /* =======================================================
-     CONECTAR VIDEO DOM → THREE
-  ======================================================= */
-
- useEffect(() => {
-  if (isYouTube) {
-    return;
-  }
-
-  const video =
-    document.getElementById(
-      "freaky-featured-video"
-    );
 
     if (
       !video ||
-      !(video instanceof HTMLVideoElement)
+      !(
+        video instanceof
+        HTMLVideoElement
+      )
     ) {
       setError(
         true
@@ -2050,22 +1740,15 @@ function HeroVideoWall() {
     videoTextureRef.current =
       texture;
 
-    /* =====================================================
-       CAMBIAR PANTALLA A VIDEO
-    ===================================================== */
-
     const showVideo =
       () => {
         if (
           screenRef.current
         ) {
-          screenRef.current
-            .material.map =
+          screenRef.current.material.map =
             texture;
 
-          screenRef.current
-            .material
-            .needsUpdate =
+          screenRef.current.material.needsUpdate =
             true;
         }
 
@@ -2078,22 +1761,15 @@ function HeroVideoWall() {
         );
       };
 
-    /* =====================================================
-       VOLVER A PREVIEW
-    ===================================================== */
-
     const showPreview =
       () => {
         if (
           screenRef.current
         ) {
-          screenRef.current
-            .material.map =
+          screenRef.current.material.map =
             previewTexture;
 
-          screenRef.current
-            .material
-            .needsUpdate =
+          screenRef.current.material.needsUpdate =
             true;
         }
 
@@ -2182,13 +1858,6 @@ function HeroVideoWall() {
       );
     }
 
-    if (
-      !video.paused &&
-      !video.ended
-    ) {
-      showVideo();
-    }
-
     return () => {
       video.removeEventListener(
         "canplay",
@@ -2234,7 +1903,215 @@ function HeroVideoWall() {
         null;
     };
   }, [
+    isYouTube,
     previewTexture,
+  ]);
+
+  /* =======================================================
+     YOUTUBE
+  ======================================================= */
+
+  useEffect(() => {
+    if (!isYouTube) {
+      return;
+    }
+
+    const sendCommand =
+      (
+        func
+      ) => {
+        const iframe =
+          youtubeIframeRef.current;
+
+        if (
+          !iframe
+            ?.contentWindow
+        ) {
+          return;
+        }
+
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            event:
+              "command",
+
+            func,
+
+            args:
+              [],
+          }),
+          "*"
+        );
+      };
+
+    const publishState =
+      (
+        isPlaying,
+        ended = false
+      ) => {
+        setPlaying(
+          isPlaying
+        );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:youtube-state",
+            {
+              detail: {
+                playing:
+                  isPlaying,
+
+                ended,
+              },
+            }
+          )
+        );
+      };
+
+    const handleCommand =
+      (
+        event
+      ) => {
+        const command =
+          event.detail
+            ?.command;
+
+        if (
+          command ===
+          "play"
+        ) {
+          sendCommand(
+            "playVideo"
+          );
+
+          return;
+        }
+
+        if (
+          command ===
+          "stop"
+        ) {
+          sendCommand(
+            "stopVideo"
+          );
+
+          publishState(
+            false
+          );
+        }
+      };
+
+    const handleMessage =
+      (
+        event
+      ) => {
+        if (
+          !String(
+            event.origin
+          ).includes(
+            "youtube.com"
+          )
+        ) {
+          return;
+        }
+
+        let data =
+          event.data;
+
+        if (
+          typeof data ===
+          "string"
+        ) {
+          try {
+            data =
+              JSON.parse(
+                data
+              );
+          } catch {
+            return;
+          }
+        }
+
+        if (!data) {
+          return;
+        }
+
+        const state =
+          data?.info
+            ?.playerState;
+
+        if (
+          typeof state !==
+          "number"
+        ) {
+          return;
+        }
+
+        if (
+          state ===
+          1
+        ) {
+          setReady(
+            true
+          );
+
+          setError(
+            false
+          );
+
+          publishState(
+            true
+          );
+
+          return;
+        }
+
+        if (
+          state ===
+          0
+        ) {
+          publishState(
+            false,
+            true
+          );
+
+          return;
+        }
+
+        if (
+          state ===
+            2 ||
+          state ===
+            5
+        ) {
+          publishState(
+            false
+          );
+        }
+      };
+
+    window.addEventListener(
+      "freaky:youtube-command",
+      handleCommand
+    );
+
+    window.addEventListener(
+      "message",
+      handleMessage
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:youtube-command",
+        handleCommand
+      );
+
+      window.removeEventListener(
+        "message",
+        handleMessage
+      );
+    };
+  }, [
     isYouTube,
   ]);
 
@@ -2248,9 +2125,6 @@ function HeroVideoWall() {
 
   /* =======================================================
      PROXIMIDAD
-
-     SOLO MUESTRA BOTONES.
-     NO REPRODUCE.
   ======================================================= */
 
   useFrame(() => {
@@ -2325,6 +2199,22 @@ function HeroVideoWall() {
         }
       )
     );
+
+    if (
+      isNear &&
+      isYouTube
+    ) {
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:youtube-state",
+          {
+            detail: {
+              playing,
+            },
+          }
+        )
+      );
+    }
   });
 
   return (
@@ -2377,7 +2267,7 @@ function HeroVideoWall() {
         />
       </RoundedBox>
 
-      {/* PANTALLA */}
+      {/* PANTALLA BASE */}
 
       <mesh
         ref={
@@ -2409,44 +2299,70 @@ function HeroVideoWall() {
         />
       </mesh>
 
+      {/* YOUTUBE */}
+
       {isYouTube &&
-        youtubeId && (
+        youtubeEmbedUrl && (
           <Html
             transform
             position={[
               0,
               7.2,
-              0.34,
+              0.36,
             ]}
             scale={
-              0.0176
+              0.01755
             }
+            zIndexRange={[
+              20,
+              0,
+            ]}
             style={{
               pointerEvents:
                 "none",
             }}
           >
-            <div
+            <iframe
+              ref={
+                youtubeIframeRef
+              }
+              src={
+                youtubeEmbedUrl
+              }
+              title="Freaky World YouTube"
+              width="1280"
+              height="720"
+              frameBorder="0"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              onLoad={() => {
+                setReady(
+                  true
+                );
+
+                setError(
+                  false
+                );
+              }}
               style={{
+                display:
+                  "block",
+
                 width:
                   "1280px",
 
                 height:
                   "720px",
 
-                overflow:
-                  "hidden",
+                border:
+                  0,
 
                 background:
                   "#000",
+
+                pointerEvents:
+                  "none",
               }}
-            >
-              <div
-                ref={
-                  youtubeContainerRef
-                }
-              />
-            </div>
+            />
           </Html>
         )}
 
