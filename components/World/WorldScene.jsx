@@ -39,7 +39,7 @@ import PerformanceMonitor from "./PerformanceMonitor";
 ========================================================= */
 
 const FEATURED_VIDEO_URL =
-  "https://media.w3.org/2010/05/sintel/trailer.mp4";
+  "/videos/freaky-video-test.mov";
 
 /* =========================================================
    CALIDAD
