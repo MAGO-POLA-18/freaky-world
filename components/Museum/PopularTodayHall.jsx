@@ -9,18 +9,16 @@ import {
 } from "react";
 
 import {
-  Html,
   RoundedBox,
 } from "@react-three/drei";
 
 import {
   useFrame,
-  useThree,
 } from "@react-three/fiber";
 
 import {
-  RigidBody,
   CuboidCollider,
+  RigidBody,
 } from "@react-three/rapier";
 
 import * as THREE from "three";
@@ -29,93 +27,15 @@ import {
   playerRuntime,
 } from "../World/PlayerController";
 
-/* =========================================================
-   CONFIG
-========================================================= */
+import {
+  FEATURED_VIDEO,
+} from "../World/featuredVideoConfig";
 
 const ROOM_HALF_WIDTH =
   29.25;
 
 const ROOM_BACK_Z =
   -34.25;
-
-const FEATURED_VIDEO_URL =
-  "https://www.youtube.com/watch?v=M7lc1UVf-VE";
-
-const FEATURED_VIDEO = {
-  id:
-    "featured-video-screen",
-
-  overlayType:
-    "video",
-
-  sourceType:
-    "youtube",
-
-  title:
-    "VIDEO DESTACADO",
-
-  accent:
-    "#58f1ff",
-
-  accent2:
-    "#8b5cff",
-
-  description:
-    "Pantalla multimedia principal de Freaky World.",
-
-  videoUrl:
-    FEATURED_VIDEO_URL,
-};
-
-function getYouTubeId(
-  url
-) {
-  if (!url) {
-    return null;
-  }
-
-  try {
-    const parsed =
-      new URL(url);
-
-    if (
-      parsed.hostname.includes(
-        "youtu.be"
-      )
-    ) {
-      return parsed.pathname
-        .replace("/", "")
-        .split("/")[0];
-    }
-
-    if (
-      parsed.pathname.startsWith(
-        "/shorts/"
-      )
-    ) {
-      return parsed.pathname
-        .split("/shorts/")[1]
-        ?.split("/")[0];
-    }
-
-    if (
-      parsed.pathname.startsWith(
-        "/embed/"
-      )
-    ) {
-      return parsed.pathname
-        .split("/embed/")[1]
-        ?.split("/")[0];
-    }
-
-    return parsed.searchParams.get(
-      "v"
-    );
-  } catch {
-    return null;
-  }
-}
 
 /* =========================================================
    JUEGOS
@@ -142,10 +62,10 @@ const GAMES = [
       "2027",
 
     genre:
-      "AcciÃ³n Â· Mundo abierto",
+      "Acción · Mundo abierto",
 
     platform:
-      "PS5 Â· Xbox Â· PC",
+      "PS5 · Xbox · PC",
 
     score:
       "9.4",
@@ -157,7 +77,7 @@ const GAMES = [
       "#7d44ff",
 
     description:
-      "Una enorme ciudad nocturna donde cada distrito cambia segÃºn tus decisiones.",
+      "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones.",
   },
 
   {
@@ -183,7 +103,7 @@ const GAMES = [
       "Aventura",
 
     platform:
-      "PS5 Â· PC",
+      "PS5 · PC",
 
     score:
       "9.1",
@@ -195,7 +115,7 @@ const GAMES = [
       "#275c9b",
 
     description:
-      "ExploraciÃ³n narrativa en un archipiÃ©lago abandonado.",
+      "Exploración narrativa en un archipiélago abandonado.",
   },
 
   {
@@ -218,10 +138,10 @@ const GAMES = [
       "2026",
 
     genre:
-      "RPG Â· Ciencia ficciÃ³n",
+      "RPG · Ciencia ficción",
 
     platform:
-      "Xbox Â· PC",
+      "Xbox · PC",
 
     score:
       "8.9",
@@ -256,10 +176,10 @@ const GAMES = [
       "2026",
 
     genre:
-      "AcciÃ³n",
+      "Acción",
 
     platform:
-      "PS5 Â· Xbox Â· PC",
+      "PS5 · Xbox · PC",
 
     score:
       "8.8",
@@ -271,7 +191,7 @@ const GAMES = [
       "#16647c",
 
     description:
-      "Combate rÃ¡pido y estaciones orbitales.",
+      "Combate rápido y estaciones orbitales.",
   },
 
   {
@@ -297,7 +217,7 @@ const GAMES = [
       "Terror",
 
     platform:
-      "PS5 Â· PC",
+      "PS5 · PC",
 
     score:
       "8.7",
@@ -309,7 +229,7 @@ const GAMES = [
       "#5a3b88",
 
     description:
-      "Una seÃ±al conduce a una estaciÃ³n cientÃ­fica abandonada.",
+      "Una señal conduce a una estación científica abandonada.",
   },
 
   {
@@ -335,7 +255,7 @@ const GAMES = [
       "RPG",
 
     platform:
-      "Switch 2 Â· PC",
+      "Switch 2 · PC",
 
     score:
       "8.6",
@@ -347,7 +267,7 @@ const GAMES = [
       "#705f32",
 
     description:
-      "Reinos mecÃ¡nicos y fortalezas mÃ³viles.",
+      "Reinos mecánicos y fortalezas móviles.",
   },
 
   {
@@ -370,10 +290,10 @@ const GAMES = [
       "2026",
 
     genre:
-      "ExploraciÃ³n",
+      "Exploración",
 
     platform:
-      "PS5 Â· Xbox",
+      "PS5 · Xbox",
 
     score:
       "8.5",
@@ -385,7 +305,7 @@ const GAMES = [
       "#15456e",
 
     description:
-      "ExploraciÃ³n submarina en un ocÃ©ano alienÃ­gena.",
+      "Exploración submarina en un océano alienígena.",
   },
 
   {
@@ -449,7 +369,7 @@ const GAMES = [
       "Supervivencia",
 
     platform:
-      "Xbox Â· PC",
+      "Xbox · PC",
 
     score:
       "8.2",
@@ -461,7 +381,7 @@ const GAMES = [
       "#714433",
 
     description:
-      "VehÃ­culos modificables y carreteras infinitas.",
+      "Vehículos modificables y carreteras infinitas.",
   },
 
   {
@@ -504,7 +424,7 @@ const GAMES = [
 ];
 
 /* =========================================================
-   POSTER
+   POSTERS
 ========================================================= */
 
 function createPosterTexture(
@@ -563,7 +483,7 @@ function createPosterTexture(
     0.15;
 
   ctx.fillStyle =
-    "#ffffff";
+    "#fff";
 
   ctx.beginPath();
 
@@ -572,7 +492,8 @@ function createPosterTexture(
     150,
     150,
     0,
-    Math.PI * 2
+    Math.PI *
+      2
   );
 
   ctx.fill();
@@ -587,7 +508,8 @@ function createPosterTexture(
     420,
     200,
     0,
-    Math.PI * 2
+    Math.PI *
+      2
   );
 
   ctx.fill();
@@ -606,7 +528,7 @@ function createPosterTexture(
   );
 
   ctx.fillStyle =
-    "#ffffff";
+    "#fff";
 
   ctx.font =
     "800 28px Arial";
@@ -621,9 +543,10 @@ function createPosterTexture(
     "900 44px Arial";
 
   const words =
-    game.title.split(
-      " "
-    );
+    game.title
+      .split(
+        " "
+      );
 
   let line =
     "";
@@ -682,9 +605,10 @@ function createPosterTexture(
   );
 
   const texture =
-    new THREE.CanvasTexture(
-      canvas
-    );
+    new THREE
+      .CanvasTexture(
+        canvas
+      );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -693,7 +617,7 @@ function createPosterTexture(
 }
 
 /* =========================================================
-   VIDEO PREVIEW
+   PREVIEW PANTALLA
 ========================================================= */
 
 function createVideoPreviewTexture() {
@@ -759,7 +683,8 @@ function createVideoPreviewTexture() {
     130,
     250,
     0,
-    Math.PI * 2
+    Math.PI *
+      2
   );
 
   ctx.fill();
@@ -774,7 +699,8 @@ function createVideoPreviewTexture() {
     620,
     280,
     0,
-    Math.PI * 2
+    Math.PI *
+      2
   );
 
   ctx.fill();
@@ -795,7 +721,7 @@ function createVideoPreviewTexture() {
   );
 
   ctx.fillStyle =
-    "#ffffff";
+    "#fff";
 
   ctx.font =
     "900 78px Arial";
@@ -818,25 +744,26 @@ function createVideoPreviewTexture() {
     275
   );
 
-  ctx.beginPath();
-
   ctx.fillStyle =
-    "#ffffff";
+    "#fff";
+
+  ctx.beginPath();
 
   ctx.arc(
     640,
     445,
     80,
     0,
-    Math.PI * 2
+    Math.PI *
+      2
   );
 
   ctx.fill();
 
-  ctx.beginPath();
-
   ctx.fillStyle =
     "#11151a";
+
+  ctx.beginPath();
 
   ctx.moveTo(
     675,
@@ -858,9 +785,10 @@ function createVideoPreviewTexture() {
   ctx.fill();
 
   const texture =
-    new THREE.CanvasTexture(
-      canvas
-    );
+    new THREE
+      .CanvasTexture(
+        canvas
+      );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -869,7 +797,7 @@ function createVideoPreviewTexture() {
 }
 
 /* =========================================================
-   NEON TEXT
+   NEON
 ========================================================= */
 
 function createNeonTextTexture(
@@ -920,7 +848,7 @@ function createNeonTextTexture(
     10;
 
   ctx.fillStyle =
-    "#ffffff";
+    "#fff";
 
   ctx.fillText(
     text,
@@ -929,19 +857,16 @@ function createNeonTextTexture(
   );
 
   const texture =
-    new THREE.CanvasTexture(
-      canvas
-    );
+    new THREE
+      .CanvasTexture(
+        canvas
+      );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
   return texture;
 }
-
-/* =========================================================
-   ARCADE
-========================================================= */
 
 function createArcadeTexture(
   type
@@ -961,13 +886,6 @@ function createArcadeTexture(
     canvas.getContext(
       "2d"
     );
-
-  ctx.clearRect(
-    0,
-    0,
-    512,
-    512
-  );
 
   if (
     type ===
@@ -1013,7 +931,8 @@ function createArcadeTexture(
       170,
       14,
       0,
-      Math.PI * 2
+      Math.PI *
+        2
     );
 
     ctx.fill();
@@ -1089,9 +1008,10 @@ function createArcadeTexture(
   }
 
   const texture =
-    new THREE.CanvasTexture(
-      canvas
-    );
+    new THREE
+      .CanvasTexture(
+        canvas
+      );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -1100,14 +1020,14 @@ function createArcadeTexture(
 }
 
 /* =========================================================
-   INSTANCED BOXES
+   INSTANCED
 ========================================================= */
 
 function InstancedBoxes({
   items,
   color,
   roughness = 0.8,
-  emissive = "#000000",
+  emissive = "#000",
   emissiveIntensity = 0,
 }) {
   const ref =
@@ -1116,7 +1036,8 @@ function InstancedBoxes({
   const dummy =
     useMemo(
       () =>
-        new THREE.Object3D(),
+        new THREE
+          .Object3D(),
       []
     );
 
@@ -1132,26 +1053,30 @@ function InstancedBoxes({
         item,
         index
       ) => {
-        dummy.position.set(
-          ...item.position
-        );
+        dummy.position
+          .set(
+            ...item.position
+          );
 
-        dummy.rotation.set(
-          ...(
-            item.rotation ??
-            [
-              0,
-              0,
-              0,
-            ]
-          )
-        );
+        dummy.rotation
+          .set(
+            ...(
+              item.rotation ??
+              [
+                0,
+                0,
+                0,
+              ]
+            )
+          );
 
-        dummy.scale.set(
-          ...item.scale
-        );
+        dummy.scale
+          .set(
+            ...item.scale
+          );
 
-        dummy.updateMatrix();
+        dummy
+          .updateMatrix();
 
         ref.current
           .setMatrixAt(
@@ -1172,7 +1097,9 @@ function InstancedBoxes({
 
   return (
     <instancedMesh
-      ref={ref}
+      ref={
+        ref
+      }
       args={[
         null,
         null,
@@ -1201,7 +1128,7 @@ function InstancedBoxes({
 }
 
 /* =========================================================
-   NEON
+   NEON COMPONENTS
 ========================================================= */
 
 function NeonLine({
@@ -1229,7 +1156,9 @@ function NeonLine({
       }
     >
       <boxGeometry
-        args={size}
+        args={
+          size
+        }
       />
 
       <meshStandardMaterial
@@ -1272,13 +1201,14 @@ function NeonWord({
       ]
     );
 
-  useEffect(() => {
-    return () => {
-      texture.dispose();
-    };
-  }, [
-    texture,
-  ]);
+  useEffect(
+    () =>
+      () =>
+        texture.dispose(),
+    [
+      texture,
+    ]
+  );
 
   return (
     <mesh
@@ -1329,13 +1259,14 @@ function ArcadeIcon({
       ]
     );
 
-  useEffect(() => {
-    return () => {
-      texture.dispose();
-    };
-  }, [
-    texture,
-  ]);
+  useEffect(
+    () =>
+      () =>
+        texture.dispose(),
+    [
+      texture,
+    ]
+  );
 
   return (
     <mesh
@@ -1388,7 +1319,8 @@ function GameStation({
   const worldPosition =
     useMemo(
       () =>
-        new THREE.Vector3(),
+        new THREE
+          .Vector3(),
       []
     );
 
@@ -1409,13 +1341,14 @@ function GameStation({
       ]
     );
 
-  useEffect(() => {
-    return () => {
-      poster.dispose();
-    };
-  }, [
-    poster,
-  ]);
+  useEffect(
+    () =>
+      () =>
+        poster.dispose(),
+    [
+      poster,
+    ]
+  );
 
   useFrame(() => {
     if (
@@ -1444,8 +1377,10 @@ function GameStation({
 
     const distance =
       Math.sqrt(
-        dx * dx +
-        dz * dz
+        dx *
+          dx +
+        dz *
+          dz
       );
 
     const isNear =
@@ -1476,11 +1411,13 @@ function GameStation({
               ? {
                   near:
                     true,
+
                   game,
                 }
               : {
                   near:
                     false,
+
                   game,
                 },
         }
@@ -1612,31 +1549,17 @@ function GameStation({
 }
 
 /* =========================================================
-   VIDEO WALL
+   PANTALLA FÍSICA
 
-   YA NO CREA UN VIDEO.
+   El vídeo NO está acá.
 
-   BUSCA EL VIDEO HTML REAL DE WorldScene
-   Y CREA LA TEXTURA CON ESE MISMO ELEMENTO.
+   El iframe YouTube real vive en
+   YouTubeScreen3D.jsx y ocupa exactamente
+   estas mismas coordenadas.
 ========================================================= */
 
 function HeroVideoWall() {
   const groupRef =
-    useRef(null);
-
-  const screenRef =
-    useRef(null);
-
-  const youtubeOverlayRef =
-    useRef(null);
-
-  const youtubePlayerRef =
-    useRef(null);
-
-  const videoRef =
-    useRef(null);
-
-  const videoTextureRef =
     useRef(null);
 
   const nearRef =
@@ -1645,81 +1568,16 @@ function HeroVideoWall() {
   const worldPosition =
     useMemo(
       () =>
-        new THREE.Vector3(),
+        new THREE
+          .Vector3(),
       []
     );
-
-  const screenCorners =
-    useMemo(
-      () => [
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-      ],
-      []
-    );
-
-  const screenCenter =
-    useMemo(
-      () =>
-        new THREE.Vector3(),
-      []
-    );
-
-  const {
-    camera,
-    size,
-  } =
-    useThree();
 
   const [
     near,
     setNear,
   ] =
     useState(false);
-
-  const [
-    playing,
-    setPlaying,
-  ] =
-    useState(false);
-
-  const [
-    started,
-    setStarted,
-  ] =
-    useState(false);
-
-  const [
-    ready,
-    setReady,
-  ] =
-    useState(false);
-
-  const [
-    error,
-    setError,
-  ] =
-    useState(false);
-
-  const [
-    currentTime,
-    setCurrentTime,
-  ] =
-    useState(0);
-
-  const [
-    duration,
-    setDuration,
-  ] =
-    useState(0);
-
-  const [
-    youtubeMountEl,
-    setYoutubeMountEl,
-  ] =
-    useState(null);
 
   const previewTexture =
     useMemo(
@@ -1728,1263 +1586,17 @@ function HeroVideoWall() {
       []
     );
 
-  const isYouTube =
-    FEATURED_VIDEO.sourceType ===
-    "youtube";
-
-  const youtubeId =
-    useMemo(
+  useEffect(
+    () =>
       () =>
-        getYouTubeId(
-          FEATURED_VIDEO.videoUrl
-        ),
-      []
-    );
-
-  const formatTime =
-    (
-      value
-    ) => {
-      const safe =
-        Number.isFinite(
-          value
-        )
-          ? Math.max(
-              0,
-              Math.floor(
-                value
-              )
-            )
-          : 0;
-
-      const minutes =
-        Math.floor(
-          safe / 60
-        );
-
-      const seconds =
-        safe % 60;
-
-      return `${minutes}:${String(
-        seconds
-      ).padStart(
-        2,
-        "0"
-      )}`;
-    };
-
-  const solvePerspective =
-    (
-      destination
-    ) => {
-      const source = [
-        [
-          0,
-          0,
-        ],
-        [
-          1280,
-          0,
-        ],
-        [
-          1280,
-          720,
-        ],
-        [
-          0,
-          720,
-        ],
-      ];
-
-      const matrix =
-        [];
-
-      for (
-        let index = 0;
-        index < 4;
-        index += 1
-      ) {
-        const [
-          x,
-          y,
-        ] =
-          source[
-            index
-          ];
-
-        const [
-          u,
-          v,
-        ] =
-          destination[
-            index
-          ];
-
-        matrix.push([
-          x,
-          y,
-          1,
-          0,
-          0,
-          0,
-          -u * x,
-          -u * y,
-          u,
-        ]);
-
-        matrix.push([
-          0,
-          0,
-          0,
-          x,
-          y,
-          1,
-          -v * x,
-          -v * y,
-          v,
-        ]);
-      }
-
-      for (
-        let column = 0;
-        column < 8;
-        column += 1
-      ) {
-        let pivot =
-          column;
-
-        for (
-          let row =
-            column + 1;
-          row < 8;
-          row += 1
-        ) {
-          if (
-            Math.abs(
-              matrix[row][column]
-            ) >
-            Math.abs(
-              matrix[pivot][column]
-            )
-          ) {
-            pivot =
-              row;
-          }
-        }
-
-        if (
-          Math.abs(
-            matrix[pivot][column]
-          ) <
-          1e-8
-        ) {
-          return null;
-        }
-
-        if (
-          pivot !==
-          column
-        ) {
-          const temp =
-            matrix[column];
-
-          matrix[column] =
-            matrix[pivot];
-
-          matrix[pivot] =
-            temp;
-        }
-
-        const divisor =
-          matrix[column][column];
-
-        for (
-          let col =
-            column;
-          col < 9;
-          col += 1
-        ) {
-          matrix[column][col] /=
-            divisor;
-        }
-
-        for (
-          let row = 0;
-          row < 8;
-          row += 1
-        ) {
-          if (
-            row ===
-            column
-          ) {
-            continue;
-          }
-
-          const factor =
-            matrix[row][column];
-
-          for (
-            let col =
-              column;
-            col < 9;
-            col += 1
-          ) {
-            matrix[row][col] -=
-              factor *
-              matrix[column][col];
-          }
-        }
-      }
-
-      const values =
-        matrix.map(
-          (
-            row
-          ) =>
-            row[8]
-        );
-
-      const [
-        a,
-        b,
-        c,
-        d,
-        e,
-        f,
-        g,
-        h,
-      ] =
-        values;
-
-      return `matrix3d(${[
-        a,
-        d,
-        0,
-        g,
-
-        b,
-        e,
-        0,
-        h,
-
-        0,
-        0,
-        1,
-        0,
-
-        c,
-        f,
-        0,
-        1,
-      ].join(
-        ","
-      )})`;
-    };
-
-  const publishYouTubeState =
-    (
-      isPlaying,
-      ended = false
-    ) => {
-      setPlaying(
-        isPlaying
-      );
-
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:youtube-state",
-          {
-            detail: {
-              playing:
-                isPlaying,
-
-              ended,
-            },
-          }
-        )
-      );
-    };
-
-  const playYouTube =
-    () => {
-      const player =
-        youtubePlayerRef.current;
-
-      if (!player) {
-        return;
-      }
-
-      setStarted(
-        true
-      );
-
-      publishYouTubeState(
-        true
-      );
-
-      try {
-        player.playVideo();
-      } catch {
-        publishYouTubeState(
-          false
-        );
-      }
-    };
-
-  const pauseYouTube =
-    () => {
-      const player =
-        youtubePlayerRef.current;
-
-      if (!player) {
-        return;
-      }
-
-      try {
-        player.pauseVideo();
-      } catch {
-        // nada
-      }
-
-      publishYouTubeState(
-        false
-      );
-    };
-
-  const seekYouTubeBy =
-    (
-      seconds
-    ) => {
-      const player =
-        youtubePlayerRef.current;
-
-      if (!player) {
-        return;
-      }
-
-      try {
-        const now =
-          player.getCurrentTime?.() ??
-          0;
-
-        const total =
-          player.getDuration?.() ??
-          0;
-
-        const next =
-          Math.max(
-            0,
-            total > 0
-              ? Math.min(
-                  total,
-                  now +
-                    seconds
-                )
-              : now +
-                seconds
-          );
-
-        player.seekTo(
-          next,
-          true
-        );
-
-        setCurrentTime(
-          next
-        );
-      } catch {
-        // nada
-      }
-    };
-
-  const seekYouTubeTo =
-    (
-      value
-    ) => {
-      const player =
-        youtubePlayerRef.current;
-
-      if (!player) {
-        return;
-      }
-
-      const next =
-        Number(
-          value
-        );
-
-      if (
-        !Number.isFinite(
-          next
-        )
-      ) {
-        return;
-      }
-
-      try {
-        player.seekTo(
-          next,
-          true
-        );
-
-        setCurrentTime(
-          next
-        );
-      } catch {
-        // nada
-      }
-    };
-
-  /* =======================================================
-     VIDEO LOCAL
-  ======================================================= */
-
-  useEffect(() => {
-    if (isYouTube) {
-      return;
-    }
-
-    const video =
-      document.getElementById(
-        "freaky-featured-video"
-      );
-
-    if (
-      !video ||
-      !(
-        video instanceof
-        HTMLVideoElement
-      )
-    ) {
-      setError(
-        true
-      );
-
-      return;
-    }
-
-    videoRef.current =
-      video;
-
-    const texture =
-      new THREE.VideoTexture(
-        video
-      );
-
-    texture.colorSpace =
-      THREE.SRGBColorSpace;
-
-    texture.minFilter =
-      THREE.LinearFilter;
-
-    texture.magFilter =
-      THREE.LinearFilter;
-
-    texture.generateMipmaps =
-      false;
-
-    videoTextureRef.current =
-      texture;
-
-    const showVideo =
-      () => {
-        if (
-          screenRef.current
-        ) {
-          screenRef.current
-            .material.map =
-            texture;
-
-          screenRef.current
-            .material
-            .needsUpdate =
-            true;
-        }
-
-        setPlaying(
-          true
-        );
-
-        setError(
-          false
-        );
-      };
-
-    const showPreview =
-      () => {
-        if (
-          screenRef.current
-        ) {
-          screenRef.current
-            .material.map =
-            previewTexture;
-
-          screenRef.current
-            .material
-            .needsUpdate =
-            true;
-        }
-
-        setPlaying(
-          false
-        );
-      };
-
-    const handleCanPlay =
-      () => {
-        setReady(
-          true
-        );
-      };
-
-    const handlePlay =
-      () => {
-        showVideo();
-      };
-
-    const handlePlaying =
-      () => {
-        showVideo();
-      };
-
-    const handlePause =
-      () => {
-        showPreview();
-      };
-
-    const handleEnded =
-      () => {
-        showPreview();
-      };
-
-    const handleError =
-      () => {
-        showPreview();
-
-        setError(
-          true
-        );
-      };
-
-    video.addEventListener(
-      "canplay",
-      handleCanPlay
-    );
-
-    video.addEventListener(
-      "loadeddata",
-      handleCanPlay
-    );
-
-    video.addEventListener(
-      "play",
-      handlePlay
-    );
-
-    video.addEventListener(
-      "playing",
-      handlePlaying
-    );
-
-    video.addEventListener(
-      "pause",
-      handlePause
-    );
-
-    video.addEventListener(
-      "ended",
-      handleEnded
-    );
-
-    video.addEventListener(
-      "error",
-      handleError
-    );
-
-    if (
-      video.readyState >=
-      3
-    ) {
-      setReady(
-        true
-      );
-    }
-
-    if (
-      !video.paused &&
-      !video.ended
-    ) {
-      showVideo();
-    }
-
-    return () => {
-      video.removeEventListener(
-        "canplay",
-        handleCanPlay
-      );
-
-      video.removeEventListener(
-        "loadeddata",
-        handleCanPlay
-      );
-
-      video.removeEventListener(
-        "play",
-        handlePlay
-      );
-
-      video.removeEventListener(
-        "playing",
-        handlePlaying
-      );
-
-      video.removeEventListener(
-        "pause",
-        handlePause
-      );
-
-      video.removeEventListener(
-        "ended",
-        handleEnded
-      );
-
-      video.removeEventListener(
-        "error",
-        handleError
-      );
-
-      texture.dispose();
-
-      videoTextureRef.current =
-        null;
-
-      videoRef.current =
-        null;
-    };
-  }, [
-    isYouTube,
-    previewTexture,
-  ]);
-
-  /* =======================================================
-     YOUTUBE PLAYER
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !isYouTube ||
-      !youtubeId ||
-      !youtubeMountEl
-    ) {
-      return;
-    }
-
-    let cancelled =
-      false;
-
-    let commandHandler =
-      null;
-
-    let waitForApi =
-      null;
-
-    const createPlayer =
-      () => {
-        if (
-          cancelled ||
-          !window.YT?.Player ||
-          youtubePlayerRef.current ||
-          !youtubeMountEl
-        ) {
-          return;
-        }
-
-        try {
-          youtubePlayerRef.current =
-            new window.YT.Player(
-              youtubeMountEl,
-              {
-                videoId:
-                  youtubeId,
-
-                width:
-                  "1280",
-
-                height:
-                  "720",
-
-                playerVars: {
-                  autoplay:
-                    0,
-
-                  controls:
-                    0,
-
-                  playsinline:
-                    1,
-
-                  rel:
-                    0,
-
-                  modestbranding:
-                    1,
-
-                  fs:
-                    0,
-
-                  iv_load_policy:
-                    3,
-                },
-
-                events: {
-                  onReady:
-                    (
-                      event
-                    ) => {
-                      if (
-                        cancelled
-                      ) {
-                        return;
-                      }
-
-                      setReady(
-                        true
-                      );
-
-                      setError(
-                        false
-                      );
-
-                      try {
-                        const total =
-                          event.target
-                            .getDuration?.();
-
-                        if (
-                          Number.isFinite(
-                            total
-                          )
-                        ) {
-                          setDuration(
-                            total
-                          );
-                        }
-
-                        const iframe =
-                          event.target
-                            .getIframe();
-
-                        iframe.style.width =
-                          "100%";
-
-                        iframe.style.height =
-                          "100%";
-
-                        iframe.style.display =
-                          "block";
-
-                        iframe.style.border =
-                          "0";
-
-                        iframe.style.pointerEvents =
-                          "none";
-                      } catch {
-                        // nada
-                      }
-                    },
-
-                  onStateChange:
-                    (
-                      event
-                    ) => {
-                      if (
-                        cancelled
-                      ) {
-                        return;
-                      }
-
-                      const state =
-                        event.data;
-
-                      if (
-                        state ===
-                        window.YT.PlayerState.PLAYING
-                      ) {
-                        setStarted(
-                          true
-                        );
-
-                        setReady(
-                          true
-                        );
-
-                        setError(
-                          false
-                        );
-
-                        publishYouTubeState(
-                          true
-                        );
-
-                        return;
-                      }
-
-                      if (
-                        state ===
-                        window.YT.PlayerState.ENDED
-                      ) {
-                        try {
-                          event.target.seekTo(
-                            0,
-                            true
-                          );
-
-                          event.target.pauseVideo();
-                        } catch {
-                          // nada
-                        }
-
-                        setCurrentTime(
-                          0
-                        );
-
-                        setStarted(
-                          false
-                        );
-
-                        publishYouTubeState(
-                          false,
-                          true
-                        );
-
-                        return;
-                      }
-
-                      if (
-                        state ===
-                          window.YT.PlayerState.PAUSED ||
-                        state ===
-                          window.YT.PlayerState.CUED
-                      ) {
-                        publishYouTubeState(
-                          false
-                        );
-                      }
-                    },
-
-                  onError:
-                    () => {
-                      if (
-                        cancelled
-                      ) {
-                        return;
-                      }
-
-                      setError(
-                        true
-                      );
-
-                      publishYouTubeState(
-                        false
-                      );
-                    },
-                },
-              }
-            );
-        } catch (
-          playerError
-        ) {
-          console.error(
-            "FREAKY YOUTUBE PLAYER ERROR:",
-            playerError
-          );
-
-          setError(
-            true
-          );
-        }
-      };
-
-    commandHandler =
-      (
-        event
-      ) => {
-        const command =
-          event.detail
-            ?.command;
-
-        if (
-          command ===
-          "play"
-        ) {
-          const player =
-            youtubePlayerRef.current;
-
-          if (!player) {
-            return;
-          }
-
-          setStarted(
-            true
-          );
-
-          publishYouTubeState(
-            true
-          );
-
-          try {
-            player.playVideo();
-          } catch {
-            publishYouTubeState(
-              false
-            );
-
-            setError(
-              true
-            );
-          }
-
-          return;
-        }
-
-        if (
-          command ===
-          "stop"
-        ) {
-          const player =
-            youtubePlayerRef.current;
-
-          if (!player) {
-            return;
-          }
-
-          try {
-            player.pauseVideo();
-          } catch {
-            // nada
-          }
-
-          publishYouTubeState(
-            false
-          );
-        }
-      };
-
-    window.addEventListener(
-      "freaky:youtube-command",
-      commandHandler
-    );
-
-    if (
-      window.YT?.Player
-    ) {
-      createPlayer();
-    } else {
-      const scriptId =
-        "youtube-iframe-api";
-
-      let script =
-        document.getElementById(
-          scriptId
-        );
-
-      const previousReady =
-        window.onYouTubeIframeAPIReady;
-
-      window.onYouTubeIframeAPIReady =
-        () => {
-          if (
-            typeof previousReady ===
-            "function"
-          ) {
-            try {
-              previousReady();
-            } catch {
-              // nada
-            }
-          }
-
-          createPlayer();
-        };
-
-      if (!script) {
-        script =
-          document.createElement(
-            "script"
-          );
-
-        script.id =
-          scriptId;
-
-        script.src =
-          "https://www.youtube.com/iframe_api";
-
-        script.async =
-          true;
-
-        document.head.appendChild(
-          script
-        );
-      }
-
-      waitForApi =
-        window.setInterval(
-          () => {
-            if (
-              window.YT
-                ?.Player
-            ) {
-              window.clearInterval(
-                waitForApi
-              );
-
-              waitForApi =
-                null;
-
-              createPlayer();
-            }
-          },
-          100
-        );
-    }
-
-    return () => {
-      cancelled =
-        true;
-
-      if (
-        waitForApi
-      ) {
-        window.clearInterval(
-          waitForApi
-        );
-      }
-
-      if (
-        commandHandler
-      ) {
-        window.removeEventListener(
-          "freaky:youtube-command",
-          commandHandler
-        );
-      }
-
-      try {
-        youtubePlayerRef.current
-          ?.destroy?.();
-      } catch {
-        // nada
-      }
-
-      youtubePlayerRef.current =
-        null;
-    };
-  }, [
-    isYouTube,
-    youtubeId,
-    youtubeMountEl,
-  ]);
-
-  /* =======================================================
-     TIEMPO / BARRA
-  ======================================================= */
-
-  useEffect(() => {
-    if (!isYouTube) {
-      return;
-    }
-
-    const timer =
-      window.setInterval(
-        () => {
-          const player =
-            youtubePlayerRef.current;
-
-          if (!player) {
-            return;
-          }
-
-          try {
-            const now =
-              player.getCurrentTime?.();
-
-            const total =
-              player.getDuration?.();
-
-            if (
-              Number.isFinite(
-                now
-              )
-            ) {
-              setCurrentTime(
-                now
-              );
-            }
-
-            if (
-              Number.isFinite(
-                total
-              ) &&
-              total > 0
-            ) {
-              setDuration(
-                total
-              );
-            }
-          } catch {
-            // nada
-          }
-        },
-        300
-      );
-
-    return () => {
-      window.clearInterval(
-        timer
-      );
-    };
-  }, [
-    isYouTube,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      previewTexture.dispose();
-    };
-  }, [
-    previewTexture,
-  ]);
-
-  /* =======================================================
-     FRAME
-  ======================================================= */
+        previewTexture
+          .dispose(),
+    [
+      previewTexture,
+    ]
+  );
 
   useFrame(() => {
-    if (
-      groupRef.current &&
-      isYouTube &&
-      youtubeOverlayRef.current
-    ) {
-      const halfW =
-        22.5 /
-        2;
-
-      const halfH =
-        12.65 /
-        2;
-
-      const localZ =
-        0.37;
-
-      screenCorners[0].set(
-        -halfW,
-        7.2 + halfH,
-        localZ
-      );
-
-      screenCorners[1].set(
-        halfW,
-        7.2 + halfH,
-        localZ
-      );
-
-      screenCorners[2].set(
-        halfW,
-        7.2 - halfH,
-        localZ
-      );
-
-      screenCorners[3].set(
-        -halfW,
-        7.2 - halfH,
-        localZ
-      );
-
-      const destination =
-        [];
-
-      for (
-        let index = 0;
-        index <
-        screenCorners.length;
-        index += 1
-      ) {
-        const point =
-          screenCorners[
-            index
-          ];
-
-        groupRef.current
-          .localToWorld(
-            point
-          );
-
-        point.project(
-          camera
-        );
-
-        destination.push([
-          (
-            point.x *
-              0.5 +
-            0.5
-          ) *
-            size.width,
-
-          (
-            -point.y *
-              0.5 +
-            0.5
-          ) *
-            size.height,
-        ]);
-      }
-
-      screenCenter.set(
-        0,
-        7.2,
-        localZ
-      );
-
-      groupRef.current
-        .localToWorld(
-          screenCenter
-        );
-
-      screenCenter.project(
-        camera
-      );
-
-      const transform =
-        solvePerspective(
-          destination
-        );
-
-      const overlay =
-        youtubeOverlayRef.current;
-
-      const visible =
-        started &&
-        transform &&
-        screenCenter.z >
-          -1 &&
-        screenCenter.z <
-          1;
-
-      overlay.style.display =
-        visible
-          ? "block"
-          : "none";
-
-      if (
-        visible &&
-        transform
-      ) {
-        overlay.style.transform =
-          transform;
-      }
-    }
-
     if (
       !groupRef.current ||
       !playerRuntime.body
@@ -3011,8 +1623,10 @@ function HeroVideoWall() {
 
     const distance =
       Math.sqrt(
-        dx * dx +
-        dz * dz
+        dx *
+          dx +
+        dz *
+          dz
       );
 
     const isNear =
@@ -3056,22 +1670,6 @@ function HeroVideoWall() {
         }
       )
     );
-
-    if (
-      isNear &&
-      isYouTube
-    ) {
-      window.dispatchEvent(
-        new CustomEvent(
-          "freaky:youtube-state",
-          {
-            detail: {
-              playing,
-            },
-          }
-        )
-      );
-    }
   });
 
   return (
@@ -3106,26 +1704,19 @@ function HeroVideoWall() {
         <meshStandardMaterial
           color="#070b10"
           emissive={
-            error
-              ? "#ff2020"
-              : playing
-                ? "#35ff7d"
-                : near
-                  ? "#58f1ff"
-                  : "#8b5cff"
+            near
+              ? "#58f1ff"
+              : "#8b5cff"
           }
           emissiveIntensity={
-            playing
-              ? 0.22
+            near
+              ? 0.18
               : 0.08
           }
         />
       </RoundedBox>
 
       <mesh
-        ref={
-          screenRef
-        }
         position={[
           0,
           7.2,
@@ -3152,325 +1743,6 @@ function HeroVideoWall() {
         />
       </mesh>
 
-      {isYouTube &&
-        youtubeId && (
-          <Html
-            fullscreen
-            zIndexRange={[
-              30,
-              0,
-            ]}
-            style={{
-              pointerEvents:
-                "none",
-            }}
-          >
-            <div
-              ref={
-                youtubeOverlayRef
-              }
-              style={{
-                position:
-                  "absolute",
-
-                left:
-                  0,
-
-                top:
-                  0,
-
-                width:
-                  "1280px",
-
-                height:
-                  "720px",
-
-                display:
-                  "none",
-
-                transformOrigin:
-                  "0 0",
-
-                overflow:
-                  "hidden",
-
-                background:
-                  "#000",
-
-                pointerEvents:
-                  "none",
-
-                willChange:
-                  "transform",
-              }}
-            >
-              <div
-                ref={
-                  setYoutubeMountEl
-                }
-                style={{
-                  position:
-                    "absolute",
-
-                  inset:
-                    0,
-
-                  width:
-                    "100%",
-
-                  height:
-                    "100%",
-
-                  pointerEvents:
-                    "none",
-                }}
-              />
-
-              {near && (
-                <div
-                  style={{
-                    position:
-                      "absolute",
-
-                    left:
-                      "28px",
-
-                    right:
-                      "28px",
-
-                    bottom:
-                      "24px",
-
-                    padding:
-                      "18px 20px",
-
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
-                    gap:
-                      "14px",
-
-                    borderRadius:
-                      "16px",
-
-                    background:
-                      "rgba(5,8,12,.78)",
-
-                    backdropFilter:
-                      "blur(12px)",
-
-                    WebkitBackdropFilter:
-                      "blur(12px)",
-
-                    border:
-                      "1px solid rgba(255,255,255,.18)",
-
-                    pointerEvents:
-                      "auto",
-                  }}
-                  onPointerDown={
-                    (
-                      event
-                    ) => {
-                      event.stopPropagation();
-                    }
-                  }
-                  onClick={
-                    (
-                      event
-                    ) => {
-                      event.stopPropagation();
-                    }
-                  }
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      seekYouTubeBy(
-                        -10
-                      )
-                    }
-                    style={{
-                      height:
-                        "46px",
-
-                      padding:
-                        "0 16px",
-
-                      border:
-                        "1px solid rgba(255,255,255,.2)",
-
-                      borderRadius:
-                        "12px",
-
-                      background:
-                        "rgba(255,255,255,.08)",
-
-                      color:
-                        "#fff",
-
-                      fontWeight:
-                        800,
-                    }}
-                  >
-                    â10 s
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        playing
-                      ) {
-                        pauseYouTube();
-                      } else {
-                        playYouTube();
-                      }
-                    }}
-                    style={{
-                      height:
-                        "46px",
-
-                      minWidth:
-                        "150px",
-
-                      padding:
-                        "0 18px",
-
-                      border:
-                        "1px solid rgba(255,255,255,.25)",
-
-                      borderRadius:
-                        "12px",
-
-                      background:
-                        playing
-                          ? "rgba(145,20,35,.94)"
-                          : "rgba(18,90,105,.94)",
-
-                      color:
-                        "#fff",
-
-                      fontWeight:
-                        900,
-                    }}
-                  >
-                    {playing
-                      ? "ââ Pausar"
-                      : "â¶ Reproducir"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      seekYouTubeBy(
-                        10
-                      )
-                    }
-                    style={{
-                      height:
-                        "46px",
-
-                      padding:
-                        "0 16px",
-
-                      border:
-                        "1px solid rgba(255,255,255,.2)",
-
-                      borderRadius:
-                        "12px",
-
-                      background:
-                        "rgba(255,255,255,.08)",
-
-                      color:
-                        "#fff",
-
-                      fontWeight:
-                        800,
-                    }}
-                  >
-                    +10 s
-                  </button>
-
-                  <input
-                    type="range"
-                    min="0"
-                    max={
-                      duration >
-                      0
-                        ? duration
-                        : 1
-                    }
-                    step="0.1"
-                    value={
-                      Math.min(
-                        currentTime,
-                        duration >
-                          0
-                          ? duration
-                          : 1
-                      )
-                    }
-                    onChange={
-                      (
-                        event
-                      ) =>
-                        seekYouTubeTo(
-                          event.target
-                            .value
-                        )
-                    }
-                    style={{
-                      flex:
-                        "1 1 auto",
-
-                      minWidth:
-                        "180px",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      minWidth:
-                        "112px",
-
-                      textAlign:
-                        "right",
-
-                      color:
-                        "#fff",
-
-                      fontSize:
-                        "18px",
-
-                      fontWeight:
-                        800,
-
-                      fontVariantNumeric:
-                        "tabular-nums",
-
-                      whiteSpace:
-                        "nowrap",
-                    }}
-                  >
-                    {formatTime(
-                      currentTime
-                    )}
-                    {" / "}
-                    {formatTime(
-                      duration
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </Html>
-        )}
-
       <NeonLine
         position={[
           0,
@@ -3482,11 +1754,7 @@ function HeroVideoWall() {
           0.1,
           0.08,
         ]}
-        color={
-          playing
-            ? "#35ff7d"
-            : "#58f1ff"
-        }
+        color="#58f1ff"
       />
 
       <NeonLine
@@ -3500,40 +1768,8 @@ function HeroVideoWall() {
           0.1,
           0.08,
         ]}
-        color={
-          error
-            ? "#ff2020"
-            : "#ff4f95"
-        }
+        color="#ff4f95"
       />
-
-      <mesh
-        position={[
-          -11.15,
-          13,
-          0.4,
-        ]}
-      >
-        <sphereGeometry
-          args={[
-            0.18,
-            16,
-            16,
-          ]}
-        />
-
-        <meshBasicMaterial
-          color={
-            error
-              ? "#ff0000"
-              : playing
-                ? "#00ff62"
-                : ready
-                  ? "#00dfff"
-                  : "#ffc400"
-          }
-        />
-      </mesh>
 
       {near && (
         <pointLight
@@ -3542,15 +1778,9 @@ function HeroVideoWall() {
             7,
             3,
           ]}
-          color={
-            playing
-              ? "#35ff7d"
-              : "#58f1ff"
-          }
+          color="#58f1ff"
           intensity={
-            playing
-              ? 16
-              : 8
+            8
           }
           distance={
             18
@@ -3893,11 +2123,11 @@ export default function PopularTodayHall() {
         items={
           ceilingLights
         }
-        color="#ffffff"
+        color="#fff"
         roughness={
           0.1
         }
-        emissive="#ffffff"
+        emissive="#fff"
         emissiveIntensity={
           1.6
         }
@@ -3929,7 +2159,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
         width={
@@ -3950,7 +2181,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          -Math.PI / 2,
+          -Math.PI /
+            2,
           0,
         ]}
         width={
@@ -3971,7 +2203,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
         width={
@@ -3991,7 +2224,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
         size={
@@ -4008,7 +2242,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          -Math.PI / 2,
+          -Math.PI /
+            2,
           0,
         ]}
         size={
@@ -4024,7 +2259,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
         size={[
@@ -4043,7 +2279,8 @@ export default function PopularTodayHall() {
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          Math.PI /
+            2,
           0,
         ]}
         size={[
@@ -4108,35 +2345,36 @@ export default function PopularTodayHall() {
         }
       />
 
-      {stationLayout.map(
-        (
-          station
-        ) => (
-          <GameStation
-            key={
-              station
-                .game
-                .id
-            }
-            game={
-              station
-                .game
-            }
-            position={
-              station
-                .position
-            }
-            rotation={
-              station
-                .rotation
-            }
-            scale={
-              station
-                .scale
-            }
-          />
-        )
-      )}
+      {stationLayout
+        .map(
+          (
+            station
+          ) => (
+            <GameStation
+              key={
+                station
+                  .game
+                  .id
+              }
+              game={
+                station
+                  .game
+              }
+              position={
+                station
+                  .position
+              }
+              rotation={
+                station
+                  .rotation
+              }
+              scale={
+                station
+                  .scale
+              }
+            />
+          )
+        )}
 
       <HeroVideoWall />
 
@@ -4146,47 +2384,48 @@ export default function PopularTodayHall() {
           false
         }
       >
-        {stationLayout.map(
-          (
-            station
-          ) => (
-            <CuboidCollider
-              key={
-                station
-                  .game
-                  .id
-              }
-              args={[
-                1.9 *
+        {stationLayout
+          .map(
+            (
+              station
+            ) => (
+              <CuboidCollider
+                key={
                   station
-                    .scale,
+                    .game
+                    .id
+                }
+                args={[
+                  1.9 *
+                    station
+                      .scale,
 
-                0.42,
+                  0.42,
 
-                0.8 *
+                  0.8 *
+                    station
+                      .scale,
+                ]}
+                position={[
                   station
-                    .scale,
-              ]}
-              position={[
-                station
-                  .position[0],
+                    .position[0],
 
-                0.8,
+                  0.8,
 
-                station
-                  .position[2],
-              ]}
-              rotation={[
-                0,
+                  station
+                    .position[2],
+                ]}
+                rotation={[
+                  0,
 
-                station
-                  .rotation,
+                  station
+                    .rotation,
 
-                0,
-              ]}
-            />
-          )
-        )}
+                  0,
+                ]}
+              />
+            )
+          )}
       </RigidBody>
     </group>
   );
