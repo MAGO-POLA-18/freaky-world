@@ -9,8 +9,13 @@ import {
   useState,
 } from "react";
 
-import { RoundedBox } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import {
+  RoundedBox,
+} from "@react-three/drei";
+
+import {
+  useFrame,
+} from "@react-three/fiber";
 
 import {
   RigidBody,
@@ -24,159 +29,172 @@ import {
 } from "../World/PlayerController";
 
 /* =========================================================
-   CONFIG
+   FREAKY WORLD
+   POPULARES HOY — PREMIUM GALLERY
+
+   IMPORTANTE:
+   DpadWing tiene su propio suelo cuya cara superior está
+   aproximadamente en Y = 0.30.
+
+   Por eso toda la terminación visual de esta sala comienza
+   POR ENCIMA de Y = 0.30.
 ========================================================= */
 
-const ROOM_HALF_WIDTH = 29.25;
 const ROOM_BACK_Z = -34.25;
+const FINISHED_FLOOR_Y = 0.315;
 
 /* =========================================================
    JUEGOS TEMPORALES
 
-   Después reemplazaremos esto por IGDB.
+   Después estos datos vendrán de IGDB.
 ========================================================= */
 
 const GAMES = [
   {
-    id: "mock-last-signal",
-    mock: true,
+    id: "last-signal",
     rank: 1,
     title: "THE LAST SIGNAL",
     subtitle: "Silent Peak",
     year: "2026",
-    platform: "PS5 · Xbox · PC",
+    platform: "PS5 · XBOX · PC",
     score: "9.4",
-    accent: "#d66cff",
-    accent2: "#55206f",
+    trend: "▲ 4 PUESTOS",
+    accent: "#d95cff",
+    accentDark: "#421653",
   },
   {
-    id: "mock-void-runner",
-    mock: true,
+    id: "void-runner",
     rank: 2,
     title: "VOID RUNNER",
     subtitle: "Pulse Works",
     year: "2026",
     platform: "PS5 · PC",
     score: "9.2",
-    accent: "#3d8cff",
-    accent2: "#173f83",
+    trend: "▲ 2 PUESTOS",
+    accent: "#29d9ff",
+    accentDark: "#0a4555",
   },
   {
-    id: "mock-red-horizon",
-    mock: true,
+    id: "red-horizon",
     rank: 3,
     title: "RED HORIZON",
     subtitle: "Atlas Interactive",
     year: "2026",
-    platform: "PS5 · Xbox · PC",
+    platform: "PS5 · XBOX · PC",
     score: "9.0",
-    accent: "#ff5a3d",
-    accent2: "#7a241a",
+    trend: "NUEVO",
+    accent: "#ff6947",
+    accentDark: "#5e1e12",
   },
   {
-    id: "mock-deep-blue",
-    mock: true,
+    id: "deep-blue",
     rank: 4,
     title: "DEEP BLUE",
     subtitle: "Drift Studios",
     year: "2026",
-    platform: "PS5 · Xbox",
+    platform: "PS5 · XBOX",
     score: "8.9",
-    accent: "#35d8ff",
-    accent2: "#14516c",
+    trend: "▲ 1 PUESTO",
+    accent: "#3f8cff",
+    accentDark: "#102b59",
   },
   {
-    id: "mock-lumina",
-    mock: true,
+    id: "lumina",
     rank: 5,
     title: "LUMINA",
     subtitle: "Small Moon",
     year: "2026",
-    platform: "Switch 2",
+    platform: "SWITCH 2",
     score: "8.8",
-    accent: "#ef64ff",
-    accent2: "#673071",
+    trend: "● ESTABLE",
+    accent: "#c957ff",
+    accentDark: "#3d1554",
   },
   {
-    id: "mock-echoes",
-    mock: true,
+    id: "echoes",
     rank: 6,
     title: "ECHOES",
     subtitle: "North Shore Games",
     year: "2026",
     platform: "PS5 · PC",
     score: "8.7",
-    accent: "#65e59d",
-    accent2: "#225d3d",
+    trend: "▲ 3 PUESTOS",
+    accent: "#42e8a1",
+    accentDark: "#0c4e35",
   },
   {
-    id: "mock-black-sun",
-    mock: true,
+    id: "black-sun",
     rank: 7,
     title: "BLACK SUN",
     subtitle: "Orbital Games",
     year: "2026",
     platform: "PC",
     score: "8.6",
-    accent: "#ff8848",
-    accent2: "#73351d",
+    trend: "NUEVO",
+    accent: "#ffb03f",
+    accentDark: "#5d3810",
   },
   {
-    id: "mock-dust-road",
-    mock: true,
+    id: "dust-road",
     rank: 8,
     title: "DUST ROAD",
     subtitle: "Nomad Interactive",
     year: "2025",
-    platform: "Xbox · PC",
+    platform: "XBOX · PC",
     score: "8.5",
-    accent: "#ffad58",
-    accent2: "#74441d",
+    trend: "▼ 1 PUESTO",
+    accent: "#ff7647",
+    accentDark: "#572012",
   },
   {
-    id: "mock-neon-district",
-    mock: true,
+    id: "neon-district",
     rank: 9,
     title: "NEON DISTRICT",
     subtitle: "Nightfall Studios",
     year: "2027",
-    platform: "PS5 · Xbox · PC",
+    platform: "PS5 · XBOX · PC",
     score: "8.4",
-    accent: "#4fb6ff",
-    accent2: "#244b77",
+    trend: "▲ 5 PUESTOS",
+    accent: "#39bfff",
+    accentDark: "#10415a",
   },
   {
-    id: "mock-iron-kingdom",
-    mock: true,
+    id: "iron-kingdom",
     rank: 10,
     title: "IRON KINGDOM",
     subtitle: "Oak Forge",
     year: "2025",
-    platform: "Switch 2 · PC",
+    platform: "SWITCH 2 · PC",
     score: "8.3",
-    accent: "#ffc95b",
-    accent2: "#73571d",
+    trend: "● ESTABLE",
+    accent: "#f3ca57",
+    accentDark: "#544315",
   },
 ];
 
 /* =========================================================
-   TEXTURA PORTADA TEMPORAL
+   CANVAS — PORTADA TEMPORAL
 ========================================================= */
 
 function createPosterTexture(game) {
-  const canvas = document.createElement("canvas");
+  const canvas =
+    document.createElement("canvas");
 
-  canvas.width = 512;
-  canvas.height = 768;
+  canvas.width = 640;
+  canvas.height = 960;
 
-  const ctx = canvas.getContext("2d");
+  const ctx =
+    canvas.getContext("2d");
 
-  const gradient = ctx.createLinearGradient(
-    0,
-    0,
-    512,
-    768
-  );
+  /* fondo */
+
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      0,
+      640,
+      960
+    );
 
   gradient.addColorStop(
     0,
@@ -185,7 +203,7 @@ function createPosterTexture(game) {
 
   gradient.addColorStop(
     0.48,
-    game.accent2
+    game.accentDark
   );
 
   gradient.addColorStop(
@@ -198,13 +216,11 @@ function createPosterTexture(game) {
   ctx.fillRect(
     0,
     0,
-    512,
-    768
+    640,
+    960
   );
 
-  /* -----------------------------------------
-     FORMAS DE FONDO
-  ----------------------------------------- */
+  /* formas abstractas */
 
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = "#ffffff";
@@ -212,9 +228,9 @@ function createPosterTexture(game) {
   ctx.beginPath();
 
   ctx.arc(
-    385,
-    155,
-    155,
+    500,
+    180,
+    190,
     0,
     Math.PI * 2
   );
@@ -226,131 +242,175 @@ function createPosterTexture(game) {
   ctx.beginPath();
 
   ctx.arc(
-    90,
-    400,
-    210,
+    100,
+    520,
+    250,
     0,
     Math.PI * 2
   );
 
   ctx.fill();
 
-  ctx.globalAlpha = 1;
-
-  /* -----------------------------------------
-     RANKING
-  ----------------------------------------- */
-
-  ctx.fillStyle =
-    "rgba(0,0,0,0.48)";
+  ctx.globalAlpha = 0.08;
 
   ctx.fillRect(
-    24,
-    24,
-    105,
-    62
+    0,
+    360,
+    640,
+    5
+  );
+
+  ctx.fillRect(
+    0,
+    375,
+    640,
+    2
+  );
+
+  ctx.globalAlpha = 1;
+
+  /* número */
+
+  ctx.fillStyle =
+    "rgba(4,5,8,0.72)";
+
+  ctx.fillRect(
+    28,
+    28,
+    122,
+    72
+  );
+
+  ctx.strokeStyle =
+    "rgba(255,255,255,0.35)";
+
+  ctx.lineWidth = 2;
+
+  ctx.strokeRect(
+    28,
+    28,
+    122,
+    72
   );
 
   ctx.fillStyle = "#ffffff";
 
   ctx.font =
-    "900 34px Arial";
+    "900 39px Arial";
 
   ctx.fillText(
     `#${game.rank}`,
-    42,
-    67
+    50,
+    78
   );
 
-  /* -----------------------------------------
-     TÍTULO
-  ----------------------------------------- */
+  /* puntuación */
+
+  ctx.textAlign = "right";
 
   ctx.font =
-    "900 45px Arial";
+    "900 36px Arial";
+
+  ctx.fillText(
+    game.score,
+    600,
+    76
+  );
+
+  ctx.textAlign = "left";
+
+  /* título */
+
+  ctx.font =
+    "900 52px Arial";
+
+  ctx.fillStyle = "#ffffff";
 
   const words =
     game.title.split(" ");
 
   let line = "";
-  let y = 575;
+  let y = 730;
 
   words.forEach((word) => {
-    const next =
+    const test =
       `${line}${word} `;
 
     if (
-      ctx.measureText(next).width >
-        450 &&
+      ctx.measureText(test).width >
+        570 &&
       line
     ) {
       ctx.fillText(
         line.trim(),
-        28,
+        34,
         y
       );
 
       line = `${word} `;
-      y += 52;
+      y += 58;
     } else {
-      line = next;
+      line = test;
     }
   });
 
   ctx.fillText(
     line.trim(),
-    28,
+    34,
     y
   );
 
-  /* -----------------------------------------
-     AÑO
-  ----------------------------------------- */
+  /* estudio */
 
   ctx.font =
-    "700 22px Arial";
+    "600 23px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.9)";
+    "rgba(255,255,255,0.68)";
 
   ctx.fillText(
-    game.year,
-    30,
-    680
+    game.subtitle,
+    35,
+    840
   );
 
-  /* -----------------------------------------
-     PLATAFORMAS
-  ----------------------------------------- */
-
-  ctx.font =
-    "600 17px Arial";
+  /* línea */
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.72)";
+    game.accent;
 
-  ctx.fillText(
-    game.platform,
-    30,
-    716
+  ctx.fillRect(
+    35,
+    868,
+    570,
+    4
   );
 
-  /* -----------------------------------------
-     SCORE
-  ----------------------------------------- */
+  /* plataformas */
 
   ctx.font =
-    "900 23px Arial";
+    "700 19px Arial";
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.78)";
+
+  ctx.fillText(
+    `${game.year}  ·  ${game.platform}`,
+    35,
+    910
+  );
+
+  /* tendencia */
+
+  ctx.textAlign = "right";
 
   ctx.fillStyle =
     "#ffffff";
 
-  ctx.textAlign = "right";
-
   ctx.fillText(
-    game.score,
-    475,
-    716
+    game.trend,
+    605,
+    910
   );
 
   ctx.textAlign = "left";
@@ -369,21 +429,19 @@ function createPosterTexture(game) {
   texture.magFilter =
     THREE.LinearFilter;
 
+  texture.anisotropy = 4;
+
   return texture;
 }
 
 /* =========================================================
-   TEXTURA DE TEXTO
+   CANVAS — TEXTO
 ========================================================= */
 
 function createTextTexture(
   text,
-  {
-    color = "#ffffff",
-    fontSize = 96,
-    weight = 900,
-    glow = null,
-  } = {}
+  color = "#ffffff",
+  glow = null
 ) {
   const canvas =
     document.createElement("canvas");
@@ -397,15 +455,15 @@ function createTextTexture(
   ctx.clearRect(
     0,
     0,
-    canvas.width,
-    canvas.height
+    1024,
+    256
   );
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
   ctx.font =
-    `${weight} ${fontSize}px Arial`;
+    "900 104px Arial";
 
   if (glow) {
     ctx.shadowColor = glow;
@@ -428,14 +486,11 @@ function createTextTexture(
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
-  texture.minFilter =
-    THREE.LinearFilter;
-
   return texture;
 }
 
 /* =========================================================
-   TEXTO 3D PLANO
+   TEXTO PLANO
 ========================================================= */
 
 function FlatText({
@@ -446,31 +501,25 @@ function FlatText({
   height = 2,
   color = "#ffffff",
   glow = null,
-  fontSize = 96,
 }) {
   const texture =
     useMemo(
       () =>
         createTextTexture(
           text,
-          {
-            color,
-            glow,
-            fontSize,
-          }
+          color,
+          glow
         ),
       [
         text,
         color,
         glow,
-        fontSize,
       ]
     );
 
   useEffect(() => {
-    return () => {
+    return () =>
       texture.dispose();
-    };
   }, [texture]);
 
   return (
@@ -490,24 +539,22 @@ function FlatText({
         transparent
         toneMapped={false}
         side={THREE.DoubleSide}
+        depthWrite={false}
       />
     </mesh>
   );
 }
 
 /* =========================================================
-   LUZ EMISIVA GEOMÉTRICA
-
-   No crea PointLight.
-   Es mucho más barata para móvil.
+   LED / NEÓN
 ========================================================= */
 
-function GlowStrip({
+function Led({
   position,
   rotation = [0, 0, 0],
-  size = [1, 0.05, 0.05],
+  size = [1, 0.06, 0.06],
   color = "#ffffff",
-  intensity = 1,
+  intensity = 2,
 }) {
   return (
     <mesh
@@ -525,25 +572,34 @@ function GlowStrip({
           intensity
         }
         toneMapped={false}
-        roughness={0.3}
+        roughness={0.18}
+        metalness={0.05}
       />
     </mesh>
   );
 }
 
 /* =========================================================
-   PANEL DE PARED
+   PANEL ARQUITECTÓNICO DE PARED
 ========================================================= */
 
-function WallPanel({
+function GalleryBay({
   side,
   z,
   accent,
 }) {
+  const left =
+    side === "left";
+
   const x =
-    side === "left"
-      ? -28.55
-      : 28.55;
+    left
+      ? -29.0
+      : 29.0;
+
+  const innerX =
+    left
+      ? 0.32
+      : -0.32;
 
   return (
     <group
@@ -553,99 +609,121 @@ function WallPanel({
         z,
       ]}
     >
-      {/* panel principal */}
+      {/* cuerpo profundo */}
 
       <mesh
         position={[
           0,
-          6,
+          6.15,
           0,
         ]}
       >
         <boxGeometry
           args={[
-            0.5,
-            12,
-            8.7,
+            0.55,
+            11.6,
+            9.1,
           ]}
         />
 
-        <meshStandardMaterial
-          color="#0b0e12"
-          roughness={0.55}
-          metalness={0.32}
+        <meshPhysicalMaterial
+          color="#080a0d"
+          roughness={0.34}
+          metalness={0.52}
+          clearcoat={0.18}
+          clearcoatRoughness={
+            0.42
+          }
         />
       </mesh>
 
-      {/* panel interior */}
+      {/* fondo interior */}
 
       <mesh
         position={[
-          side === "left"
-            ? 0.28
-            : -0.28,
-          6,
+          innerX,
+          6.1,
           0,
         ]}
       >
         <boxGeometry
           args={[
-            0.14,
-            10.5,
-            7.65,
+            0.12,
+            10.45,
+            8.15,
           ]}
         />
 
         <meshStandardMaterial
-          color="#151a20"
-          roughness={0.45}
-          metalness={0.28}
+          color="#15191e"
+          roughness={0.46}
+          metalness={0.34}
         />
       </mesh>
 
-      {/* luz superior */}
+      {/* franja superior */}
 
-      <GlowStrip
+      <mesh
         position={[
-          side === "left"
-            ? 0.39
-            : -0.39,
-          11.25,
+          innerX * 1.08,
+          11.42,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.18,
+            0.55,
+            8.6,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#272d34"
+          roughness={0.28}
+          metalness={0.6}
+        />
+      </mesh>
+
+      {/* LED superior */}
+
+      <Led
+        position={[
+          innerX * 1.45,
+          11.18,
           0,
         ]}
         size={[
-          0.05,
-          0.08,
-          6.9,
+          0.055,
+          0.09,
+          7.45,
         ]}
         color={accent}
-        intensity={0.9}
+        intensity={2.8}
       />
 
-      {/* luz inferior */}
+      {/* LED inferior */}
 
-      <GlowStrip
+      <Led
         position={[
-          side === "left"
-            ? 0.39
-            : -0.39,
-          0.55,
+          innerX * 1.45,
+          0.86,
           0,
         ]}
         size={[
-          0.05,
-          0.06,
-          6.9,
+          0.055,
+          0.07,
+          7.45,
         ]}
         color={accent}
-        intensity={0.55}
+        intensity={1.8}
       />
     </group>
   );
 }
 
 /* =========================================================
-   FICHA / EXPOSITOR
+   EXPOSITOR / PANTALLA
 ========================================================= */
 
 function GameStation({
@@ -653,7 +731,8 @@ function GameStation({
   position,
   rotation,
 }) {
-  const ref = useRef(null);
+  const ref =
+    useRef(null);
 
   const nearRef =
     useRef(false);
@@ -680,9 +759,8 @@ function GameStation({
     );
 
   useEffect(() => {
-    return () => {
+    return () =>
       poster.dispose();
-    };
   }, [poster]);
 
   useFrame(() => {
@@ -715,7 +793,7 @@ function GameStation({
       );
 
     const isNear =
-      distance < 5.4;
+      distance < 5.6;
 
     if (
       isNear ===
@@ -757,79 +835,77 @@ function GameStation({
         0,
       ]}
     >
-      {/* -----------------------------------------
-          MARCO EXTERIOR
-      ----------------------------------------- */}
+      {/* sombra/retranqueo */}
 
       <RoundedBox
         position={[
           0,
-          5.7,
-          -0.18,
+          5.85,
+          -0.28,
         ]}
         args={[
-          5.6,
-          9.9,
+          5.85,
+          10.45,
           0.48,
         ]}
-        radius={0.18}
+        radius={0.2}
         smoothness={3}
       >
-        <meshStandardMaterial
-          color="#090b0f"
-          roughness={0.34}
-          metalness={0.48}
+        <meshPhysicalMaterial
+          color="#050608"
+          roughness={0.25}
+          metalness={0.62}
+          clearcoat={0.35}
+          clearcoatRoughness={
+            0.3
+          }
         />
       </RoundedBox>
 
-      {/* -----------------------------------------
-          MARCO INTERIOR
-      ----------------------------------------- */}
+      {/* marco principal */}
 
       <RoundedBox
         position={[
           0,
-          5.7,
-          0.09,
+          5.85,
+          0,
         ]}
         args={[
-          5.05,
-          9.35,
-          0.18,
+          5.45,
+          10.05,
+          0.22,
         ]}
-        radius={0.12}
+        radius={0.17}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#161b21"
+          color="#151a20"
+          roughness={0.28}
+          metalness={0.58}
           emissive={
             game.accent
           }
           emissiveIntensity={
             near
-              ? 0.28
-              : 0.055
+              ? 0.22
+              : 0.045
           }
-          roughness={0.38}
-          metalness={0.35}
         />
       </RoundedBox>
 
-      {/* -----------------------------------------
-          PORTADA
-      ----------------------------------------- */}
+      {/* pantalla */}
 
       <mesh
         position={[
           0,
-          5.72,
-          0.195,
+          5.86,
+          0.125,
         ]}
       >
         <planeGeometry
           args={[
-            4.58,
-            8.72,
+            4.9,
+            9.45,
           ]}
         />
 
@@ -839,169 +915,208 @@ function GameStation({
         />
       </mesh>
 
-      {/* -----------------------------------------
-          LUCES LATERALES
-      ----------------------------------------- */}
+      {/* LED izquierdo */}
 
-      <GlowStrip
+      <Led
         position={[
-          -2.72,
-          5.7,
-          0.16,
+          -2.83,
+          5.85,
+          0.17,
         ]}
         size={[
-          0.075,
-          8.9,
-          0.075,
+          0.085,
+          9.55,
+          0.09,
         ]}
         color={
           game.accent
         }
         intensity={
           near
-            ? 2
-            : 0.9
+            ? 4.2
+            : 2.7
         }
       />
 
-      <GlowStrip
+      {/* LED derecho */}
+
+      <Led
         position={[
-          2.72,
-          5.7,
-          0.16,
+          2.83,
+          5.85,
+          0.17,
         ]}
         size={[
-          0.075,
-          8.9,
-          0.075,
+          0.085,
+          9.55,
+          0.09,
         ]}
         color={
           game.accent
         }
         intensity={
           near
-            ? 2
-            : 0.9
+            ? 4.2
+            : 2.7
         }
       />
 
-      {/* -----------------------------------------
-          BASE
-      ----------------------------------------- */}
+      {/* LED superior */}
+
+      <Led
+        position={[
+          0,
+          10.83,
+          0.17,
+        ]}
+        size={[
+          5.4,
+          0.085,
+          0.09,
+        ]}
+        color={
+          game.accent
+        }
+        intensity={
+          near
+            ? 4
+            : 2.4
+        }
+      />
+
+      {/* base */}
 
       <RoundedBox
         position={[
           0,
-          0.38,
-          0.15,
+          0.58,
+          0.25,
         ]}
         args={[
-          5.9,
-          0.65,
-          1.25,
+          6.1,
+          0.48,
+          1.2,
         ]}
         radius={0.16}
         smoothness={2}
       >
-        <meshStandardMaterial
-          color="#11151a"
-          roughness={0.38}
-          metalness={0.42}
+        <meshPhysicalMaterial
+          color="#15191e"
+          roughness={0.3}
+          metalness={0.55}
+          clearcoat={0.25}
         />
       </RoundedBox>
 
-      {/* -----------------------------------------
-          TERMINAL INFORMATIVO
-      ----------------------------------------- */}
+      {/* terminal */}
 
       <group
         position={[
           0,
           0,
-          2.55,
+          2.35,
         ]}
       >
         <mesh
           position={[
             0,
-            1.05,
+            1.1,
             0,
           ]}
           rotation={[
-            -0.35,
+            -0.32,
             0,
             0,
           ]}
         >
           <boxGeometry
             args={[
-              2.15,
+              2.05,
               1.05,
               0.18,
             ]}
           />
 
           <meshStandardMaterial
-            color="#161c23"
-            roughness={0.28}
-            metalness={0.5}
+            color="#20262d"
+            roughness={0.24}
+            metalness={0.62}
             emissive={
               game.accent
             }
             emissiveIntensity={
-              0.06
+              0.12
             }
           />
         </mesh>
+
+        <Led
+          position={[
+            0,
+            1.08,
+            0.105,
+          ]}
+          rotation={[
+            -0.32,
+            0,
+            0,
+          ]}
+          size={[
+            1.55,
+            0.04,
+            0.025,
+          ]}
+          color={
+            game.accent
+          }
+          intensity={2}
+        />
 
         <mesh
           position={[
             0,
             0.48,
-            0.15,
+            0.12,
           ]}
         >
           <boxGeometry
             args={[
-              0.3,
+              0.28,
               0.95,
-              0.3,
+              0.28,
             ]}
           />
 
           <meshStandardMaterial
             color="#171b20"
-            metalness={0.45}
-            roughness={0.35}
+            roughness={0.28}
+            metalness={0.6}
           />
         </mesh>
 
-        <mesh
+        <RoundedBox
           position={[
             0,
+            0.13,
             0.12,
-            0.15,
           ]}
+          args={[
+            1.8,
+            0.22,
+            1.15,
+          ]}
+          radius={0.08}
+          smoothness={2}
         >
-          <boxGeometry
-            args={[
-              1.75,
-              0.2,
-              1.15,
-            ]}
-          />
-
           <meshStandardMaterial
-            color="#101419"
-            metalness={0.4}
-            roughness={0.4}
+            color="#111419"
+            roughness={0.28}
+            metalness={0.58}
           />
-        </mesh>
+        </RoundedBox>
       </group>
 
-      {/* -----------------------------------------
-          COLISIÓN REAL
-      ----------------------------------------- */}
+      {/* colisiones */}
 
       <RigidBody
         type="fixed"
@@ -1009,27 +1124,27 @@ function GameStation({
       >
         <CuboidCollider
           args={[
-            2.95,
+            3.05,
             5.25,
-            0.65,
+            0.55,
           ]}
           position={[
             0,
-            5.25,
+            5.55,
             0,
           ]}
         />
 
         <CuboidCollider
           args={[
-            1.25,
-            0.95,
-            0.8,
+            1.15,
+            0.9,
+            0.78,
           ]}
           position={[
             0,
             0.95,
-            2.55,
+            2.35,
           ]}
         />
       </RigidBody>
@@ -1038,7 +1153,7 @@ function GameStation({
 }
 
 /* =========================================================
-   BANCO
+   BANCO PREMIUM
 ========================================================= */
 
 function Bench({
@@ -1057,37 +1172,60 @@ function Bench({
       <RoundedBox
         position={[
           0,
-          0.48,
+          0.72,
           0,
         ]}
         args={[
-          5.5,
-          0.75,
-          1.65,
+          5.6,
+          0.82,
+          1.75,
         ]}
         radius={0.28}
         smoothness={3}
       >
-        <meshStandardMaterial
-          color="#171a1f"
-          roughness={0.46}
-          metalness={0.22}
+        <meshPhysicalMaterial
+          color="#1b1d21"
+          roughness={0.38}
+          metalness={0.3}
+          clearcoat={0.18}
         />
       </RoundedBox>
 
-      <GlowStrip
+      <mesh
         position={[
           0,
-          0.14,
-          0.7,
+          0.29,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            4.8,
+            0.28,
+            1.35,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#0a0c0f"
+          roughness={0.3}
+          metalness={0.58}
+        />
+      </mesh>
+
+      <Led
+        position={[
+          0,
+          0.35,
+          0.78,
         ]}
         size={[
-          4.7,
-          0.05,
+          4.6,
+          0.055,
           0.05,
         ]}
-        color="#f3c47b"
-        intensity={0.7}
+        color="#ffc36b"
+        intensity={1.8}
       />
 
       <RigidBody
@@ -1096,13 +1234,13 @@ function Bench({
       >
         <CuboidCollider
           args={[
-            2.75,
-            0.45,
-            0.85,
+            2.8,
+            0.55,
+            0.88,
           ]}
           position={[
             0,
-            0.45,
+            0.65,
             0,
           ]}
         />
@@ -1118,6 +1256,14 @@ function Bench({
 function Planter({
   position,
 }) {
+  const leaves = [
+    [-0.7, 1.05, 0, -0.25],
+    [-0.35, 1.25, 0.05, 0.18],
+    [0, 1.05, -0.08, -0.12],
+    [0.38, 1.28, 0.03, 0.24],
+    [0.72, 1.02, -0.04, -0.18],
+  ];
+
   return (
     <group
       position={position}
@@ -1125,38 +1271,32 @@ function Planter({
       <RoundedBox
         position={[
           0,
-          0.38,
+          0.55,
           0,
         ]}
         args={[
-          2.5,
+          2.65,
           0.7,
           1.4,
         ]}
-        radius={0.18}
+        radius={0.16}
         smoothness={2}
       >
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color="#15191d"
-          roughness={0.55}
-          metalness={0.25}
+          roughness={0.3}
+          metalness={0.48}
+          clearcoat={0.2}
         />
       </RoundedBox>
 
-      {/* vegetación simple y barata */}
-
-      {[
-        [-0.7, 0.95, 0],
-        [-0.3, 1.15, 0.1],
-        [0.15, 1.0, -0.05],
-        [0.55, 1.2, 0.08],
-        [0.85, 0.9, -0.08],
-      ].map(
+      {leaves.map(
         (
           [
             x,
             y,
             z,
+            r,
           ],
           index
         ) => (
@@ -1170,22 +1310,20 @@ function Planter({
             rotation={[
               0,
               0,
-              index % 2
-                ? 0.25
-                : -0.25,
+              r,
             ]}
           >
             <coneGeometry
               args={[
-                0.22,
-                1.4,
+                0.24,
+                1.45,
                 5,
               ]}
             />
 
             <meshStandardMaterial
-              color="#31543c"
-              roughness={0.85}
+              color="#2f6546"
+              roughness={0.78}
             />
           </mesh>
         )
@@ -1195,7 +1333,7 @@ function Planter({
 }
 
 /* =========================================================
-   TOP 10 CENTRAL
+   ISLA CENTRAL TOP 10
 ========================================================= */
 
 function TopTenIsland() {
@@ -1204,85 +1342,100 @@ function TopTenIsland() {
       position={[
         0,
         0,
-        -14,
+        -14.5,
       ]}
     >
+      {/* base */}
+
       <RoundedBox
         position={[
           0,
-          0.75,
+          0.72,
           0,
         ]}
         args={[
-          8.8,
-          1.35,
-          2.5,
+          8.6,
+          1.15,
+          2.7,
         ]}
         radius={0.25}
         smoothness={3}
       >
-        <meshStandardMaterial
-          color="#11151a"
-          roughness={0.32}
-          metalness={0.48}
+        <meshPhysicalMaterial
+          color="#12161b"
+          roughness={0.25}
+          metalness={0.62}
+          clearcoat={0.3}
+          clearcoatRoughness={
+            0.25
+          }
         />
       </RoundedBox>
 
-      <GlowStrip
+      {/* tapa */}
+
+      <RoundedBox
         position={[
           0,
-          0.15,
-          1.05,
+          1.32,
+          0,
+        ]}
+        args={[
+          7.8,
+          0.12,
+          2.25,
+        ]}
+        radius={0.08}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#262d34"
+          roughness={0.25}
+          metalness={0.6}
+        />
+      </RoundedBox>
+
+      <Led
+        position={[
+          0,
+          0.28,
+          1.25,
         ]}
         size={[
-          7.8,
-          0.06,
-          0.06,
+          7.3,
+          0.07,
+          0.05,
         ]}
-        color="#f5c47c"
-        intensity={1}
+        color="#ffc76f"
+        intensity={2.8}
       />
 
-      <GlowStrip
+      <Led
         position={[
           0,
-          0.15,
-          -1.05,
+          0.28,
+          -1.25,
         ]}
         size={[
-          7.8,
-          0.06,
-          0.06,
+          7.3,
+          0.07,
+          0.05,
         ]}
-        color="#f5c47c"
-        intensity={1}
+        color="#ffc76f"
+        intensity={2.8}
       />
 
       <FlatText
-        text="TOP 10"
+        text="TOP 10 HOY"
         position={[
           0,
-          1.46,
-          1.27,
+          1.41,
+          1.36,
         ]}
-        width={6}
-        height={1.4}
-        color="#fff2d8"
-        glow="#f5b85c"
-        fontSize={100}
-      />
-
-      <FlatText
-        text="HOY"
-        position={[
-          0,
-          0.82,
-          1.29,
-        ]}
-        width={2.2}
-        height={0.55}
-        color="#ffffff"
-        fontSize={72}
+        width={6.6}
+        height={1.35}
+        color="#fff5df"
+        glow="#ffb84f"
       />
 
       <RigidBody
@@ -1291,9 +1444,9 @@ function TopTenIsland() {
       >
         <CuboidCollider
           args={[
-            4.4,
-            0.75,
-            1.25,
+            4.3,
+            0.65,
+            1.35,
           ]}
           position={[
             0,
@@ -1307,117 +1460,156 @@ function TopTenIsland() {
 }
 
 /* =========================================================
-   ESCENARIO DE VIDEO
+   ESCENARIO DEL FONDO
 ========================================================= */
 
 function VideoStage() {
   return (
     <group>
-      {/* pared profunda */}
+      {/* gran fondo */}
 
       <RoundedBox
         position={[
           0,
-          6.3,
+          6.4,
           ROOM_BACK_Z +
-            0.05,
+            0.18,
         ]}
         args={[
-          31,
-          12.5,
-          0.8,
+          32,
+          12.2,
+          0.7,
         ]}
-        radius={0.25}
+        radius={0.22}
         smoothness={3}
       >
-        <meshStandardMaterial
-          color="#080a0d"
-          roughness={0.45}
-          metalness={0.3}
+        <meshPhysicalMaterial
+          color="#07090c"
+          roughness={0.3}
+          metalness={0.5}
+          clearcoat={0.2}
         />
       </RoundedBox>
 
-      {/* marco */}
+      {/* alas del escenario */}
+
+      <RoundedBox
+        position={[
+          -14.5,
+          6.1,
+          ROOM_BACK_Z +
+            0.75,
+        ]}
+        args={[
+          2.4,
+          10.8,
+          0.55,
+        ]}
+        radius={0.15}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#181d23"
+          roughness={0.28}
+          metalness={0.55}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          14.5,
+          6.1,
+          ROOM_BACK_Z +
+            0.75,
+        ]}
+        args={[
+          2.4,
+          10.8,
+          0.55,
+        ]}
+        radius={0.15}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#181d23"
+          roughness={0.28}
+          metalness={0.55}
+        />
+      </RoundedBox>
+
+      {/* marco de pantalla */}
 
       <RoundedBox
         position={[
           0,
-          6.15,
+          6.1,
           ROOM_BACK_Z +
-            0.55,
+            0.72,
         ]}
         args={[
           24.8,
-          9.4,
+          9.55,
           0.42,
         ]}
         radius={0.18}
         smoothness={3}
       >
-        <meshStandardMaterial
-          color="#20262d"
-          roughness={0.32}
-          metalness={0.5}
+        <meshPhysicalMaterial
+          color="#252b32"
+          roughness={0.24}
+          metalness={0.68}
+          clearcoat={0.22}
         />
       </RoundedBox>
 
-      {/* fondo negro */}
+      {/* LED marco */}
 
-      <mesh
+      <Led
         position={[
           0,
-          6.15,
+          11.02,
           ROOM_BACK_Z +
-            0.79,
-        ]}
-      >
-        <planeGeometry
-          args={[
-            23.8,
-            8.45,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#020203"
-          roughness={0.75}
-        />
-      </mesh>
-
-      {/* iluminación cálida inferior */}
-
-      <GlowStrip
-        position={[
-          0,
-          1.3,
-          ROOM_BACK_Z +
-            0.9,
+            0.98,
         ]}
         size={[
-          22.5,
+          23.6,
           0.08,
-          0.08,
+          0.07,
         ]}
-        color="#f1bb68"
-        intensity={0.85}
+        color="#5fdcff"
+        intensity={2.4}
       />
 
-      {/* iluminación fría superior */}
-
-      <GlowStrip
+      <Led
         position={[
-          0,
-          11,
+          -12.2,
+          6.1,
           ROOM_BACK_Z +
-            0.9,
+            0.98,
         ]}
         size={[
-          22.5,
           0.07,
+          9.2,
           0.07,
         ]}
-        color="#8adfff"
-        intensity={0.65}
+        color="#5fdcff"
+        intensity={2}
+      />
+
+      <Led
+        position={[
+          12.2,
+          6.1,
+          ROOM_BACK_Z +
+            0.98,
+        ]}
+        size={[
+          0.07,
+          9.2,
+          0.07,
+        ]}
+        color="#5fdcff"
+        intensity={2}
       />
 
       {/* plataforma */}
@@ -1425,74 +1617,339 @@ function VideoStage() {
       <RoundedBox
         position={[
           0,
-          0.28,
+          0.58,
           ROOM_BACK_Z +
             3.4,
         ]}
         args={[
-          27,
-          0.48,
-          5.8,
+          29,
+          0.5,
+          6.2,
         ]}
-        radius={0.18}
-        smoothness={2}
+        radius={0.2}
+        smoothness={3}
       >
-        <meshStandardMaterial
-          color="#11151a"
-          roughness={0.42}
-          metalness={0.35}
+        <meshPhysicalMaterial
+          color="#14181d"
+          roughness={0.24}
+          metalness={0.55}
+          clearcoat={0.2}
         />
       </RoundedBox>
 
-      {/* escalón */}
-
-      <RoundedBox
+      <Led
         position={[
           0,
-          0.11,
+          0.85,
           ROOM_BACK_Z +
-            6,
-        ]}
-        args={[
-          20,
-          0.2,
-          1.4,
-        ]}
-        radius={0.1}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#171b20"
-          roughness={0.42}
-          metalness={0.3}
-        />
-      </RoundedBox>
-
-      <GlowStrip
-        position={[
-          0,
-          0.23,
-          ROOM_BACK_Z +
-            6.65,
+            6.25,
         ]}
         size={[
-          18.5,
-          0.04,
-          0.04,
+          25,
+          0.06,
+          0.06,
         ]}
-        color="#f5c477"
-        intensity={0.75}
+        color="#ffc66d"
+        intensity={2.4}
       />
 
-      {/* reproductor existente */}
+      {/* plantas */}
+
+      <Planter
+        position={[
+          -12.5,
+          0.3,
+          ROOM_BACK_Z +
+            5.6,
+        ]}
+      />
+
+      <Planter
+        position={[
+          12.5,
+          0.3,
+          ROOM_BACK_Z +
+            5.6,
+        ]}
+      />
+
+      {/* reproductor */}
 
       <FeaturedVideoWall
         position={[
           0,
           5.2,
           ROOM_BACK_Z +
-            0.95,
+            1,
         ]}
+      />
+    </group>
+  );
+}
+
+/* =========================================================
+   TECHO LATERAL
+
+   El centro queda completamente libre.
+   NO TOCAMOS LA FLECHA DEL DPADWING.
+========================================================= */
+
+function PremiumCeiling() {
+  const zs = [
+    -27,
+    -18,
+    -9,
+    0,
+    9,
+    18,
+  ];
+
+  return (
+    <group>
+      {zs.map((z) => (
+        <group
+          key={z}
+        >
+          {/* módulo izquierdo */}
+
+          <mesh
+            position={[
+              -20.8,
+              12.25,
+              z,
+            ]}
+          >
+            <boxGeometry
+              args={[
+                13.5,
+                0.38,
+                1,
+              ]}
+            />
+
+            <meshPhysicalMaterial
+              color="#171b20"
+              roughness={0.24}
+              metalness={0.58}
+              clearcoat={0.18}
+            />
+          </mesh>
+
+          <Led
+            position={[
+              -20.8,
+              12.02,
+              z,
+            ]}
+            size={[
+              9.5,
+              0.07,
+              0.1,
+            ]}
+            color="#fff0d3"
+            intensity={2}
+          />
+
+          {/* módulo derecho */}
+
+          <mesh
+            position={[
+              20.8,
+              12.25,
+              z,
+            ]}
+          >
+            <boxGeometry
+              args={[
+                13.5,
+                0.38,
+                1,
+              ]}
+            />
+
+            <meshPhysicalMaterial
+              color="#171b20"
+              roughness={0.24}
+              metalness={0.58}
+              clearcoat={0.18}
+            />
+          </mesh>
+
+          <Led
+            position={[
+              20.8,
+              12.02,
+              z,
+            ]}
+            size={[
+              9.5,
+              0.07,
+              0.1,
+            ]}
+            color="#fff0d3"
+            intensity={2}
+          />
+        </group>
+      ))}
+
+      {/* líneas longitudinales */}
+
+      <mesh
+        position={[
+          -14.4,
+          12.28,
+          -4,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.55,
+            0.5,
+            59,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#22272d"
+          roughness={0.28}
+          metalness={0.58}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          14.4,
+          12.28,
+          -4,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.55,
+            0.5,
+            59,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#22272d"
+          roughness={0.28}
+          metalness={0.58}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
+   ILUMINACIÓN PREMIUM
+
+   Las tiras emissive se ven brillantes.
+   Estas luces reales hacen que ese color llegue
+   físicamente a suelo, paredes y estructuras.
+========================================================= */
+
+function GalleryLighting() {
+  return (
+    <group>
+      {/* luz general interior */}
+
+      <hemisphereLight
+        intensity={0.58}
+        color="#d9ecff"
+        groundColor="#15100d"
+      />
+
+      {/* luz fría procedente del techo */}
+
+      <directionalLight
+        position={[
+          0,
+          13,
+          7,
+        ]}
+        intensity={1.25}
+        color="#b9dcff"
+      />
+
+      {/* iluminación central cálida */}
+
+      <pointLight
+        position={[
+          0,
+          8.5,
+          -13,
+        ]}
+        intensity={42}
+        distance={28}
+        decay={2}
+        color="#ffd29a"
+      />
+
+      {/* pantalla fondo */}
+
+      <pointLight
+        position={[
+          0,
+          7,
+          -28,
+        ]}
+        intensity={55}
+        distance={25}
+        decay={2}
+        color="#78d9ff"
+      />
+
+      {/* galería izquierda */}
+
+      <pointLight
+        position={[
+          -20,
+          6,
+          -17,
+        ]}
+        intensity={38}
+        distance={20}
+        decay={2}
+        color="#b96dff"
+      />
+
+      <pointLight
+        position={[
+          -20,
+          6,
+          5,
+        ]}
+        intensity={34}
+        distance={19}
+        decay={2}
+        color="#ff855d"
+      />
+
+      {/* galería derecha */}
+
+      <pointLight
+        position={[
+          20,
+          6,
+          -17,
+        ]}
+        intensity={36}
+        distance={20}
+        decay={2}
+        color="#55dfff"
+      />
+
+      <pointLight
+        position={[
+          20,
+          6,
+          5,
+        ]}
+        intensity={34}
+        distance={19}
+        decay={2}
+        color="#ffbd67"
       />
     </group>
   );
@@ -1503,17 +1960,24 @@ function VideoStage() {
 ========================================================= */
 
 export default function PopularTodayHall() {
+  /*
+    Las fichas están algo más separadas que antes.
+
+    Las más cercanas a la entrada comienzan en Z 15.
+    Las del fondo terminan en Z -24.
+  */
+
   const stations =
     useMemo(
       () => [
-        /* IZQUIERDA */
+        /* izquierda */
 
         {
           game: GAMES[0],
           position: [
-            -25.15,
-            0,
-            -23.5,
+            -25.3,
+            0.3,
+            -24,
           ],
           rotation:
             Math.PI / 2,
@@ -1523,9 +1987,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[1],
           position: [
-            -25.15,
-            0,
-            -14.3,
+            -25.3,
+            0.3,
+            -14.2,
           ],
           rotation:
             Math.PI / 2,
@@ -1535,9 +1999,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[2],
           position: [
-            -25.15,
-            0,
-            -5.1,
+            -25.3,
+            0.3,
+            -4.4,
           ],
           rotation:
             Math.PI / 2,
@@ -1547,9 +2011,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[3],
           position: [
-            -25.15,
-            0,
-            4.1,
+            -25.3,
+            0.3,
+            5.4,
           ],
           rotation:
             Math.PI / 2,
@@ -1559,23 +2023,23 @@ export default function PopularTodayHall() {
         {
           game: GAMES[4],
           position: [
-            -25.15,
-            0,
-            13.3,
+            -25.3,
+            0.3,
+            15.2,
           ],
           rotation:
             Math.PI / 2,
           side: "left",
         },
 
-        /* DERECHA */
+        /* derecha */
 
         {
           game: GAMES[5],
           position: [
-            25.15,
-            0,
-            13.3,
+            25.3,
+            0.3,
+            15.2,
           ],
           rotation:
             -Math.PI / 2,
@@ -1585,9 +2049,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[6],
           position: [
-            25.15,
-            0,
-            4.1,
+            25.3,
+            0.3,
+            5.4,
           ],
           rotation:
             -Math.PI / 2,
@@ -1597,9 +2061,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[7],
           position: [
-            25.15,
-            0,
-            -5.1,
+            25.3,
+            0.3,
+            -4.4,
           ],
           rotation:
             -Math.PI / 2,
@@ -1609,9 +2073,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[8],
           position: [
-            25.15,
-            0,
-            -14.3,
+            25.3,
+            0.3,
+            -14.2,
           ],
           rotation:
             -Math.PI / 2,
@@ -1621,9 +2085,9 @@ export default function PopularTodayHall() {
         {
           game: GAMES[9],
           position: [
-            25.15,
-            0,
-            -23.5,
+            25.3,
+            0.3,
+            -24,
           ],
           rotation:
             -Math.PI / 2,
@@ -1636,92 +2100,127 @@ export default function PopularTodayHall() {
   return (
     <group>
       {/* ===================================================
-          SUELO OSCURO
+          ACABADO DE SUELO
 
-          No más carretera gris.
+          ESTE es el cambio clave:
+          está por encima del suelo físico de DpadWing.
       =================================================== */}
 
       <mesh
         position={[
           0,
-          -0.11,
-          -4,
+          FINISHED_FLOOR_Y,
+          -3.5,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
         ]}
         receiveShadow
       >
-        <boxGeometry
+        <planeGeometry
           args={[
-            ROOM_HALF_WIDTH *
-              2,
-            0.2,
-            60,
+            58.7,
+            62.5,
           ]}
         />
 
-        <meshStandardMaterial
-          color="#090b0e"
-          roughness={0.24}
-          metalness={0.38}
+        <meshPhysicalMaterial
+          color="#0b0d10"
+          roughness={0.2}
+          metalness={0.48}
+          clearcoat={0.32}
+          clearcoatRoughness={
+            0.24
+          }
         />
       </mesh>
 
       {/* ===================================================
-          PAVIMENTO CENTRAL SUTIL
+          PLACAS DEL PAVIMENTO
+
+          Rompen la sensación de carretera/plano vacío.
       =================================================== */}
 
-      <mesh
-        position={[
-          0,
-          0.005,
-          -3,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            17,
-            0.025,
-            55,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#101318"
-          roughness={0.28}
-          metalness={0.42}
-        />
-      </mesh>
-
-      {/* juntas del suelo */}
-
       {[
-        -25,
-        -19,
-        -13,
-        -7,
-        -1,
-        5,
-        11,
-        17,
+        -27,
+        -21,
+        -15,
+        -9,
+        -3,
+        3,
+        9,
+        15,
+        21,
       ].map((z) => (
-        <GlowStrip
-          key={`floor-${z}`}
-          position={[
-            0,
-            0.035,
-            z,
-          ]}
-          size={[
-            15,
-            0.018,
-            0.025,
-          ]}
-          color="#82939d"
-          intensity={0.12}
-        />
+        <group
+          key={`floor-panel-${z}`}
+        >
+          <mesh
+            position={[
+              0,
+              FINISHED_FLOOR_Y +
+                0.006,
+              z,
+            ]}
+            rotation={[
+              -Math.PI / 2,
+              0,
+              0,
+            ]}
+          >
+            <planeGeometry
+              args={[
+                16,
+                5.55,
+              ]}
+            />
+
+            <meshPhysicalMaterial
+              color="#11151a"
+              roughness={0.18}
+              metalness={0.5}
+              clearcoat={0.25}
+            />
+          </mesh>
+
+          <Led
+            position={[
+              -8.2,
+              FINISHED_FLOOR_Y +
+                0.018,
+              z,
+            ]}
+            size={[
+              0.035,
+              0.025,
+              5,
+            ]}
+            color="#536875"
+            intensity={0.4}
+          />
+
+          <Led
+            position={[
+              8.2,
+              FINISHED_FLOOR_Y +
+                0.018,
+              z,
+            ]}
+            size={[
+              0.035,
+              0.025,
+              5,
+            ]}
+            color="#536875"
+            intensity={0.4}
+          />
+        </group>
       ))}
 
       {/* ===================================================
-          PAREDES DE GALERÍA
+          GALERÍAS DE PARED
       =================================================== */}
 
       {stations.map(
@@ -1730,8 +2229,8 @@ export default function PopularTodayHall() {
           position,
           side,
         }) => (
-          <WallPanel
-            key={`wall-${game.id}`}
+          <GalleryBay
+            key={`bay-${game.id}`}
             side={side}
             z={position[2]}
             accent={
@@ -1742,7 +2241,7 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          FICHAS + COLISIONES
+          FICHAS
       =================================================== */}
 
       {stations.map(
@@ -1761,286 +2260,91 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          LUZ ARQUITECTÓNICA SUPERIOR
+          TECHO PREMIUM LATERAL
 
-          IMPORTANTE:
-          queda únicamente en los laterales.
-          NO atraviesa la flecha/ventana.
+          Centro libre = flecha totalmente visible.
       =================================================== */}
 
-      {[
-        -24,
-        -15,
-        -6,
-        3,
-        12,
-      ].map((z) => (
-        <group
-          key={`roof-${z}`}
-        >
-          {/* izquierda */}
-
-          <mesh
-            position={[
-              -20,
-              12.1,
-              z,
-            ]}
-          >
-            <boxGeometry
-              args={[
-                13,
-                0.35,
-                0.55,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#171b20"
-              roughness={0.3}
-              metalness={0.48}
-            />
-          </mesh>
-
-          <GlowStrip
-            position={[
-              -20,
-              11.88,
-              z,
-            ]}
-            size={[
-              9,
-              0.055,
-              0.055,
-            ]}
-            color="#e7e1d4"
-            intensity={0.65}
-          />
-
-          {/* derecha */}
-
-          <mesh
-            position={[
-              20,
-              12.1,
-              z,
-            ]}
-          >
-            <boxGeometry
-              args={[
-                13,
-                0.35,
-                0.55,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#171b20"
-              roughness={0.3}
-              metalness={0.48}
-            />
-          </mesh>
-
-          <GlowStrip
-            position={[
-              20,
-              11.88,
-              z,
-            ]}
-            size={[
-              9,
-              0.055,
-              0.055,
-            ]}
-            color="#e7e1d4"
-            intensity={0.65}
-          />
-        </group>
-      ))}
+      <PremiumCeiling />
 
       {/* ===================================================
-          MOLDURAS LONGITUDINALES DEL TECHO
-
-          También solo laterales.
-      =================================================== */}
-
-      <mesh
-        position={[
-          -16.8,
-          12.15,
-          -4,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            0.5,
-            0.45,
-            57,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#15191e"
-          metalness={0.5}
-          roughness={0.3}
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          16.8,
-          12.15,
-          -4,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            0.5,
-            0.45,
-            57,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#15191e"
-          metalness={0.5}
-          roughness={0.3}
-        />
-      </mesh>
-
-      {/* ===================================================
-          ESCENARIO DE VIDEO
+          ESCENARIO
       =================================================== */}
 
       <VideoStage />
 
       {/* ===================================================
-          ISLA TOP 10
+          ELEMENTO CENTRAL
       =================================================== */}
 
       <TopTenIsland />
 
       {/* ===================================================
-          BANCOS
+          MOBILIARIO
 
-          Disposición baja para no tapar las fichas.
+          Dejamos circulación central amplia.
       =================================================== */}
 
       <Bench
         position={[
-          -7.2,
-          0,
-          -18.5,
+          -8.5,
+          0.3,
+          -19,
         ]}
       />
 
       <Bench
         position={[
-          7.2,
-          0,
-          -18.5,
+          8.5,
+          0.3,
+          -19,
         ]}
       />
 
       <Bench
         position={[
-          -7.2,
-          0,
-          -9.5,
+          -8.5,
+          0.3,
+          -7,
         ]}
       />
 
       <Bench
         position={[
-          7.2,
-          0,
-          -9.5,
+          8.5,
+          0.3,
+          -7,
         ]}
       />
 
       {/* ===================================================
-          VEGETACIÓN PUNTUAL
+          JARDINERAS
       =================================================== */}
 
       <Planter
         position={[
           -12,
-          0,
-          -27.8,
+          0.3,
+          -27,
         ]}
       />
 
       <Planter
         position={[
           12,
-          0,
-          -27.8,
-        ]}
-      />
-
-      <Planter
-        position={[
-          -12,
-          0,
-          -16,
-        ]}
-      />
-
-      <Planter
-        position={[
-          12,
-          0,
-          -16,
+          0.3,
+          -27,
         ]}
       />
 
       {/* ===================================================
-          LUZ AMBIENTAL DE LA SALA
+          LUZ
 
-          Solo 3 luces reales.
-          El resto del efecto viene de emissive.
+          Ahora los LED no son simplemente rayas de color:
+          las luces reales iluminan el espacio.
       =================================================== */}
 
-      <ambientLight
-        intensity={0.28}
-        color="#b8c7d5"
-      />
-
-      <pointLight
-        position={[
-          0,
-          9,
-          -24,
-        ]}
-        intensity={10}
-        distance={28}
-        decay={2}
-        color="#8bcfff"
-      />
-
-      <pointLight
-        position={[
-          -14,
-          7,
-          -5,
-        ]}
-        intensity={7}
-        distance={20}
-        decay={2}
-        color="#c58cff"
-      />
-
-      <pointLight
-        position={[
-          14,
-          7,
-          -5,
-        ]}
-        intensity={7}
-        distance={20}
-        decay={2}
-        color="#ffc47c"
-      />
+      <GalleryLighting />
     </group>
   );
 }
