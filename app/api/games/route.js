@@ -80,6 +80,24 @@ async function supabaseGet(
 }
 
 /* =========================================================
+   HELPERS
+========================================================= */
+
+function uniqueNumbers(values) {
+  return [
+    ...new Set(
+      values
+        .map(Number)
+        .filter(
+          (value) =>
+            Number.isFinite(value) &&
+            value > 0
+        )
+    ),
+  ];
+}
+
+/* =========================================================
    CATÁLOGOS RELACIONADOS
 ========================================================= */
 
@@ -162,6 +180,7 @@ async function loadPlatforms(
     );
 
   if (
+    !relations ||
     relations.length === 0
   ) {
     return [];
@@ -205,6 +224,183 @@ async function loadPlatforms(
         platformMap.get(id)
     )
     .filter(Boolean);
+}
+
+/* =========================================================
+   SIMILARES
+
+   game_similar_games guarda los IDs de IGDB.
+
+   Acá resolvemos esos IDs contra nuestra biblioteca.
+
+   Si el juego YA existe:
+   devolvemos sus datos mínimos.
+
+   Si todavía NO existe:
+   conservamos el ID y marcamos available=false.
+
+   IMPORTANTE:
+   esta API NO importa automáticamente juegos.
+========================================================= */
+
+async function loadSimilarGames(
+  environment,
+  gameId
+) {
+  const relations =
+    await supabaseGet(
+      environment,
+      [
+        "game_similar_games",
+        "?select=similar_game_id,position",
+        `&game_id=eq.${gameId}`,
+        "&order=position.asc",
+      ].join("")
+    );
+
+  if (
+    !relations ||
+    relations.length === 0
+  ) {
+    return [];
+  }
+
+  const ids =
+    uniqueNumbers(
+      relations.map(
+        (item) =>
+          item.similar_game_id
+      )
+    );
+
+  if (
+    ids.length === 0
+  ) {
+    return [];
+  }
+
+  const existingGames =
+    await supabaseGet(
+      environment,
+      [
+        "games",
+        "?select=",
+        [
+          "id",
+          "slug",
+          "name",
+          "release_year",
+          "developer",
+          "publisher",
+          "cover_image_id",
+          "cover_small_url",
+          "cover_medium_url",
+          "cover_large_url",
+          "rating",
+          "rating_count",
+          "total_rating",
+          "total_rating_count",
+          "freaky_official_score",
+          "community_score",
+          "active",
+        ].join(","),
+        `&id=in.(${ids.join(",")})`,
+      ].join("")
+    );
+
+  const gameMap =
+    new Map(
+      existingGames.map(
+        (game) => [
+          Number(game.id),
+          game,
+        ]
+      )
+    );
+
+  return relations.map(
+    (relation) => {
+      const id =
+        Number(
+          relation.similar_game_id
+        );
+
+      const game =
+        gameMap.get(id);
+
+      if (!game) {
+        return {
+          id,
+          position:
+            relation.position,
+
+          available:
+            false,
+        };
+      }
+
+      return {
+        id:
+          game.id,
+
+        slug:
+          game.slug,
+
+        name:
+          game.name,
+
+        year:
+          game.release_year,
+
+        developer:
+          game.developer,
+
+        publisher:
+          game.publisher,
+
+        cover: {
+          imageId:
+            game.cover_image_id,
+
+          small:
+            game.cover_small_url,
+
+          medium:
+            game.cover_medium_url,
+
+          large:
+            game.cover_large_url,
+        },
+
+        rating:
+          game.rating,
+
+        ratingCount:
+          game.rating_count,
+
+        totalRating:
+          game.total_rating,
+
+        totalRatingCount:
+          game.total_rating_count,
+
+        freakyOfficialScore:
+          game.freaky_official_score,
+
+        communityScore:
+          game.community_score,
+
+        active:
+          game.active,
+
+        position:
+          relation.position,
+
+        available:
+          true,
+      };
+    }
+  );
 }
 
 /* =========================================================
@@ -259,55 +455,75 @@ async function loadCompleteGame(
 
       loadCatalogRelation({
         environment,
-        gameId: game.id,
+        gameId:
+          game.id,
+
         relationTable:
           "game_genres",
+
         relationColumn:
           "genre_id",
+
         catalogTable:
           "genres",
       }),
 
       loadCatalogRelation({
         environment,
-        gameId: game.id,
+        gameId:
+          game.id,
+
         relationTable:
           "game_themes",
+
         relationColumn:
           "theme_id",
+
         catalogTable:
           "themes",
       }),
 
       loadCatalogRelation({
         environment,
-        gameId: game.id,
+        gameId:
+          game.id,
+
         relationTable:
           "game_game_modes",
+
         relationColumn:
           "game_mode_id",
+
         catalogTable:
           "game_modes",
       }),
 
       loadCatalogRelation({
         environment,
-        gameId: game.id,
+        gameId:
+          game.id,
+
         relationTable:
           "game_player_perspectives",
+
         relationColumn:
           "perspective_id",
+
         catalogTable:
           "player_perspectives",
       }),
 
       loadCatalogRelation({
         environment,
-        gameId: game.id,
+        gameId:
+          game.id,
+
         relationTable:
           "game_game_engines",
+
         relationColumn:
           "engine_id",
+
         catalogTable:
           "game_engines",
       }),
@@ -317,9 +533,9 @@ async function loadCompleteGame(
         `game_websites?select=id,category,url,trusted,position&game_id=eq.${game.id}&order=position.asc`
       ),
 
-      supabaseGet(
+      loadSimilarGames(
         environment,
-        `game_similar_games?select=similar_game_id,position&game_id=eq.${game.id}&order=position.asc`
+        game.id
       ),
 
       supabaseGet(
@@ -332,6 +548,25 @@ async function loadCompleteGame(
         `game_languages?select=id,language_id,language_name,native_name,audio,subtitles,interface&game_id=eq.${game.id}`
       ),
     ]);
+
+  /* =======================================================
+     TEXTOS
+
+     Para interfaz usamos español si existe.
+
+     También devolvemos explícitamente originales y español
+     para no perder ninguna versión.
+  ======================================================= */
+
+  const displaySummary =
+    game.summary_es ||
+    game.summary ||
+    null;
+
+  const displayStoryline =
+    game.storyline_es ||
+    game.storyline ||
+    null;
 
   return {
     /* =====================================================
@@ -352,13 +587,49 @@ async function loadCompleteGame(
     ===================================================== */
 
     summary:
+      displaySummary,
+
+    summaryOriginal:
       game.summary,
 
+    summaryEs:
+      game.summary_es,
+
     storyline:
+      displayStoryline,
+
+    storylineOriginal:
       game.storyline,
+
+    storylineEs:
+      game.storyline_es,
 
     editorialSummary:
       game.editorial_summary,
+
+    translation: {
+      status:
+        game.translation_status ||
+        null,
+
+      source:
+        game.translation_source ||
+        null,
+
+      updatedAt:
+        game.translation_updated_at ||
+        null,
+
+      hasSpanishSummary:
+        Boolean(
+          game.summary_es
+        ),
+
+      hasSpanishStoryline:
+        Boolean(
+          game.storyline_es
+        ),
+    },
 
     /* =====================================================
        LANZAMIENTO
@@ -588,8 +859,6 @@ async function loadCompleteGame(
 
     /* =====================================================
        IDIOMAS
-       Actualmente puede venir vacío.
-       Lo completaremos en el siguiente paso específico.
     ===================================================== */
 
     languages:
@@ -644,18 +913,15 @@ async function loadCompleteGame(
 
     /* =====================================================
        SIMILARES
+
+       available=true:
+       ya está en nuestra biblioteca.
+
+       available=false:
+       IGDB lo relaciona pero todavía no lo importamos.
     ===================================================== */
 
-    similarGames:
-      similarGames.map(
-        (item) => ({
-          id:
-            item.similar_game_id,
-
-          position:
-            item.position,
-        })
-      ),
+    similarGames,
 
     /* =====================================================
        METADATOS
@@ -683,23 +949,252 @@ async function loadCompleteGame(
 }
 
 /* =========================================================
-   GET /api/games
+   CAMPOS BASE DE GAMES
+
+   Centralizados para poder usarlos tanto en:
+   /api/games
+   como en:
+   /api/games?id=40
 ========================================================= */
 
-export async function GET() {
+const GAME_SELECT_FIELDS = [
+  "id",
+  "slug",
+  "name",
+
+  "summary",
+  "summary_es",
+
+  "storyline",
+  "storyline_es",
+
+  "translation_status",
+  "translation_source",
+  "translation_updated_at",
+
+  "first_release_date",
+  "release_year",
+
+  "category",
+  "status",
+  "release_type",
+
+  "rating",
+  "rating_count",
+  "total_rating",
+  "total_rating_count",
+  "hypes",
+
+  "cover_image_id",
+  "cover_small_url",
+  "cover_medium_url",
+  "cover_large_url",
+
+  "developer",
+  "publisher",
+
+  "franchise_name",
+  "collection_name",
+
+  "checksum",
+  "igdb_url",
+  "source",
+  "active",
+
+  "editorial_summary",
+
+  "freaky_official_score",
+  "freaky_official_votes",
+
+  "community_score",
+  "community_votes",
+
+  "manual_trailer_youtube_id",
+  "manual_trailer_url",
+
+  "data_sources",
+  "featured",
+].join(",");
+
+/* =========================================================
+   VALIDAR ID
+========================================================= */
+
+function parseGameId(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const normalized =
+    String(value).trim();
+
+  if (
+    !/^\d+$/.test(
+      normalized
+    )
+  ) {
+    return NaN;
+  }
+
+  const id =
+    Number(normalized);
+
+  if (
+    !Number.isSafeInteger(id) ||
+    id <= 0
+  ) {
+    return NaN;
+  }
+
+  return id;
+}
+
+/* =========================================================
+   GET /api/games
+
+   Biblioteca:
+   /api/games
+
+   Ficha individual:
+   /api/games?id=40
+========================================================= */
+
+export async function GET(
+  request
+) {
   try {
     const environment =
       getEnvironment();
 
-    /*
-      Seguimos usando los mismos 10 juegos de prueba.
+    const { searchParams } =
+      new URL(
+        request.url
+      );
 
-      IMPORTANTE:
-      esto todavía NO representa "Populares Hoy".
+    const requestedId =
+      parseGameId(
+        searchParams.get(
+          "id"
+        )
+      );
 
-      No cambiamos ese comportamiento hasta crear
-      la lógica real de actualidad.
-    */
+    /* =====================================================
+       ID INVÁLIDO
+    ===================================================== */
+
+    if (
+      Number.isNaN(
+        requestedId
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok:
+            false,
+
+          error:
+            "El parámetro id debe ser un ID numérico válido.",
+        },
+        {
+          status:
+            400,
+        }
+      );
+    }
+
+    /* =====================================================
+       FICHA INDIVIDUAL
+    ===================================================== */
+
+    if (
+      requestedId !== null
+    ) {
+      const games =
+        await supabaseGet(
+          environment,
+          [
+            "games",
+            "?select=",
+            GAME_SELECT_FIELDS,
+            `&id=eq.${requestedId}`,
+            "&limit=1",
+          ].join("")
+        );
+
+      if (
+        !games ||
+        games.length === 0
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            found:
+              false,
+
+            id:
+              requestedId,
+
+            error:
+              `El juego ${requestedId} no existe todavía en la biblioteca de Freaky World.`,
+          },
+          {
+            status:
+              404,
+
+            headers: {
+              "Cache-Control":
+                "no-store, max-age=0",
+            },
+          }
+        );
+      }
+
+      const completeGame =
+        await loadCompleteGame(
+          environment,
+          games[0]
+        );
+
+      return NextResponse.json(
+        {
+          ok:
+            true,
+
+          found:
+            true,
+
+          source:
+            "Freaky World Database",
+
+          game:
+            completeGame,
+        },
+        {
+          status:
+            200,
+
+          headers: {
+            "Cache-Control":
+              "no-store, max-age=0",
+          },
+        }
+      );
+    }
+
+    /* =====================================================
+       BIBLIOTECA
+
+       Ya NO limitamos a los 10 juegos iniciales.
+
+       Todo juego activo incorporado a Freaky World
+       puede aparecer en esta API.
+    ===================================================== */
 
     const games =
       await supabaseGet(
@@ -707,47 +1202,9 @@ export async function GET() {
         [
           "games",
           "?select=",
-          [
-            "id",
-            "slug",
-            "name",
-            "summary",
-            "storyline",
-            "first_release_date",
-            "release_year",
-            "category",
-            "status",
-            "release_type",
-            "rating",
-            "rating_count",
-            "total_rating",
-            "total_rating_count",
-            "hypes",
-            "cover_image_id",
-            "cover_small_url",
-            "cover_medium_url",
-            "cover_large_url",
-            "developer",
-            "publisher",
-            "franchise_name",
-            "collection_name",
-            "checksum",
-            "igdb_url",
-            "source",
-            "active",
-            "editorial_summary",
-            "freaky_official_score",
-            "freaky_official_votes",
-            "community_score",
-            "community_votes",
-            "manual_trailer_youtube_id",
-            "manual_trailer_url",
-            "data_sources",
-            "featured",
-          ].join(","),
+          GAME_SELECT_FIELDS,
           "&active=eq.true",
-          "&order=total_rating_count.desc",
-          "&limit=10",
+          "&order=total_rating_count.desc.nullslast",
         ].join("")
       );
 
@@ -805,6 +1262,11 @@ export async function GET() {
       {
         status:
           500,
+
+        headers: {
+          "Cache-Control":
+            "no-store, max-age=0",
+        },
       }
     );
   }
