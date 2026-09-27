@@ -3,49 +3,36 @@
 import {
   useEffect,
   useMemo,
+  useState,
 } from "react";
 
 /* =========================================================
    FREAKY WORLD
-   FICHA RÁPIDA DE JUEGO
+   FICHA RÁPIDA RESPONSIVE
 
-   Esta ficha vive encima del mundo 3D.
+   VERTICAL:
+   - vídeo arriba
+   - información debajo
 
-   X
-   VOLVER AL MUNDO
-       -> cierran esta ficha
-
-   VER FICHA COMPLETA
-       -> queda preparado para abrir nuestra ficha 2D propia
+   HORIZONTAL / DESKTOP:
+   - vídeo izquierda
+   - información derecha
+   - todo adaptado a la altura disponible
 ========================================================= */
 
 /* =========================================================
    YOUTUBE
 ========================================================= */
 
-function getYoutubeId(
-  game
-) {
+function getYoutubeId(game) {
   const videos =
-    Array.isArray(
-      game?.videos
-    )
+    Array.isArray(game?.videos)
       ? game.videos
       : [];
 
-  if (
-    videos.length === 0
-  ) {
+  if (!videos.length) {
     return null;
   }
-
-  /*
-    Preferimos primero vídeos cuyo nombre parezca
-    un trailer principal.
-
-    Si no encontramos uno, usamos el primer vídeo
-    disponible de IGDB.
-  */
 
   const preferredWords = [
     "launch trailer",
@@ -57,19 +44,13 @@ function getYoutubeId(
 
   let selected = null;
 
-  for (
-    const word
-    of preferredWords
-  ) {
-    selected =
-      videos.find(
-        (video) =>
-          String(
-            video?.name || ""
-          )
-            .toLowerCase()
-            .includes(word)
-      );
+  for (const word of preferredWords) {
+    selected = videos.find(
+      (video) =>
+        String(video?.name || "")
+          .toLowerCase()
+          .includes(word)
+    );
 
     if (selected) {
       break;
@@ -77,8 +58,7 @@ function getYoutubeId(
   }
 
   if (!selected) {
-    selected =
-      videos[0];
+    selected = videos[0];
   }
 
   return (
@@ -92,21 +72,11 @@ function getYoutubeId(
    PLATAFORMAS
 ========================================================= */
 
-function getPlatforms(
-  game
-) {
+function getPlatforms(game) {
   const platforms =
-    Array.isArray(
-      game?.platforms
-    )
+    Array.isArray(game?.platforms)
       ? game.platforms
       : [];
-
-  if (
-    platforms.length === 0
-  ) {
-    return "";
-  }
 
   return platforms
     .map(
@@ -122,46 +92,119 @@ function getPlatforms(
    PUNTUACIÓN
 ========================================================= */
 
-function getScore(
-  game
-) {
+function getScore(game) {
   const value =
-    typeof game?.totalRating ===
-    "number"
+    typeof game?.totalRating === "number"
       ? game.totalRating
-      : typeof game?.rating ===
-          "number"
+      : typeof game?.rating === "number"
         ? game.rating
         : null;
 
-  if (
-    value === null
-  ) {
+  if (value === null) {
     return null;
   }
 
-  /*
-    IGDB trabaja sobre 100.
-    Freaky World muestra 0-10.
-  */
-
-  return (
-    value / 10
-  ).toFixed(1);
+  return (value / 10).toFixed(1);
 }
 
 /* =========================================================
    PORTADA
 ========================================================= */
 
-function getCover(
-  game
-) {
+function getCover(game) {
   return (
     game?.cover?.large ||
     game?.cover?.medium ||
     game?.cover?.small ||
     null
+  );
+}
+
+/* =========================================================
+   MEDIA QUERY
+========================================================= */
+
+function useMediaQuery(query) {
+  const [matches, setMatches] =
+    useState(false);
+
+  useEffect(() => {
+    const media =
+      window.matchMedia(query);
+
+    const update = () => {
+      setMatches(media.matches);
+    };
+
+    update();
+
+    media.addEventListener?.(
+      "change",
+      update
+    );
+
+    return () => {
+      media.removeEventListener?.(
+        "change",
+        update
+      );
+    };
+  }, [query]);
+
+  return matches;
+}
+
+/* =========================================================
+   BOTÓN
+========================================================= */
+
+function ActionButton({
+  children,
+  onClick,
+  primary = false,
+  accent = "#5fdcff",
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: "100%",
+
+        minHeight: 48,
+
+        padding:
+          "11px 16px",
+
+        border:
+          primary
+            ? `1px solid ${accent}`
+            : "1px solid rgba(255,255,255,.18)",
+
+        borderRadius: 13,
+
+        background:
+          primary
+            ? accent
+            : "#1b2025",
+
+        color:
+          primary
+            ? "#050708"
+            : "#ffffff",
+
+        fontSize: 13,
+
+        fontWeight: 900,
+
+        letterSpacing:
+          ".035em",
+
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -173,37 +216,59 @@ export default function RankingOverlay({
   game,
   onClose,
 }) {
+  /*
+    Horizontal incluye:
+
+    - móvil apaisado
+    - tablet apaisada
+    - ordenador
+
+    En vertical mantenemos el formato tradicional.
+  */
+
+  const horizontal =
+    useMediaQuery(
+      "(orientation: landscape)"
+    );
+
+  /*
+    Detectamos pantallas bajas.
+
+    Es especialmente importante en:
+    - móviles horizontales
+    - portátiles
+  */
+
+  const lowHeight =
+    useMediaQuery(
+      "(max-height: 700px)"
+    );
+
   /* =======================================================
      BLOQUEAR SCROLL DEL DOCUMENTO
   ======================================================= */
 
   useEffect(() => {
     const previous =
-      document.body.style
-        .overflow;
+      document.body.style.overflow;
 
-    document.body.style
-      .overflow =
+    document.body.style.overflow =
       "hidden";
 
     return () => {
-      document.body.style
-        .overflow =
+      document.body.style.overflow =
         previous;
     };
   }, []);
 
   /* =======================================================
-     CERRAR CON ESCAPE
+     ESCAPE
   ======================================================= */
 
   useEffect(() => {
-    function handleKeyDown(
-      event
-    ) {
+    function handleKeyDown(event) {
       if (
-        event.key ===
-        "Escape"
+        event.key === "Escape"
       ) {
         onClose?.();
       }
@@ -224,43 +289,29 @@ export default function RankingOverlay({
 
   const youtubeId =
     useMemo(
-      () =>
-        getYoutubeId(
-          game
-        ),
+      () => getYoutubeId(game),
       [game]
     );
 
   const platforms =
     useMemo(
-      () =>
-        getPlatforms(
-          game
-        ),
+      () => getPlatforms(game),
       [game]
     );
 
   const score =
     useMemo(
-      () =>
-        getScore(
-          game
-        ),
+      () => getScore(game),
       [game]
     );
 
   const cover =
     useMemo(
-      () =>
-        getCover(
-          game
-        ),
+      () => getCover(game),
       [game]
     );
 
-  if (
-    !game?.id
-  ) {
+  if (!game?.id) {
     return null;
   }
 
@@ -276,16 +327,14 @@ export default function RankingOverlay({
     "";
 
   const year =
-    game.year ||
-    "";
+    game.year || "";
+
+  const accent =
+    game.accent ||
+    "#5fdcff";
 
   /* =======================================================
      FICHA COMPLETA
-
-     Por ahora dejamos preparada la acción.
-
-     En el siguiente paso construiremos la ficha 2D propia
-     y este botón abrirá esa segunda capa.
   ======================================================= */
 
   function openFullGameCard() {
@@ -301,28 +350,49 @@ export default function RankingOverlay({
     );
   }
 
+  /* =======================================================
+     TAMAÑOS RESPONSIVE
+  ======================================================= */
+
+  const headerHeight =
+    horizontal
+      ? lowHeight
+        ? 58
+        : 68
+      : 82;
+
+  const contentPadding =
+    horizontal
+      ? lowHeight
+        ? 12
+        : 18
+      : "clamp(18px,4vw,38px)";
+
   return (
     <div
       style={{
-        position:
-          "fixed",
+        position: "fixed",
 
         inset: 0,
 
-        zIndex:
-          99999,
+        zIndex: 99999,
 
-        overflowY:
-          "auto",
+        width: "100%",
+
+        height: "100dvh",
 
         background:
           "#080a0d",
 
-        color:
-          "#ffffff",
+        color: "#ffffff",
 
         fontFamily:
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+
+        overflow:
+          horizontal
+            ? "hidden"
+            : "auto",
 
         WebkitOverflowScrolling:
           "touch",
@@ -334,35 +404,33 @@ export default function RankingOverlay({
 
       <header
         style={{
-          position:
-            "sticky",
+          height:
+            headerHeight,
 
-          top: 0,
-
-          zIndex: 20,
-
-          minHeight:
-            82,
+          boxSizing:
+            "border-box",
 
           padding:
-            "14px 18px",
+            horizontal
+              ? lowHeight
+                ? "8px 14px"
+                : "10px 18px"
+              : "14px 18px",
 
-          display:
-            "flex",
+          display: "flex",
 
-          alignItems:
-            "center",
+          alignItems: "center",
 
           justifyContent:
             "space-between",
 
-          gap: 16,
+          gap: 14,
 
           background:
-            "rgba(5,7,9,0.96)",
+            "rgba(5,7,9,.97)",
 
           borderBottom:
-            `1px solid ${game.accent || "#5fdcff"}55`,
+            `1px solid ${accent}55`,
 
           backdropFilter:
             "blur(18px)",
@@ -374,24 +442,29 @@ export default function RankingOverlay({
         <div
           style={{
             minWidth: 0,
+
+            flex: 1,
           }}
         >
           <div
             style={{
               marginBottom:
-                6,
+                horizontal &&
+                lowHeight
+                  ? 3
+                  : 5,
 
-              color:
-                game.accent ||
-                "#5fdcff",
+              color: accent,
 
               fontSize:
-                12,
+                horizontal &&
+                lowHeight
+                  ? 9
+                  : 11,
 
               lineHeight: 1,
 
-              fontWeight:
-                900,
+              fontWeight: 900,
 
               letterSpacing:
                 ".18em",
@@ -402,9 +475,6 @@ export default function RankingOverlay({
 
           <div
             style={{
-              maxWidth:
-                "calc(100vw - 100px)",
-
               overflow:
                 "hidden",
 
@@ -415,10 +485,13 @@ export default function RankingOverlay({
                 "nowrap",
 
               fontSize:
-                "clamp(18px, 5vw, 27px)",
+                horizontal
+                  ? lowHeight
+                    ? 17
+                    : 21
+                  : "clamp(18px,5vw,27px)",
 
-              fontWeight:
-                850,
+              fontWeight: 850,
             }}
           >
             {title}
@@ -428,19 +501,25 @@ export default function RankingOverlay({
         <button
           type="button"
           aria-label="Cerrar ficha"
-          onClick={
-            onClose
-          }
+          onClick={onClose}
           style={{
-            flex:
-              "0 0 auto",
+            flex: "0 0 auto",
 
-            width: 54,
+            width:
+              horizontal
+                ? lowHeight
+                  ? 40
+                  : 46
+                : 54,
 
-            height: 54,
+            height:
+              horizontal
+                ? lowHeight
+                  ? 40
+                  : 46
+                : 54,
 
-            display:
-              "grid",
+            display: "grid",
 
             placeItems:
               "center",
@@ -454,16 +533,16 @@ export default function RankingOverlay({
             background:
               "#20252a",
 
-            color:
-              "#ffffff",
+            color: "#ffffff",
 
             fontSize:
-              36,
+              horizontal
+                ? 29
+                : 36,
 
             lineHeight: 1,
 
-            cursor:
-              "pointer",
+            cursor: "pointer",
           }}
         >
           ×
@@ -476,461 +555,584 @@ export default function RankingOverlay({
 
       <main
         style={{
-          width:
-            "min(100%, 1100px)",
+          boxSizing:
+            "border-box",
 
-          margin:
-            "0 auto",
+          width: "100%",
+
+          maxWidth:
+            horizontal
+              ? 1500
+              : 1100,
+
+          height:
+            horizontal
+              ? `calc(100dvh - ${headerHeight}px)`
+              : "auto",
+
+          margin: "0 auto",
 
           padding:
-            "clamp(18px,4vw,38px)",
+            contentPadding,
+
+          overflow:
+            horizontal
+              ? "hidden"
+              : "visible",
         }}
       >
-        {/* =================================================
-            TRÁILER
-        ================================================= */}
-
-        <section
+        <div
           style={{
-            overflow:
-              "hidden",
+            width: "100%",
 
-            position:
-              "relative",
+            height:
+              horizontal
+                ? "100%"
+                : "auto",
 
-            width:
-              "100%",
+            display: "grid",
 
-            aspectRatio:
-              "16 / 9",
+            /*
+              En horizontal reservamos más espacio
+              al vídeo que a la ficha.
 
-            border:
-              "1px solid rgba(255,255,255,.12)",
+              En vertical queda una sola columna.
+            */
 
-            borderRadius:
-              18,
+            gridTemplateColumns:
+              horizontal
+                ? "minmax(0, 1.65fr) minmax(280px, .85fr)"
+                : "1fr",
 
-            background:
-              "#000000",
-
-            boxShadow:
-              "0 24px 70px rgba(0,0,0,.42)",
-          }}
-        >
-          {youtubeId ? (
-            <iframe
-              src={
-                `https://www.youtube.com/embed/${youtubeId}?playsinline=1&rel=0`
-              }
-              title={
-                `Tráiler de ${title}`
-              }
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              style={{
-                position:
-                  "absolute",
-
-                inset: 0,
-
-                width:
-                  "100%",
-
-                height:
-                  "100%",
-
-                border: 0,
-              }}
-            />
-          ) : cover ? (
-            <img
-              src={cover}
-              alt={title}
-              style={{
-                width:
-                  "100%",
-
-                height:
-                  "100%",
-
-                objectFit:
-                  "cover",
-
-                display:
-                  "block",
-
-                opacity:
-                  0.72,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                position:
-                  "absolute",
-
-                inset: 0,
-
-                display:
-                  "grid",
-
-                placeItems:
-                  "center",
-
-                color:
-                  "#8c969e",
-
-                fontSize:
-                  14,
-
-                fontWeight:
-                  700,
-              }}
-            >
-              Tráiler no disponible
-            </div>
-          )}
-        </section>
-
-        {/* =================================================
-            TÍTULO + PUNTUACIÓN
-        ================================================= */}
-
-        <section
-          style={{
-            display:
-              "flex",
+            gap:
+              horizontal
+                ? lowHeight
+                  ? 14
+                  : 22
+                : 0,
 
             alignItems:
-              "flex-start",
-
-            justifyContent:
-              "space-between",
-
-            gap: 20,
-
-            marginTop:
-              26,
+              horizontal
+                ? "center"
+                : "stretch",
           }}
         >
-          <div
+          {/* =================================================
+              COLUMNA DEL VÍDEO
+          ================================================= */}
+
+          <section
             style={{
+              width: "100%",
+
               minWidth: 0,
+
+              display:
+                horizontal
+                  ? "flex"
+                  : "block",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "center",
             }}
           >
             <div
               style={{
-                color:
-                  game.accent ||
-                  "#5fdcff",
+                position:
+                  "relative",
 
-                fontSize:
-                  12,
+                /*
+                  CLAVE DEL CAMBIO:
 
-                fontWeight:
-                  900,
+                  En horizontal el vídeo NO toma
+                  simplemente el 100% del ancho.
 
-                letterSpacing:
-                  ".14em",
-              }}
-            >
-              {game.rank
-                ? `TOP 10 · #${game.rank}`
-                : "FREAKY WORLD"}
-            </div>
+                  Su tamaño queda limitado tanto
+                  por el ancho como por la altura
+                  real disponible.
+                */
 
-            <h1
-              style={{
-                margin:
-                  "7px 0 5px",
+                width:
+                  horizontal
+                    ? "min(100%, calc((100dvh - 110px) * 16 / 9))"
+                    : "100%",
 
-                fontSize:
-                  "clamp(29px,7vw,55px)",
+                maxWidth:
+                  "100%",
 
-                lineHeight:
-                  1.03,
+                aspectRatio:
+                  "16 / 9",
 
-                letterSpacing:
-                  "-.035em",
-              }}
-            >
-              {title}
-            </h1>
+                maxHeight:
+                  horizontal
+                    ? lowHeight
+                      ? `calc(100dvh - ${headerHeight + 24}px)`
+                      : `calc(100dvh - ${headerHeight + 40}px)`
+                    : "none",
 
-            {developer && (
-              <div
-                style={{
-                  color:
-                    "#9da6ad",
-
-                  fontSize:
-                    "clamp(14px,3.8vw,18px)",
-                }}
-              >
-                {developer}
-              </div>
-            )}
-          </div>
-
-          {score && (
-            <div
-              style={{
-                flex:
-                  "0 0 auto",
-
-                minWidth:
-                  72,
-
-                padding:
-                  "12px 13px",
+                overflow:
+                  "hidden",
 
                 border:
-                  `1px solid ${game.accent || "#5fdcff"}66`,
+                  "1px solid rgba(255,255,255,.12)",
 
                 borderRadius:
-                  16,
+                  horizontal &&
+                  lowHeight
+                    ? 12
+                    : 18,
 
                 background:
-                  `${game.accent || "#5fdcff"}18`,
+                  "#000000",
 
-                textAlign:
-                  "center",
+                boxShadow:
+                  "0 20px 60px rgba(0,0,0,.4)",
+              }}
+            >
+              {youtubeId ? (
+                <iframe
+                  src={
+                    `https://www.youtube.com/embed/${youtubeId}?playsinline=1&rel=0`
+                  }
+                  title={
+                    `Tráiler de ${title}`
+                  }
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  style={{
+                    position:
+                      "absolute",
+
+                    inset: 0,
+
+                    width:
+                      "100%",
+
+                    height:
+                      "100%",
+
+                    display:
+                      "block",
+
+                    border: 0,
+                  }}
+                />
+              ) : cover ? (
+                <img
+                  src={cover}
+                  alt={title}
+                  style={{
+                    position:
+                      "absolute",
+
+                    inset: 0,
+
+                    width:
+                      "100%",
+
+                    height:
+                      "100%",
+
+                    objectFit:
+                      "contain",
+
+                    display:
+                      "block",
+
+                    background:
+                      "#000000",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    position:
+                      "absolute",
+
+                    inset: 0,
+
+                    display:
+                      "grid",
+
+                    placeItems:
+                      "center",
+
+                    color:
+                      "#8c969e",
+
+                    fontSize: 14,
+
+                    fontWeight: 700,
+                  }}
+                >
+                  Tráiler no disponible
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* =================================================
+              COLUMNA DE INFORMACIÓN
+          ================================================= */}
+
+          <section
+            style={{
+              minWidth: 0,
+
+              height:
+                horizontal
+                  ? "100%"
+                  : "auto",
+
+              display: "flex",
+
+              flexDirection:
+                "column",
+
+              justifyContent:
+                horizontal
+                  ? "center"
+                  : "flex-start",
+
+              overflowY:
+                horizontal
+                  ? "auto"
+                  : "visible",
+
+              paddingRight:
+                horizontal
+                  ? 3
+                  : 0,
+
+              scrollbarWidth:
+                "thin",
+            }}
+          >
+            {/* ===============================================
+                TÍTULO / SCORE
+            =============================================== */}
+
+            <div
+              style={{
+                display: "flex",
+
+                alignItems:
+                  "flex-start",
+
+                justifyContent:
+                  "space-between",
+
+                gap:
+                  lowHeight
+                    ? 12
+                    : 18,
+
+                marginTop:
+                  horizontal
+                    ? 0
+                    : 26,
               }}
             >
               <div
                 style={{
-                  fontSize:
-                    28,
-
-                  lineHeight:
-                    1,
-
-                  fontWeight:
-                    950,
+                  minWidth: 0,
                 }}
               >
-                {score}
+                <div
+                  style={{
+                    color: accent,
+
+                    fontSize:
+                      horizontal &&
+                      lowHeight
+                        ? 9
+                        : 11,
+
+                    fontWeight: 900,
+
+                    letterSpacing:
+                      ".14em",
+                  }}
+                >
+                  {game.rank
+                    ? `TOP 10 · #${game.rank}`
+                    : "FREAKY WORLD"}
+                </div>
+
+                <h1
+                  style={{
+                    margin:
+                      horizontal &&
+                      lowHeight
+                        ? "5px 0 3px"
+                        : "7px 0 5px",
+
+                    fontSize:
+                      horizontal
+                        ? lowHeight
+                          ? "clamp(19px,3.3vw,30px)"
+                          : "clamp(24px,3vw,42px)"
+                        : "clamp(29px,7vw,55px)",
+
+                    lineHeight: 1.03,
+
+                    letterSpacing:
+                      "-.035em",
+                  }}
+                >
+                  {title}
+                </h1>
+
+                {developer && (
+                  <div
+                    style={{
+                      color:
+                        "#9da6ad",
+
+                      fontSize:
+                        horizontal &&
+                        lowHeight
+                          ? 12
+                          : 14,
+                    }}
+                  >
+                    {developer}
+                  </div>
+                )}
               </div>
 
-              <div
-                style={{
-                  marginTop:
-                    4,
+              {score && (
+                <div
+                  style={{
+                    flex:
+                      "0 0 auto",
 
-                  color:
-                    "#89939a",
+                    minWidth:
+                      horizontal &&
+                      lowHeight
+                        ? 56
+                        : 66,
 
-                  fontSize:
-                    10,
+                    padding:
+                      horizontal &&
+                      lowHeight
+                        ? "8px 9px"
+                        : "10px 11px",
 
-                  fontWeight:
-                    800,
+                    border:
+                      `1px solid ${accent}66`,
 
-                  letterSpacing:
-                    ".08em",
-                }}
-              >
-                / 10
-              </div>
+                    borderRadius:
+                      14,
+
+                    background:
+                      `${accent}18`,
+
+                    textAlign:
+                      "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize:
+                        horizontal &&
+                        lowHeight
+                          ? 21
+                          : 26,
+
+                      lineHeight: 1,
+
+                      fontWeight: 950,
+                    }}
+                  >
+                    {score}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 3,
+
+                      color:
+                        "#89939a",
+
+                      fontSize: 9,
+
+                      fontWeight: 800,
+                    }}
+                  >
+                    / 10
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </section>
 
-        {/* =================================================
-            DATOS RÁPIDOS
-        ================================================= */}
+            {/* ===============================================
+                DATOS
+            =============================================== */}
 
-        <section
-          style={{
-            marginTop:
-              22,
-
-            padding:
-              "17px 18px",
-
-            border:
-              "1px solid rgba(255,255,255,.09)",
-
-            borderRadius:
-              16,
-
-            background:
-              "#11151a",
-          }}
-        >
-          <div
-            style={{
-              display:
-                "flex",
-
-              flexWrap:
-                "wrap",
-
-              gap:
-                "10px 22px",
-
-              color:
-                "#c7cdd1",
-
-              fontSize:
-                14,
-
-              lineHeight:
-                1.5,
-            }}
-          >
-            {year && (
-              <span>
-                <strong
-                  style={{
-                    color:
-                      "#ffffff",
-                  }}
-                >
-                  Año:
-                </strong>{" "}
-                {year}
-              </span>
-            )}
-
-            {developer && (
-              <span>
-                <strong
-                  style={{
-                    color:
-                      "#ffffff",
-                  }}
-                >
-                  Desarrollo:
-                </strong>{" "}
-                {developer}
-              </span>
-            )}
-          </div>
-
-          {platforms && (
             <div
               style={{
                 marginTop:
-                  11,
+                  horizontal &&
+                  lowHeight
+                    ? 10
+                    : 18,
 
-                color:
-                  "#939da4",
+                padding:
+                  horizontal &&
+                  lowHeight
+                    ? "10px 12px"
+                    : "14px 15px",
 
-                fontSize:
-                  13,
+                border:
+                  "1px solid rgba(255,255,255,.09)",
 
-                lineHeight:
-                  1.5,
+                borderRadius:
+                  14,
+
+                background:
+                  "#11151a",
               }}
             >
-              {platforms}
+              <div
+                style={{
+                  display: "flex",
+
+                  flexWrap: "wrap",
+
+                  gap:
+                    horizontal &&
+                    lowHeight
+                      ? "5px 13px"
+                      : "8px 18px",
+
+                  color:
+                    "#c7cdd1",
+
+                  fontSize:
+                    horizontal &&
+                    lowHeight
+                      ? 11
+                      : 13,
+
+                  lineHeight: 1.45,
+                }}
+              >
+                {year && (
+                  <span>
+                    <strong
+                      style={{
+                        color:
+                          "#ffffff",
+                      }}
+                    >
+                      Año:
+                    </strong>{" "}
+                    {year}
+                  </span>
+                )}
+
+                {developer && (
+                  <span>
+                    <strong
+                      style={{
+                        color:
+                          "#ffffff",
+                      }}
+                    >
+                      Desarrollo:
+                    </strong>{" "}
+                    {developer}
+                  </span>
+                )}
+              </div>
+
+              {platforms && (
+                <div
+                  style={{
+                    marginTop:
+                      horizontal &&
+                      lowHeight
+                        ? 6
+                        : 9,
+
+                    color:
+                      "#939da4",
+
+                    fontSize:
+                      horizontal &&
+                      lowHeight
+                        ? 10
+                        : 12,
+
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {platforms}
+                </div>
+              )}
             </div>
-          )}
-        </section>
 
-        {/* =================================================
-            BOTONES
-        ================================================= */}
+            {/* ===============================================
+                BOTONES
+            =============================================== */}
 
-        <section
-          style={{
-            display:
-              "grid",
+            <div
+              style={{
+                display: "grid",
 
-            gridTemplateColumns:
-              "repeat(auto-fit,minmax(210px,1fr))",
+                gridTemplateColumns:
+                  horizontal &&
+                  !lowHeight
+                    ? "1fr 1fr"
+                    : "1fr",
 
-            gap: 12,
+                gap:
+                  horizontal &&
+                  lowHeight
+                    ? 7
+                    : 10,
 
-            marginTop:
-              24,
+                marginTop:
+                  horizontal &&
+                  lowHeight
+                    ? 10
+                    : 18,
 
-            paddingBottom:
-              "max(30px, env(safe-area-inset-bottom))",
-          }}
-        >
-          <button
-            type="button"
-            onClick={
-              onClose
-            }
-            style={{
-              minHeight:
-                54,
+                paddingBottom:
+                  horizontal
+                    ? 0
+                    : "max(30px, env(safe-area-inset-bottom))",
+              }}
+            >
+              <ActionButton
+                onClick={
+                  onClose
+                }
+                accent={
+                  accent
+                }
+              >
+                VOLVER AL MUNDO
+              </ActionButton>
 
-              padding:
-                "14px 18px",
-
-              border:
-                "1px solid rgba(255,255,255,.18)",
-
-              borderRadius:
-                14,
-
-              background:
-                "#1b2025",
-
-              color:
-                "#ffffff",
-
-              fontSize:
-                14,
-
-              fontWeight:
-                900,
-
-              letterSpacing:
-                ".035em",
-
-              cursor:
-                "pointer",
-            }}
-          >
-            VOLVER AL MUNDO
-          </button>
-
-          <button
-            type="button"
-            onClick={
-              openFullGameCard
-            }
-            style={{
-              minHeight:
-                54,
-
-              padding:
-                "14px 18px",
-
-              border:
-                `1px solid ${game.accent || "#5fdcff"}`,
-
-              borderRadius:
-                14,
-
-              background:
-                game.accent ||
-                "#5fdcff",
-
-              color:
-                "#050708",
-
-              fontSize:
-                14,
-
-              fontWeight:
-                950,
-
-              letterSpacing:
-                ".035em",
-
-              cursor:
-                "pointer",
-            }}
-          >
-            VER FICHA COMPLETA
-          </button>
-        </section>
+              <ActionButton
+                onClick={
+                  openFullGameCard
+                }
+                primary
+                accent={
+                  accent
+                }
+              >
+                VER FICHA COMPLETA
+              </ActionButton>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );
