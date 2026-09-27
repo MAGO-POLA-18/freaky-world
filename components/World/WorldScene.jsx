@@ -26,6 +26,7 @@ import PlayerController, {
 import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
+import FullGameOverlay from "./FullGameOverlay";
 import VideoOverlay from "./VideoOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
@@ -64,6 +65,25 @@ export default function WorldScene() {
     setOpenedGame,
   ] = useState(null);
 
+  /*
+    Juego que se está mostrando
+    en la ficha completa.
+
+    Es independiente de openedGame
+    para poder alternar:
+
+    ficha rápida
+        ↓
+    ficha completa
+        ↓
+    ficha rápida
+  */
+
+  const [
+    fullGame,
+    setFullGame,
+  ] = useState(null);
+
   const [
     quality,
     setQuality,
@@ -99,8 +119,17 @@ export default function WorldScene() {
     setSkyTestHour,
   ] = useState(null);
 
+  /*
+    El mundo se considera bloqueado
+    tanto con la ficha rápida
+    como con la ficha completa.
+  */
+
   const overlayOpen =
-    Boolean(openedGame);
+    Boolean(
+      openedGame ||
+      fullGame
+    );
 
   const isVideoWall =
     nearbyGame?.id ===
@@ -211,6 +240,50 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
+     ABRIR FICHA COMPLETA
+
+     RankingOverlay ya dispara:
+
+     freaky:open-full-game
+
+     Acá lo escuchamos y cambiamos
+     de ficha rápida a ficha completa.
+  ======================================================= */
+
+  useEffect(() => {
+    const handleOpenFullGame = (
+      event
+    ) => {
+      const game =
+        event.detail?.game;
+
+      if (!game?.id) {
+        return;
+      }
+
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+
+      setFullGame(game);
+    };
+
+    window.addEventListener(
+      "freaky:open-full-game",
+      handleOpenFullGame
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:open-full-game",
+        handleOpenFullGame
+      );
+    };
+  }, []);
+
+  /* =======================================================
      ABRIR 2D
   ======================================================= */
 
@@ -229,6 +302,13 @@ export default function WorldScene() {
       playerInput.dashRequested =
         false;
 
+      /*
+        Por seguridad limpiamos
+        cualquier ficha completa anterior.
+      */
+
+      setFullGame(null);
+
       setOpenedGame(
         nearbyGame
       );
@@ -236,6 +316,10 @@ export default function WorldScene() {
       nearbyGame,
       overlayOpen,
     ]);
+
+  /* =======================================================
+     CERRAR TODO Y VOLVER AL MUNDO
+  ======================================================= */
 
   const closeGame =
     useCallback(() => {
@@ -245,7 +329,24 @@ export default function WorldScene() {
       playerInput.dashRequested =
         false;
 
+      setFullGame(null);
       setOpenedGame(null);
+    }, []);
+
+  /* =======================================================
+     VOLVER DE FICHA COMPLETA
+     A FICHA RÁPIDA
+  ======================================================= */
+
+  const backToQuickGame =
+    useCallback(() => {
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+
+      setFullGame(null);
     }, []);
 
   /* =======================================================
@@ -256,6 +357,15 @@ export default function WorldScene() {
     const handleKey = (
       event
     ) => {
+      /*
+        Si estamos en ficha completa,
+        dejamos que FullGameOverlay
+        gestione Escape.
+
+        Así Escape cierra todo y vuelve
+        al mundo mediante onClose.
+      */
+
       if (
         event.code ===
           "Escape" &&
@@ -875,10 +985,29 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          2D
+          OVERLAYS 2D
+
+          Prioridad:
+
+          1. Ficha completa
+          2. VideoOverlay
+          3. Ficha rápida
+
+          De esta forma nunca quedan
+          dos interfaces visibles
+          simultáneamente.
       =================================================== */}
 
-      {openedGame?.overlayType === "video" ? (
+      {fullGame ? (
+        <FullGameOverlay
+          game={fullGame}
+          onClose={closeGame}
+          onBack={
+            backToQuickGame
+          }
+        />
+      ) : openedGame?.overlayType ===
+        "video" ? (
         <VideoOverlay
           video={openedGame}
           onClose={closeGame}
