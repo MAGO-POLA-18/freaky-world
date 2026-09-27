@@ -1,5 +1,7 @@
 "use client";
 
+import FeaturedVideoWall from "./FeaturedVideoWall";
+
 import {
   useEffect,
   useLayoutEffect,
@@ -2497,7 +2499,7 @@ export default function PopularTodayHall() {
         )
       )}
 
-      <HeroVideoWall />
+      <FeaturedVideoWall />
 
       <RigidBody
         type="fixed"
