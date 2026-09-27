@@ -10,14 +10,18 @@ import {
    FREAKY WORLD
    FICHA RÁPIDA RESPONSIVE
 
-   VERTICAL:
-   - vídeo arriba
-   - información debajo
+   3 MODOS:
 
-   HORIZONTAL / DESKTOP:
-   - vídeo izquierda
-   - información derecha
-   - todo adaptado a la altura disponible
+   1. VERTICAL
+      vídeo arriba + información debajo
+
+   2. MÓVIL / TABLET HORIZONTAL
+      vídeo izquierda + información derecha
+
+   3. DESKTOP
+      vídeo contenido y centrado
+      información derecha
+      nunca supera la altura útil
 ========================================================= */
 
 /* =========================================================
@@ -163,6 +167,7 @@ function ActionButton({
   onClick,
   primary = false,
   accent = "#5fdcff",
+  compact = false,
 }) {
   return (
     <button
@@ -171,10 +176,15 @@ function ActionButton({
       style={{
         width: "100%",
 
-        minHeight: 48,
+        minHeight:
+          compact
+            ? 42
+            : 48,
 
         padding:
-          "11px 16px",
+          compact
+            ? "9px 12px"
+            : "11px 16px",
 
         border:
           primary
@@ -193,7 +203,10 @@ function ActionButton({
             ? "#050708"
             : "#ffffff",
 
-        fontSize: 13,
+        fontSize:
+          compact
+            ? 11
+            : 13,
 
         fontWeight: 900,
 
@@ -216,28 +229,23 @@ export default function RankingOverlay({
   game,
   onClose,
 }) {
-  /*
-    Horizontal incluye:
-
-    - móvil apaisado
-    - tablet apaisada
-    - ordenador
-
-    En vertical mantenemos el formato tradicional.
-  */
-
   const horizontal =
     useMediaQuery(
       "(orientation: landscape)"
     );
 
   /*
-    Detectamos pantallas bajas.
+    Desktop real.
 
-    Es especialmente importante en:
-    - móviles horizontales
-    - portátiles
+    Lo separamos de orientación porque un ordenador
+    normalmente también es landscape, pero necesita
+    un tratamiento distinto al móvil horizontal.
   */
+
+  const desktop =
+    useMediaQuery(
+      "(min-width: 1100px)"
+    );
 
   const lowHeight =
     useMediaQuery(
@@ -245,7 +253,7 @@ export default function RankingOverlay({
     );
 
   /* =======================================================
-     BLOQUEAR SCROLL DEL DOCUMENTO
+     BLOQUEAR SCROLL EXTERIOR
   ======================================================= */
 
   useEffect(() => {
@@ -333,10 +341,6 @@ export default function RankingOverlay({
     game.accent ||
     "#5fdcff";
 
-  /* =======================================================
-     FICHA COMPLETA
-  ======================================================= */
-
   function openFullGameCard() {
     window.dispatchEvent(
       new CustomEvent(
@@ -351,22 +355,23 @@ export default function RankingOverlay({
   }
 
   /* =======================================================
-     TAMAÑOS RESPONSIVE
+     TAMAÑOS
   ======================================================= */
 
   const headerHeight =
-    horizontal
-      ? lowHeight
-        ? 58
-        : 68
-      : 82;
+    desktop
+      ? 64
+      : horizontal
+        ? lowHeight
+          ? 58
+          : 68
+        : 82;
 
-  const contentPadding =
-    horizontal
-      ? lowHeight
-        ? 12
-        : 18
-      : "clamp(18px,4vw,38px)";
+  const horizontalLayout =
+    horizontal || desktop;
+
+  const compact =
+    lowHeight || desktop;
 
   return (
     <div
@@ -381,6 +386,8 @@ export default function RankingOverlay({
 
         height: "100dvh",
 
+        boxSizing: "border-box",
+
         background:
           "#080a0d",
 
@@ -390,7 +397,7 @@ export default function RankingOverlay({
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 
         overflow:
-          horizontal
+          horizontalLayout
             ? "hidden"
             : "auto",
 
@@ -411,11 +418,13 @@ export default function RankingOverlay({
             "border-box",
 
           padding:
-            horizontal
-              ? lowHeight
-                ? "8px 14px"
-                : "10px 18px"
-              : "14px 18px",
+            desktop
+              ? "9px 22px"
+              : horizontal
+                ? lowHeight
+                  ? "8px 14px"
+                  : "10px 18px"
+                : "14px 18px",
 
           display: "flex",
 
@@ -442,23 +451,20 @@ export default function RankingOverlay({
         <div
           style={{
             minWidth: 0,
-
             flex: 1,
           }}
         >
           <div
             style={{
               marginBottom:
-                horizontal &&
-                lowHeight
+                compact
                   ? 3
                   : 5,
 
               color: accent,
 
               fontSize:
-                horizontal &&
-                lowHeight
+                compact
                   ? 9
                   : 11,
 
@@ -485,11 +491,13 @@ export default function RankingOverlay({
                 "nowrap",
 
               fontSize:
-                horizontal
-                  ? lowHeight
-                    ? 17
-                    : 21
-                  : "clamp(18px,5vw,27px)",
+                desktop
+                  ? 20
+                  : horizontal
+                    ? lowHeight
+                      ? 17
+                      : 21
+                    : "clamp(18px,5vw,27px)",
 
               fontWeight: 850,
             }}
@@ -506,17 +514,13 @@ export default function RankingOverlay({
             flex: "0 0 auto",
 
             width:
-              horizontal
-                ? lowHeight
-                  ? 40
-                  : 46
+              compact
+                ? 42
                 : 54,
 
             height:
-              horizontal
-                ? lowHeight
-                  ? 40
-                  : 46
+              compact
+                ? 42
                 : 54,
 
             display: "grid",
@@ -536,7 +540,7 @@ export default function RankingOverlay({
             color: "#ffffff",
 
             fontSize:
-              horizontal
+              compact
                 ? 29
                 : 36,
 
@@ -561,22 +565,30 @@ export default function RankingOverlay({
           width: "100%",
 
           maxWidth:
-            horizontal
-              ? 1500
-              : 1100,
+            desktop
+              ? 1380
+              : horizontal
+                ? 1500
+                : 1100,
 
           height:
-            horizontal
+            horizontalLayout
               ? `calc(100dvh - ${headerHeight}px)`
               : "auto",
 
           margin: "0 auto",
 
           padding:
-            contentPadding,
+            desktop
+              ? "18px 24px"
+              : horizontal
+                ? lowHeight
+                  ? 12
+                  : 18
+                : "clamp(18px,4vw,38px)",
 
           overflow:
-            horizontal
+            horizontalLayout
               ? "hidden"
               : "visible",
         }}
@@ -586,49 +598,59 @@ export default function RankingOverlay({
             width: "100%",
 
             height:
-              horizontal
+              horizontalLayout
                 ? "100%"
                 : "auto",
 
             display: "grid",
 
             /*
-              En horizontal reservamos más espacio
-              al vídeo que a la ficha.
+              PC:
+              vídeo contenido + ficha lateral.
 
-              En vertical queda una sola columna.
+              Móvil horizontal:
+              conservamos la proporción que ya funciona.
             */
 
             gridTemplateColumns:
-              horizontal
-                ? "minmax(0, 1.65fr) minmax(280px, .85fr)"
-                : "1fr",
+              desktop
+                ? "minmax(0, 1.45fr) minmax(320px, .75fr)"
+                : horizontal
+                  ? "minmax(0, 1.65fr) minmax(280px, .85fr)"
+                  : "1fr",
 
             gap:
-              horizontal
-                ? lowHeight
-                  ? 14
-                  : 22
-                : 0,
+              desktop
+                ? 28
+                : horizontal
+                  ? lowHeight
+                    ? 14
+                    : 22
+                  : 0,
 
             alignItems:
-              horizontal
+              horizontalLayout
                 ? "center"
                 : "stretch",
           }}
         >
           {/* =================================================
-              COLUMNA DEL VÍDEO
+              VÍDEO
           ================================================= */}
 
           <section
             style={{
               width: "100%",
 
+              height:
+                horizontalLayout
+                  ? "100%"
+                  : "auto",
+
               minWidth: 0,
 
               display:
-                horizontal
+                horizontalLayout
                   ? "flex"
                   : "block",
 
@@ -645,33 +667,42 @@ export default function RankingOverlay({
                   "relative",
 
                 /*
-                  CLAVE DEL CAMBIO:
+                  DESKTOP:
 
-                  En horizontal el vídeo NO toma
-                  simplemente el 100% del ancho.
+                  El tamaño se calcula primero por ALTURA.
 
-                  Su tamaño queda limitado tanto
-                  por el ancho como por la altura
-                  real disponible.
+                  max-height impide que el reproductor
+                  pueda salir del viewport.
+
+                  aspect-ratio mantiene 16:9.
+
+                  width:auto permite que Three/Browser
+                  calcule el ancho correspondiente.
                 */
 
                 width:
-                  horizontal
-                    ? "min(100%, calc((100dvh - 110px) * 16 / 9))"
-                    : "100%",
+                  desktop
+                    ? "min(100%, calc((100dvh - 120px) * 16 / 9))"
+                    : horizontal
+                      ? "min(100%, calc((100dvh - 110px) * 16 / 9))"
+                      : "100%",
 
                 maxWidth:
-                  "100%",
+                  desktop
+                    ? "900px"
+                    : "100%",
 
                 aspectRatio:
                   "16 / 9",
 
                 maxHeight:
-                  horizontal
-                    ? lowHeight
-                      ? `calc(100dvh - ${headerHeight + 24}px)`
-                      : `calc(100dvh - ${headerHeight + 40}px)`
-                    : "none",
+                  desktop
+                    ? `calc(100dvh - ${headerHeight + 60}px)`
+                    : horizontal
+                      ? lowHeight
+                        ? `calc(100dvh - ${headerHeight + 24}px)`
+                        : `calc(100dvh - ${headerHeight + 40}px)`
+                      : "none",
 
                 overflow:
                   "hidden",
@@ -680,8 +711,7 @@ export default function RankingOverlay({
                   "1px solid rgba(255,255,255,.12)",
 
                 borderRadius:
-                  horizontal &&
-                  lowHeight
+                  compact
                     ? 12
                     : 18,
 
@@ -708,11 +738,9 @@ export default function RankingOverlay({
 
                     inset: 0,
 
-                    width:
-                      "100%",
+                    width: "100%",
 
-                    height:
-                      "100%",
+                    height: "100%",
 
                     display:
                       "block",
@@ -730,11 +758,9 @@ export default function RankingOverlay({
 
                     inset: 0,
 
-                    width:
-                      "100%",
+                    width: "100%",
 
-                    height:
-                      "100%",
+                    height: "100%",
 
                     objectFit:
                       "contain",
@@ -775,7 +801,7 @@ export default function RankingOverlay({
           </section>
 
           {/* =================================================
-              COLUMNA DE INFORMACIÓN
+              INFORMACIÓN
           ================================================= */}
 
           <section
@@ -783,7 +809,7 @@ export default function RankingOverlay({
               minWidth: 0,
 
               height:
-                horizontal
+                horizontalLayout
                   ? "100%"
                   : "auto",
 
@@ -793,27 +819,25 @@ export default function RankingOverlay({
                 "column",
 
               justifyContent:
-                horizontal
+                horizontalLayout
                   ? "center"
                   : "flex-start",
 
               overflowY:
-                horizontal
+                horizontalLayout
                   ? "auto"
                   : "visible",
 
               paddingRight:
-                horizontal
-                  ? 3
+                horizontalLayout
+                  ? 4
                   : 0,
 
               scrollbarWidth:
                 "thin",
             }}
           >
-            {/* ===============================================
-                TÍTULO / SCORE
-            =============================================== */}
+            {/* TÍTULO */}
 
             <div
               style={{
@@ -826,12 +850,12 @@ export default function RankingOverlay({
                   "space-between",
 
                 gap:
-                  lowHeight
+                  compact
                     ? 12
                     : 18,
 
                 marginTop:
-                  horizontal
+                  horizontalLayout
                     ? 0
                     : 26,
               }}
@@ -846,8 +870,7 @@ export default function RankingOverlay({
                     color: accent,
 
                     fontSize:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? 9
                         : 11,
 
@@ -865,17 +888,18 @@ export default function RankingOverlay({
                 <h1
                   style={{
                     margin:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? "5px 0 3px"
                         : "7px 0 5px",
 
                     fontSize:
-                      horizontal
-                        ? lowHeight
-                          ? "clamp(19px,3.3vw,30px)"
-                          : "clamp(24px,3vw,42px)"
-                        : "clamp(29px,7vw,55px)",
+                      desktop
+                        ? "clamp(24px,2.4vw,38px)"
+                        : horizontal
+                          ? lowHeight
+                            ? "clamp(19px,3.3vw,30px)"
+                            : "clamp(24px,3vw,42px)"
+                          : "clamp(29px,7vw,55px)",
 
                     lineHeight: 1.03,
 
@@ -893,8 +917,7 @@ export default function RankingOverlay({
                         "#9da6ad",
 
                       fontSize:
-                        horizontal &&
-                        lowHeight
+                        compact
                           ? 12
                           : 14,
                     }}
@@ -911,14 +934,12 @@ export default function RankingOverlay({
                       "0 0 auto",
 
                     minWidth:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? 56
                         : 66,
 
                     padding:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? "8px 9px"
                         : "10px 11px",
 
@@ -938,8 +959,7 @@ export default function RankingOverlay({
                   <div
                     style={{
                       fontSize:
-                        horizontal &&
-                        lowHeight
+                        compact
                           ? 21
                           : 26,
 
@@ -969,21 +989,17 @@ export default function RankingOverlay({
               )}
             </div>
 
-            {/* ===============================================
-                DATOS
-            =============================================== */}
+            {/* DATOS */}
 
             <div
               style={{
                 marginTop:
-                  horizontal &&
-                  lowHeight
+                  compact
                     ? 10
                     : 18,
 
                 padding:
-                  horizontal &&
-                  lowHeight
+                  compact
                     ? "10px 12px"
                     : "14px 15px",
 
@@ -1004,8 +1020,7 @@ export default function RankingOverlay({
                   flexWrap: "wrap",
 
                   gap:
-                    horizontal &&
-                    lowHeight
+                    compact
                       ? "5px 13px"
                       : "8px 18px",
 
@@ -1013,8 +1028,7 @@ export default function RankingOverlay({
                     "#c7cdd1",
 
                   fontSize:
-                    horizontal &&
-                    lowHeight
+                    compact
                       ? 11
                       : 13,
 
@@ -1054,8 +1068,7 @@ export default function RankingOverlay({
                 <div
                   style={{
                     marginTop:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? 6
                         : 9,
 
@@ -1063,8 +1076,7 @@ export default function RankingOverlay({
                       "#939da4",
 
                     fontSize:
-                      horizontal &&
-                      lowHeight
+                      compact
                         ? 10
                         : 12,
 
@@ -1076,45 +1088,40 @@ export default function RankingOverlay({
               )}
             </div>
 
-            {/* ===============================================
-                BOTONES
-            =============================================== */}
+            {/* BOTONES */}
 
             <div
               style={{
                 display: "grid",
 
                 gridTemplateColumns:
-                  horizontal &&
-                  !lowHeight
-                    ? "1fr 1fr"
-                    : "1fr",
+                  desktop
+                    ? "1fr"
+                    : horizontal &&
+                        !lowHeight
+                      ? "1fr 1fr"
+                      : "1fr",
 
                 gap:
-                  horizontal &&
-                  lowHeight
+                  compact
                     ? 7
                     : 10,
 
                 marginTop:
-                  horizontal &&
-                  lowHeight
+                  compact
                     ? 10
                     : 18,
 
                 paddingBottom:
-                  horizontal
+                  horizontalLayout
                     ? 0
                     : "max(30px, env(safe-area-inset-bottom))",
               }}
             >
               <ActionButton
-                onClick={
-                  onClose
-                }
-                accent={
-                  accent
-                }
+                onClick={onClose}
+                accent={accent}
+                compact={compact}
               >
                 VOLVER AL MUNDO
               </ActionButton>
@@ -1124,9 +1131,8 @@ export default function RankingOverlay({
                   openFullGameCard
                 }
                 primary
-                accent={
-                  accent
-                }
+                accent={accent}
+                compact={compact}
               >
                 VER FICHA COMPLETA
               </ActionButton>
