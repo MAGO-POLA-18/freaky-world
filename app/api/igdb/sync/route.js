@@ -10,6 +10,9 @@ const TWITCH_TOKEN_URL =
 const IGDB_GAMES_URL =
   "https://api.igdb.com/v4/games";
 
+const DEFAULT_BATCH_SIZE = 25;
+const MAX_BATCH_SIZE = 50;
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -108,11 +111,6 @@ async function getTwitchAccessToken(
 
 /* =========================================================
    CAMPOS IGDB
-
-   IMPORTANTE:
-   Usamos exactamente los mismos campos tanto para:
-   - sincronización general
-   - importación individual por ID
 ========================================================= */
 
 const IGDB_FIELDS = `
@@ -245,8 +243,7 @@ async function requestIGDBGames(
             "text/plain",
         },
 
-        body:
-          query,
+        body: query,
 
         cache:
           "no-store",
@@ -271,10 +268,7 @@ async function requestIGDBGames(
 }
 
 /* =========================================================
-   SINCRONIZACIÓN GENERAL
-
-   Mantiene el comportamiento actual:
-   10 juegos históricos de prueba.
+   SINCRONIZACIÓN GENERAL ORIGINAL
 ========================================================= */
 
 async function getGamesFromIGDB(
@@ -309,10 +303,7 @@ async function getGamesFromIGDB(
 }
 
 /* =========================================================
-   IMPORTACIÓN INDIVIDUAL POR ID
-
-   Ejemplo:
-   /api/igdb/sync?id=40
+   IMPORTACIÓN INDIVIDUAL
 ========================================================= */
 
 async function getGameFromIGDBById(
@@ -337,6 +328,50 @@ async function getGameFromIGDBById(
     );
 
   return games[0] || null;
+}
+
+/* =========================================================
+   IMPORTACIÓN MASIVA
+
+   Se pagina por ID, no por "offset" real de IGDB.
+
+   Esto permite reanudar:
+   ?mode=bulk&after=12345&limit=25
+
+   La siguiente llamada usa nextAfter.
+========================================================= */
+
+async function getBulkGamesFromIGDB(
+  accessToken,
+  clientId,
+  after,
+  limit
+) {
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const query = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      id > ${after}
+      & cover != null
+      & first_release_date != null
+      & first_release_date <= ${now};
+
+    sort id asc;
+
+    limit ${limit};
+  `;
+
+  return requestIGDBGames(
+    accessToken,
+    clientId,
+    query
+  );
 }
 
 /* =========================================================
@@ -1128,7 +1163,7 @@ async function supabaseRequest(
 }
 
 /* =========================================================
-   COMPROBAR SI EXISTE UN JUEGO
+   COMPROBAR SI EXISTE
 ========================================================= */
 
 async function gameExists(
@@ -1176,8 +1211,7 @@ async function deleteGameRelations(
 /* =========================================================
    GUARDAR JUEGO
 
-   IMPORTANTE:
-   NO incluimos:
+   NO SE TOCAN:
    - summary_es
    - storyline_es
    - translation_status
@@ -1192,8 +1226,6 @@ async function deleteGameRelations(
    - hidden
    - manual_trailer_youtube_id
    - manual_trailer_url
-
-   Por tanto IGDB NO pisa los datos propios de Freaky World.
 ========================================================= */
 
 async function saveGame(
@@ -1710,7 +1742,7 @@ async function saveCatalogRelation({
 }
 
 /* =========================================================
-   GÉNEROS
+   CATÁLOGOS
 ========================================================= */
 
 async function saveGenres(
@@ -1719,27 +1751,18 @@ async function saveGenres(
 ) {
   await saveCatalogRelation({
     environment,
-
     gameId:
       game.id,
-
     items:
       game.genres,
-
     catalogTable:
       "genres",
-
     relationTable:
       "game_genres",
-
     relationColumn:
       "genre_id",
   });
 }
-
-/* =========================================================
-   TEMAS
-========================================================= */
 
 async function saveThemes(
   environment,
@@ -1747,27 +1770,18 @@ async function saveThemes(
 ) {
   await saveCatalogRelation({
     environment,
-
     gameId:
       game.id,
-
     items:
       game.themes,
-
     catalogTable:
       "themes",
-
     relationTable:
       "game_themes",
-
     relationColumn:
       "theme_id",
   });
 }
-
-/* =========================================================
-   MODOS DE JUEGO
-========================================================= */
 
 async function saveGameModes(
   environment,
@@ -1775,27 +1789,18 @@ async function saveGameModes(
 ) {
   await saveCatalogRelation({
     environment,
-
     gameId:
       game.id,
-
     items:
       game.gameModes,
-
     catalogTable:
       "game_modes",
-
     relationTable:
       "game_game_modes",
-
     relationColumn:
       "game_mode_id",
   });
 }
-
-/* =========================================================
-   PERSPECTIVAS
-========================================================= */
 
 async function savePerspectives(
   environment,
@@ -1803,27 +1808,18 @@ async function savePerspectives(
 ) {
   await saveCatalogRelation({
     environment,
-
     gameId:
       game.id,
-
     items:
       game.perspectives,
-
     catalogTable:
       "player_perspectives",
-
     relationTable:
       "game_player_perspectives",
-
     relationColumn:
       "perspective_id",
   });
 }
-
-/* =========================================================
-   MOTORES
-========================================================= */
 
 async function saveEngines(
   environment,
@@ -1831,19 +1827,14 @@ async function saveEngines(
 ) {
   await saveCatalogRelation({
     environment,
-
     gameId:
       game.id,
-
     items:
       game.engines,
-
     catalogTable:
       "game_engines",
-
     relationTable:
       "game_game_engines",
-
     relationColumn:
       "engine_id",
   });
@@ -1905,7 +1896,7 @@ async function saveWebsites(
 }
 
 /* =========================================================
-   JUEGOS SIMILARES
+   SIMILARES
 ========================================================= */
 
 async function saveSimilarGames(
@@ -1957,7 +1948,7 @@ async function saveSimilarGames(
 }
 
 /* =========================================================
-   CLASIFICACIONES DE EDAD
+   EDADES
 ========================================================= */
 
 async function saveAgeRatings(
@@ -2164,7 +2155,7 @@ async function syncGame(
 }
 
 /* =========================================================
-   RESUMEN PARA RESPUESTA
+   RESUMEN
 ========================================================= */
 
 function createGameResult(
@@ -2360,7 +2351,7 @@ async function runGeneralSync() {
 }
 
 /* =========================================================
-   IMPORTAR / ACTUALIZAR UN JUEGO POR ID
+   IMPORTACIÓN INDIVIDUAL
 ========================================================= */
 
 async function runSingleGameSync(
@@ -2448,16 +2439,195 @@ async function runSingleGameSync(
 }
 
 /* =========================================================
-   VALIDAR ID
+   IMPORTACIÓN MASIVA
 ========================================================= */
 
-function parseGameId(value) {
+async function runBulkSync({
+  after,
+  limit,
+}) {
+  const environment =
+    getEnvironment();
+
+  const accessToken =
+    await getTwitchAccessToken(
+      environment.igdbClientId,
+      environment.igdbClientSecret
+    );
+
+  const rawGames =
+    await getBulkGamesFromIGDB(
+      accessToken,
+      environment.igdbClientId,
+      after,
+      limit
+    );
+
+  const games =
+    rawGames.map(
+      normalizeGame
+    );
+
+  const results = [];
+
+  let created = 0;
+  let updated = 0;
+  let failed = 0;
+
+  /*
+    Cada juego se procesa independientemente.
+
+    Si uno falla, el lote continúa.
+  */
+
+  for (const game of games) {
+    try {
+      const existedBefore =
+        await gameExists(
+          environment,
+          game.id
+        );
+
+      await syncGame(
+        environment,
+        game
+      );
+
+      if (existedBefore) {
+        updated += 1;
+      } else {
+        created += 1;
+      }
+
+      results.push({
+        id:
+          game.id,
+
+        name:
+          game.name,
+
+        ok:
+          true,
+
+        created:
+          !existedBefore,
+
+        updated:
+          existedBefore,
+      });
+    } catch (error) {
+      failed += 1;
+
+      console.error(
+        `ERROR IMPORTANDO IGDB ${game.id} ${game.name}:`,
+        error
+      );
+
+      results.push({
+        id:
+          game.id,
+
+        name:
+          game.name,
+
+        ok:
+          false,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      });
+    }
+  }
+
+  /*
+    IMPORTANTE:
+
+    nextAfter avanza usando el último ID RECIBIDO
+    desde IGDB, incluso si ese juego concreto falló
+    al guardarse.
+
+    Los fallos aparecen en results y pueden
+    reimportarse después individualmente por ID.
+  */
+
+  const lastRawGame =
+    rawGames.length
+      ? rawGames[
+          rawGames.length - 1
+        ]
+      : null;
+
+  const nextAfter =
+    lastRawGame?.id ??
+    after;
+
+  const finished =
+    rawGames.length <
+    limit;
+
+  return {
+    ok:
+      true,
+
+    mode:
+      "bulk",
+
+    message:
+      finished
+        ? "El lote se procesó y no quedan más juegos que cumplan los criterios actuales."
+        : "Lote procesado correctamente. Usá nextAfter para continuar.",
+
+    requestedAfter:
+      after,
+
+    requestedLimit:
+      limit,
+
+    received:
+      rawGames.length,
+
+    processed:
+      results.length,
+
+    created,
+    updated,
+    failed,
+
+    nextAfter,
+
+    finished,
+
+    nextUrl:
+      finished
+        ? null
+        : `/api/igdb/sync?mode=bulk&after=${nextAfter}&limit=${limit}`,
+
+    games:
+      results,
+  };
+}
+
+/* =========================================================
+   VALIDACIONES
+========================================================= */
+
+function parsePositiveInteger(
+  value,
+  {
+    name,
+    allowZero = false,
+    defaultValue = null,
+    max = null,
+  }
+) {
   if (
     value === null ||
     value === undefined ||
     value === ""
   ) {
-    return null;
+    return defaultValue;
   }
 
   const normalized =
@@ -2469,35 +2639,109 @@ function parseGameId(value) {
     )
   ) {
     throw new Error(
-      "El parámetro id debe ser un ID numérico válido de IGDB."
+      `El parámetro ${name} debe ser numérico.`
     );
   }
 
-  const gameId =
+  const number =
     Number(normalized);
+
+  const minimum =
+    allowZero
+      ? 0
+      : 1;
 
   if (
     !Number.isSafeInteger(
-      gameId
+      number
     ) ||
-    gameId <= 0
+    number < minimum
   ) {
     throw new Error(
-      "El parámetro id debe ser un ID numérico válido de IGDB."
+      `El parámetro ${name} no es válido.`
     );
   }
 
-  return gameId;
+  if (
+    max !== null &&
+    number > max
+  ) {
+    throw new Error(
+      `El parámetro ${name} no puede superar ${max}.`
+    );
+  }
+
+  return number;
+}
+
+function parseGameId(value) {
+  return parsePositiveInteger(
+    value,
+    {
+      name:
+        "id",
+
+      allowZero:
+        false,
+
+      defaultValue:
+        null,
+    }
+  );
+}
+
+function parseBulkAfter(value) {
+  return parsePositiveInteger(
+    value,
+    {
+      name:
+        "after",
+
+      allowZero:
+        true,
+
+      defaultValue:
+        0,
+    }
+  );
+}
+
+function parseBulkLimit(value) {
+  return parsePositiveInteger(
+    value,
+    {
+      name:
+        "limit",
+
+      allowZero:
+        false,
+
+      defaultValue:
+        DEFAULT_BATCH_SIZE,
+
+      max:
+        MAX_BATCH_SIZE,
+    }
+  );
 }
 
 /* =========================================================
    GET
 
-   SIN ID:
+   ORIGINAL:
    /api/igdb/sync
 
-   CON ID:
+   INDIVIDUAL:
    /api/igdb/sync?id=40
+
+   MASIVO:
+   /api/igdb/sync?mode=bulk
+
+   CONTINUAR:
+   /api/igdb/sync?mode=bulk&after=12345
+
+   CAMBIAR TAMAÑO:
+   /api/igdb/sync?mode=bulk&after=12345&limit=25
 ========================================================= */
 
 export async function GET(
@@ -2509,6 +2753,15 @@ export async function GET(
         request.url
       );
 
+    const mode =
+      String(
+        searchParams.get(
+          "mode"
+        ) || ""
+      )
+        .trim()
+        .toLowerCase();
+
     const gameId =
       parseGameId(
         searchParams.get(
@@ -2516,20 +2769,85 @@ export async function GET(
         )
       );
 
-    const result =
-      gameId
-        ? await runSingleGameSync(
-            gameId
+    /*
+      ID tiene prioridad.
+
+      Así mantenemos exactamente:
+      /api/igdb/sync?id=40
+    */
+
+    if (gameId) {
+      const result =
+        await runSingleGameSync(
+          gameId
+        );
+
+      return NextResponse.json(
+        result,
+        {
+          status:
+            result.ok
+              ? 200
+              : 404,
+
+          headers: {
+            "Cache-Control":
+              "no-store, no-cache, must-revalidate",
+          },
+        }
+      );
+    }
+
+    /*
+      MODO MASIVO
+    */
+
+    if (mode === "bulk") {
+      const after =
+        parseBulkAfter(
+          searchParams.get(
+            "after"
           )
-        : await runGeneralSync();
+        );
+
+      const limit =
+        parseBulkLimit(
+          searchParams.get(
+            "limit"
+          )
+        );
+
+      const result =
+        await runBulkSync({
+          after,
+          limit,
+        });
+
+      return NextResponse.json(
+        result,
+        {
+          status: 200,
+
+          headers: {
+            "Cache-Control":
+              "no-store, no-cache, must-revalidate",
+          },
+        }
+      );
+    }
+
+    /*
+      SIN PARÁMETROS:
+      conservamos el sync original de 10.
+    */
+
+    const result =
+      await runGeneralSync();
 
     return NextResponse.json(
       result,
       {
-        status:
-          result.ok
-            ? 200
-            : 404,
+        status: 200,
 
         headers: {
           "Cache-Control":
