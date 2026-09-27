@@ -1,141 +1,83 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { RoundedBox } from "@react-three/drei";
+import { Html, RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { playerRuntime } from "../World/PlayerController";
+import {
+  FEATURED_VIDEO,
+  FEATURED_VIDEO_URL,
+  getYouTubeEmbedUrl,
+  getYouTubeId,
+} from "../World/featuredVideoConfig";
 
-/* =========================================================
-   CONFIGURACIÓN DEL VIDEO
+const PLAYER_WIDTH = 1280;
+const PLAYER_HEIGHT = 720;
 
-   UNA SOLA URL.
-   De aquí salen:
-   - la miniatura del 3D
-   - el reproductor del overlay 2D
-========================================================= */
+const SCREEN_WIDTH = 22.5;
+const SCREEN_HEIGHT = 12.65;
 
-export const FEATURED_VIDEO_URL =
-  "https://www.youtube.com/watch?v=M7lc1UVf-VE";
-
-export const FEATURED_VIDEO = {
-  id: "featured-video-screen",
-
-  overlayType: "video",
-
-  sourceType: "youtube",
-
-  title: "VIDEO DESTACADO",
-
-  description:
-    "Pantalla multimedia principal de Freaky World.",
-
-  accent: "#58f1ff",
-
-  accent2: "#8b5cff",
-
-  youtubeUrl: FEATURED_VIDEO_URL,
-};
-
-/* =========================================================
-   YOUTUBE ID
-========================================================= */
-
-export function getYouTubeId(url) {
-  if (!url) return null;
-
-  try {
-    const parsed = new URL(url);
-
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname
-        .replace("/", "")
-        .split("/")[0];
-    }
-
-    if (parsed.pathname.startsWith("/shorts/")) {
-      return parsed.pathname
-        .split("/shorts/")[1]
-        ?.split("/")[0];
-    }
-
-    if (parsed.pathname.startsWith("/embed/")) {
-      return parsed.pathname
-        .split("/embed/")[1]
-        ?.split("/")[0];
-    }
-
-    return parsed.searchParams.get("v");
-  } catch {
-    return null;
-  }
-}
-
-/* =========================================================
-   MINIATURA
-========================================================= */
+const HTML_SCALE =
+  SCREEN_WIDTH / PLAYER_WIDTH;
 
 function useYouTubeThumbnail() {
   const youtubeId = useMemo(
-    () => getYouTubeId(FEATURED_VIDEO_URL),
+    () =>
+      getYouTubeId(
+        FEATURED_VIDEO_URL
+      ),
     []
   );
 
-  const [texture, setTexture] = useState(null);
+  const [texture, setTexture] =
+    useState(null);
 
   useEffect(() => {
-    if (!youtubeId) return;
+    if (!youtubeId) {
+      return undefined;
+    }
 
     let cancelled = false;
+    let loadedTexture = null;
 
-    const loader = new THREE.TextureLoader();
+    const loader =
+      new THREE.TextureLoader();
 
     loader.setCrossOrigin("anonymous");
 
-    /*
-      Primero intentamos maxresdefault.
-      Si ese video no tiene miniatura máxima,
-      usamos hqdefault.
-    */
+    const configureTexture = (
+      nextTexture
+    ) => {
+      loadedTexture = nextTexture;
 
-    const maxResUrl =
-      `https://i.ytimg.com/vi/${youtubeId}/maxresdefault.jpg`;
-
-    const fallbackUrl =
-      `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
-
-    const configureTexture = (loadedTexture) => {
-      loadedTexture.colorSpace =
+      nextTexture.colorSpace =
         THREE.SRGBColorSpace;
 
-      loadedTexture.minFilter =
+      nextTexture.minFilter =
         THREE.LinearFilter;
 
-      loadedTexture.magFilter =
+      nextTexture.magFilter =
         THREE.LinearFilter;
 
-      loadedTexture.generateMipmaps =
+      nextTexture.generateMipmaps =
         false;
 
-      loadedTexture.needsUpdate =
-        true;
+      nextTexture.needsUpdate = true;
 
       if (!cancelled) {
-        setTexture(loadedTexture);
+        setTexture(nextTexture);
       }
     };
 
     loader.load(
-      maxResUrl,
-
+      `https://i.ytimg.com/vi/${youtubeId}/maxresdefault.jpg`,
       configureTexture,
-
       undefined,
-
       () => {
         loader.load(
-          fallbackUrl,
+          `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
           configureTexture
         );
       }
@@ -143,22 +85,20 @@ function useYouTubeThumbnail() {
 
     return () => {
       cancelled = true;
+
+      loadedTexture?.dispose?.();
     };
   }, [youtubeId]);
 
   return texture;
 }
 
-/* =========================================================
-   TEXTURA TEMPORAL MIENTRAS CARGA YOUTUBE
-========================================================= */
-
 function createLoadingTexture() {
   const canvas =
     document.createElement("canvas");
 
-  canvas.width = 1280;
-  canvas.height = 720;
+  canvas.width = PLAYER_WIDTH;
+  canvas.height = PLAYER_HEIGHT;
 
   const ctx =
     canvas.getContext("2d");
@@ -167,8 +107,8 @@ function createLoadingTexture() {
     ctx.createLinearGradient(
       0,
       0,
-      1280,
-      720
+      PLAYER_WIDTH,
+      PLAYER_HEIGHT
     );
 
   gradient.addColorStop(
@@ -186,27 +126,20 @@ function createLoadingTexture() {
     "#180b25"
   );
 
-  ctx.fillStyle =
-    gradient;
+  ctx.fillStyle = gradient;
 
   ctx.fillRect(
     0,
     0,
-    1280,
-    720
+    PLAYER_WIDTH,
+    PLAYER_HEIGHT
   );
 
-  ctx.textAlign =
-    "center";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
-  ctx.textBaseline =
-    "middle";
-
-  ctx.fillStyle =
-    "#58f1ff";
-
-  ctx.font =
-    "800 34px Arial";
+  ctx.fillStyle = "#58f1ff";
+  ctx.font = "800 34px Arial";
 
   ctx.fillText(
     "FREAKY WORLD",
@@ -214,21 +147,14 @@ function createLoadingTexture() {
     260
   );
 
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.font =
-    "900 62px Arial";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 62px Arial";
 
   ctx.fillText(
     "VIDEO DESTACADO",
     640,
     340
   );
-
-  /*
-    Botón play
-  */
 
   ctx.beginPath();
 
@@ -247,24 +173,11 @@ function createLoadingTexture() {
 
   ctx.beginPath();
 
-  ctx.fillStyle =
-    "#11151a";
+  ctx.fillStyle = "#11151a";
 
-  ctx.moveTo(
-    666,
-    455
-  );
-
-  ctx.lineTo(
-    624,
-    427
-  );
-
-  ctx.lineTo(
-    624,
-    483
-  );
-
+  ctx.moveTo(666, 455);
+  ctx.lineTo(624, 427);
+  ctx.lineTo(624, 483);
   ctx.closePath();
 
   ctx.fill();
@@ -279,10 +192,6 @@ function createLoadingTexture() {
 
   return texture;
 }
-
-/* =========================================================
-   LÍNEA NEÓN
-========================================================= */
 
 function NeonLine({
   position,
@@ -302,28 +211,16 @@ function NeonLine({
   );
 }
 
-/* =========================================================
-   PANTALLA 3D
-
-   IMPORTANTE:
-   AQUÍ NO EXISTE NINGÚN REPRODUCTOR.
-
-   Solamente:
-   - miniatura
-   - proximidad
-   - evento para abrir 2D
-========================================================= */
-
 export default function FeaturedVideoWall() {
-  const groupRef =
-    useRef(null);
+  const groupRef = useRef(null);
 
   const nearRef =
     useRef(false);
 
   const worldPosition =
     useMemo(
-      () => new THREE.Vector3(),
+      () =>
+        new THREE.Vector3(),
       []
     );
 
@@ -335,7 +232,17 @@ export default function FeaturedVideoWall() {
 
   const loadingTexture =
     useMemo(
-      () => createLoadingTexture(),
+      () =>
+        createLoadingTexture(),
+      []
+    );
+
+  const embedUrl =
+    useMemo(
+      () =>
+        getYouTubeEmbedUrl(
+          FEATURED_VIDEO_URL
+        ),
       []
     );
 
@@ -348,10 +255,6 @@ export default function FeaturedVideoWall() {
       loadingTexture.dispose();
     };
   }, [loadingTexture]);
-
-  /* =======================================================
-     PROXIMIDAD
-  ======================================================= */
 
   useFrame(() => {
     if (
@@ -403,17 +306,13 @@ export default function FeaturedVideoWall() {
         {
           detail: {
             near: isNear,
-
-            game: FEATURED_VIDEO,
+            game:
+              FEATURED_VIDEO,
           },
         }
       )
     );
   });
-
-  /* =======================================================
-     PANTALLA
-  ======================================================= */
 
   return (
     <group
@@ -424,8 +323,6 @@ export default function FeaturedVideoWall() {
         -33.72,
       ]}
     >
-      {/* MARCO */}
-
       <RoundedBox
         position={[
           0,
@@ -455,30 +352,111 @@ export default function FeaturedVideoWall() {
         />
       </RoundedBox>
 
-      {/* MINIATURA YOUTUBE */}
-
       <mesh
         position={[
           0,
           7.2,
-          0.28,
+          0.275,
         ]}
       >
         <planeGeometry
           args={[
-            22.5,
-            12.65,
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
           ]}
         />
 
         <meshBasicMaterial
-          map={screenTexture}
+          map={
+            screenTexture
+          }
           toneMapped={false}
-          side={THREE.DoubleSide}
+          side={
+            THREE.DoubleSide
+          }
         />
       </mesh>
 
-      {/* BORDE SUPERIOR */}
+      {embedUrl && (
+        <Html
+          transform
+          position={[
+            0,
+            7.2,
+            0.34,
+          ]}
+          scale={
+            HTML_SCALE
+          }
+          zIndexRange={[
+            20,
+            0,
+          ]}
+          style={{
+            width: `${PLAYER_WIDTH}px`,
+            height: `${PLAYER_HEIGHT}px`,
+            pointerEvents:
+              near
+                ? "auto"
+                : "none",
+          }}
+        >
+          <div
+            onPointerDown={(
+              event
+            ) => {
+              event.stopPropagation();
+            }}
+            onClick={(
+              event
+            ) => {
+              event.stopPropagation();
+            }}
+            style={{
+              width: `${PLAYER_WIDTH}px`,
+              height: `${PLAYER_HEIGHT}px`,
+              overflow:
+                "hidden",
+              background:
+                "#000",
+              borderRadius:
+                "8px",
+              pointerEvents:
+                near
+                  ? "auto"
+                  : "none",
+            }}
+          >
+            <iframe
+              src={embedUrl}
+              title="Freaky World YouTube 3D"
+              width={
+                PLAYER_WIDTH
+              }
+              height={
+                PLAYER_HEIGHT
+              }
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              style={{
+                display:
+                  "block",
+                width: `${PLAYER_WIDTH}px`,
+                height: `${PLAYER_HEIGHT}px`,
+                margin: 0,
+                padding: 0,
+                border: 0,
+                background:
+                  "#000",
+                pointerEvents:
+                  near
+                    ? "auto"
+                    : "none",
+              }}
+            />
+          </div>
+        </Html>
+      )}
 
       <NeonLine
         position={[
@@ -494,8 +472,6 @@ export default function FeaturedVideoWall() {
         color="#58f1ff"
       />
 
-      {/* BORDE INFERIOR */}
-
       <NeonLine
         position={[
           0,
@@ -509,8 +485,6 @@ export default function FeaturedVideoWall() {
         ]}
         color="#ff4f95"
       />
-
-      {/* LUZ DE PROXIMIDAD */}
 
       {near && (
         <pointLight
