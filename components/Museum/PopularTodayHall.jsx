@@ -594,7 +594,6 @@ function InstancedBoxes({
     </instancedMesh>
   );
 }
-
 /* =========================================================
    LÍNEA NEÓN
 ========================================================= */
@@ -949,609 +948,720 @@ function GameStation({
 ========================================================= */
 
 export default function PopularTodayHall() {
-  const stationLayout =
-    useMemo(
-      () => [
-        {
-          game: GAMES[9],
-          position: [
-            -22,
-            0.32,
-            22,
-          ],
-          rotation:
-            Math.PI / 2.25,
-          scale: 1.05,
-        },
-        {
-          game: GAMES[8],
-          position: [
-            22,
-            0.32,
-            22,
-          ],
-          rotation:
-            -Math.PI / 2.25,
-          scale: 1.05,
-        },
-        {
-          game: GAMES[7],
-          position: [
-            -23,
-            0.32,
-            10,
-          ],
-rotation:
-            Math.PI /
-            2.12,
+  const stations = useMemo(
+    () => [
+      {
+        game: GAMES[0],
+        position: [-21.5, 0, -23],
+        rotation: Math.PI / 2,
+      },
+      {
+        game: GAMES[1],
+        position: [-21.5, 0, -14],
+        rotation: Math.PI / 2,
+      },
+      {
+        game: GAMES[2],
+        position: [-21.5, 0, -5],
+        rotation: Math.PI / 2,
+      },
+      {
+        game: GAMES[3],
+        position: [-21.5, 0, 4],
+        rotation: Math.PI / 2,
+      },
+      {
+        game: GAMES[4],
+        position: [-21.5, 0, 13],
+        rotation: Math.PI / 2,
+      },
 
-          scale:
-            1.08,
-        },
+      {
+        game: GAMES[5],
+        position: [21.5, 0, 13],
+        rotation: -Math.PI / 2,
+      },
+      {
+        game: GAMES[6],
+        position: [21.5, 0, 4],
+        rotation: -Math.PI / 2,
+      },
+      {
+        game: GAMES[7],
+        position: [21.5, 0, -5],
+        rotation: -Math.PI / 2,
+      },
+      {
+        game: GAMES[8],
+        position: [21.5, 0, -14],
+        rotation: -Math.PI / 2,
+      },
+      {
+        game: GAMES[9],
+        position: [21.5, 0, -23],
+        rotation: -Math.PI / 2,
+      },
+    ],
+    []
+  );
 
-        {
-          game:
-            GAMES[6],
+  /* =======================================================
+     ESTRUCTURAS DEL TECHO
+  ======================================================= */
 
-          position: [
-            23,
-            0.32,
-            10,
-          ],
+  const ceilingBars = useMemo(
+    () => [
+      {
+        position: [-18, 12.4, -23],
+        scale: [5, 0.12, 0.12],
+      },
+      {
+        position: [18, 12.4, -23],
+        scale: [5, 0.12, 0.12],
+      },
 
-          rotation:
-            -Math.PI /
-            2.12,
+      {
+        position: [-18, 12.4, -14],
+        scale: [5, 0.12, 0.12],
+      },
+      {
+        position: [18, 12.4, -14],
+        scale: [5, 0.12, 0.12],
+      },
 
-          scale:
-            1.08,
-        },
+      {
+        position: [-18, 12.4, -5],
+        scale: [5, 0.12, 0.12],
+      },
+      {
+        position: [18, 12.4, -5],
+        scale: [5, 0.12, 0.12],
+      },
 
-        {
-          game:
-            GAMES[5],
+      {
+        position: [-18, 12.4, 4],
+        scale: [5, 0.12, 0.12],
+      },
+      {
+        position: [18, 12.4, 4],
+        scale: [5, 0.12, 0.12],
+      },
 
-          position: [
-            -23,
-            0.32,
-            -3,
-          ],
+      {
+        position: [-18, 12.4, 13],
+        scale: [5, 0.12, 0.12],
+      },
+      {
+        position: [18, 12.4, 13],
+        scale: [5, 0.12, 0.12],
+      },
+    ],
+    []
+  );
 
-          rotation:
-            Math.PI /
-            2.08,
+  /* =======================================================
+     COLUMNAS / MARCOS LATERALES
+  ======================================================= */
 
-          scale:
-            1.1,
-        },
+  const sideStructures = useMemo(
+    () => [
+      {
+        position: [-27.6, 5.5, -27],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [-27.6, 5.5, -18],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [-27.6, 5.5, -9],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [-27.6, 5.5, 0],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [-27.6, 5.5, 9],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [-27.6, 5.5, 18],
+        scale: [0.18, 5.5, 0.18],
+      },
 
-        {
-          game:
-            GAMES[4],
-
-          position: [
-            23,
-            0.32,
-            -3,
-          ],
-
-          rotation:
-            -Math.PI /
-            2.08,
-
-          scale:
-            1.1,
-        },
-
-        {
-          game:
-            GAMES[3],
-
-          position: [
-            -21,
-            0.32,
-            -17,
-          ],
-
-          rotation:
-            Math.PI /
-            2.3,
-
-          scale:
-            1.13,
-        },
-
-        {
-          game:
-            GAMES[2],
-
-          position: [
-            21,
-            0.32,
-            -17,
-          ],
-
-          rotation:
-            -Math.PI /
-            2.3,
-
-          scale:
-            1.13,
-        },
-
-        {
-          game:
-            GAMES[1],
-
-          position: [
-            -14,
-            0.32,
-            -26,
-          ],
-
-          rotation:
-            Math.PI /
-            3.1,
-
-          scale:
-            1.15,
-        },
-      ],
-      []
-    );
-
-  const blackWalls =
-    useMemo(
-      () => [
-        {
-          position: [
-            -ROOM_HALF_WIDTH,
-            7,
-            0,
-          ],
-
-          scale: [
-            0.14,
-            13.5,
-            68,
-          ],
-        },
-
-        {
-          position: [
-            ROOM_HALF_WIDTH,
-            7,
-            0,
-          ],
-
-          scale: [
-            0.14,
-            13.5,
-            68,
-          ],
-        },
-
-        {
-          position: [
-            0,
-            7,
-            ROOM_BACK_Z,
-          ],
-
-          scale: [
-            58.5,
-            13.5,
-            0.14,
-          ],
-        },
-      ],
-      []
-    );
-
-  const floor =
-    useMemo(
-      () => [
-        {
-          position: [
-            0,
-            0.325,
-            0,
-          ],
-
-          scale: [
-            58.2,
-            0.025,
-            68,
-          ],
-        },
-      ],
-      []
-    );
-
-  const ceilingLights =
-    useMemo(
-      () => [
-        {
-          position: [
-            -15,
-            12.3,
-            13,
-          ],
-
-          scale: [
-            0.16,
-            0.12,
-            34,
-          ],
-        },
-
-        {
-          position: [
-            15,
-            12.3,
-            13,
-          ],
-
-          scale: [
-            0.16,
-            0.12,
-            34,
-          ],
-        },
-
-        {
-          position: [
-            -8,
-            12.3,
-            -20,
-          ],
-
-          scale: [
-            0.16,
-            0.12,
-            20,
-          ],
-        },
-
-        {
-          position: [
-            8,
-            12.3,
-            -20,
-          ],
-
-          scale: [
-            0.16,
-            0.12,
-            20,
-          ],
-        },
-      ],
-      []
-    );
+      {
+        position: [27.6, 5.5, -27],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [27.6, 5.5, -18],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [27.6, 5.5, -9],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [27.6, 5.5, 0],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [27.6, 5.5, 9],
+        scale: [0.18, 5.5, 0.18],
+      },
+      {
+        position: [27.6, 5.5, 18],
+        scale: [0.18, 5.5, 0.18],
+      },
+    ],
+    []
+  );
 
   return (
     <group>
-      <InstancedBoxes
-        items={
-          blackWalls
-        }
-        color="#05080c"
-        roughness={
-          0.9
-        }
+      {/* ===================================================
+          SUELO BASE
+      =================================================== */}
+
+      <mesh
+        position={[0, -0.08, -5]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            ROOM_HALF_WIDTH * 2,
+            0.16,
+            59,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#090c10"
+          roughness={0.82}
+          metalness={0.08}
+        />
+      </mesh>
+
+      {/* ===================================================
+          CAMINO CENTRAL
+      =================================================== */}
+
+      <mesh
+        position={[0, 0.015, -4]}
+      >
+        <boxGeometry
+          args={[9.5, 0.025, 54]}
+        />
+
+        <meshStandardMaterial
+          color="#11171d"
+          roughness={0.7}
+        />
+      </mesh>
+
+      {/* bordes del camino */}
+
+      <NeonLine
+        position={[
+          -4.9,
+          0.045,
+          -4,
+        ]}
+        size={[
+          0.06,
+          0.025,
+          54,
+        ]}
+        color="#31d9ff"
       />
 
-      <InstancedBoxes
-        items={
-          floor
-        }
-        color="#080c11"
-        roughness={
-          0.7
-        }
+      <NeonLine
+        position={[
+          4.9,
+          0.045,
+          -4,
+        ]}
+        size={[
+          0.06,
+          0.025,
+          54,
+        ]}
+        color="#31d9ff"
       />
 
-      <InstancedBoxes
-        items={
-          ceilingLights
-        }
-        color="#ffffff"
-        roughness={
-          0.1
-        }
-        emissive="#ffffff"
-        emissiveIntensity={
-          1.6
-        }
-      />
+      {/* cortes transversales del recorrido */}
+
+      {[-24, -15, -6, 3, 12, 21].map(
+        (z) => (
+          <group
+            key={`floor-${z}`}
+          >
+            <NeonLine
+              position={[
+                -3.8,
+                0.05,
+                z,
+              ]}
+              size={[
+                2.2,
+                0.025,
+                0.055,
+              ]}
+              color="#ff3ea5"
+            />
+
+            <NeonLine
+              position={[
+                3.8,
+                0.05,
+                z,
+              ]}
+              size={[
+                2.2,
+                0.025,
+                0.055,
+              ]}
+              color="#755cff"
+            />
+          </group>
+        )
+      )}
+
+      {/* ===================================================
+          CABECERA POPULARES HOY
+      =================================================== */}
 
       <NeonWord
         text="POPULARES HOY"
         color="#58f1ff"
         position={[
           0,
-          10.8,
-          29,
-        ]}
-        width={
-          15
-        }
-        height={
-          3
-        }
-      />
-
-      <NeonWord
-        text="INSERT COIN"
-        color="#ff4f95"
-        position={[
-          -29,
-          8,
-          18,
+          10.5,
+          ROOM_BACK_Z + 0.28,
         ]}
         rotation={[
           0,
-          Math.PI / 2,
+          0,
           0,
         ]}
-        width={
-          8
-        }
-        height={
-          2
-        }
+        width={17}
+        height={4.2}
       />
 
-      <NeonWord
-        text="LEVEL UP"
-        color="#8b5cff"
+      <NeonLine
         position={[
-          29,
-          8,
-          8,
-        ]}
-        rotation={[
           0,
-          -Math.PI / 2,
-          0,
+          8.6,
+          ROOM_BACK_Z + 0.31,
         ]}
-        width={
-          7
-        }
-        height={
-          2
-        }
+        size={[
+          15,
+          0.07,
+          0.06,
+        ]}
+        color="#ff3ea5"
       />
 
-      <NeonWord
-        text="PLAY"
-        color="#ffe44f"
+      {/* ===================================================
+          PANTALLA PRINCIPAL
+      =================================================== */}
+
+      <FeaturedVideoWall
         position={[
-          -29,
-          8,
-          -16,
-        ]}
-        rotation={[
           0,
-          Math.PI / 2,
-          0,
+          5.2,
+          ROOM_BACK_Z + 0.55,
         ]}
-        width={
-          5
-        }
-        height={
-          2
-        }
       />
+
+      {/* ===================================================
+          ICONOS ARCADE EN PARED TRASERA
+      =================================================== */}
 
       <ArcadeIcon
         type="chomper"
         position={[
-          -28.95,
-          5,
-          2,
+          -20.5,
+          9.2,
+          ROOM_BACK_Z + 0.34,
         ]}
-        rotation={[
-          0,
-          Math.PI / 2,
-          0,
-        ]}
-        size={
-          5
-        }
+        rotation={[0, 0, 0]}
+        size={5.5}
       />
 
       <ArcadeIcon
         type="invader"
         position={[
-          28.95,
-          5.2,
-          -12,
+          20.5,
+          9.2,
+          ROOM_BACK_Z + 0.34,
         ]}
-        rotation={[
-          0,
-          -Math.PI / 2,
-          0,
-        ]}
-        size={
-          5.4
-        }
+        rotation={[0, 0, 0]}
+        size={5.5}
       />
+
+      {/* ===================================================
+          TOP 10 - INDICADOR CENTRAL
+      =================================================== */}
+
+      <group
+        position={[
+          0,
+          0,
+          14.5,
+        ]}
+      >
+        <RoundedBox
+          position={[
+            0,
+            0.18,
+            0,
+          ]}
+          args={[
+            7.5,
+            0.32,
+            3.4,
+          ]}
+          radius={0.2}
+          smoothness={3}
+        >
+          <meshStandardMaterial
+            color="#11161b"
+            roughness={0.5}
+            metalness={0.25}
+          />
+        </RoundedBox>
+
+        <NeonLine
+          position={[
+            0,
+            0.37,
+            -1.25,
+          ]}
+          size={[
+            5.7,
+            0.04,
+            0.05,
+          ]}
+          color="#58f1ff"
+        />
+
+        <NeonLine
+          position={[
+            0,
+            0.37,
+            1.25,
+          ]}
+          size={[
+            5.7,
+            0.04,
+            0.05,
+          ]}
+          color="#ff3ea5"
+        />
+
+        <NeonWord
+          text="TOP 10"
+          color="#ffffff"
+          position={[
+            0,
+            0.39,
+            0,
+          ]}
+          rotation={[
+            -Math.PI / 2,
+            0,
+            0,
+          ]}
+          width={5.5}
+          height={1.5}
+        />
+      </group>
+
+      {/* ===================================================
+          EXPOSITOR CENTRAL 1
+      =================================================== */}
+
+      <group
+        position={[
+          -7.5,
+          0,
+          -7,
+        ]}
+      >
+        <RoundedBox
+          position={[
+            0,
+            0.45,
+            0,
+          ]}
+          args={[
+            2.7,
+            0.9,
+            2.7,
+          ]}
+          radius={0.25}
+          smoothness={3}
+        >
+          <meshStandardMaterial
+            color="#11161c"
+            roughness={0.45}
+            metalness={0.35}
+          />
+        </RoundedBox>
+
+        <mesh
+          position={[
+            0,
+            2.1,
+            0,
+          ]}
+          rotation={[
+            0,
+            Math.PI / 4,
+            0,
+          ]}
+        >
+          <octahedronGeometry
+            args={[0.8, 0]}
+          />
+
+          <meshStandardMaterial
+            color="#58f1ff"
+            emissive="#58f1ff"
+            emissiveIntensity={1.3}
+            roughness={0.3}
+          />
+        </mesh>
+
+        <NeonLine
+          position={[
+            0,
+            1.05,
+            0,
+          ]}
+          size={[
+            0.055,
+            1.5,
+            0.055,
+          ]}
+          color="#58f1ff"
+        />
+      </group>
+
+      {/* ===================================================
+          EXPOSITOR CENTRAL 2
+      =================================================== */}
+
+      <group
+        position={[
+          7.5,
+          0,
+          -7,
+        ]}
+      >
+        <RoundedBox
+          position={[
+            0,
+            0.45,
+            0,
+          ]}
+          args={[
+            2.7,
+            0.9,
+            2.7,
+          ]}
+          radius={0.25}
+          smoothness={3}
+        >
+          <meshStandardMaterial
+            color="#11161c"
+            roughness={0.45}
+            metalness={0.35}
+          />
+        </RoundedBox>
+
+        <mesh
+          position={[
+            0,
+            2.1,
+            0,
+          ]}
+          rotation={[
+            Math.PI / 4,
+            0,
+            Math.PI / 4,
+          ]}
+        >
+          <icosahedronGeometry
+            args={[0.8, 0]}
+          />
+
+          <meshStandardMaterial
+            color="#ff3ea5"
+            emissive="#ff3ea5"
+            emissiveIntensity={1.3}
+            roughness={0.3}
+          />
+        </mesh>
+
+        <NeonLine
+          position={[
+            0,
+            1.05,
+            0,
+          ]}
+          size={[
+            0.055,
+            1.5,
+            0.055,
+          ]}
+          color="#ff3ea5"
+        />
+      </group>
+
+      {/* ===================================================
+          ESTRUCTURAS DEL TECHO
+      =================================================== */}
+
+      <InstancedBoxes
+        items={ceilingBars}
+        color="#171d23"
+        roughness={0.45}
+        emissive="#25313b"
+        emissiveIntensity={0.25}
+      />
+
+      {/* líneas luminosas techo izquierda */}
 
       <NeonLine
         position={[
-          -29,
-          11,
-          0,
-        ]}
-        rotation={[
-          0,
-          Math.PI / 2,
-          0,
+          -18,
+          12.28,
+          -5,
         ]}
         size={[
-          42,
+          0.09,
+          0.08,
+          45,
+        ]}
+        color="#58f1ff"
+      />
+
+      {/* líneas luminosas techo derecha */}
+
+      <NeonLine
+        position={[
+          18,
+          12.28,
+          -5,
+        ]}
+        size={[
+          0.09,
+          0.08,
+          45,
+        ]}
+        color="#ff3ea5"
+      />
+
+      {/* ===================================================
+          ESTRUCTURA DE PAREDES
+      =================================================== */}
+
+      <InstancedBoxes
+        items={sideStructures}
+        color="#1b2229"
+        roughness={0.6}
+        emissive="#26333d"
+        emissiveIntensity={0.18}
+      />
+
+      {/* ===================================================
+          LÍNEAS LATERALES
+      =================================================== */}
+
+      <NeonLine
+        position={[
+          -27.4,
+          9.5,
+          -5,
+        ]}
+        size={[
           0.07,
           0.07,
+          49,
         ]}
         color="#58f1ff"
       />
 
       <NeonLine
         position={[
-          29,
-          11,
-          0,
-        ]}
-        rotation={[
-          0,
-          Math.PI / 2,
-          0,
+          27.4,
+          9.5,
+          -5,
         ]}
         size={[
-          42,
           0.07,
           0.07,
+          49,
         ]}
-        color="#ff4f95"
+        color="#ff3ea5"
       />
 
-      <pointLight
-        position={[
-          0,
-          10,
-          22,
-        ]}
-        color="#dff8ff"
-        intensity={
-          30
-        }
-        distance={
-          28
-        }
-        decay={
-          2
-        }
-      />
+      {/* ===================================================
+          ESTACIONES TOP 10
+      =================================================== */}
 
-      <pointLight
-        position={[
-          -12,
-          9,
-          2,
-        ]}
-        color="#59eaff"
-        intensity={
-          18
-        }
-        distance={
-          20
-        }
-        decay={
-          2
-        }
-      />
-
-      <pointLight
-        position={[
-          12,
-          9,
-          -6,
-        ]}
-        color="#ff62ad"
-        intensity={
-          18
-        }
-        distance={
-          20
-        }
-        decay={
-          2
-        }
-      />
-
-      {stationLayout.map(
-        (
-          station
-        ) => (
+      {stations.map(
+        ({
+          game,
+          position,
+          rotation,
+        }) => (
           <GameStation
-            key={
-              station
-                .game
-                .id
-            }
-            game={
-              station
-                .game
-            }
-            position={
-              station
-                .position
-            }
-            rotation={
-              station
-                .rotation
-            }
-            scale={
-              station
-                .scale
-            }
+            key={game.id}
+            game={game}
+            position={position}
+            rotation={rotation}
           />
         )
       )}
 
-      <FeaturedVideoWall />
+      {/* ===================================================
+          COLISIONES EXPOSITORES CENTRALES
+      =================================================== */}
 
       <RigidBody
         type="fixed"
-        colliders={
-          false
-        }
+        colliders={false}
       >
-        {stationLayout.map(
-          (
-            station
-          ) => (
-            <CuboidCollider
-              key={
-                station
-                  .game
-                  .id
-              }
-              args={[
-                1.9 *
-                  station
-                    .scale,
+        <CuboidCollider
+          args={[
+            1.5,
+            1.4,
+            1.5,
+          ]}
+          position={[
+            -7.5,
+            1.4,
+            -7,
+          ]}
+        />
 
-                0.42,
-
-                0.8 *
-                  station
-                    .scale,
-              ]}
-              position={[
-                station
-                  .position[0],
-
-                0.8,
-
-                station
-                  .position[2],
-              ]}
-              rotation={[
-                0,
-
-                station
-                  .rotation,
-
-                0,
-              ]}
-            />
-          )
-        )}
+        <CuboidCollider
+          args={[
+            1.5,
+            1.4,
+            1.5,
+          ]}
+          position={[
+            7.5,
+            1.4,
+            -7,
+          ]}
+        />
       </RigidBody>
     </group>
   );
 }
-          
