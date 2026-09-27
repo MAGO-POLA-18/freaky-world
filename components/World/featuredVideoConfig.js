@@ -11,6 +11,7 @@ export const FEATURED_VIDEO = {
   description:
     "Pantalla multimedia principal de Freaky World.",
   videoUrl: FEATURED_VIDEO_URL,
+  youtubeUrl: FEATURED_VIDEO_URL,
 };
 
 export function getYouTubeId(url) {
@@ -18,47 +19,86 @@ export function getYouTubeId(url) {
 
   try {
     const parsed = new URL(url);
+    const hostname = parsed.hostname.replace(/^www\./, "");
 
-    if (
-      parsed.hostname.includes(
-        "youtu.be"
-      )
-    ) {
-      return parsed.pathname
-        .replace("/", "")
-        .split("/")[0];
-    }
-
-    if (
-      parsed.pathname.startsWith(
-        "/shorts/"
-      )
-    ) {
+    if (hostname === "youtu.be") {
       return (
         parsed.pathname
-          .split("/shorts/")[1]
-          ?.split("/")[0] ||
-        null
+          .split("/")
+          .filter(Boolean)[0] || null
       );
     }
 
     if (
-      parsed.pathname.startsWith(
-        "/embed/"
-      )
+      hostname === "youtube.com" ||
+      hostname.endsWith(".youtube.com")
     ) {
-      return (
-        parsed.pathname
-          .split("/embed/")[1]
-          ?.split("/")[0] ||
-        null
-      );
+      if (
+        parsed.pathname.startsWith(
+          "/shorts/"
+        )
+      ) {
+        return (
+          parsed.pathname
+            .split("/shorts/")[1]
+            ?.split("/")[0] || null
+        );
+      }
+
+      if (
+        parsed.pathname.startsWith(
+          "/embed/"
+        )
+      ) {
+        return (
+          parsed.pathname
+            .split("/embed/")[1]
+            ?.split("/")[0] || null
+        );
+      }
+
+      if (
+        parsed.pathname.startsWith(
+          "/live/"
+        )
+      ) {
+        return (
+          parsed.pathname
+            .split("/live/")[1]
+            ?.split("/")[0] || null
+        );
+      }
+
+      return parsed.searchParams.get("v");
     }
 
-    return parsed.searchParams.get(
-      "v"
-    );
+    return null;
   } catch {
     return null;
   }
+}
+
+export function getYouTubeEmbedUrl(
+  url,
+  { autoplay = false } = {}
+) {
+  const youtubeId = getYouTubeId(url);
+
+  if (!youtubeId) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    playsinline: "1",
+    controls: "1",
+    rel: "0",
+    modestbranding: "1",
+    fs: "1",
+  });
+
+  if (autoplay) {
+    params.set("autoplay", "1");
+  }
+
+  return `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
 }
