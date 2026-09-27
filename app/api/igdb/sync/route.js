@@ -125,8 +125,18 @@ async function getGamesFromIGDB(
       summary,
       storyline,
 
-      category,
-      status,
+      game_type.id,
+      game_type.type,
+
+      game_status.id,
+      game_status.status,
+
+      parent_game.id,
+      parent_game.name,
+
+      version_parent.id,
+      version_parent.name,
+      version_title,
 
       first_release_date,
 
@@ -193,9 +203,20 @@ async function getGamesFromIGDB(
 
       similar_games,
 
-      age_ratings.category,
-      age_ratings.rating,
-      age_ratings.synopsis;
+      age_ratings.organization.id,
+      age_ratings.organization.name,
+      age_ratings.rating_category.id,
+      age_ratings.rating_category.rating,
+      age_ratings.rating_content_descriptions.id,
+      age_ratings.rating_content_descriptions.description,
+      age_ratings.synopsis,
+
+      language_supports.language.id,
+      language_supports.language.name,
+      language_supports.language.native_name,
+      language_supports.language.locale,
+      language_supports.language_support_type.id,
+      language_supports.language_support_type.name;
 
     where
       cover != null
@@ -276,6 +297,49 @@ function uniqueById(items) {
   return [
     ...map.values(),
   ];
+}
+
+function normalizeSupportTypeName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function getLanguageSupportFlags(
+  supports
+) {
+  const flags = {
+    audio: false,
+    subtitles: false,
+    interface: false,
+  };
+
+  for (const support of supports) {
+    const typeName =
+      normalizeSupportTypeName(
+        support?.language_support_type?.name
+      );
+
+    if (
+      typeName.includes("audio")
+  ) {
+      flags.audio = true;
+    }
+
+    if (
+      typeName.includes("subtitle")
+    ) {
+      flags.subtitles = true;
+    }
+
+    if (
+      typeName.includes("interface")
+    ) {
+      flags.interface = true;
+    }
+  }
+
+  return flags;
 }
 
 /* =========================================================
@@ -591,6 +655,12 @@ function normalizeGame(game) {
     cleanArray(
       game.similar_games
     )
+      .map(
+        (item) =>
+          typeof item === "object"
+            ? item?.id
+            : item
+      )
       .filter(
         (id) =>
           Number.isFinite(id)
@@ -608,19 +678,132 @@ function normalizeGame(game) {
       game.age_ratings
     ).map(
       (item) => ({
-        category:
-          item.category ??
+        organization:
+          item.organization?.name ||
+          null,
+
+        organizationId:
+          item.organization?.id ??
           null,
 
         rating:
-          item.rating ??
+          item.rating_category?.rating ||
+          null,
+
+        ratingCategoryId:
+          item.rating_category?.id ??
           null,
 
         synopsis:
           item.synopsis ||
           null,
+
+        contentDescriptors:
+          cleanArray(
+            item.rating_content_descriptions
+          )
+            .map(
+              (descriptor) =>
+                descriptor?.description
+            )
+            .filter(Boolean),
       })
     );
+
+  const languageGroups =
+    new Map();
+
+  for (
+    const support of cleanArray(
+      game.language_supports
+    )
+  ) {
+    const language =
+      support.language;
+
+    if (
+      !language?.id
+    ) {
+      continue;
+    }
+
+    if (
+      !languageGroups.has(
+        language.id
+      )
+    ) {
+      languageGroups.set(
+        language.id,
+        {
+          language,
+          supports: [],
+        }
+      );
+    }
+
+    languageGroups
+      .get(language.id)
+      .supports.push(
+        support
+      );
+  }
+
+  const languages =
+    [
+      ...languageGroups.values(),
+    ].map(
+      ({
+        language,
+        supports,
+      }) => {
+        const flags =
+          getLanguageSupportFlags(
+            supports
+          );
+
+        return {
+          languageId:
+            language.id,
+
+          languageName:
+            language.name ||
+            null,
+
+          nativeName:
+            language.native_name ||
+            null,
+
+          locale:
+            language.locale ||
+            null,
+
+          audio:
+            flags.audio,
+
+          subtitles:
+            flags.subtitles,
+
+          interface:
+            flags.interface,
+        };
+      }
+    );
+
+  const gameType =
+    game.game_type ||
+    null;
+
+  const gameStatus =
+    game.game_status ||
+    null;
+
+  const parentGame =
+    game.parent_game ||
+    null;
+
+  const versionParent =
+    game.version_parent ||
+    null;
 
   return {
     id:
@@ -642,11 +825,39 @@ function normalizeGame(game) {
       null,
 
     category:
-      game.category ??
+      gameType?.id ??
+      null,
+
+    releaseType:
+      gameType?.type ||
       null,
 
     status:
-      game.status ??
+      gameStatus?.id ??
+      null,
+
+    gameStatusName:
+      gameStatus?.status ||
+      null,
+
+    parentGameId:
+      parentGame?.id ??
+      null,
+
+    parentGameName:
+      parentGame?.name ||
+      null,
+
+    versionParentId:
+      versionParent?.id ??
+      null,
+
+    versionParentName:
+      versionParent?.name ||
+      null,
+
+    versionTitle:
+      game.version_title ||
       null,
 
     firstReleaseDate:
@@ -763,6 +974,8 @@ function normalizeGame(game) {
     similarGames,
 
     ageRatings,
+
+    languages,
   };
 }
 
@@ -877,6 +1090,15 @@ async function saveGame(
 
     status:
       game.status,
+
+    release_type:
+      game.releaseType,
+
+    parent_game_id:
+      game.parentGameId,
+
+    version_parent_id:
+      game.versionParentId,
 
     first_release_date:
       game.firstReleaseDate,
@@ -1630,23 +1852,16 @@ async function saveAgeRatings(
           game.id,
 
         organization:
-          item.category !== null
-            ? String(
-                item.category
-              )
-            : null,
+          item.organization,
 
         rating:
-          item.rating !== null
-            ? String(
-                item.rating
-              )
-            : null,
+          item.rating,
 
         synopsis:
           item.synopsis,
 
         content_descriptors:
+          item.contentDescriptors ||
           [],
       })
     );
@@ -1654,6 +1869,73 @@ async function saveAgeRatings(
   await supabaseRequest(
     environment,
     "game_age_ratings",
+    {
+      method:
+        "POST",
+
+      body:
+        JSON.stringify(
+          rows
+        ),
+    }
+  );
+}
+
+/* =========================================================
+   IDIOMAS
+========================================================= */
+
+async function saveLanguages(
+  environment,
+  game
+) {
+  await deleteGameRelations(
+    environment,
+    "game_languages",
+    game.id
+  );
+
+  if (
+    !game.languages.length
+  ) {
+    return;
+  }
+
+  const rows =
+    game.languages.map(
+      (language) => ({
+        game_id:
+          game.id,
+
+        language_id:
+          language.languageId,
+
+        language_name:
+          language.languageName,
+
+        native_name:
+          language.nativeName,
+
+        audio:
+          Boolean(
+            language.audio
+          ),
+
+        subtitles:
+          Boolean(
+            language.subtitles
+          ),
+
+        interface:
+          Boolean(
+            language.interface
+          ),
+      })
+    );
+
+  await supabaseRequest(
+    environment,
+    "game_languages",
     {
       method:
         "POST",
@@ -1743,10 +2025,15 @@ async function syncGame(
     environment,
     game
   );
+
+  await saveLanguages(
+    environment,
+    game
+  );
 }
 
 /* =========================================================
-   SINCRONIZACIÓN COMPLETA
+   EJECUTAR SINCRONIZACIÓN
 ========================================================= */
 
 async function runSync() {
@@ -1770,83 +2057,161 @@ async function runSync() {
       normalizeGame
     );
 
-  for (
-    const game of games
-  ) {
+  const syncedGames = [];
+
+  for (const game of games) {
     await syncGame(
       environment,
       game
     );
+
+    syncedGames.push({
+      id:
+        game.id,
+
+      name:
+        game.name,
+
+      type: {
+        id:
+          game.category,
+
+        name:
+          game.releaseType,
+      },
+
+      status: {
+        id:
+          game.status,
+
+        name:
+          game.gameStatusName,
+      },
+
+      parentGame: game.parentGameId
+        ? {
+            id:
+              game.parentGameId,
+
+            name:
+              game.parentGameName,
+          }
+        : null,
+
+      versionParent: game.versionParentId
+        ? {
+            id:
+              game.versionParentId,
+
+            name:
+              game.versionParentName,
+
+            title:
+              game.versionTitle,
+          }
+        : null,
+
+      genres:
+        game.genres.map(
+          (item) =>
+            item.name
+        ),
+
+      themes:
+        game.themes.map(
+          (item) =>
+            item.name
+        ),
+
+      artworks:
+        game.artworks.length,
+
+      screenshots:
+        game.screenshots.length,
+
+      videos:
+        game.videos.length,
+
+      ageRatings:
+        game.ageRatings.map(
+          (item) => ({
+            organization:
+              item.organization,
+
+            rating:
+              item.rating,
+
+            descriptors:
+              item.contentDescriptors,
+          })
+        ),
+
+      languages:
+        game.languages.map(
+          (language) => ({
+            id:
+              language.languageId,
+
+            name:
+              language.languageName,
+
+            nativeName:
+              language.nativeName,
+
+            locale:
+              language.locale,
+
+            audio:
+              language.audio,
+
+            subtitles:
+              language.subtitles,
+
+            interface:
+              language.interface,
+          })
+        ),
+    });
   }
 
-  return games;
+  return {
+    ok:
+      true,
+
+    message:
+      "IGDB sincronizado correctamente con la ficha maestra de Freaky World.",
+
+    synced:
+      syncedGames.length,
+
+    games:
+      syncedGames,
+  };
 }
 
 /* =========================================================
-   GET /api/igdb/sync
+   GET
 ========================================================= */
 
 export async function GET() {
   try {
-    const games =
+    const result =
       await runSync();
 
     return NextResponse.json(
+      result,
       {
-        ok:
-          true,
-
-        message:
-          "IGDB sincronizado correctamente con la ficha maestra de Freaky World.",
-
-        synced:
-          games.length,
-
-        games:
-          games.map(
-            (game) => ({
-              id:
-                game.id,
-
-              name:
-                game.name,
-
-              genres:
-                game.genres.map(
-                  (item) =>
-                    item.name
-                ),
-
-              themes:
-                game.themes.map(
-                  (item) =>
-                    item.name
-                ),
-
-              artworks:
-                game.artworks.length,
-
-              screenshots:
-                game.screenshots.length,
-
-              videos:
-                game.videos.length,
-            })
-          ),
-      },
-      {
-        status:
-          200,
+        status: 200,
 
         headers: {
           "Cache-Control":
-            "no-store, max-age=0",
+            "no-store, no-cache, must-revalidate",
         },
       }
     );
   } catch (error) {
     console.error(
-      "[Freaky World / IGDB Sync]",
+      "ERROR IGDB SYNC:",
       error
     );
 
@@ -1858,11 +2223,15 @@ export async function GET() {
         error:
           error instanceof Error
             ? error.message
-            : "Error desconocido sincronizando IGDB con Supabase.",
+            : String(error),
       },
       {
-        status:
-          500,
+        status: 500,
+
+        headers: {
+          "Cache-Control":
+            "no-store, no-cache, must-revalidate",
+        },
       }
     );
   }
