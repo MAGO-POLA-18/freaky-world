@@ -26,6 +26,7 @@ import PlayerController, {
 import CameraRig from "./CameraRig";
 import MobileControls from "./MobileControls";
 import RankingOverlay from "./RankingOverlay";
+import VideoOverlay from "./VideoOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 
 /* =========================================================
@@ -56,61 +57,50 @@ export default function WorldScene() {
   const [
     nearbyGame,
     setNearbyGame,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     openedGame,
     setOpenedGame,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     quality,
     setQuality,
-  ] =
-    useState("medium");
+  ] = useState("medium");
 
   const [
     stats,
     setStats,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const [
     showStats,
     setShowStats,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     showTutorial,
     setShowTutorial,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     mobile,
     setMobile,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     deviceReady,
     setDeviceReady,
-  ] =
-    useState(false);
+  ] = useState(false);
 
   const [
     skyTestHour,
     setSkyTestHour,
-  ] =
-    useState(null);
+  ] = useState(null);
 
   const overlayOpen =
-    Boolean(
-      openedGame
-    );
+    Boolean(openedGame);
 
   const isVideoWall =
     nearbyGame?.id ===
@@ -126,9 +116,7 @@ export default function WorldScene() {
         "(pointer: coarse)"
       ).matches;
 
-    setMobile(
-      coarse
-    );
+    setMobile(coarse);
 
     setQuality(
       coarse
@@ -136,9 +124,7 @@ export default function WorldScene() {
         : "high"
     );
 
-    setDeviceReady(
-      true
-    );
+    setDeviceReady(true);
 
     const completed =
       window.localStorage
@@ -153,16 +139,12 @@ export default function WorldScene() {
       return;
     }
 
-    setShowTutorial(
-      true
-    );
+    setShowTutorial(true);
 
     const timer =
       window.setTimeout(
         () => {
-          setShowTutorial(
-            false
-          );
+          setShowTutorial(false);
 
           window.localStorage
             .setItem(
@@ -174,9 +156,7 @@ export default function WorldScene() {
       );
 
     return () => {
-      window.clearTimeout(
-        timer
-      );
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -186,9 +166,7 @@ export default function WorldScene() {
 
   const closeTutorial =
     useCallback(() => {
-      setShowTutorial(
-        false
-      );
+      setShowTutorial(false);
 
       window.localStorage
         .setItem(
@@ -202,27 +180,22 @@ export default function WorldScene() {
   ======================================================= */
 
   useEffect(() => {
-    const handleGameNear =
-      (
-        event
-      ) => {
-        if (
-          event.detail
-            ?.near &&
-          event.detail
-            ?.game
-        ) {
-          setNearbyGame(
-            event.detail.game
-          );
-
-          return;
-        }
-
+    const handleGameNear = (
+      event
+    ) => {
+      if (
+        event.detail?.near &&
+        event.detail?.game
+      ) {
         setNearbyGame(
-          null
+          event.detail.game
         );
-      };
+
+        return;
+      }
+
+      setNearbyGame(null);
+    };
 
     window.addEventListener(
       "freaky:game-near",
@@ -250,14 +223,10 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x =
-        0;
+      playerInput.x = 0;
+      playerInput.y = 0;
 
-      playerInput.y =
-        0;
-
-      playerInput
-        .dashRequested =
+      playerInput.dashRequested =
         false;
 
       setOpenedGame(
@@ -270,19 +239,13 @@ export default function WorldScene() {
 
   const closeGame =
     useCallback(() => {
-      playerInput.x =
-        0;
+      playerInput.x = 0;
+      playerInput.y = 0;
 
-      playerInput.y =
-        0;
-
-      playerInput
-        .dashRequested =
+      playerInput.dashRequested =
         false;
 
-      setOpenedGame(
-        null
-      );
+      setOpenedGame(null);
     }, []);
 
   /* =======================================================
@@ -290,47 +253,42 @@ export default function WorldScene() {
   ======================================================= */
 
   useEffect(() => {
-    const handleKey =
-      (
-        event
-      ) => {
-        if (
-          event.code ===
-            "Escape" &&
-          overlayOpen
-        ) {
-          event
-            .preventDefault();
+    const handleKey = (
+      event
+    ) => {
+      if (
+        event.code ===
+          "Escape" &&
+        overlayOpen
+      ) {
+        event.preventDefault();
 
-          closeGame();
+        closeGame();
 
-          return;
-        }
+        return;
+      }
 
-        if (
-          event.code ===
-            "KeyE" &&
-          nearbyGame &&
-          !overlayOpen
-        ) {
-          event
-            .preventDefault();
+      if (
+        event.code ===
+          "KeyE" &&
+        nearbyGame &&
+        !overlayOpen
+      ) {
+        event.preventDefault();
 
-          openGame();
-        }
+        openGame();
+      }
 
-        if (
-          event.code ===
-          "KeyP"
-        ) {
-          setShowStats(
-            (
-              current
-            ) =>
-              !current
-          );
-        }
-      };
+      if (
+        event.code ===
+        "KeyP"
+      ) {
+        setShowStats(
+          (current) =>
+            !current
+        );
+      }
+    };
 
     window.addEventListener(
       "keydown",
@@ -365,9 +323,7 @@ export default function WorldScene() {
           "0"
         )}:00`;
 
-  if (
-    !deviceReady
-  ) {
+  if (!deviceReady) {
     return null;
   }
 
@@ -520,9 +476,7 @@ export default function WorldScene() {
             type="button"
             onClick={() =>
               setShowStats(
-                (
-                  current
-                ) =>
+                (current) =>
                   !current
               )
             }
@@ -631,8 +585,7 @@ export default function WorldScene() {
                 <br />
 
                 Quality:{" "}
-                {quality
-                  .toUpperCase()}
+                {quality.toUpperCase()}
 
                 <div
                   style={{
@@ -662,9 +615,7 @@ export default function WorldScene() {
                   }}
                 >
                   {SKY_TEST_HOURS.map(
-                    (
-                      hour
-                    ) => (
+                    (hour) => (
                       <button
                         key={
                           hour ??
@@ -747,12 +698,6 @@ export default function WorldScene() {
 
           powerPreference:
             "high-performance",
-
-          /*
-            Necesario para que el modo
-            occlude="blending" de <Html>
-            pueda convivir con WebGL.
-          */
 
           alpha:
             true,
@@ -933,16 +878,17 @@ export default function WorldScene() {
           2D
       =================================================== */}
 
-      {openedGame && (
-        <RankingOverlay
-          game={
-            openedGame
-          }
-          onClose={
-            closeGame
-          }
+      {openedGame?.overlayType === "video" ? (
+        <VideoOverlay
+          video={openedGame}
+          onClose={closeGame}
         />
-      )}
+      ) : openedGame ? (
+        <RankingOverlay
+          game={openedGame}
+          onClose={closeGame}
+        />
+      ) : null}
     </>
   );
 }
