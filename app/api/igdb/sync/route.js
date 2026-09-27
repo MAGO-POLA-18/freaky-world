@@ -10,11 +10,21 @@ const TWITCH_TOKEN_URL =
 const IGDB_GAMES_URL =
   "https://api.igdb.com/v4/games";
 
-const DEFAULT_BATCH_SIZE = 25;
-const MAX_BATCH_SIZE = 50;
+/*
+  Base44 ya demostró que el patrón correcto es trabajar
+  por lotes grandes.
+
+  Freaky World usa 100 por defecto para mantener margen
+  suficiente en Vercel/Supabase porque nuestra ficha maestra
+  tiene bastantes relaciones.
+*/
+
+const DEFAULT_BATCH_SIZE = 100;
+const MAX_BATCH_SIZE = 500;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 /* =========================================================
    VARIABLES DE ENTORNO
@@ -72,10 +82,24 @@ function getEnvironment() {
    TOKEN TWITCH
 ========================================================= */
 
+let cachedAccessToken = null;
+let cachedAccessTokenExpiresAt = 0;
+
 async function getTwitchAccessToken(
   clientId,
   clientSecret
 ) {
+  const now = Date.now();
+
+  if (
+    cachedAccessToken &&
+    now <
+      cachedAccessTokenExpiresAt -
+        60_000
+  ) {
+    return cachedAccessToken;
+  }
+
   const url =
     `${TWITCH_TOKEN_URL}` +
     `?client_id=${encodeURIComponent(clientId)}` +
@@ -106,7 +130,17 @@ async function getTwitchAccessToken(
     );
   }
 
-  return data.access_token;
+  cachedAccessToken =
+    data.access_token;
+
+  cachedAccessTokenExpiresAt =
+    now +
+    Number(
+      data.expires_in || 0
+    ) *
+      1000;
+
+  return cachedAccessToken;
 }
 
 /* =========================================================
@@ -215,7 +249,7 @@ const IGDB_FIELDS = `
 `;
 
 /* =========================================================
-   LLAMADA GENÉRICA A IGDB
+   LLAMADA IGDB
 ========================================================= */
 
 async function requestIGDBGames(
@@ -249,6 +283,12 @@ async function requestIGDBGames(
           "no-store",
       }
     );
+
+  /*
+    Si Twitch invalida el token no hacemos
+    un bucle silencioso. La próxima ejecución
+    obtendrá uno nuevo.
+  */
 
   if (!response.ok) {
     const errorText =
@@ -333,12 +373,17 @@ async function getGameFromIGDBById(
 /* =========================================================
    IMPORTACIÓN MASIVA
 
-   Se pagina por ID, no por "offset" real de IGDB.
+   IMPORTANTE:
+   No usamos offset para recorrer todo IGDB.
 
-   Esto permite reanudar:
-   ?mode=bulk&after=12345&limit=25
+   Avanzamos por ID:
+   id > after
 
-   La siguiente llamada usa nextAfter.
+   Esto permite:
+   - reanudar
+   - evitar offsets enormes
+   - no repetir páginas
+   - continuar aunque una ejecución termine
 ========================================================= */
 
 async function getBulkGamesFromIGDB(
@@ -406,7 +451,36 @@ function uniqueById(items) {
   ];
 }
 
-function normalizeSupportTypeName(value) {
+function uniqueRows(
+  rows,
+  keyBuilder
+) {
+  const map =
+    new Map();
+
+  for (const row of rows) {
+    const key =
+      keyBuilder(row);
+
+    if (
+      key !== null &&
+      key !== undefined
+    ) {
+      map.set(
+        String(key),
+        row
+      );
+    }
+  }
+
+  return [
+    ...map.values(),
+  ];
+}
+
+function normalizeSupportTypeName(
+  value
+) {
   return String(value || "")
     .trim()
     .toLowerCase();
@@ -852,9 +926,7 @@ function normalizeGame(game) {
     const language =
       support.language;
 
-    if (
-      !language?.id
-    ) {
+    if (!language?.id) {
       continue;
     }
 
@@ -873,9 +945,7 @@ function normalizeGame(game) {
     }
 
     languageGroups
-      .get(
-        language.id
-      )
+      .get(language.id)
       .supports.push(
         support
       );
@@ -1007,9 +1077,7 @@ function normalizeGame(game) {
       typeof game.rating ===
       "number"
         ? Number(
-            game.rating.toFixed(
-              2
-            )
+            game.rating.toFixed(2)
           )
         : null,
 
@@ -1021,9 +1089,7 @@ function normalizeGame(game) {
       typeof game.total_rating ===
       "number"
         ? Number(
-            game.total_rating.toFixed(
-              2
-            )
+            game.total_rating.toFixed(2)
           )
         : null,
 
@@ -1098,7 +1164,6 @@ function normalizeGame(game) {
     languages,
   };
 }
-
 /* =========================================================
    SUPABASE REST
 ========================================================= */
@@ -1154,64 +1219,180 @@ async function supabaseRequest(
   }
 
   try {
-    return JSON.parse(
-      text
-    );
+    return JSON.parse(text);
   } catch {
     return text;
   }
 }
 
 /* =========================================================
-   COMPROBAR SI EXISTE
+   HELPERS SUPABASE BULK
 ========================================================= */
 
-async function gameExists(
-  environment,
-  gameId
-) {
-  const result =
-    await supabaseRequest(
-      environment,
-      `games?id=eq.${gameId}&select=id,name`,
-      {
-        method:
-          "GET",
-
-        prefer:
-          "return=representation",
-      }
-    );
-
-  return (
-    Array.isArray(result) &&
-    result.length > 0
-  );
+function buildInFilter(values) {
+  return values
+    .map((value) =>
+      encodeURIComponent(
+        String(value)
+      )
+    )
+    .join(",");
 }
 
-/* =========================================================
-   REEMPLAZAR RELACIONES
-========================================================= */
+async function getExistingGameIds(
+  environment,
+  gameIds
+) {
+  if (!gameIds.length) {
+    return new Set();
+  }
 
-async function deleteGameRelations(
+  const existingIds =
+    new Set();
+
+  /*
+    Dividimos la consulta para no construir
+    una URL REST excesivamente grande.
+  */
+
+  const chunkSize = 200;
+
+  for (
+    let index = 0;
+    index < gameIds.length;
+    index += chunkSize
+  ) {
+    const chunk =
+      gameIds.slice(
+        index,
+        index + chunkSize
+      );
+
+    const filter =
+      buildInFilter(chunk);
+
+    const result =
+      await supabaseRequest(
+        environment,
+        `games?id=in.(${filter})&select=id`,
+        {
+          method: "GET",
+          prefer:
+            "return=representation",
+        }
+      );
+
+    for (
+      const row of
+        Array.isArray(result)
+          ? result
+          : []
+    ) {
+      if (
+        row?.id !== null &&
+        row?.id !== undefined
+      ) {
+        existingIds.add(
+          Number(row.id)
+        );
+      }
+    }
+  }
+
+  return existingIds;
+}
+
+async function deleteRelationsForGames(
   environment,
   table,
-  gameId
+  gameIds
 ) {
-  await supabaseRequest(
-    environment,
-    `${table}?game_id=eq.${gameId}`,
-    {
-      method:
-        "DELETE",
-    }
-  );
+  if (!gameIds.length) {
+    return;
+  }
+
+  const chunkSize = 100;
+
+  for (
+    let index = 0;
+    index < gameIds.length;
+    index += chunkSize
+  ) {
+    const chunk =
+      gameIds.slice(
+        index,
+        index + chunkSize
+      );
+
+    const filter =
+      buildInFilter(chunk);
+
+    await supabaseRequest(
+      environment,
+      `${table}?game_id=in.(${filter})`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+}
+
+async function bulkInsert(
+  environment,
+  table,
+  rows,
+  {
+    onConflict = null,
+    merge = false,
+    chunkSize = 500,
+  } = {}
+) {
+  if (!rows.length) {
+    return;
+  }
+
+  for (
+    let index = 0;
+    index < rows.length;
+    index += chunkSize
+  ) {
+    const chunk =
+      rows.slice(
+        index,
+        index + chunkSize
+      );
+
+    const path =
+      onConflict
+        ? `${table}?on_conflict=${onConflict}`
+        : table;
+
+    await supabaseRequest(
+      environment,
+      path,
+      {
+        method: "POST",
+
+        prefer:
+          merge
+            ? "resolution=merge-duplicates,return=minimal"
+            : "return=minimal",
+
+        body:
+          JSON.stringify(chunk),
+      }
+    );
+  }
 }
 
 /* =========================================================
-   GUARDAR JUEGO
+   FILA MAESTRA DE JUEGO
 
-   NO SE TOCAN:
+   MUY IMPORTANTE:
+
+   IGDB puede actualizar estos campos.
+
+   IGDB NO toca:
    - summary_es
    - storyline_es
    - translation_status
@@ -1226,13 +1407,13 @@ async function deleteGameRelations(
    - hidden
    - manual_trailer_youtube_id
    - manual_trailer_url
+
+   De esta manera un resync nunca pisa
+   el trabajo propio de Freaky World.
 ========================================================= */
 
-async function saveGame(
-  environment,
-  game
-) {
-  const gameRow = {
+function createGameRow(game) {
+  return {
     id:
       game.id,
 
@@ -1323,36 +1504,981 @@ async function saveGame(
     updated_at:
       new Date().toISOString(),
   };
+}
 
-  await supabaseRequest(
+/* =========================================================
+   GUARDAR JUEGOS EN BLOQUE
+========================================================= */
+
+async function saveGamesBulk(
+  environment,
+  games
+) {
+  const rows =
+    games.map(
+      createGameRow
+    );
+
+  await bulkInsert(
     environment,
-    "games?on_conflict=id",
+    "games",
+    rows,
     {
-      method:
-        "POST",
-
-      prefer:
-        "resolution=merge-duplicates,return=minimal",
-
-      body:
-        JSON.stringify(
-          [gameRow]
-        ),
+      onConflict: "id",
+      merge: true,
+      chunkSize: 500,
     }
   );
 }
 
 /* =========================================================
-   GUARDAR PLATAFORMAS
+   PLATAFORMAS EN BLOQUE
+========================================================= */
+
+async function savePlatformsBulk(
+  environment,
+  games
+) {
+  const platformRows = [];
+
+  const relationRows = [];
+
+  const now =
+    new Date().toISOString();
+
+  for (const game of games) {
+    for (
+      const platform of
+        game.platforms
+    ) {
+      platformRows.push({
+        id:
+          platform.id,
+
+        name:
+          platform.name,
+
+        abbreviation:
+          platform.abbreviation,
+
+        updated_at:
+          now,
+      });
+
+      relationRows.push({
+        game_id:
+          game.id,
+
+        platform_id:
+          platform.id,
+      });
+    }
+  }
+
+  const uniquePlatforms =
+    uniqueRows(
+      platformRows,
+      (row) => row.id
+    );
+
+  const uniqueRelations =
+    uniqueRows(
+      relationRows,
+      (row) =>
+        `${row.game_id}:${row.platform_id}`
+    );
+
+  await bulkInsert(
+    environment,
+    "platforms",
+    uniquePlatforms,
+    {
+      onConflict: "id",
+      merge: true,
+    }
+  );
+
+  await deleteRelationsForGames(
+    environment,
+    "game_platforms",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_platforms",
+    uniqueRelations,
+    {
+      onConflict:
+        "game_id,platform_id",
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   VIDEOS EN BLOQUE
+========================================================= */
+
+async function saveVideosBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const video of
+        game.videos
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        name:
+          video.name,
+
+        youtube_id:
+          video.youtubeId,
+
+        youtube_url:
+          video.youtubeUrl,
+
+        position:
+          video.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_videos",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_videos",
+    uniqueRows(
+      rows,
+      (row) =>
+        `${row.game_id}:${row.youtube_id}`
+    ),
+    {
+      onConflict:
+        "game_id,youtube_id",
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   SCREENSHOTS EN BLOQUE
+========================================================= */
+
+async function saveScreenshotsBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const screenshot of
+        game.screenshots
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        image_id:
+          screenshot.imageId,
+
+        image_url:
+          screenshot.imageUrl,
+
+        position:
+          screenshot.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_screenshots",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_screenshots",
+    uniqueRows(
+      rows,
+      (row) =>
+        `${row.game_id}:${row.image_id}`
+    ),
+    {
+      onConflict:
+        "game_id,image_id",
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   ARTWORKS EN BLOQUE
+========================================================= */
+
+async function saveArtworksBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const artwork of
+        game.artworks
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        image_id:
+          artwork.imageId,
+
+        image_url:
+          artwork.imageUrl,
+
+        position:
+          artwork.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_artworks",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_artworks",
+    uniqueRows(
+      rows,
+      (row) =>
+        `${row.game_id}:${row.image_id}`
+    ),
+    {
+      onConflict:
+        "game_id,image_id",
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   NOMBRES ALTERNATIVOS EN BLOQUE
+========================================================= */
+
+async function saveAlternativeNamesBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const item of
+        game.alternativeNames
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        name:
+          item.name,
+
+        comment:
+          item.comment,
+
+        position:
+          item.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_alternative_names",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  /*
+    Esta tabla tiene ID identity y no necesitamos
+    hacer upsert por cada nombre.
+
+    Borramos las relaciones de estos juegos una vez
+    y reinsertamos todo el lote.
+  */
+
+  await bulkInsert(
+    environment,
+    "game_alternative_names",
+    rows
+  );
+}
+
+/* =========================================================
+   CATÁLOGOS + RELACIONES EN BLOQUE
+========================================================= */
+
+async function saveCatalogRelationsBulk({
+  environment,
+  games,
+  itemKey,
+  catalogTable,
+  relationTable,
+  relationColumn,
+}) {
+  const catalogRows = [];
+
+  const relationRows = [];
+
+  const now =
+    new Date().toISOString();
+
+  for (const game of games) {
+    const items =
+      cleanArray(
+        game[itemKey]
+      );
+
+    for (const item of items) {
+      if (
+        item?.id === null ||
+        item?.id === undefined
+      ) {
+        continue;
+      }
+
+      catalogRows.push({
+        id:
+          item.id,
+
+        name:
+          item.name,
+
+        slug:
+          item.slug ||
+          null,
+
+        updated_at:
+          now,
+      });
+
+      relationRows.push({
+        game_id:
+          game.id,
+
+        [relationColumn]:
+          item.id,
+      });
+    }
+  }
+
+  await bulkInsert(
+    environment,
+    catalogTable,
+    uniqueRows(
+      catalogRows,
+      (row) => row.id
+    ),
+    {
+      onConflict: "id",
+      merge: true,
+    }
+  );
+
+  await deleteRelationsForGames(
+    environment,
+    relationTable,
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    relationTable,
+    uniqueRows(
+      relationRows,
+      (row) =>
+        `${row.game_id}:${row[relationColumn]}`
+    ),
+    {
+      onConflict:
+        `game_id,${relationColumn}`,
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   GÉNEROS
+========================================================= */
+
+async function saveGenresBulk(
+  environment,
+  games
+) {
+  await saveCatalogRelationsBulk({
+    environment,
+    games,
+
+    itemKey:
+      "genres",
+
+    catalogTable:
+      "genres",
+
+    relationTable:
+      "game_genres",
+
+    relationColumn:
+      "genre_id",
+  });
+}
+
+/* =========================================================
+   TEMAS
+========================================================= */
+
+async function saveThemesBulk(
+  environment,
+  games
+) {
+  await saveCatalogRelationsBulk({
+    environment,
+    games,
+
+    itemKey:
+      "themes",
+
+    catalogTable:
+      "themes",
+
+    relationTable:
+      "game_themes",
+
+    relationColumn:
+      "theme_id",
+  });
+}
+
+/* =========================================================
+   MODOS DE JUEGO
+========================================================= */
+
+async function saveGameModesBulk(
+  environment,
+  games
+) {
+  await saveCatalogRelationsBulk({
+    environment,
+    games,
+
+    itemKey:
+      "gameModes",
+
+    catalogTable:
+      "game_modes",
+
+    relationTable:
+      "game_game_modes",
+
+    relationColumn:
+      "game_mode_id",
+  });
+}
+
+/* =========================================================
+   PERSPECTIVAS
+========================================================= */
+
+async function savePerspectivesBulk(
+  environment,
+  games
+) {
+  await saveCatalogRelationsBulk({
+    environment,
+    games,
+
+    itemKey:
+      "perspectives",
+
+    catalogTable:
+      "player_perspectives",
+
+    relationTable:
+      "game_player_perspectives",
+
+    relationColumn:
+      "perspective_id",
+  });
+}
+
+/* =========================================================
+   MOTORES
+========================================================= */
+
+async function saveEnginesBulk(
+  environment,
+  games
+) {
+  await saveCatalogRelationsBulk({
+    environment,
+    games,
+
+    itemKey:
+      "engines",
+
+    catalogTable:
+      "game_engines",
+
+    relationTable:
+      "game_game_engines",
+
+    relationColumn:
+      "engine_id",
+  });
+}
+
+/* =========================================================
+   WEBS EN BLOQUE
+========================================================= */
+
+async function saveWebsitesBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const website of
+        game.websites
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        category:
+          website.category,
+
+        url:
+          website.url,
+
+        trusted:
+          website.trusted,
+
+        position:
+          website.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_websites",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_websites",
+    rows
+  );
+}
+
+/* =========================================================
+   JUEGOS SIMILARES EN BLOQUE
+========================================================= */
+
+async function saveSimilarGamesBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const item of
+        game.similarGames
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        similar_game_id:
+          item.id,
+
+        position:
+          item.position,
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_similar_games",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_similar_games",
+    uniqueRows(
+      rows,
+      (row) =>
+        `${row.game_id}:${row.similar_game_id}`
+    ),
+    {
+      onConflict:
+        "game_id,similar_game_id",
+      merge: true,
+    }
+  );
+}
+
+/* =========================================================
+   CLASIFICACIONES DE EDAD EN BLOQUE
+========================================================= */
+
+async function saveAgeRatingsBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const item of
+        game.ageRatings
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        organization:
+          item.organization,
+
+        rating:
+          item.rating,
+
+        synopsis:
+          item.synopsis,
+
+        content_descriptors:
+          item.contentDescriptors ||
+          [],
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_age_ratings",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_age_ratings",
+    rows
+  );
+}
+
+/* =========================================================
+   IDIOMAS EN BLOQUE
+========================================================= */
+
+async function saveLanguagesBulk(
+  environment,
+  games
+) {
+  const rows = [];
+
+  for (const game of games) {
+    for (
+      const language of
+        game.languages
+    ) {
+      rows.push({
+        game_id:
+          game.id,
+
+        language_id:
+          language.languageId,
+
+        language_name:
+          language.languageName,
+
+        native_name:
+          language.nativeName,
+
+        audio:
+          Boolean(
+            language.audio
+          ),
+
+        subtitles:
+          Boolean(
+            language.subtitles
+          ),
+
+        interface:
+          Boolean(
+            language.interface
+          ),
+      });
+    }
+  }
+
+  await deleteRelationsForGames(
+    environment,
+    "game_languages",
+    games.map(
+      (game) => game.id
+    )
+  );
+
+  await bulkInsert(
+    environment,
+    "game_languages",
+    rows
+  );
+}
+
+/* =========================================================
+   SINCRONIZAR LOTE COMPLETO
+
+   Esta es la diferencia fundamental con el código anterior.
+
+   ANTES:
+     juego 1 -> 15+ requests
+     juego 2 -> 15+ requests
+     juego 3 -> 15+ requests
+     ...
+
+   AHORA:
+     todos los games
+     todas las plataformas
+     todos los videos
+     todas las capturas
+     todos los artworks
+     etc.
+
+   El número de llamadas depende de las TABLAS,
+   no del número de JUEGOS.
+========================================================= */
+
+async function syncGamesBulk(
+  environment,
+  games
+) {
+  if (!games.length) {
+    return;
+  }
+
+  /*
+    Primero guardamos los juegos padre.
+    Las relaciones posteriores dependen
+    de que esos IDs existan.
+  */
+
+  await saveGamesBulk(
+    environment,
+    games
+  );
+
+  /*
+    Después procesamos las relaciones.
+
+    Las dejamos secuenciales intencionadamente.
+    Son operaciones masivas y así evitamos
+    bombardear Supabase simultáneamente.
+  */
+
+  await savePlatformsBulk(
+    environment,
+    games
+  );
+
+  await saveVideosBulk(
+    environment,
+    games
+  );
+
+  await saveScreenshotsBulk(
+    environment,
+    games
+  );
+
+  await saveArtworksBulk(
+    environment,
+    games
+  );
+
+  await saveAlternativeNamesBulk(
+    environment,
+    games
+  );
+
+  await saveGenresBulk(
+    environment,
+    games
+  );
+
+  await saveThemesBulk(
+    environment,
+    games
+  );
+
+  await saveGameModesBulk(
+    environment,
+    games
+  );
+
+  await savePerspectivesBulk(
+    environment,
+    games
+  );
+
+  await saveEnginesBulk(
+    environment,
+    games
+  );
+
+  await saveWebsitesBulk(
+    environment,
+    games
+  );
+
+  await saveSimilarGamesBulk(
+    environment,
+    games
+  );
+
+  await saveAgeRatingsBulk(
+    environment,
+    games
+  );
+
+  await saveLanguagesBulk(
+    environment,
+    games
+  );
+}
+/* =========================================================
+   SISTEMA INDIVIDUAL
+
+   Se mantiene para:
+   /api/igdb/sync?id=40
+
+   A diferencia del modo bulk, aquí sí tiene sentido
+   trabajar con un solo juego y actualizar toda su ficha.
+========================================================= */
+
+async function gameExists(
+  environment,
+  gameId
+) {
+  const result =
+    await supabaseRequest(
+      environment,
+      `games?id=eq.${gameId}&select=id,name`,
+      {
+        method: "GET",
+        prefer:
+          "return=representation",
+      }
+    );
+
+  return (
+    Array.isArray(result) &&
+    result.length > 0
+  );
+}
+
+async function deleteGameRelations(
+  environment,
+  table,
+  gameId
+) {
+  await supabaseRequest(
+    environment,
+    `${table}?game_id=eq.${gameId}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+/* =========================================================
+   GUARDAR JUEGO INDIVIDUAL
+========================================================= */
+
+async function saveGame(
+  environment,
+  game
+) {
+  await supabaseRequest(
+    environment,
+    "games?on_conflict=id",
+    {
+      method: "POST",
+
+      prefer:
+        "resolution=merge-duplicates,return=minimal",
+
+      body:
+        JSON.stringify([
+          createGameRow(game),
+        ]),
+    }
+  );
+}
+
+/* =========================================================
+   PLATAFORMAS INDIVIDUAL
 ========================================================= */
 
 async function savePlatforms(
   environment,
   game
 ) {
-  if (
-    game.platforms.length
-  ) {
+  if (game.platforms.length) {
+    const now =
+      new Date().toISOString();
+
     const rows =
       game.platforms.map(
         (platform) => ({
@@ -1366,7 +2492,7 @@ async function savePlatforms(
             platform.abbreviation,
 
           updated_at:
-            new Date().toISOString(),
+            now,
         })
       );
 
@@ -1374,16 +2500,13 @@ async function savePlatforms(
       environment,
       "platforms?on_conflict=id",
       {
-        method:
-          "POST",
+        method: "POST",
 
         prefer:
           "resolution=merge-duplicates,return=minimal",
 
         body:
-          JSON.stringify(
-            rows
-          ),
+          JSON.stringify(rows),
       }
     );
   }
@@ -1394,9 +2517,7 @@ async function savePlatforms(
     game.id
   );
 
-  if (
-    !game.platforms.length
-  ) {
+  if (!game.platforms.length) {
     return;
   }
 
@@ -1415,8 +2536,7 @@ async function savePlatforms(
     environment,
     "game_platforms?on_conflict=game_id,platform_id",
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
@@ -1430,7 +2550,7 @@ async function savePlatforms(
 }
 
 /* =========================================================
-   GUARDAR VIDEOS
+   VIDEOS INDIVIDUAL
 ========================================================= */
 
 async function saveVideos(
@@ -1443,9 +2563,7 @@ async function saveVideos(
     game.id
   );
 
-  if (
-    !game.videos.length
-  ) {
+  if (!game.videos.length) {
     return;
   }
 
@@ -1473,22 +2591,19 @@ async function saveVideos(
     environment,
     "game_videos?on_conflict=game_id,youtube_id",
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   GUARDAR SCREENSHOTS
+   SCREENSHOTS INDIVIDUAL
 ========================================================= */
 
 async function saveScreenshots(
@@ -1501,9 +2616,7 @@ async function saveScreenshots(
     game.id
   );
 
-  if (
-    !game.screenshots.length
-  ) {
+  if (!game.screenshots.length) {
     return;
   }
 
@@ -1528,22 +2641,19 @@ async function saveScreenshots(
     environment,
     "game_screenshots?on_conflict=game_id,image_id",
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   GUARDAR ARTWORKS
+   ARTWORKS INDIVIDUAL
 ========================================================= */
 
 async function saveArtworks(
@@ -1556,9 +2666,7 @@ async function saveArtworks(
     game.id
   );
 
-  if (
-    !game.artworks.length
-  ) {
+  if (!game.artworks.length) {
     return;
   }
 
@@ -1583,22 +2691,19 @@ async function saveArtworks(
     environment,
     "game_artworks?on_conflict=game_id,image_id",
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   GUARDAR NOMBRES ALTERNATIVOS
+   NOMBRES ALTERNATIVOS INDIVIDUAL
 ========================================================= */
 
 async function saveAlternativeNames(
@@ -1638,19 +2743,16 @@ async function saveAlternativeNames(
     environment,
     "game_alternative_names",
     {
-      method:
-        "POST",
+      method: "POST",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   GUARDAR CATÁLOGO + RELACIÓN
+   CATÁLOGO INDIVIDUAL
 ========================================================= */
 
 async function saveCatalogRelation({
@@ -1661,9 +2763,10 @@ async function saveCatalogRelation({
   relationTable,
   relationColumn,
 }) {
-  if (
-    items.length
-  ) {
+  if (items.length) {
+    const now =
+      new Date().toISOString();
+
     const catalogRows =
       items.map(
         (item) => ({
@@ -1678,7 +2781,7 @@ async function saveCatalogRelation({
             null,
 
           updated_at:
-            new Date().toISOString(),
+            now,
         })
       );
 
@@ -1686,8 +2789,7 @@ async function saveCatalogRelation({
       environment,
       `${catalogTable}?on_conflict=id`,
       {
-        method:
-          "POST",
+        method: "POST",
 
         prefer:
           "resolution=merge-duplicates,return=minimal",
@@ -1706,9 +2808,7 @@ async function saveCatalogRelation({
     gameId
   );
 
-  if (
-    !items.length
-  ) {
+  if (!items.length) {
     return;
   }
 
@@ -1727,8 +2827,7 @@ async function saveCatalogRelation({
     environment,
     `${relationTable}?on_conflict=game_id,${relationColumn}`,
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
@@ -1742,7 +2841,7 @@ async function saveCatalogRelation({
 }
 
 /* =========================================================
-   CATÁLOGOS
+   CATÁLOGOS INDIVIDUALES
 ========================================================= */
 
 async function saveGenres(
@@ -1751,14 +2850,19 @@ async function saveGenres(
 ) {
   await saveCatalogRelation({
     environment,
+
     gameId:
       game.id,
+
     items:
       game.genres,
+
     catalogTable:
       "genres",
+
     relationTable:
       "game_genres",
+
     relationColumn:
       "genre_id",
   });
@@ -1770,14 +2874,19 @@ async function saveThemes(
 ) {
   await saveCatalogRelation({
     environment,
+
     gameId:
       game.id,
+
     items:
       game.themes,
+
     catalogTable:
       "themes",
+
     relationTable:
       "game_themes",
+
     relationColumn:
       "theme_id",
   });
@@ -1789,14 +2898,19 @@ async function saveGameModes(
 ) {
   await saveCatalogRelation({
     environment,
+
     gameId:
       game.id,
+
     items:
       game.gameModes,
+
     catalogTable:
       "game_modes",
+
     relationTable:
       "game_game_modes",
+
     relationColumn:
       "game_mode_id",
   });
@@ -1808,14 +2922,19 @@ async function savePerspectives(
 ) {
   await saveCatalogRelation({
     environment,
+
     gameId:
       game.id,
+
     items:
       game.perspectives,
+
     catalogTable:
       "player_perspectives",
+
     relationTable:
       "game_player_perspectives",
+
     relationColumn:
       "perspective_id",
   });
@@ -1827,21 +2946,26 @@ async function saveEngines(
 ) {
   await saveCatalogRelation({
     environment,
+
     gameId:
       game.id,
+
     items:
       game.engines,
+
     catalogTable:
       "game_engines",
+
     relationTable:
       "game_game_engines",
+
     relationColumn:
       "engine_id",
   });
 }
 
 /* =========================================================
-   WEBS
+   WEBS INDIVIDUAL
 ========================================================= */
 
 async function saveWebsites(
@@ -1854,9 +2978,7 @@ async function saveWebsites(
     game.id
   );
 
-  if (
-    !game.websites.length
-  ) {
+  if (!game.websites.length) {
     return;
   }
 
@@ -1884,19 +3006,16 @@ async function saveWebsites(
     environment,
     "game_websites",
     {
-      method:
-        "POST",
+      method: "POST",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   SIMILARES
+   SIMILARES INDIVIDUAL
 ========================================================= */
 
 async function saveSimilarGames(
@@ -1933,22 +3052,19 @@ async function saveSimilarGames(
     environment,
     "game_similar_games?on_conflict=game_id,similar_game_id",
     {
-      method:
-        "POST",
+      method: "POST",
 
       prefer:
         "resolution=merge-duplicates,return=minimal",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   EDADES
+   EDADES INDIVIDUAL
 ========================================================= */
 
 async function saveAgeRatings(
@@ -1961,9 +3077,7 @@ async function saveAgeRatings(
     game.id
   );
 
-  if (
-    !game.ageRatings.length
-  ) {
+  if (!game.ageRatings.length) {
     return;
   }
 
@@ -1992,19 +3106,16 @@ async function saveAgeRatings(
     environment,
     "game_age_ratings",
     {
-      method:
-        "POST",
+      method: "POST",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
 
 /* =========================================================
-   IDIOMAS
+   IDIOMAS INDIVIDUAL
 ========================================================= */
 
 async function saveLanguages(
@@ -2017,9 +3128,7 @@ async function saveLanguages(
     game.id
   );
 
-  if (
-    !game.languages.length
-  ) {
+  if (!game.languages.length) {
     return;
   }
 
@@ -2059,13 +3168,10 @@ async function saveLanguages(
     environment,
     "game_languages",
     {
-      method:
-        "POST",
+      method: "POST",
 
       body:
-        JSON.stringify(
-          rows
-        ),
+        JSON.stringify(rows),
     }
   );
 }
@@ -2155,7 +3261,7 @@ async function syncGame(
 }
 
 /* =========================================================
-   RESUMEN
+   RESUMEN DE JUEGO
 ========================================================= */
 
 function createGameResult(
@@ -2282,7 +3388,7 @@ function createGameResult(
 }
 
 /* =========================================================
-   SINCRONIZACIÓN GENERAL
+   SINCRONIZACIÓN GENERAL ORIGINAL
 ========================================================= */
 
 async function runGeneralSync() {
@@ -2306,35 +3412,43 @@ async function runGeneralSync() {
       normalizeGame
     );
 
-  const syncedGames = [];
-
-  for (
-    const game of games
-  ) {
-    const existedBefore =
-      await gameExists(
-        environment,
-        game.id
-      );
-
-    await syncGame(
+  const existingIds =
+    await getExistingGameIds(
       environment,
-      game
-    );
-
-    syncedGames.push(
-      createGameResult(
-        game,
-        {
-          existedBefore,
-        }
+      games.map(
+        (game) => game.id
       )
     );
-  }
+
+  /*
+    Aunque sean solo 10 juegos, aprovechamos
+    desde ahora el nuevo sistema bulk.
+
+    Así tampoco hacemos cientos de requests
+    cuando se ejecuta el sync general.
+  */
+
+  await syncGamesBulk(
+    environment,
+    games
+  );
+
+  const syncedGames =
+    games.map(
+      (game) =>
+        createGameResult(
+          game,
+          {
+            existedBefore:
+              existingIds.has(
+                game.id
+              ),
+          }
+        )
+    );
 
   return {
-    ok:
-      true,
+    ok: true,
 
     mode:
       "general",
@@ -2375,8 +3489,7 @@ async function runSingleGameSync(
 
   if (!rawGame) {
     return {
-      ok:
-        false,
+      ok: false,
 
       mode:
         "single",
@@ -2402,14 +3515,21 @@ async function runSingleGameSync(
       game.id
     );
 
+  /*
+    El importador individual sigue utilizando
+    syncGame.
+
+    Esto nos permite usar ?id=XXXXX como herramienta
+    precisa para importar/reparar una ficha concreta.
+  */
+
   await syncGame(
     environment,
     game
   );
 
   return {
-    ok:
-      true,
+    ok: true,
 
     mode:
       "single",
@@ -2439,13 +3559,16 @@ async function runSingleGameSync(
 }
 
 /* =========================================================
-   IMPORTACIÓN MASIVA
+   IMPORTACIÓN MASIVA OPTIMIZADA
 ========================================================= */
 
 async function runBulkSync({
   after,
   limit,
 }) {
+  const startedAt =
+    Date.now();
+
   const environment =
     getEnvironment();
 
@@ -2454,6 +3577,10 @@ async function runBulkSync({
       environment.igdbClientId,
       environment.igdbClientSecret
     );
+
+  /*
+    UNA consulta a IGDB obtiene el lote.
+  */
 
   const rawGames =
     await getBulkGamesFromIGDB(
@@ -2468,89 +3595,47 @@ async function runBulkSync({
       normalizeGame
     );
 
-  const results = [];
-
-  let created = 0;
-  let updated = 0;
-  let failed = 0;
+  const gameIds =
+    games.map(
+      (game) => game.id
+    );
 
   /*
-    Cada juego se procesa independientemente.
+    UNA consulta agrupada determina cuáles
+    ya existen.
 
-    Si uno falla, el lote continúa.
+    Ya no hacemos gameExists() para cada juego.
   */
 
-  for (const game of games) {
-    try {
-      const existedBefore =
-        await gameExists(
-          environment,
+  const existingIds =
+    await getExistingGameIds(
+      environment,
+      gameIds
+    );
+
+  const created =
+    games.filter(
+      (game) =>
+        !existingIds.has(
           game.id
-        );
+        )
+    ).length;
 
-      await syncGame(
-        environment,
-        game
-      );
-
-      if (existedBefore) {
-        updated += 1;
-      } else {
-        created += 1;
-      }
-
-      results.push({
-        id:
-          game.id,
-
-        name:
-          game.name,
-
-        ok:
-          true,
-
-        created:
-          !existedBefore,
-
-        updated:
-          existedBefore,
-      });
-    } catch (error) {
-      failed += 1;
-
-      console.error(
-        `ERROR IMPORTANDO IGDB ${game.id} ${game.name}:`,
-        error
-      );
-
-      results.push({
-        id:
-          game.id,
-
-        name:
-          game.name,
-
-        ok:
-          false,
-
-        error:
-          error instanceof Error
-            ? error.message
-            : String(error),
-      });
-    }
-  }
+  const updated =
+    games.length -
+    created;
 
   /*
-    IMPORTANTE:
+    Guardamos TODO EL LOTE agrupado por tablas.
 
-    nextAfter avanza usando el último ID RECIBIDO
-    desde IGDB, incluso si ese juego concreto falló
-    al guardarse.
-
-    Los fallos aparecen en results y pueden
-    reimportarse después individualmente por ID.
+    Este es el cambio central respecto
+    al importador anterior.
   */
+
+  await syncGamesBulk(
+    environment,
+    games
+  );
 
   const lastRawGame =
     rawGames.length
@@ -2567,17 +3652,23 @@ async function runBulkSync({
     rawGames.length <
     limit;
 
+  const durationMs =
+    Date.now() -
+    startedAt;
+
   return {
-    ok:
-      true,
+    ok: true,
 
     mode:
       "bulk",
 
     message:
       finished
-        ? "El lote se procesó y no quedan más juegos que cumplan los criterios actuales."
-        : "Lote procesado correctamente. Usá nextAfter para continuar.",
+        ? "Lote procesado. No quedan más juegos que cumplan los criterios actuales."
+        : "Lote masivo procesado correctamente. Usá nextAfter para continuar.",
+
+    strategy:
+      "bulk-supabase",
 
     requestedAfter:
       after,
@@ -2589,26 +3680,63 @@ async function runBulkSync({
       rawGames.length,
 
     processed:
-      results.length,
+      games.length,
 
     created,
+
     updated,
-    failed,
+
+    failed:
+      0,
 
     nextAfter,
 
     finished,
+
+    durationMs,
+
+    durationSeconds:
+      Number(
+        (
+          durationMs /
+          1000
+        ).toFixed(2)
+      ),
 
     nextUrl:
       finished
         ? null
         : `/api/igdb/sync?mode=bulk&after=${nextAfter}&limit=${limit}`,
 
+    /*
+      En modo masivo devolvemos un resumen pequeño.
+
+      No devolvemos toda la ficha de cada juego porque
+      eso solamente agranda la respuesta HTTP.
+    */
+
     games:
-      results,
+      games.map(
+        (game) => ({
+          id:
+            game.id,
+
+          name:
+            game.name,
+
+          created:
+            !existingIds.has(
+              game.id
+            ),
+
+          updated:
+            existingIds.has(
+              game.id
+            ),
+        })
+      ),
   };
 }
-
 /* =========================================================
    VALIDACIONES
 ========================================================= */
@@ -2678,14 +3806,9 @@ function parseGameId(value) {
   return parsePositiveInteger(
     value,
     {
-      name:
-        "id",
-
-      allowZero:
-        false,
-
-      defaultValue:
-        null,
+      name: "id",
+      allowZero: false,
+      defaultValue: null,
     }
   );
 }
@@ -2694,14 +3817,9 @@ function parseBulkAfter(value) {
   return parsePositiveInteger(
     value,
     {
-      name:
-        "after",
-
-      allowZero:
-        true,
-
-      defaultValue:
-        0,
+      name: "after",
+      allowZero: true,
+      defaultValue: 0,
     }
   );
 }
@@ -2710,15 +3828,10 @@ function parseBulkLimit(value) {
   return parsePositiveInteger(
     value,
     {
-      name:
-        "limit",
-
-      allowZero:
-        false,
-
+      name: "limit",
+      allowZero: false,
       defaultValue:
         DEFAULT_BATCH_SIZE,
-
       max:
         MAX_BATCH_SIZE,
     }
@@ -2726,22 +3839,46 @@ function parseBulkLimit(value) {
 }
 
 /* =========================================================
+   RESPUESTA SIN CACHE
+========================================================= */
+
+function jsonResponse(
+  data,
+  status = 200
+) {
+  return NextResponse.json(
+    data,
+    {
+      status,
+
+      headers: {
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate",
+      },
+    }
+  );
+}
+
+/* =========================================================
    GET
 
-   ORIGINAL:
+   SIN PARÁMETROS:
    /api/igdb/sync
 
-   INDIVIDUAL:
+   JUEGO INDIVIDUAL:
    /api/igdb/sync?id=40
 
-   MASIVO:
+   BULK:
    /api/igdb/sync?mode=bulk
 
    CONTINUAR:
-   /api/igdb/sync?mode=bulk&after=12345
+   /api/igdb/sync?mode=bulk&after=100
 
-   CAMBIAR TAMAÑO:
-   /api/igdb/sync?mode=bulk&after=12345&limit=25
+   CAMBIAR LOTE:
+   /api/igdb/sync?mode=bulk&after=100&limit=100
+
+   MÁXIMO:
+   /api/igdb/sync?mode=bulk&after=100&limit=500
 ========================================================= */
 
 export async function GET(
@@ -2769,12 +3906,11 @@ export async function GET(
         )
       );
 
-    /*
-      ID tiene prioridad.
+    /* =====================================================
+       IMPORTACIÓN INDIVIDUAL
 
-      Así mantenemos exactamente:
-      /api/igdb/sync?id=40
-    */
+       El ID tiene prioridad sobre cualquier otro parámetro.
+    ===================================================== */
 
     if (gameId) {
       const result =
@@ -2782,25 +3918,17 @@ export async function GET(
           gameId
         );
 
-      return NextResponse.json(
+      return jsonResponse(
         result,
-        {
-          status:
-            result.ok
-              ? 200
-              : 404,
-
-          headers: {
-            "Cache-Control":
-              "no-store, no-cache, must-revalidate",
-          },
-        }
+        result.ok
+          ? 200
+          : 404
       );
     }
 
-    /*
-      MODO MASIVO
-    */
+    /* =====================================================
+       IMPORTACIÓN MASIVA
+    ===================================================== */
 
     if (mode === "bulk") {
       const after =
@@ -2823,37 +3951,48 @@ export async function GET(
           limit,
         });
 
-      return NextResponse.json(
+      return jsonResponse(
         result,
-        {
-          status: 200,
-
-          headers: {
-            "Cache-Control":
-              "no-store, no-cache, must-revalidate",
-          },
-        }
+        200
       );
     }
 
-    /*
-      SIN PARÁMETROS:
-      conservamos el sync original de 10.
-    */
+    /* =====================================================
+       MODO DESCONOCIDO
+    ===================================================== */
+
+    if (
+      mode &&
+      mode !== "general"
+    ) {
+      return jsonResponse(
+        {
+          ok: false,
+
+          error:
+            `Modo desconocido: ${mode}.`,
+
+          availableModes: [
+            "general",
+            "bulk",
+          ],
+        },
+        400
+      );
+    }
+
+    /* =====================================================
+       SIN PARÁMETROS
+
+       Conservamos el comportamiento original.
+    ===================================================== */
 
     const result =
       await runGeneralSync();
 
-    return NextResponse.json(
+    return jsonResponse(
       result,
-      {
-        status: 200,
-
-        headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate",
-        },
-      }
+      200
     );
   } catch (error) {
     console.error(
@@ -2861,25 +4000,16 @@ export async function GET(
       error
     );
 
-    return NextResponse.json(
+    return jsonResponse(
       {
-        ok:
-          false,
+        ok: false,
 
         error:
           error instanceof Error
             ? error.message
             : String(error),
       },
-      {
-        status:
-          500,
-
-        headers: {
-          "Cache-Control":
-            "no-store, no-cache, must-revalidate",
-        },
-      }
+      500
     );
   }
 }
