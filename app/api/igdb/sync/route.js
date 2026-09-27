@@ -107,128 +107,124 @@ async function getTwitchAccessToken(
 }
 
 /* =========================================================
-   OBTENER JUEGOS DE IGDB
+   CAMPOS IGDB
+
+   IMPORTANTE:
+   Usamos exactamente los mismos campos tanto para:
+   - sincronización general
+   - importación individual por ID
 ========================================================= */
 
-async function getGamesFromIGDB(
+const IGDB_FIELDS = `
+  id,
+  name,
+  slug,
+  summary,
+  storyline,
+
+  game_type.id,
+  game_type.type,
+
+  game_status.id,
+  game_status.status,
+
+  parent_game.id,
+  parent_game.name,
+
+  version_parent.id,
+  version_parent.name,
+  version_title,
+
+  first_release_date,
+
+  rating,
+  rating_count,
+  total_rating,
+  total_rating_count,
+  hypes,
+
+  url,
+  checksum,
+
+  cover.image_id,
+  cover.width,
+  cover.height,
+
+  platforms.id,
+  platforms.name,
+  platforms.abbreviation,
+
+  involved_companies.company.name,
+  involved_companies.developer,
+  involved_companies.publisher,
+
+  videos.video_id,
+  videos.name,
+
+  screenshots.image_id,
+
+  artworks.image_id,
+
+  alternative_names.name,
+  alternative_names.comment,
+
+  genres.id,
+  genres.name,
+  genres.slug,
+
+  themes.id,
+  themes.name,
+  themes.slug,
+
+  game_modes.id,
+  game_modes.name,
+  game_modes.slug,
+
+  player_perspectives.id,
+  player_perspectives.name,
+  player_perspectives.slug,
+
+  game_engines.id,
+  game_engines.name,
+  game_engines.slug,
+
+  franchises.id,
+  franchises.name,
+
+  collections.id,
+  collections.name,
+
+  websites.category,
+  websites.url,
+  websites.trusted,
+
+  similar_games,
+
+  age_ratings.organization.id,
+  age_ratings.organization.name,
+  age_ratings.rating_category.id,
+  age_ratings.rating_category.rating,
+  age_ratings.rating_content_descriptions.id,
+  age_ratings.rating_content_descriptions.description,
+  age_ratings.synopsis,
+
+  language_supports.language.id,
+  language_supports.language.name,
+  language_supports.language.native_name,
+  language_supports.language.locale,
+  language_supports.language_support_type.id,
+  language_supports.language_support_type.name
+`;
+
+/* =========================================================
+   LLAMADA GENÉRICA A IGDB
+========================================================= */
+
+async function requestIGDBGames(
   accessToken,
-  clientId
+  clientId,
+  query
 ) {
-  const now =
-    Math.floor(Date.now() / 1000);
-
-  const query = `
-    fields
-      id,
-      name,
-      slug,
-      summary,
-      storyline,
-
-      game_type.id,
-      game_type.type,
-
-      game_status.id,
-      game_status.status,
-
-      parent_game.id,
-      parent_game.name,
-
-      version_parent.id,
-      version_parent.name,
-      version_title,
-
-      first_release_date,
-
-      rating,
-      rating_count,
-      total_rating,
-      total_rating_count,
-      hypes,
-
-      url,
-      checksum,
-
-      cover.image_id,
-      cover.width,
-      cover.height,
-
-      platforms.id,
-      platforms.name,
-      platforms.abbreviation,
-
-      involved_companies.company.name,
-      involved_companies.developer,
-      involved_companies.publisher,
-
-      videos.video_id,
-      videos.name,
-
-      screenshots.image_id,
-
-      artworks.image_id,
-
-      alternative_names.name,
-      alternative_names.comment,
-
-      genres.id,
-      genres.name,
-      genres.slug,
-
-      themes.id,
-      themes.name,
-      themes.slug,
-
-      game_modes.id,
-      game_modes.name,
-      game_modes.slug,
-
-      player_perspectives.id,
-      player_perspectives.name,
-      player_perspectives.slug,
-
-      game_engines.id,
-      game_engines.name,
-      game_engines.slug,
-
-      franchises.id,
-      franchises.name,
-
-      collections.id,
-      collections.name,
-
-      websites.category,
-      websites.url,
-      websites.trusted,
-
-      similar_games,
-
-      age_ratings.organization.id,
-      age_ratings.organization.name,
-      age_ratings.rating_category.id,
-      age_ratings.rating_category.rating,
-      age_ratings.rating_content_descriptions.id,
-      age_ratings.rating_content_descriptions.description,
-      age_ratings.synopsis,
-
-      language_supports.language.id,
-      language_supports.language.name,
-      language_supports.language.native_name,
-      language_supports.language.locale,
-      language_supports.language_support_type.id,
-      language_supports.language_support_type.name;
-
-    where
-      cover != null
-      & first_release_date != null
-      & first_release_date <= ${now}
-      & total_rating_count > 20;
-
-    sort total_rating_count desc;
-
-    limit 10;
-  `;
-
   const response =
     await fetch(
       IGDB_GAMES_URL,
@@ -249,9 +245,11 @@ async function getGamesFromIGDB(
             "text/plain",
         },
 
-        body: query,
+        body:
+          query,
 
-        cache: "no-store",
+        cache:
+          "no-store",
       }
     );
 
@@ -264,7 +262,81 @@ async function getGamesFromIGDB(
     );
   }
 
-  return response.json();
+  const data =
+    await response.json();
+
+  return Array.isArray(data)
+    ? data
+    : [];
+}
+
+/* =========================================================
+   SINCRONIZACIÓN GENERAL
+
+   Mantiene el comportamiento actual:
+   10 juegos históricos de prueba.
+========================================================= */
+
+async function getGamesFromIGDB(
+  accessToken,
+  clientId
+) {
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const query = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date <= ${now}
+      & total_rating_count > 20;
+
+    sort total_rating_count desc;
+
+    limit 10;
+  `;
+
+  return requestIGDBGames(
+    accessToken,
+    clientId,
+    query
+  );
+}
+
+/* =========================================================
+   IMPORTACIÓN INDIVIDUAL POR ID
+
+   Ejemplo:
+   /api/igdb/sync?id=40
+========================================================= */
+
+async function getGameFromIGDBById(
+  accessToken,
+  clientId,
+  gameId
+) {
+  const query = `
+    fields
+      ${IGDB_FIELDS};
+
+    where id = ${gameId};
+
+    limit 1;
+  `;
+
+  const games =
+    await requestIGDBGames(
+      accessToken,
+      clientId,
+      query
+    );
+
+  return games[0] || null;
 }
 
 /* =========================================================
@@ -317,23 +389,31 @@ function getLanguageSupportFlags(
   for (const support of supports) {
     const typeName =
       normalizeSupportTypeName(
-        support?.language_support_type?.name
+        support
+          ?.language_support_type
+          ?.name
       );
 
     if (
-      typeName.includes("audio")
-  ) {
+      typeName.includes(
+        "audio"
+      )
+    ) {
       flags.audio = true;
     }
 
     if (
-      typeName.includes("subtitle")
+      typeName.includes(
+        "subtitle"
+      )
     ) {
       flags.subtitles = true;
     }
 
     if (
-      typeName.includes("interface")
+      typeName.includes(
+        "interface"
+      )
     ) {
       flags.interface = true;
     }
@@ -411,7 +491,10 @@ function normalizeGame(game) {
           video.video_id
       )
       .map(
-        (video, index) => ({
+        (
+          video,
+          index
+        ) => ({
           name:
             video.name ||
             null,
@@ -484,7 +567,10 @@ function normalizeGame(game) {
           item.name
       )
       .map(
-        (item, index) => ({
+        (
+          item,
+          index
+        ) => ({
           name:
             item.name,
 
@@ -657,7 +743,8 @@ function normalizeGame(game) {
     )
       .map(
         (item) =>
-          typeof item === "object"
+          typeof item ===
+          "object"
             ? item?.id
             : item
       )
@@ -666,7 +753,10 @@ function normalizeGame(game) {
           Number.isFinite(id)
       )
       .map(
-        (id, index) => ({
+        (
+          id,
+          index
+        ) => ({
           id,
           position:
             index,
@@ -679,19 +769,23 @@ function normalizeGame(game) {
     ).map(
       (item) => ({
         organization:
-          item.organization?.name ||
+          item.organization
+            ?.name ||
           null,
 
         organizationId:
-          item.organization?.id ??
+          item.organization
+            ?.id ??
           null,
 
         rating:
-          item.rating_category?.rating ||
+          item.rating_category
+            ?.rating ||
           null,
 
         ratingCategoryId:
-          item.rating_category?.id ??
+          item.rating_category
+            ?.id ??
           null,
 
         synopsis:
@@ -700,11 +794,13 @@ function normalizeGame(game) {
 
         contentDescriptors:
           cleanArray(
-            item.rating_content_descriptions
+            item
+              .rating_content_descriptions
           )
             .map(
               (descriptor) =>
-                descriptor?.description
+                descriptor
+                  ?.description
             )
             .filter(Boolean),
       })
@@ -742,7 +838,9 @@ function normalizeGame(game) {
     }
 
     languageGroups
-      .get(language.id)
+      .get(
+        language.id
+      )
       .supports.push(
         support
       );
@@ -938,43 +1036,30 @@ function normalizeGame(game) {
       null,
 
     franchiseName:
-      franchises[0]?.name ||
+      franchises[0]
+        ?.name ||
       null,
 
     collectionName:
-      collections[0]?.name ||
+      collections[0]
+        ?.name ||
       null,
 
     platforms,
-
     videos,
-
     screenshots,
-
     artworks,
-
     alternativeNames,
-
     genres,
-
     themes,
-
     gameModes,
-
     perspectives,
-
     engines,
-
     franchises,
-
     collections,
-
     websites,
-
     similarGames,
-
     ageRatings,
-
     languages,
   };
 }
@@ -1043,6 +1128,33 @@ async function supabaseRequest(
 }
 
 /* =========================================================
+   COMPROBAR SI EXISTE UN JUEGO
+========================================================= */
+
+async function gameExists(
+  environment,
+  gameId
+) {
+  const result =
+    await supabaseRequest(
+      environment,
+      `games?id=eq.${gameId}&select=id,name`,
+      {
+        method:
+          "GET",
+
+        prefer:
+          "return=representation",
+      }
+    );
+
+  return (
+    Array.isArray(result) &&
+    result.length > 0
+  );
+}
+
+/* =========================================================
    REEMPLAZAR RELACIONES
 ========================================================= */
 
@@ -1063,6 +1175,25 @@ async function deleteGameRelations(
 
 /* =========================================================
    GUARDAR JUEGO
+
+   IMPORTANTE:
+   NO incluimos:
+   - summary_es
+   - storyline_es
+   - translation_status
+   - translation_source
+   - translation_updated_at
+   - freaky_official_score
+   - freaky_official_votes
+   - community_score
+   - community_votes
+   - editorial_summary
+   - featured
+   - hidden
+   - manual_trailer_youtube_id
+   - manual_trailer_url
+
+   Por tanto IGDB NO pisa los datos propios de Freaky World.
 ========================================================= */
 
 async function saveGame(
@@ -2033,10 +2164,137 @@ async function syncGame(
 }
 
 /* =========================================================
-   EJECUTAR SINCRONIZACIÓN
+   RESUMEN PARA RESPUESTA
 ========================================================= */
 
-async function runSync() {
+function createGameResult(
+  game,
+  extra = {}
+) {
+  return {
+    id:
+      game.id,
+
+    name:
+      game.name,
+
+    ...extra,
+
+    type: {
+      id:
+        game.category,
+
+      name:
+        game.releaseType,
+    },
+
+    status: {
+      id:
+        game.status,
+
+      name:
+        game.gameStatusName,
+    },
+
+    parentGame:
+      game.parentGameId
+        ? {
+            id:
+              game.parentGameId,
+
+            name:
+              game.parentGameName,
+          }
+        : null,
+
+    versionParent:
+      game.versionParentId
+        ? {
+            id:
+              game.versionParentId,
+
+            name:
+              game.versionParentName,
+
+            title:
+              game.versionTitle,
+          }
+        : null,
+
+    genres:
+      game.genres.map(
+        (item) =>
+          item.name
+      ),
+
+    themes:
+      game.themes.map(
+        (item) =>
+          item.name
+      ),
+
+    artworks:
+      game.artworks.length,
+
+    screenshots:
+      game.screenshots.length,
+
+    videos:
+      game.videos.length,
+
+    similarGames:
+      game.similarGames.map(
+        (item) =>
+          item.id
+      ),
+
+    ageRatings:
+      game.ageRatings.map(
+        (item) => ({
+          organization:
+            item.organization,
+
+          rating:
+            item.rating,
+
+          descriptors:
+            item.contentDescriptors,
+        })
+      ),
+
+    languages:
+      game.languages.map(
+        (language) => ({
+          id:
+            language.languageId,
+
+          name:
+            language.languageName,
+
+          nativeName:
+            language.nativeName,
+
+          locale:
+            language.locale,
+
+          audio:
+            language.audio,
+
+          subtitles:
+            language.subtitles,
+
+          interface:
+            language.interface,
+        })
+      ),
+  };
+}
+
+/* =========================================================
+   SINCRONIZACIÓN GENERAL
+========================================================= */
+
+async function runGeneralSync() {
   const environment =
     getEnvironment();
 
@@ -2059,124 +2317,36 @@ async function runSync() {
 
   const syncedGames = [];
 
-  for (const game of games) {
+  for (
+    const game of games
+  ) {
+    const existedBefore =
+      await gameExists(
+        environment,
+        game.id
+      );
+
     await syncGame(
       environment,
       game
     );
 
-    syncedGames.push({
-      id:
-        game.id,
-
-      name:
-        game.name,
-
-      type: {
-        id:
-          game.category,
-
-        name:
-          game.releaseType,
-      },
-
-      status: {
-        id:
-          game.status,
-
-        name:
-          game.gameStatusName,
-      },
-
-      parentGame: game.parentGameId
-        ? {
-            id:
-              game.parentGameId,
-
-            name:
-              game.parentGameName,
-          }
-        : null,
-
-      versionParent: game.versionParentId
-        ? {
-            id:
-              game.versionParentId,
-
-            name:
-              game.versionParentName,
-
-            title:
-              game.versionTitle,
-          }
-        : null,
-
-      genres:
-        game.genres.map(
-          (item) =>
-            item.name
-        ),
-
-      themes:
-        game.themes.map(
-          (item) =>
-            item.name
-        ),
-
-      artworks:
-        game.artworks.length,
-
-      screenshots:
-        game.screenshots.length,
-
-      videos:
-        game.videos.length,
-
-      ageRatings:
-        game.ageRatings.map(
-          (item) => ({
-            organization:
-              item.organization,
-
-            rating:
-              item.rating,
-
-            descriptors:
-              item.contentDescriptors,
-          })
-        ),
-
-      languages:
-        game.languages.map(
-          (language) => ({
-            id:
-              language.languageId,
-
-            name:
-              language.languageName,
-
-            nativeName:
-              language.nativeName,
-
-            locale:
-              language.locale,
-
-            audio:
-              language.audio,
-
-            subtitles:
-              language.subtitles,
-
-            interface:
-              language.interface,
-          })
-        ),
-    });
+    syncedGames.push(
+      createGameResult(
+        game,
+        {
+          existedBefore,
+        }
+      )
+    );
   }
 
   return {
     ok:
       true,
+
+    mode:
+      "general",
 
     message:
       "IGDB sincronizado correctamente con la ficha maestra de Freaky World.",
@@ -2190,18 +2360,176 @@ async function runSync() {
 }
 
 /* =========================================================
-   GET
+   IMPORTAR / ACTUALIZAR UN JUEGO POR ID
 ========================================================= */
 
-export async function GET() {
+async function runSingleGameSync(
+  gameId
+) {
+  const environment =
+    getEnvironment();
+
+  const accessToken =
+    await getTwitchAccessToken(
+      environment.igdbClientId,
+      environment.igdbClientSecret
+    );
+
+  const rawGame =
+    await getGameFromIGDBById(
+      accessToken,
+      environment.igdbClientId,
+      gameId
+    );
+
+  if (!rawGame) {
+    return {
+      ok:
+        false,
+
+      mode:
+        "single",
+
+      found:
+        false,
+
+      gameId,
+
+      message:
+        `IGDB no encontró el juego con ID ${gameId}.`,
+    };
+  }
+
+  const game =
+    normalizeGame(
+      rawGame
+    );
+
+  const existedBefore =
+    await gameExists(
+      environment,
+      game.id
+    );
+
+  await syncGame(
+    environment,
+    game
+  );
+
+  return {
+    ok:
+      true,
+
+    mode:
+      "single",
+
+    found:
+      true,
+
+    created:
+      !existedBefore,
+
+    updated:
+      existedBefore,
+
+    message:
+      existedBefore
+        ? `${game.name} ya existía y fue actualizado correctamente.`
+        : `${game.name} fue incorporado correctamente a la biblioteca de Freaky World.`,
+
+    game:
+      createGameResult(
+        game,
+        {
+          existedBefore,
+        }
+      ),
+  };
+}
+
+/* =========================================================
+   VALIDAR ID
+========================================================= */
+
+function parseGameId(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const normalized =
+    String(value).trim();
+
+  if (
+    !/^\d+$/.test(
+      normalized
+    )
+  ) {
+    throw new Error(
+      "El parámetro id debe ser un ID numérico válido de IGDB."
+    );
+  }
+
+  const gameId =
+    Number(normalized);
+
+  if (
+    !Number.isSafeInteger(
+      gameId
+    ) ||
+    gameId <= 0
+  ) {
+    throw new Error(
+      "El parámetro id debe ser un ID numérico válido de IGDB."
+    );
+  }
+
+  return gameId;
+}
+
+/* =========================================================
+   GET
+
+   SIN ID:
+   /api/igdb/sync
+
+   CON ID:
+   /api/igdb/sync?id=40
+========================================================= */
+
+export async function GET(
+  request
+) {
   try {
+    const { searchParams } =
+      new URL(
+        request.url
+      );
+
+    const gameId =
+      parseGameId(
+        searchParams.get(
+          "id"
+        )
+      );
+
     const result =
-      await runSync();
+      gameId
+        ? await runSingleGameSync(
+            gameId
+          )
+        : await runGeneralSync();
 
     return NextResponse.json(
       result,
       {
-        status: 200,
+        status:
+          result.ok
+            ? 200
+            : 404,
 
         headers: {
           "Cache-Control":
@@ -2226,7 +2554,8 @@ export async function GET() {
             : String(error),
       },
       {
-        status: 500,
+        status:
+          500,
 
         headers: {
           "Cache-Control":
