@@ -482,13 +482,43 @@ function DataRow({
   );
 }
 
+function navButtonStyle() {
+  return {
+    width: 34,
+    height: 34,
+
+    display: "grid",
+
+    placeItems:
+      "center",
+
+    border:
+      "1px solid rgba(255,255,255,.12)",
+
+    borderRadius:
+      "50%",
+
+    background:
+      "#181d22",
+
+    color:
+      "#ffffff",
+
+    fontSize: 24,
+
+    lineHeight: 1,
+
+    cursor:
+      "pointer",
+  };
+}
+
 /* =========================================================
    VIDEO
 ========================================================= */
 
 function VideoPlayer({
   game,
-  accent,
 }) {
   const videos =
     useMemo(() => {
@@ -654,37 +684,6 @@ function VideoPlayer({
   );
 }
 
-function navButtonStyle() {
-  return {
-    width: 34,
-    height: 34,
-
-    display: "grid",
-
-    placeItems:
-      "center",
-
-    border:
-      "1px solid rgba(255,255,255,.12)",
-
-    borderRadius:
-      "50%",
-
-    background:
-      "#181d22",
-
-    color:
-      "#ffffff",
-
-    fontSize: 24,
-
-    lineHeight: 1,
-
-    cursor:
-      "pointer",
-  };
-}
-
 /* =========================================================
    GALERÍA
 ========================================================= */
@@ -726,6 +725,10 @@ function Gallery({
     selected,
     setSelected,
   ] = useState(null);
+
+  useEffect(() => {
+    setSelected(null);
+  }, [game?.id]);
 
   if (!images.length) {
     return null;
@@ -1267,11 +1270,271 @@ function AgeRatings({
                   )}
                 </div>
               )}
+
+              {rating.synopsis &&
+                rating.synopsis !==
+                  "No Rating Summary" && (
+                  <div
+                    style={{
+                      marginTop: 8,
+
+                      color:
+                        "#78838a",
+
+                      fontSize: 9,
+
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {rating.synopsis}
+                  </div>
+                )}
             </div>
           )
         )}
       </div>
     </Section>
+  );
+}
+
+/* =========================================================
+   JUEGOS SIMILARES
+========================================================= */
+
+function SimilarGames({
+  game,
+  accent,
+  onOpenGame,
+}) {
+  const similarGames =
+    asArray(
+      game?.similarGames
+    );
+
+  const availableGames =
+    similarGames.filter(
+      (item) =>
+        item?.available &&
+        item?.id &&
+        item?.name
+    );
+
+  if (!availableGames.length) {
+    return null;
+  }
+
+  return (
+    <Section title="Juegos similares">
+      <div
+        style={{
+          display: "flex",
+
+          gap: 12,
+
+          overflowX: "auto",
+
+          paddingBottom: 5,
+
+          WebkitOverflowScrolling:
+            "touch",
+
+          scrollSnapType:
+            "x proximity",
+        }}
+      >
+        {availableGames.map(
+          (similar) => {
+            const cover =
+              getCover(similar);
+
+            return (
+              <button
+                key={similar.id}
+                type="button"
+                onClick={() =>
+                  onOpenGame?.(
+                    similar
+                  )
+                }
+                style={{
+                  flex:
+                    "0 0 145px",
+
+                  width: 145,
+
+                  padding: 0,
+
+                  overflow:
+                    "hidden",
+
+                  border:
+                    "1px solid rgba(255,255,255,.09)",
+
+                  borderRadius: 14,
+
+                  background:
+                    "#0d1115",
+
+                  color:
+                    "#ffffff",
+
+                  textAlign:
+                    "left",
+
+                  cursor:
+                    "pointer",
+
+                  scrollSnapAlign:
+                    "start",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+
+                    aspectRatio:
+                      "3 / 4",
+
+                    overflow:
+                      "hidden",
+
+                    background:
+                      "#080a0d",
+                  }}
+                >
+                  {cover ? (
+                    <img
+                      src={cover}
+                      alt={
+                        similar.name
+                      }
+                      loading="lazy"
+                      style={{
+                        width:
+                          "100%",
+
+                        height:
+                          "100%",
+
+                        objectFit:
+                          "cover",
+
+                        display:
+                          "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width:
+                          "100%",
+
+                        height:
+                          "100%",
+
+                        display:
+                          "grid",
+
+                        placeItems:
+                          "center",
+
+                        color:
+                          "#667078",
+
+                        fontSize:
+                          10,
+                      }}
+                    >
+                      SIN PORTADA
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    padding:
+                      "10px 10px 11px",
+                  }}
+                >
+                  <div
+                    style={{
+                      minHeight: 34,
+
+                      color:
+                        "#f4f6f7",
+
+                      fontSize: 12,
+
+                      lineHeight:
+                        1.35,
+
+                      fontWeight: 850,
+                    }}
+                  >
+                    {similar.name}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 5,
+
+                      color:
+                        accent,
+
+                      fontSize: 10,
+
+                      fontWeight: 750,
+                    }}
+                  >
+                    {similar.year ||
+                      "Ver ficha"}
+                  </div>
+                </div>
+              </button>
+            );
+          }
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/* =========================================================
+   ESTADO DE CARGA
+========================================================= */
+
+function LoadingBar({
+  accent,
+}) {
+  return (
+    <div
+      style={{
+        position: "relative",
+
+        width: "100%",
+
+        height: 3,
+
+        overflow:
+          "hidden",
+
+        background:
+          "rgba(255,255,255,.05)",
+      }}
+    >
+      <div
+        style={{
+          width: "42%",
+
+          height: "100%",
+
+          background:
+            accent,
+
+          opacity: 0.85,
+        }}
+      />
+    </div>
   );
 }
 
@@ -1289,58 +1552,236 @@ export default function FullGameOverlay({
       "(max-width: 767px)"
     );
 
+  /*
+    game = objeto recibido desde la ficha rápida.
+
+    activeGame = juego que queremos mostrar.
+    masterGame = ficha completa recibida de /api/games?id=...
+  */
+
+  const [
+    activeGame,
+    setActiveGame,
+  ] = useState(game);
+
+  const [
+    masterGame,
+    setMasterGame,
+  ] = useState(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    loadError,
+    setLoadError,
+  ] = useState(null);
+
+  /*
+    Historial interno.
+
+    Sirve para:
+    Mafia II → GTA V → volver → Mafia II
+
+    sin cerrar la ficha completa.
+  */
+
+  const [
+    gameHistory,
+    setGameHistory,
+  ] = useState([]);
+
+  /*
+    Si desde WorldScene se abre un juego completamente
+    diferente, reiniciamos el estado interno.
+  */
+
+  useEffect(() => {
+    setActiveGame(game);
+    setMasterGame(null);
+    setLoadError(null);
+    setGameHistory([]);
+  }, [game?.id]);
+
+  /*
+    Cargar ficha maestra.
+
+    Mientras llega mantenemos visible el objeto que ya
+    teníamos, por lo que el usuario no ve una pantalla vacía.
+  */
+
+  useEffect(() => {
+    const gameId =
+      activeGame?.id;
+
+    if (!gameId) {
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    let alive = true;
+
+    async function loadGame() {
+      setLoading(true);
+      setLoadError(null);
+
+      try {
+        const response =
+          await fetch(
+            `/api/games?id=${encodeURIComponent(
+              gameId
+            )}`,
+            {
+              method: "GET",
+
+              cache:
+                "no-store",
+
+              signal:
+                controller.signal,
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+              `No se pudo cargar el juego ${gameId}.`
+          );
+        }
+
+        if (
+          !data?.ok ||
+          !data?.game
+        ) {
+          throw new Error(
+            "La biblioteca devolvió una ficha inválida."
+          );
+        }
+
+        if (!alive) {
+          return;
+        }
+
+        setMasterGame(
+          data.game
+        );
+      } catch (error) {
+        if (
+          error?.name ===
+          "AbortError"
+        ) {
+          return;
+        }
+
+        if (!alive) {
+          return;
+        }
+
+        console.error(
+          "[Freaky World / FullGameOverlay]",
+          error
+        );
+
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar la ficha completa."
+        );
+      } finally {
+        if (alive) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadGame();
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [activeGame?.id]);
+
+  /*
+    Una vez cargada la API usamos la ficha maestra.
+
+    Mientras carga, seguimos usando activeGame.
+  */
+
+  const displayGame =
+    masterGame &&
+    Number(masterGame.id) ===
+      Number(activeGame?.id)
+      ? masterGame
+      : activeGame;
+
   const title =
-    getTitle(game);
+    getTitle(displayGame);
 
   const cover =
-    getCover(game);
+    getCover(displayGame);
 
   const year =
-    getYear(game);
+    getYear(displayGame);
 
   const official =
-    getScore(game);
+    getScore(displayGame);
 
   const community =
-    getCommunityScore(game);
+    getCommunityScore(
+      displayGame
+    );
+
+  /*
+    Conservamos el accent del objeto 3D aunque la ficha
+    maestra no lo almacene en Supabase.
+  */
 
   const accent =
+    activeGame?.accent ||
     game?.accent ||
     "#5fdcff";
 
   const platforms =
     normalizeNamedItems(
-      game?.platforms
+      displayGame?.platforms
     );
 
   const genres =
     normalizeNamedItems(
-      game?.genres
+      displayGame?.genres
     );
 
   const themes =
     normalizeNamedItems(
-      game?.themes
+      displayGame?.themes
     );
 
   const gameModes =
     normalizeNamedItems(
-      game?.gameModes
+      displayGame?.gameModes
     );
 
   const perspectives =
     normalizeNamedItems(
-      game?.playerPerspectives
+      displayGame?.playerPerspectives
     );
 
   const engines =
     normalizeNamedItems(
-      game?.gameEngines
+      displayGame?.gameEngines
     );
 
   const alternativeNames =
     asArray(
-      game?.alternativeNames
+      displayGame?.alternativeNames
     )
       .map(
         (item) =>
@@ -1351,14 +1792,96 @@ export default function FullGameOverlay({
       )
       .filter(Boolean);
 
+  /*
+    /api/games ya prioriza summary_es/storyline_es.
+
+    Cuando todavía no existe traducción, devuelve el
+    original de IGDB como fallback.
+  */
+
   const description =
-    game?.editorialSummary ||
-    game?.summary ||
+    displayGame?.editorialSummary ||
+    displayGame?.summary ||
     null;
 
   const storyline =
-    game?.storyline ||
+    displayGame?.storyline ||
     null;
+
+  /* =======================================================
+     NAVEGACIÓN ENTRE SIMILARES
+  ======================================================= */
+
+  function openSimilarGame(
+    similar
+  ) {
+    if (
+      !similar?.id ||
+      !similar?.available
+    ) {
+      return;
+    }
+
+    setGameHistory(
+      (current) => [
+        ...current,
+        activeGame,
+      ]
+    );
+
+    setMasterGame(null);
+
+    setActiveGame({
+      ...similar,
+
+      accent,
+    });
+
+    /*
+      El overlay principal tiene su propio scroll.
+      Al cambiar de juego volvemos arriba.
+    */
+
+    requestAnimationFrame(
+      () => {
+        window.scrollTo?.(
+          0,
+          0
+        );
+      }
+    );
+  }
+
+  function goToPreviousGame() {
+    if (
+      gameHistory.length === 0
+    ) {
+      return;
+    }
+
+    const previous =
+      gameHistory[
+        gameHistory.length - 1
+      ];
+
+    setGameHistory(
+      (current) =>
+        current.slice(
+          0,
+          -1
+        )
+    );
+
+    setMasterGame(null);
+
+    setActiveGame(
+      previous
+    );
+  }
+
+  /* =======================================================
+     BLOQUEAR SCROLL DEL MUNDO
+  ======================================================= */
 
   useEffect(() => {
     const previous =
@@ -1373,16 +1896,38 @@ export default function FullGameOverlay({
     };
   }, []);
 
+  /* =======================================================
+     ESCAPE
+  ======================================================= */
+
   useEffect(() => {
     function handleKeyDown(
       event
     ) {
       if (
-        event.key ===
+        event.key !==
         "Escape"
       ) {
-        onClose?.();
+        return;
       }
+
+      /*
+        Si estamos dentro de un similar,
+        Escape vuelve al juego anterior.
+
+        Si estamos en el juego inicial,
+        cierra la ficha.
+      */
+
+      if (
+        gameHistory.length >
+        0
+      ) {
+        goToPreviousGame();
+        return;
+      }
+
+      onClose?.();
     }
 
     window.addEventListener(
@@ -1395,11 +1940,14 @@ export default function FullGameOverlay({
         "keydown",
         handleKeyDown
       );
-  }, [onClose]);
+  });
 
-  if (!game?.id) {
+  if (!activeGame?.id) {
     return null;
   }
+
+  const canGoToPreviousGame =
+    gameHistory.length > 0;
 
   return (
     <div
@@ -1466,17 +2014,26 @@ export default function FullGameOverlay({
             "blur(18px)",
         }}
       >
-        {onBack && (
+        {(canGoToPreviousGame ||
+          onBack) && (
           <button
             type="button"
-            onClick={onBack}
+            onClick={
+              canGoToPreviousGame
+                ? goToPreviousGame
+                : onBack
+            }
             style={{
               ...navButtonStyle(),
 
               flex:
                 "0 0 auto",
             }}
-            aria-label="Volver a ficha rápida"
+            aria-label={
+              canGoToPreviousGame
+                ? "Volver al juego anterior"
+                : "Volver a ficha rápida"
+            }
           >
             ‹
           </button>
@@ -1529,6 +2086,27 @@ export default function FullGameOverlay({
           </div>
         </div>
 
+        {loading && (
+          <div
+            style={{
+              flex:
+                "0 0 auto",
+
+              color:
+                "#7f8a90",
+
+              fontSize: 9,
+
+              fontWeight: 800,
+
+              letterSpacing:
+                ".06em",
+            }}
+          >
+            CARGANDO
+          </div>
+        )}
+
         <button
           type="button"
           onClick={onClose}
@@ -1545,6 +2123,12 @@ export default function FullGameOverlay({
           ×
         </button>
       </header>
+
+      {loading && (
+        <LoadingBar
+          accent={accent}
+        />
+      )}
 
       <main
         style={{
@@ -1563,6 +2147,38 @@ export default function FullGameOverlay({
             "border-box",
         }}
       >
+        {/* ERROR NO DESTRUCTIVO */}
+
+        {loadError && (
+          <div
+            style={{
+              marginBottom: 14,
+
+              padding:
+                "10px 13px",
+
+              border:
+                "1px solid rgba(255,120,120,.25)",
+
+              borderRadius: 12,
+
+              background:
+                "rgba(120,20,20,.13)",
+
+              color:
+                "#d9a1a1",
+
+              fontSize: 11,
+
+              lineHeight: 1.5,
+            }}
+          >
+            No se pudo actualizar la ficha desde la biblioteca.
+            {" "}
+            {loadError}
+          </div>
+        )}
+
         {/* HERO */}
 
         <div
@@ -1652,9 +2268,9 @@ export default function FullGameOverlay({
                   ".15em",
               }}
             >
-              {game?.rank
-                ? `TOP 10 · #${game.rank}`
-                : game?.releaseType ||
+              {displayGame?.rank
+                ? `TOP 10 · #${displayGame.rank}`
+                : displayGame?.releaseType ||
                   "VIDEOJUEGO"}
             </div>
 
@@ -1692,8 +2308,8 @@ export default function FullGameOverlay({
             >
               {[
                 year,
-                game?.developer,
-                game?.publisher,
+                displayGame?.developer,
+                displayGame?.publisher,
               ]
                 .filter(Boolean)
                 .join(" · ")}
@@ -1844,8 +2460,9 @@ export default function FullGameOverlay({
           }}
         >
           <VideoPlayer
-            game={game}
-            accent={accent}
+            game={
+              displayGame
+            }
           />
         </div>
 
@@ -1875,6 +2492,9 @@ export default function FullGameOverlay({
                   style={{
                     margin: 0,
 
+                    whiteSpace:
+                      "pre-line",
+
                     color:
                       "#bdc5ca",
 
@@ -1895,6 +2515,9 @@ export default function FullGameOverlay({
                 <p
                   style={{
                     margin: 0,
+
+                    whiteSpace:
+                      "pre-line",
 
                     color:
                       "#bdc5ca",
@@ -1929,37 +2552,43 @@ export default function FullGameOverlay({
             <DataRow
               label="Desarrollador"
               value={
-                game?.developer
+                displayGame?.developer
               }
             />
 
             <DataRow
               label="Distribuidor"
               value={
-                game?.publisher
+                displayGame?.publisher
               }
             />
 
             <DataRow
               label="Saga"
               value={
-                game?.collection?.name ||
-                game?.collectionName
+                typeof displayGame?.collection ===
+                "string"
+                  ? displayGame.collection
+                  : displayGame?.collection?.name ||
+                    displayGame?.collectionName
               }
             />
 
             <DataRow
               label="Franquicia"
               value={
-                game?.franchise?.name ||
-                game?.franchiseName
+                typeof displayGame?.franchise ===
+                "string"
+                  ? displayGame.franchise
+                  : displayGame?.franchise?.name ||
+                    displayGame?.franchiseName
               }
             />
 
             <DataRow
               label="Tipo"
               value={
-                game?.releaseType
+                displayGame?.releaseType
               }
             />
 
@@ -2045,11 +2674,15 @@ export default function FullGameOverlay({
           }}
         >
           <Languages
-            game={game}
+            game={
+              displayGame
+            }
           />
 
           <AgeRatings
-            game={game}
+            game={
+              displayGame
+            }
             accent={accent}
           />
         </div>
@@ -2062,7 +2695,27 @@ export default function FullGameOverlay({
           }}
         >
           <Gallery
-            game={game}
+            game={
+              displayGame
+            }
+          />
+        </div>
+
+        {/* SIMILARES */}
+
+        <div
+          style={{
+            marginTop: 12,
+          }}
+        >
+          <SimilarGames
+            game={
+              displayGame
+            }
+            accent={accent}
+            onOpenGame={
+              openSimilarGame
+            }
           />
         </div>
 
@@ -2083,10 +2736,12 @@ export default function FullGameOverlay({
             marginTop: 22,
           }}
         >
-          {onBack && (
+          {canGoToPreviousGame ? (
             <button
               type="button"
-              onClick={onBack}
+              onClick={
+                goToPreviousGame
+              }
               style={{
                 minHeight: 44,
 
@@ -2113,8 +2768,42 @@ export default function FullGameOverlay({
                   "pointer",
               }}
             >
-              VOLVER A FICHA RÁPIDA
+              VOLVER AL JUEGO ANTERIOR
             </button>
+          ) : (
+            onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                style={{
+                  minHeight: 44,
+
+                  padding:
+                    "10px 18px",
+
+                  border:
+                    "1px solid rgba(255,255,255,.15)",
+
+                  borderRadius:
+                    13,
+
+                  background:
+                    "#181d22",
+
+                  color:
+                    "#ffffff",
+
+                  fontSize: 11,
+
+                  fontWeight: 900,
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                VOLVER A FICHA RÁPIDA
+              </button>
+            )
           )}
 
           <button
