@@ -1,6 +1,7 @@
 "use client";
 
 import FeaturedVideoWall from "./FeaturedVideoWall";
+import GameCoverMaterial from "./GameCoverTexture";
 
 import {
   useEffect,
@@ -32,161 +33,197 @@ import {
    FREAKY WORLD
    POPULARES HOY — PREMIUM GALLERY
 
-   IMPORTANTE:
-   DpadWing tiene su propio suelo cuya cara superior está
-   aproximadamente en Y = 0.30.
+   DATOS:
+   Freaky World API -> Supabase -> datos sincronizados IGDB
 
-   Por eso toda la terminación visual de esta sala comienza
-   POR ENCIMA de Y = 0.30.
+   IMPORTANTE:
+   Estos 10 juegos todavía NO representan el algoritmo
+   definitivo de "Populares Hoy".
+
+   En esta fase estamos sustituyendo correctamente los
+   juegos ficticios por datos reales de nuestra base.
 ========================================================= */
 
 const ROOM_BACK_Z = -34.25;
 const FINISHED_FLOOR_Y = 0.315;
 
 /* =========================================================
-   JUEGOS TEMPORALES
+   COLORES DE LOS 10 EXPOSITORES
 
-   Después estos datos vendrán de IGDB.
+   El color pertenece al diseño de la sala, no a IGDB.
 ========================================================= */
 
-const GAMES = [
+const ACCENTS = [
   {
-    id: "last-signal",
-    rank: 1,
-    title: "THE LAST SIGNAL",
-    subtitle: "Silent Peak",
-    year: "2026",
-    platform: "PS5 · XBOX · PC",
-    score: "9.4",
-    trend: "▲ 4 PUESTOS",
     accent: "#d95cff",
     accentDark: "#421653",
   },
   {
-    id: "void-runner",
-    rank: 2,
-    title: "VOID RUNNER",
-    subtitle: "Pulse Works",
-    year: "2026",
-    platform: "PS5 · PC",
-    score: "9.2",
-    trend: "▲ 2 PUESTOS",
     accent: "#29d9ff",
     accentDark: "#0a4555",
   },
   {
-    id: "red-horizon",
-    rank: 3,
-    title: "RED HORIZON",
-    subtitle: "Atlas Interactive",
-    year: "2026",
-    platform: "PS5 · XBOX · PC",
-    score: "9.0",
-    trend: "NUEVO",
     accent: "#ff6947",
     accentDark: "#5e1e12",
   },
   {
-    id: "deep-blue",
-    rank: 4,
-    title: "DEEP BLUE",
-    subtitle: "Drift Studios",
-    year: "2026",
-    platform: "PS5 · XBOX",
-    score: "8.9",
-    trend: "▲ 1 PUESTO",
     accent: "#3f8cff",
     accentDark: "#102b59",
   },
   {
-    id: "lumina",
-    rank: 5,
-    title: "LUMINA",
-    subtitle: "Small Moon",
-    year: "2026",
-    platform: "SWITCH 2",
-    score: "8.8",
-    trend: "● ESTABLE",
     accent: "#c957ff",
     accentDark: "#3d1554",
   },
   {
-    id: "echoes",
-    rank: 6,
-    title: "ECHOES",
-    subtitle: "North Shore Games",
-    year: "2026",
-    platform: "PS5 · PC",
-    score: "8.7",
-    trend: "▲ 3 PUESTOS",
     accent: "#42e8a1",
     accentDark: "#0c4e35",
   },
   {
-    id: "black-sun",
-    rank: 7,
-    title: "BLACK SUN",
-    subtitle: "Orbital Games",
-    year: "2026",
-    platform: "PC",
-    score: "8.6",
-    trend: "NUEVO",
     accent: "#ffb03f",
     accentDark: "#5d3810",
   },
   {
-    id: "dust-road",
-    rank: 8,
-    title: "DUST ROAD",
-    subtitle: "Nomad Interactive",
-    year: "2025",
-    platform: "XBOX · PC",
-    score: "8.5",
-    trend: "▼ 1 PUESTO",
     accent: "#ff7647",
     accentDark: "#572012",
   },
   {
-    id: "neon-district",
-    rank: 9,
-    title: "NEON DISTRICT",
-    subtitle: "Nightfall Studios",
-    year: "2027",
-    platform: "PS5 · XBOX · PC",
-    score: "8.4",
-    trend: "▲ 5 PUESTOS",
     accent: "#39bfff",
     accentDark: "#10415a",
   },
   {
-    id: "iron-kingdom",
-    rank: 10,
-    title: "IRON KINGDOM",
-    subtitle: "Oak Forge",
-    year: "2025",
-    platform: "SWITCH 2 · PC",
-    score: "8.3",
-    trend: "● ESTABLE",
     accent: "#f3ca57",
     accentDark: "#544315",
   },
 ];
 
 /* =========================================================
-   CANVAS — PORTADA TEMPORAL
+   FALLBACK
+
+   Solo aparece si /api/games falla.
+
+   Esto evita que un problema de red deje la sala vacía.
 ========================================================= */
 
-function createPosterTexture(game) {
+const FALLBACK_GAMES = Array.from(
+  {
+    length: 10,
+  },
+  (_, index) => ({
+    id: `loading-${index + 1}`,
+    rank: index + 1,
+    title: "FREAKY WORLD",
+    subtitle: "Cargando juego...",
+    year: "",
+    platform: "",
+    score: "--",
+    trend: "",
+    cover: null,
+    ...ACCENTS[index],
+  })
+);
+
+/* =========================================================
+   NORMALIZAR DATOS DE NUESTRA API
+========================================================= */
+
+function normalizeApiGame(
+  game,
+  index
+) {
+  const platforms =
+    game.platforms
+      ?.map(
+        (platform) =>
+          platform.abbreviation ||
+          platform.name
+      )
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(" · ") || "";
+
+  const scoreValue =
+    typeof game.totalRating ===
+    "number"
+      ? game.totalRating
+      : typeof game.rating ===
+        "number"
+        ? game.rating
+        : null;
+
+  /*
+    Nuestra API usa escala 0-100.
+    Visualmente la sala usa escala 0-10.
+  */
+
+  const score =
+    scoreValue !== null
+      ? (
+          Number(scoreValue) / 10
+        ).toFixed(1)
+      : "--";
+
+  return {
+    ...game,
+
+    id: game.id,
+
+    rank: index + 1,
+
+    title:
+      game.name ||
+      "SIN TÍTULO",
+
+    subtitle:
+      game.developer ||
+      game.publisher ||
+      "Desarrollador desconocido",
+
+    year:
+      game.year
+        ? String(game.year)
+        : "",
+
+    platform:
+      platforms,
+
+    score,
+
+    /*
+      No inventamos tendencias.
+
+      Esto llegará cuando implementemos el sistema
+      real de Populares Hoy.
+    */
+
+    trend: "",
+
+    accent:
+      ACCENTS[index]?.accent ||
+      "#5fdcff",
+
+    accentDark:
+      ACCENTS[index]?.accentDark ||
+      "#123b47",
+  };
+}
+
+/* =========================================================
+   CANVAS — PORTADA FALLBACK
+========================================================= */
+
+function createFallbackPosterTexture(
+  game
+) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
   canvas.width = 640;
   canvas.height = 960;
 
   const ctx =
     canvas.getContext("2d");
-
-  /* fondo */
 
   const gradient =
     ctx.createLinearGradient(
@@ -211,7 +248,8 @@ function createPosterTexture(game) {
     "#050609"
   );
 
-  ctx.fillStyle = gradient;
+  ctx.fillStyle =
+    gradient;
 
   ctx.fillRect(
     0,
@@ -219,8 +257,6 @@ function createPosterTexture(game) {
     640,
     960
   );
-
-  /* formas abstractas */
 
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = "#ffffff";
@@ -251,25 +287,7 @@ function createPosterTexture(game) {
 
   ctx.fill();
 
-  ctx.globalAlpha = 0.08;
-
-  ctx.fillRect(
-    0,
-    360,
-    640,
-    5
-  );
-
-  ctx.fillRect(
-    0,
-    375,
-    640,
-    2
-  );
-
   ctx.globalAlpha = 1;
-
-  /* número */
 
   ctx.fillStyle =
     "rgba(4,5,8,0.72)";
@@ -304,8 +322,6 @@ function createPosterTexture(game) {
     78
   );
 
-  /* puntuación */
-
   ctx.textAlign = "right";
 
   ctx.font =
@@ -319,8 +335,6 @@ function createPosterTexture(game) {
 
   ctx.textAlign = "left";
 
-  /* título */
-
   ctx.font =
     "900 52px Arial";
 
@@ -332,35 +346,37 @@ function createPosterTexture(game) {
   let line = "";
   let y = 730;
 
-  words.forEach((word) => {
-    const test =
-      `${line}${word} `;
+  words.forEach(
+    (word) => {
+      const test =
+        `${line}${word} `;
 
-    if (
-      ctx.measureText(test).width >
-        570 &&
-      line
-    ) {
-      ctx.fillText(
-        line.trim(),
-        34,
-        y
-      );
+      if (
+        ctx.measureText(test)
+          .width > 570 &&
+        line
+      ) {
+        ctx.fillText(
+          line.trim(),
+          34,
+          y
+        );
 
-      line = `${word} `;
-      y += 58;
-    } else {
-      line = test;
+        line =
+          `${word} `;
+
+        y += 58;
+      } else {
+        line = test;
+      }
     }
-  });
+  );
 
   ctx.fillText(
     line.trim(),
     34,
     y
   );
-
-  /* estudio */
 
   ctx.font =
     "600 23px Arial";
@@ -374,8 +390,6 @@ function createPosterTexture(game) {
     840
   );
 
-  /* línea */
-
   ctx.fillStyle =
     game.accent;
 
@@ -386,8 +400,6 @@ function createPosterTexture(game) {
     4
   );
 
-  /* plataformas */
-
   ctx.font =
     "700 19px Arial";
 
@@ -395,25 +407,15 @@ function createPosterTexture(game) {
     "rgba(255,255,255,0.78)";
 
   ctx.fillText(
-    `${game.year}  ·  ${game.platform}`,
+    `${game.year}${
+      game.year &&
+      game.platform
+        ? "  ·  "
+        : ""
+    }${game.platform}`,
     35,
     910
   );
-
-  /* tendencia */
-
-  ctx.textAlign = "right";
-
-  ctx.fillStyle =
-    "#ffffff";
-
-  ctx.fillText(
-    game.trend,
-    605,
-    910
-  );
-
-  ctx.textAlign = "left";
 
   const texture =
     new THREE.CanvasTexture(
@@ -444,7 +446,9 @@ function createTextTexture(
   glow = null
 ) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
   canvas.width = 1024;
   canvas.height = 256;
@@ -593,8 +597,8 @@ function GalleryBay({
 
   const x =
     left
-      ? -29.0
-      : 29.0;
+      ? -29
+      : 29;
 
   const innerX =
     left
@@ -609,8 +613,6 @@ function GalleryBay({
         z,
       ]}
     >
-      {/* cuerpo profundo */}
-
       <mesh
         position={[
           0,
@@ -637,8 +639,6 @@ function GalleryBay({
         />
       </mesh>
 
-      {/* fondo interior */}
-
       <mesh
         position={[
           innerX,
@@ -660,8 +660,6 @@ function GalleryBay({
           metalness={0.34}
         />
       </mesh>
-
-      {/* franja superior */}
 
       <mesh
         position={[
@@ -685,8 +683,6 @@ function GalleryBay({
         />
       </mesh>
 
-      {/* LED superior */}
-
       <Led
         position={[
           innerX * 1.45,
@@ -701,8 +697,6 @@ function GalleryBay({
         color={accent}
         intensity={2.8}
       />
-
-      {/* LED inferior */}
 
       <Led
         position={[
@@ -719,6 +713,52 @@ function GalleryBay({
         intensity={1.8}
       />
     </group>
+  );
+}
+
+/* =========================================================
+   PORTADA REAL / FALLBACK
+========================================================= */
+
+function GamePoster({
+  game,
+}) {
+  const fallbackTexture =
+    useMemo(
+      () =>
+        createFallbackPosterTexture(
+          game
+        ),
+      [game]
+    );
+
+  useEffect(() => {
+    return () => {
+      fallbackTexture.dispose();
+    };
+  }, [fallbackTexture]);
+
+  const realCover =
+    game.cover?.large ||
+    game.cover?.medium ||
+    null;
+
+  if (realCover) {
+    return (
+      <GameCoverMaterial
+        imageUrl={realCover}
+        fallbackColor={
+          game.accentDark
+        }
+      />
+    );
+  }
+
+  return (
+    <meshBasicMaterial
+      map={fallbackTexture}
+      toneMapped={false}
+    />
   );
 }
 
@@ -748,20 +788,6 @@ function GameStation({
         new THREE.Vector3(),
       []
     );
-
-  const poster =
-    useMemo(
-      () =>
-        createPosterTexture(
-          game
-        ),
-      [game]
-    );
-
-  useEffect(() => {
-    return () =>
-      poster.dispose();
-  }, [poster]);
 
   useFrame(() => {
     if (
@@ -835,8 +861,6 @@ function GameStation({
         0,
       ]}
     >
-      {/* sombra/retranqueo */}
-
       <RoundedBox
         position={[
           0,
@@ -861,8 +885,6 @@ function GameStation({
           }
         />
       </RoundedBox>
-
-      {/* marco principal */}
 
       <RoundedBox
         position={[
@@ -893,7 +915,7 @@ function GameStation({
         />
       </RoundedBox>
 
-      {/* pantalla */}
+      {/* PORTADA REAL */}
 
       <mesh
         position={[
@@ -909,13 +931,10 @@ function GameStation({
           ]}
         />
 
-        <meshBasicMaterial
-          map={poster}
-          toneMapped={false}
+        <GamePoster
+          game={game}
         />
       </mesh>
-
-      {/* LED izquierdo */}
 
       <Led
         position={[
@@ -938,8 +957,6 @@ function GameStation({
         }
       />
 
-      {/* LED derecho */}
-
       <Led
         position={[
           2.83,
@@ -960,8 +977,6 @@ function GameStation({
             : 2.7
         }
       />
-
-      {/* LED superior */}
 
       <Led
         position={[
@@ -984,8 +999,6 @@ function GameStation({
         }
       />
 
-      {/* base */}
-
       <RoundedBox
         position={[
           0,
@@ -1007,8 +1020,6 @@ function GameStation({
           clearcoat={0.25}
         />
       </RoundedBox>
-
-      {/* terminal */}
 
       <group
         position={[
@@ -1115,8 +1126,6 @@ function GameStation({
           />
         </RoundedBox>
       </group>
-
-      {/* colisiones */}
 
       <RigidBody
         type="fixed"
@@ -1333,7 +1342,7 @@ function Planter({
 }
 
 /* =========================================================
-   ISLA CENTRAL TOP 10
+   ISLA CENTRAL
 ========================================================= */
 
 function TopTenIsland() {
@@ -1345,8 +1354,6 @@ function TopTenIsland() {
         -14.5,
       ]}
     >
-      {/* base */}
-
       <RoundedBox
         position={[
           0,
@@ -1371,8 +1378,6 @@ function TopTenIsland() {
           }
         />
       </RoundedBox>
-
-      {/* tapa */}
 
       <RoundedBox
         position={[
@@ -1426,7 +1431,7 @@ function TopTenIsland() {
       />
 
       <FlatText
-        text="TOP 10 HOY"
+        text="TOP 10"
         position={[
           0,
           1.41,
@@ -1466,8 +1471,6 @@ function TopTenIsland() {
 function VideoStage() {
   return (
     <group>
-      {/* gran fondo */}
-
       <RoundedBox
         position={[
           0,
@@ -1490,8 +1493,6 @@ function VideoStage() {
           clearcoat={0.2}
         />
       </RoundedBox>
-
-      {/* alas del escenario */}
 
       <RoundedBox
         position={[
@@ -1537,8 +1538,6 @@ function VideoStage() {
         />
       </RoundedBox>
 
-      {/* marco de pantalla */}
-
       <RoundedBox
         position={[
           0,
@@ -1561,8 +1560,6 @@ function VideoStage() {
           clearcoat={0.22}
         />
       </RoundedBox>
-
-      {/* LED marco */}
 
       <Led
         position={[
@@ -1612,8 +1609,6 @@ function VideoStage() {
         intensity={2}
       />
 
-      {/* plataforma */}
-
       <RoundedBox
         position={[
           0,
@@ -1653,8 +1648,6 @@ function VideoStage() {
         intensity={2.4}
       />
 
-      {/* plantas */}
-
       <Planter
         position={[
           -12.5,
@@ -1673,8 +1666,6 @@ function VideoStage() {
         ]}
       />
 
-      {/* reproductor */}
-
       <FeaturedVideoWall
         position={[
           0,
@@ -1688,10 +1679,7 @@ function VideoStage() {
 }
 
 /* =========================================================
-   TECHO LATERAL
-
-   El centro queda completamente libre.
-   NO TOCAMOS LA FLECHA DEL DPADWING.
+   TECHO
 ========================================================= */
 
 function PremiumCeiling() {
@@ -1707,11 +1695,7 @@ function PremiumCeiling() {
   return (
     <group>
       {zs.map((z) => (
-        <group
-          key={z}
-        >
-          {/* módulo izquierdo */}
-
+        <group key={z}>
           <mesh
             position={[
               -20.8,
@@ -1749,8 +1733,6 @@ function PremiumCeiling() {
             color="#fff0d3"
             intensity={2}
           />
-
-          {/* módulo derecho */}
 
           <mesh
             position={[
@@ -1791,8 +1773,6 @@ function PremiumCeiling() {
           />
         </group>
       ))}
-
-      {/* líneas longitudinales */}
 
       <mesh
         position={[
@@ -1842,25 +1822,17 @@ function PremiumCeiling() {
 }
 
 /* =========================================================
-   ILUMINACIÓN PREMIUM
-
-   Las tiras emissive se ven brillantes.
-   Estas luces reales hacen que ese color llegue
-   físicamente a suelo, paredes y estructuras.
+   ILUMINACIÓN
 ========================================================= */
 
 function GalleryLighting() {
   return (
     <group>
-      {/* luz general interior */}
-
       <hemisphereLight
         intensity={0.58}
         color="#d9ecff"
         groundColor="#15100d"
       />
-
-      {/* luz fría procedente del techo */}
 
       <directionalLight
         position={[
@@ -1871,8 +1843,6 @@ function GalleryLighting() {
         intensity={1.25}
         color="#b9dcff"
       />
-
-      {/* iluminación central cálida */}
 
       <pointLight
         position={[
@@ -1886,8 +1856,6 @@ function GalleryLighting() {
         color="#ffd29a"
       />
 
-      {/* pantalla fondo */}
-
       <pointLight
         position={[
           0,
@@ -1899,8 +1867,6 @@ function GalleryLighting() {
         decay={2}
         color="#78d9ff"
       />
-
-      {/* galería izquierda */}
 
       <pointLight
         position={[
@@ -1925,8 +1891,6 @@ function GalleryLighting() {
         decay={2}
         color="#ff855d"
       />
-
-      {/* galería derecha */}
 
       <pointLight
         position={[
@@ -1960,20 +1924,107 @@ function GalleryLighting() {
 ========================================================= */
 
 export default function PopularTodayHall() {
-  /*
-    Las fichas están algo más separadas que antes.
+  const [
+    games,
+    setGames,
+  ] = useState(
+    FALLBACK_GAMES
+  );
 
-    Las más cercanas a la entrada comienzan en Z 15.
-    Las del fondo terminan en Z -24.
-  */
+  /* =======================================================
+     CARGAR DATOS REALES
+
+     El navegador llama solamente a nuestra API.
+     Las claves de Supabase e IGDB nunca llegan al cliente.
+  ======================================================= */
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadGames() {
+      try {
+        const response =
+          await fetch(
+            "/api/games",
+            {
+              method: "GET",
+              cache: "no-store",
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            `API respondió ${response.status}`
+          );
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          !data?.ok ||
+          !Array.isArray(
+            data.games
+          )
+        ) {
+          throw new Error(
+            "Respuesta de juegos inválida."
+          );
+        }
+
+        const normalized =
+          data.games
+            .slice(0, 10)
+            .map(
+              (
+                game,
+                index
+              ) =>
+                normalizeApiGame(
+                  game,
+                  index
+                )
+            );
+
+        if (
+          active &&
+          normalized.length ===
+            10
+        ) {
+          setGames(
+            normalized
+          );
+        }
+      } catch (error) {
+        /*
+          No desmontamos la sala.
+
+          Si la API falla, conservamos el fallback.
+        */
+
+        console.error(
+          "[Freaky World / PopularTodayHall]",
+          error
+        );
+      }
+    }
+
+    loadGames();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /* =======================================================
+     POSICIONES DE LOS 10 EXPOSITORES
+  ======================================================= */
 
   const stations =
     useMemo(
       () => [
-        /* izquierda */
-
         {
-          game: GAMES[0],
+          game: games[0],
           position: [
             -25.3,
             0.3,
@@ -1985,7 +2036,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[1],
+          game: games[1],
           position: [
             -25.3,
             0.3,
@@ -1997,7 +2048,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[2],
+          game: games[2],
           position: [
             -25.3,
             0.3,
@@ -2009,7 +2060,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[3],
+          game: games[3],
           position: [
             -25.3,
             0.3,
@@ -2021,7 +2072,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[4],
+          game: games[4],
           position: [
             -25.3,
             0.3,
@@ -2032,10 +2083,8 @@ export default function PopularTodayHall() {
           side: "left",
         },
 
-        /* derecha */
-
         {
-          game: GAMES[5],
+          game: games[5],
           position: [
             25.3,
             0.3,
@@ -2047,7 +2096,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[6],
+          game: games[6],
           position: [
             25.3,
             0.3,
@@ -2059,7 +2108,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[7],
+          game: games[7],
           position: [
             25.3,
             0.3,
@@ -2071,7 +2120,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[8],
+          game: games[8],
           position: [
             25.3,
             0.3,
@@ -2083,7 +2132,7 @@ export default function PopularTodayHall() {
         },
 
         {
-          game: GAMES[9],
+          game: games[9],
           position: [
             25.3,
             0.3,
@@ -2094,16 +2143,13 @@ export default function PopularTodayHall() {
           side: "right",
         },
       ],
-      []
+      [games]
     );
 
   return (
     <group>
       {/* ===================================================
-          ACABADO DE SUELO
-
-          ESTE es el cambio clave:
-          está por encima del suelo físico de DpadWing.
+          SUELO
       =================================================== */}
 
       <mesh
@@ -2136,12 +2182,6 @@ export default function PopularTodayHall() {
           }
         />
       </mesh>
-
-      {/* ===================================================
-          PLACAS DEL PAVIMENTO
-
-          Rompen la sensación de carretera/plano vacío.
-      =================================================== */}
 
       {[
         -27,
@@ -2219,9 +2259,7 @@ export default function PopularTodayHall() {
         </group>
       ))}
 
-      {/* ===================================================
-          GALERÍAS DE PARED
-      =================================================== */}
+      {/* GALERÍAS */}
 
       {stations.map(
         ({
@@ -2240,9 +2278,7 @@ export default function PopularTodayHall() {
         )
       )}
 
-      {/* ===================================================
-          FICHAS
-      =================================================== */}
+      {/* JUEGOS */}
 
       {stations.map(
         ({
@@ -2259,32 +2295,12 @@ export default function PopularTodayHall() {
         )
       )}
 
-      {/* ===================================================
-          TECHO PREMIUM LATERAL
-
-          Centro libre = flecha totalmente visible.
-      =================================================== */}
-
       <PremiumCeiling />
-
-      {/* ===================================================
-          ESCENARIO
-      =================================================== */}
 
       <VideoStage />
 
-      {/* ===================================================
-          ELEMENTO CENTRAL
-      =================================================== */}
-
       <TopTenIsland />
 
-      {/* ===================================================
-          MOBILIARIO
-
-          Dejamos circulación central amplia.
-      =================================================== */}
-
       <Bench
         position={[
           -8.5,
@@ -2316,10 +2332,6 @@ export default function PopularTodayHall() {
           -7,
         ]}
       />
-
-      {/* ===================================================
-          JARDINERAS
-      =================================================== */}
 
       <Planter
         position={[
@@ -2336,13 +2348,6 @@ export default function PopularTodayHall() {
           -27,
         ]}
       />
-
-      {/* ===================================================
-          LUZ
-
-          Ahora los LED no son simplemente rayas de color:
-          las luces reales iluminan el espacio.
-      =================================================== */}
 
       <GalleryLighting />
     </group>
