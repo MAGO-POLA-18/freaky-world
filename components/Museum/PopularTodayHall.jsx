@@ -981,4 +981,577 @@ export default function PopularTodayHall() {
             0.32,
             10,
           ],
-          rotation
+rotation:
+            Math.PI /
+            2.12,
+
+          scale:
+            1.08,
+        },
+
+        {
+          game:
+            GAMES[6],
+
+          position: [
+            23,
+            0.32,
+            10,
+          ],
+
+          rotation:
+            -Math.PI /
+            2.12,
+
+          scale:
+            1.08,
+        },
+
+        {
+          game:
+            GAMES[5],
+
+          position: [
+            -23,
+            0.32,
+            -3,
+          ],
+
+          rotation:
+            Math.PI /
+            2.08,
+
+          scale:
+            1.1,
+        },
+
+        {
+          game:
+            GAMES[4],
+
+          position: [
+            23,
+            0.32,
+            -3,
+          ],
+
+          rotation:
+            -Math.PI /
+            2.08,
+
+          scale:
+            1.1,
+        },
+
+        {
+          game:
+            GAMES[3],
+
+          position: [
+            -21,
+            0.32,
+            -17,
+          ],
+
+          rotation:
+            Math.PI /
+            2.3,
+
+          scale:
+            1.13,
+        },
+
+        {
+          game:
+            GAMES[2],
+
+          position: [
+            21,
+            0.32,
+            -17,
+          ],
+
+          rotation:
+            -Math.PI /
+            2.3,
+
+          scale:
+            1.13,
+        },
+
+        {
+          game:
+            GAMES[1],
+
+          position: [
+            -14,
+            0.32,
+            -26,
+          ],
+
+          rotation:
+            Math.PI /
+            3.1,
+
+          scale:
+            1.15,
+        },
+      ],
+      []
+    );
+
+  const blackWalls =
+    useMemo(
+      () => [
+        {
+          position: [
+            -ROOM_HALF_WIDTH,
+            7,
+            0,
+          ],
+
+          scale: [
+            0.14,
+            13.5,
+            68,
+          ],
+        },
+
+        {
+          position: [
+            ROOM_HALF_WIDTH,
+            7,
+            0,
+          ],
+
+          scale: [
+            0.14,
+            13.5,
+            68,
+          ],
+        },
+
+        {
+          position: [
+            0,
+            7,
+            ROOM_BACK_Z,
+          ],
+
+          scale: [
+            58.5,
+            13.5,
+            0.14,
+          ],
+        },
+      ],
+      []
+    );
+
+  const floor =
+    useMemo(
+      () => [
+        {
+          position: [
+            0,
+            0.325,
+            0,
+          ],
+
+          scale: [
+            58.2,
+            0.025,
+            68,
+          ],
+        },
+      ],
+      []
+    );
+
+  const ceilingLights =
+    useMemo(
+      () => [
+        {
+          position: [
+            -15,
+            12.3,
+            13,
+          ],
+
+          scale: [
+            0.16,
+            0.12,
+            34,
+          ],
+        },
+
+        {
+          position: [
+            15,
+            12.3,
+            13,
+          ],
+
+          scale: [
+            0.16,
+            0.12,
+            34,
+          ],
+        },
+
+        {
+          position: [
+            -8,
+            12.3,
+            -20,
+          ],
+
+          scale: [
+            0.16,
+            0.12,
+            20,
+          ],
+        },
+
+        {
+          position: [
+            8,
+            12.3,
+            -20,
+          ],
+
+          scale: [
+            0.16,
+            0.12,
+            20,
+          ],
+        },
+      ],
+      []
+    );
+
+  return (
+    <group>
+      <InstancedBoxes
+        items={
+          blackWalls
+        }
+        color="#05080c"
+        roughness={
+          0.9
+        }
+      />
+
+      <InstancedBoxes
+        items={
+          floor
+        }
+        color="#080c11"
+        roughness={
+          0.7
+        }
+      />
+
+      <InstancedBoxes
+        items={
+          ceilingLights
+        }
+        color="#ffffff"
+        roughness={
+          0.1
+        }
+        emissive="#ffffff"
+        emissiveIntensity={
+          1.6
+        }
+      />
+
+      <NeonWord
+        text="POPULARES HOY"
+        color="#58f1ff"
+        position={[
+          0,
+          10.8,
+          29,
+        ]}
+        width={
+          15
+        }
+        height={
+          3
+        }
+      />
+
+      <NeonWord
+        text="INSERT COIN"
+        color="#ff4f95"
+        position={[
+          -29,
+          8,
+          18,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        width={
+          8
+        }
+        height={
+          2
+        }
+      />
+
+      <NeonWord
+        text="LEVEL UP"
+        color="#8b5cff"
+        position={[
+          29,
+          8,
+          8,
+        ]}
+        rotation={[
+          0,
+          -Math.PI / 2,
+          0,
+        ]}
+        width={
+          7
+        }
+        height={
+          2
+        }
+      />
+
+      <NeonWord
+        text="PLAY"
+        color="#ffe44f"
+        position={[
+          -29,
+          8,
+          -16,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        width={
+          5
+        }
+        height={
+          2
+        }
+      />
+
+      <ArcadeIcon
+        type="chomper"
+        position={[
+          -28.95,
+          5,
+          2,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        size={
+          5
+        }
+      />
+
+      <ArcadeIcon
+        type="invader"
+        position={[
+          28.95,
+          5.2,
+          -12,
+        ]}
+        rotation={[
+          0,
+          -Math.PI / 2,
+          0,
+        ]}
+        size={
+          5.4
+        }
+      />
+
+      <NeonLine
+        position={[
+          -29,
+          11,
+          0,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        size={[
+          42,
+          0.07,
+          0.07,
+        ]}
+        color="#58f1ff"
+      />
+
+      <NeonLine
+        position={[
+          29,
+          11,
+          0,
+        ]}
+        rotation={[
+          0,
+          Math.PI / 2,
+          0,
+        ]}
+        size={[
+          42,
+          0.07,
+          0.07,
+        ]}
+        color="#ff4f95"
+      />
+
+      <pointLight
+        position={[
+          0,
+          10,
+          22,
+        ]}
+        color="#dff8ff"
+        intensity={
+          30
+        }
+        distance={
+          28
+        }
+        decay={
+          2
+        }
+      />
+
+      <pointLight
+        position={[
+          -12,
+          9,
+          2,
+        ]}
+        color="#59eaff"
+        intensity={
+          18
+        }
+        distance={
+          20
+        }
+        decay={
+          2
+        }
+      />
+
+      <pointLight
+        position={[
+          12,
+          9,
+          -6,
+        ]}
+        color="#ff62ad"
+        intensity={
+          18
+        }
+        distance={
+          20
+        }
+        decay={
+          2
+        }
+      />
+
+      {stationLayout.map(
+        (
+          station
+        ) => (
+          <GameStation
+            key={
+              station
+                .game
+                .id
+            }
+            game={
+              station
+                .game
+            }
+            position={
+              station
+                .position
+            }
+            rotation={
+              station
+                .rotation
+            }
+            scale={
+              station
+                .scale
+            }
+          />
+        )
+      )}
+
+      <FeaturedVideoWall />
+
+      <RigidBody
+        type="fixed"
+        colliders={
+          false
+        }
+      >
+        {stationLayout.map(
+          (
+            station
+          ) => (
+            <CuboidCollider
+              key={
+                station
+                  .game
+                  .id
+              }
+              args={[
+                1.9 *
+                  station
+                    .scale,
+
+                0.42,
+
+                0.8 *
+                  station
+                    .scale,
+              ]}
+              position={[
+                station
+                  .position[0],
+
+                0.8,
+
+                station
+                  .position[2],
+              ]}
+              rotation={[
+                0,
+
+                station
+                  .rotation,
+
+                0,
+              ]}
+            />
+          )
+        )}
+      </RigidBody>
+    </group>
+  );
+}
+          
