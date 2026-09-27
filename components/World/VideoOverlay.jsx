@@ -1,53 +1,24 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-
-function getYouTubeId(url) {
-  if (!url) return null;
-
-  try {
-    const parsed = new URL(url);
-
-    if (parsed.hostname.includes("youtu.be")) {
-      return parsed.pathname
-        .replace("/", "")
-        .split("/")[0];
-    }
-
-    if (parsed.pathname.startsWith("/shorts/")) {
-      return parsed.pathname
-        .split("/shorts/")[1]
-        ?.split("/")[0];
-    }
-
-    if (parsed.pathname.startsWith("/embed/")) {
-      return parsed.pathname
-        .split("/embed/")[1]
-        ?.split("/")[0];
-    }
-
-    return parsed.searchParams.get("v");
-  } catch {
-    return null;
-  }
-}
+import { getYouTubeEmbedUrl } from "./featuredVideoConfig";
 
 export default function VideoOverlay({
   video,
   onClose,
 }) {
-  const youtubeId =
-    useMemo(
-      () =>
-        getYouTubeId(
-          video?.youtubeUrl ||
-          video?.videoUrl
-        ),
-      [
-        video?.youtubeUrl,
-        video?.videoUrl,
-      ]
-    );
+  const sourceUrl =
+    video?.youtubeUrl ||
+    video?.videoUrl ||
+    null;
+
+  const embedUrl = useMemo(
+    () =>
+      getYouTubeEmbedUrl(sourceUrl, {
+        autoplay: true,
+      }),
+    [sourceUrl]
+  );
 
   useEffect(() => {
     const previousOverflow =
@@ -60,9 +31,9 @@ export default function VideoOverlay({
       event
     ) => {
       if (
-        event.code ===
-        "Escape"
+        event.code === "Escape"
       ) {
+        event.preventDefault();
         onClose?.();
       }
     };
@@ -83,22 +54,26 @@ export default function VideoOverlay({
     };
   }, [onClose]);
 
-  if (
-    !video ||
-    !youtubeId
-  ) {
+  if (!video || !embedUrl) {
     return null;
   }
 
-  const embedUrl =
-    `https://www.youtube.com/embed/${youtubeId}` +
-    `?autoplay=1` +
-    `&playsinline=1` +
-    `&rel=0` +
-    `&modestbranding=1`;
-
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={
+        video.title ||
+        "Video Freaky World"
+      }
+      onPointerDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose?.();
+        }
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -120,69 +95,68 @@ export default function VideoOverlay({
         WebkitBackdropFilter:
           "blur(8px)",
       }}
-
-      onPointerDown={(
-        event
-      ) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
-          onClose?.();
-        }
-      }}
     >
       <div
+        onPointerDown={(event) =>
+          event.stopPropagation()
+        }
         style={{
-          position:
-            "relative",
+          position: "relative",
 
           width:
             "min(1200px, 96vw)",
 
-          aspectRatio:
-            "16 / 9",
+          maxHeight:
+            "calc(100dvh - 32px)",
 
-          background:
-            "#000",
+          aspectRatio: "16 / 9",
+
+          background: "#000",
 
           borderRadius:
             "18px",
 
-          overflow:
-            "hidden",
+          overflow: "hidden",
 
           boxShadow:
             "0 30px 100px rgba(0,0,0,0.65)",
         }}
       >
-        {/* BOTÓN CERRAR */}
+        <iframe
+          key={embedUrl}
+          src={embedUrl}
+          title={
+            video.title ||
+            "Video Freaky World"
+          }
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{
+            display: "block",
+
+            width: "100%",
+            height: "100%",
+
+            border: 0,
+
+            background: "#000",
+          }}
+        />
 
         <button
           type="button"
-
           aria-label="Cerrar video"
-
           onClick={onClose}
-
           style={{
-            position:
-              "absolute",
+            position: "absolute",
 
-            top:
-              "12px",
+            top: "12px",
+            right: "12px",
 
-            right:
-              "12px",
+            zIndex: 10,
 
-            zIndex:
-              10,
-
-            width:
-              "44px",
-
-            height:
-              "44px",
+            width: "44px",
+            height: "44px",
 
             border:
               "1px solid rgba(255,255,255,0.25)",
@@ -193,17 +167,12 @@ export default function VideoOverlay({
             background:
               "rgba(0,0,0,0.72)",
 
-            color:
-              "#fff",
+            color: "#fff",
 
-            fontSize:
-              "25px",
+            fontSize: "25px",
+            lineHeight: 1,
 
-            lineHeight:
-              1,
-
-            cursor:
-              "pointer",
+            cursor: "pointer",
 
             WebkitTapHighlightColor:
               "transparent",
@@ -211,45 +180,6 @@ export default function VideoOverlay({
         >
           ×
         </button>
-
-        {/* YOUTUBE */}
-
-        <iframe
-          key={youtubeId}
-
-          src={embedUrl}
-
-          title={
-            video.title ||
-            "Video Freaky World"
-          }
-
-          allow="
-            accelerometer;
-            autoplay;
-            clipboard-write;
-            encrypted-media;
-            gyroscope;
-            picture-in-picture;
-            web-share
-          "
-
-          allowFullScreen
-
-          style={{
-            display:
-              "block",
-
-            width:
-              "100%",
-
-            height:
-              "100%",
-
-            border:
-              0,
-          }}
-        />
       </div>
     </div>
   );
