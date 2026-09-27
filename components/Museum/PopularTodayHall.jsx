@@ -4,7 +4,6 @@ import FeaturedVideoWall from "./FeaturedVideoWall";
 
 import {
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +11,11 @@ import {
 
 import { RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
+
+import {
+  RigidBody,
+  CuboidCollider,
+} from "@react-three/rapier";
 
 import * as THREE from "three";
 
@@ -27,39 +31,35 @@ const ROOM_HALF_WIDTH = 29.25;
 const ROOM_BACK_Z = -34.25;
 
 /* =========================================================
-   JUEGOS
+   JUEGOS TEMPORALES
+
+   Después reemplazaremos esto por IGDB.
 ========================================================= */
 
 const GAMES = [
   {
-    id: "mock-neon-district",
+    id: "mock-last-signal",
     mock: true,
     rank: 1,
-    title: "NEON DISTRICT",
-    subtitle: "Nightfall Studios",
-    year: "2027",
-    genre: "Acción · Mundo abierto",
+    title: "THE LAST SIGNAL",
+    subtitle: "Silent Peak",
+    year: "2026",
     platform: "PS5 · Xbox · PC",
     score: "9.4",
-    accent: "#ff4f95",
-    accent2: "#7d44ff",
-    description:
-      "Una enorme ciudad nocturna donde cada distrito cambia según tus decisiones.",
+    accent: "#d66cff",
+    accent2: "#55206f",
   },
   {
-    id: "mock-echoes",
+    id: "mock-void-runner",
     mock: true,
     rank: 2,
-    title: "ECHOES",
-    subtitle: "North Shore Games",
+    title: "VOID RUNNER",
+    subtitle: "Pulse Works",
     year: "2026",
-    genre: "Aventura",
     platform: "PS5 · PC",
-    score: "9.1",
-    accent: "#5ab8ff",
-    accent2: "#275c9b",
-    description:
-      "Exploración narrativa en un archipiélago abandonado.",
+    score: "9.2",
+    accent: "#3d8cff",
+    accent2: "#173f83",
   },
   {
     id: "mock-red-horizon",
@@ -68,142 +68,115 @@ const GAMES = [
     title: "RED HORIZON",
     subtitle: "Atlas Interactive",
     year: "2026",
-    genre: "RPG · Ciencia ficción",
-    platform: "Xbox · PC",
-    score: "8.9",
-    accent: "#ff7b34",
-    accent2: "#b83a2d",
-    description:
-      "Una colonia marciana dividida entre corporaciones y exploradores.",
-  },
-  {
-    id: "mock-void-runner",
-    mock: true,
-    rank: 4,
-    title: "VOID RUNNER",
-    subtitle: "Pulse Works",
-    year: "2026",
-    genre: "Acción",
     platform: "PS5 · Xbox · PC",
-    score: "8.8",
-    accent: "#3ee8c2",
-    accent2: "#16647c",
-    description:
-      "Combate rápido y estaciones orbitales.",
-  },
-  {
-    id: "mock-last-signal",
-    mock: true,
-    rank: 5,
-    title: "THE LAST SIGNAL",
-    subtitle: "Silent Peak",
-    year: "2026",
-    genre: "Terror",
-    platform: "PS5 · PC",
-    score: "8.7",
-    accent: "#ca8dff",
-    accent2: "#5a3b88",
-    description:
-      "Una señal conduce a una estación científica abandonada.",
-  },
-  {
-    id: "mock-iron-kingdom",
-    mock: true,
-    rank: 6,
-    title: "IRON KINGDOM",
-    subtitle: "Oak Forge",
-    year: "2025",
-    genre: "RPG",
-    platform: "Switch 2 · PC",
-    score: "8.6",
-    accent: "#e6bd59",
-    accent2: "#705f32",
-    description:
-      "Reinos mecánicos y fortalezas móviles.",
+    score: "9.0",
+    accent: "#ff5a3d",
+    accent2: "#7a241a",
   },
   {
     id: "mock-deep-blue",
     mock: true,
-    rank: 7,
+    rank: 4,
     title: "DEEP BLUE",
     subtitle: "Drift Studios",
     year: "2026",
-    genre: "Exploración",
     platform: "PS5 · Xbox",
-    score: "8.5",
-    accent: "#45b8ff",
-    accent2: "#15456e",
-    description:
-      "Exploración submarina en un océano alienígena.",
-  },
-  {
-    id: "mock-black-sun",
-    mock: true,
-    rank: 8,
-    title: "BLACK SUN",
-    subtitle: "Orbital Games",
-    year: "2026",
-    genre: "Estrategia",
-    platform: "PC",
-    score: "8.4",
-    accent: "#ffca54",
-    accent2: "#903b42",
-    description:
-      "Civilizaciones alrededor de una estrella que se apaga.",
-  },
-  {
-    id: "mock-dust-road",
-    mock: true,
-    rank: 9,
-    title: "DUST ROAD",
-    subtitle: "Nomad Interactive",
-    year: "2025",
-    genre: "Supervivencia",
-    platform: "Xbox · PC",
-    score: "8.2",
-    accent: "#d69255",
-    accent2: "#714433",
-    description:
-      "Vehículos modificables y carreteras infinitas.",
+    score: "8.9",
+    accent: "#35d8ff",
+    accent2: "#14516c",
   },
   {
     id: "mock-lumina",
     mock: true,
-    rank: 10,
+    rank: 5,
     title: "LUMINA",
     subtitle: "Small Moon",
     year: "2026",
-    genre: "Plataformas",
     platform: "Switch 2",
-    score: "8.1",
-    accent: "#75e3ab",
-    accent2: "#3284a0",
-    description:
-      "Mundos conectados mediante portales de luz.",
+    score: "8.8",
+    accent: "#ef64ff",
+    accent2: "#673071",
+  },
+  {
+    id: "mock-echoes",
+    mock: true,
+    rank: 6,
+    title: "ECHOES",
+    subtitle: "North Shore Games",
+    year: "2026",
+    platform: "PS5 · PC",
+    score: "8.7",
+    accent: "#65e59d",
+    accent2: "#225d3d",
+  },
+  {
+    id: "mock-black-sun",
+    mock: true,
+    rank: 7,
+    title: "BLACK SUN",
+    subtitle: "Orbital Games",
+    year: "2026",
+    platform: "PC",
+    score: "8.6",
+    accent: "#ff8848",
+    accent2: "#73351d",
+  },
+  {
+    id: "mock-dust-road",
+    mock: true,
+    rank: 8,
+    title: "DUST ROAD",
+    subtitle: "Nomad Interactive",
+    year: "2025",
+    platform: "Xbox · PC",
+    score: "8.5",
+    accent: "#ffad58",
+    accent2: "#74441d",
+  },
+  {
+    id: "mock-neon-district",
+    mock: true,
+    rank: 9,
+    title: "NEON DISTRICT",
+    subtitle: "Nightfall Studios",
+    year: "2027",
+    platform: "PS5 · Xbox · PC",
+    score: "8.4",
+    accent: "#4fb6ff",
+    accent2: "#244b77",
+  },
+  {
+    id: "mock-iron-kingdom",
+    mock: true,
+    rank: 10,
+    title: "IRON KINGDOM",
+    subtitle: "Oak Forge",
+    year: "2025",
+    platform: "Switch 2 · PC",
+    score: "8.3",
+    accent: "#ffc95b",
+    accent2: "#73571d",
   },
 ];
 
 /* =========================================================
-   POSTER DE JUEGO
+   TEXTURA PORTADA TEMPORAL
 ========================================================= */
 
 function createPosterTexture(game) {
-  const canvas =
-    document.createElement("canvas");
+  const canvas = document.createElement("canvas");
 
   canvas.width = 512;
   canvas.height = 768;
 
-  const ctx =
-    canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
 
-  const gradient =
-    ctx.createLinearGradient(
-      0,
-      0,
-      512,
-      768
-    );
+  const gradient = ctx.createLinearGradient(
+    0,
+    0,
+    512,
+    768
+  );
 
   gradient.addColorStop(
     0,
@@ -211,13 +184,13 @@ function createPosterTexture(game) {
   );
 
   gradient.addColorStop(
-    0.55,
+    0.48,
     game.accent2
   );
 
   gradient.addColorStop(
     1,
-    "#05070a"
+    "#050609"
   );
 
   ctx.fillStyle = gradient;
@@ -229,29 +202,33 @@ function createPosterTexture(game) {
     768
   );
 
-  ctx.globalAlpha = 0.15;
-  ctx.fillStyle = "#fff";
+  /* -----------------------------------------
+     FORMAS DE FONDO
+  ----------------------------------------- */
+
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = "#ffffff";
 
   ctx.beginPath();
 
   ctx.arc(
-    390,
-    150,
-    150,
+    385,
+    155,
+    155,
     0,
     Math.PI * 2
   );
 
   ctx.fill();
 
-  ctx.globalAlpha = 0.1;
+  ctx.globalAlpha = 0.07;
 
   ctx.beginPath();
 
   ctx.arc(
-    100,
-    420,
-    200,
+    90,
+    400,
+    210,
     0,
     Math.PI * 2
   );
@@ -260,32 +237,43 @@ function createPosterTexture(game) {
 
   ctx.globalAlpha = 1;
 
+  /* -----------------------------------------
+     RANKING
+  ----------------------------------------- */
+
   ctx.fillStyle =
-    "rgba(0,0,0,.5)";
+    "rgba(0,0,0,0.48)";
 
   ctx.fillRect(
-    28,
-    28,
-    90,
-    54
+    24,
+    24,
+    105,
+    62
   );
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 28px Arial";
+
+  ctx.font =
+    "900 34px Arial";
 
   ctx.fillText(
     `#${game.rank}`,
-    47,
-    65
+    42,
+    67
   );
 
-  ctx.font = "900 44px Arial";
+  /* -----------------------------------------
+     TÍTULO
+  ----------------------------------------- */
+
+  ctx.font =
+    "900 45px Arial";
 
   const words =
     game.title.split(" ");
 
   let line = "";
-  let y = 590;
+  let y = 575;
 
   words.forEach((word) => {
     const next =
@@ -303,7 +291,7 @@ function createPosterTexture(game) {
       );
 
       line = `${word} `;
-      y += 50;
+      y += 52;
     } else {
       line = next;
     }
@@ -315,16 +303,57 @@ function createPosterTexture(game) {
     y
   );
 
-  ctx.font = "500 20px Arial";
+  /* -----------------------------------------
+     AÑO
+  ----------------------------------------- */
+
+  ctx.font =
+    "700 22px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,.75)";
+    "rgba(255,255,255,0.9)";
 
   ctx.fillText(
-    game.subtitle,
+    game.year,
     30,
-    720
+    680
   );
+
+  /* -----------------------------------------
+     PLATAFORMAS
+  ----------------------------------------- */
+
+  ctx.font =
+    "600 17px Arial";
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.72)";
+
+  ctx.fillText(
+    game.platform,
+    30,
+    716
+  );
+
+  /* -----------------------------------------
+     SCORE
+  ----------------------------------------- */
+
+  ctx.font =
+    "900 23px Arial";
+
+  ctx.fillStyle =
+    "#ffffff";
+
+  ctx.textAlign = "right";
+
+  ctx.fillText(
+    game.score,
+    475,
+    716
+  );
+
+  ctx.textAlign = "left";
 
   const texture =
     new THREE.CanvasTexture(
@@ -334,16 +363,27 @@ function createPosterTexture(game) {
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
+  texture.minFilter =
+    THREE.LinearFilter;
+
+  texture.magFilter =
+    THREE.LinearFilter;
+
   return texture;
 }
 
 /* =========================================================
-   TEXTO NEÓN
+   TEXTURA DE TEXTO
 ========================================================= */
 
-function createNeonTextTexture(
+function createTextTexture(
   text,
-  color
+  {
+    color = "#ffffff",
+    fontSize = 96,
+    weight = 900,
+    glow = null,
+  } = {}
 ) {
   const canvas =
     document.createElement("canvas");
@@ -354,22 +394,25 @@ function createNeonTextTexture(
   const ctx =
     canvas.getContext("2d");
 
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "900 108px Arial";
-
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 35;
-  ctx.fillStyle = color;
-
-  ctx.fillText(
-    text,
-    512,
-    128
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
   );
 
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.font =
+    `${weight} ${fontSize}px Arial`;
+
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 28;
+  }
+
+  ctx.fillStyle = color;
 
   ctx.fillText(
     text,
@@ -385,161 +428,42 @@ function createNeonTextTexture(
   texture.colorSpace =
     THREE.SRGBColorSpace;
 
+  texture.minFilter =
+    THREE.LinearFilter;
+
   return texture;
 }
 
 /* =========================================================
-   INSTANCED BOXES
+   TEXTO 3D PLANO
 ========================================================= */
 
-function InstancedBoxes({
-  items,
-  color,
-  roughness = 0.8,
-  metalness = 0,
-  emissive = "#000000",
-  emissiveIntensity = 0,
-}) {
-  const ref = useRef(null);
-
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
-
-  useLayoutEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-
-    items.forEach(
-      (item, index) => {
-        dummy.position.set(
-          ...item.position
-        );
-
-        dummy.rotation.set(
-          ...(
-            item.rotation ?? [
-              0,
-              0,
-              0,
-            ]
-          )
-        );
-
-        dummy.scale.set(
-          ...item.scale
-        );
-
-        dummy.updateMatrix();
-
-        ref.current.setMatrixAt(
-          index,
-          dummy.matrix
-        );
-      }
-    );
-
-    ref.current.instanceMatrix.needsUpdate =
-      true;
-  }, [
-    items,
-    dummy,
-  ]);
-
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[
-        null,
-        null,
-        items.length,
-      ]}
-    >
-      <boxGeometry />
-
-      <meshStandardMaterial
-        color={color}
-        roughness={roughness}
-        metalness={metalness}
-        emissive={emissive}
-        emissiveIntensity={
-          emissiveIntensity
-        }
-      />
-    </instancedMesh>
-  );
-}
-
-/* =========================================================
-   LÍNEA LUMINOSA
-========================================================= */
-
-function NeonLine({
-  position,
-  rotation = [
-    0,
-    0,
-    0,
-  ],
-  size = [
-    6,
-    0.08,
-    0.08,
-  ],
-  color = "#58f1ff",
-  intensity = 1.25,
-}) {
-  return (
-    <mesh
-      position={position}
-      rotation={rotation}
-    >
-      <boxGeometry
-        args={size}
-      />
-
-      <meshStandardMaterial
-        color={color}
-        emissive={color}
-        emissiveIntensity={
-          intensity
-        }
-        toneMapped={false}
-      />
-    </mesh>
-  );
-}
-
-/* =========================================================
-   PALABRA / CARTEL
-========================================================= */
-
-function NeonWord({
+function FlatText({
   text,
-  color,
   position,
-  rotation = [
-    0,
-    0,
-    0,
-  ],
+  rotation = [0, 0, 0],
   width = 8,
   height = 2,
+  color = "#ffffff",
+  glow = null,
+  fontSize = 96,
 }) {
   const texture =
     useMemo(
       () =>
-        createNeonTextTexture(
+        createTextTexture(
           text,
-          color
+          {
+            color,
+            glow,
+            fontSize,
+          }
         ),
       [
         text,
         color,
+        glow,
+        fontSize,
       ]
     );
 
@@ -572,162 +496,172 @@ function NeonWord({
 }
 
 /* =========================================================
-   MÓDULO ARQUITECTÓNICO PARA CADA FICHA
+   LUZ EMISIVA GEOMÉTRICA
+
+   No crea PointLight.
+   Es mucho más barata para móvil.
 ========================================================= */
 
-function StationArchitecture({
+function GlowStrip({
   position,
-  rotation,
-  accent,
+  rotation = [0, 0, 0],
+  size = [1, 0.05, 0.05],
+  color = "#ffffff",
+  intensity = 1,
 }) {
   return (
-    <group
+    <mesh
       position={position}
-      rotation={[
+      rotation={rotation}
+    >
+      <boxGeometry
+        args={size}
+      />
+
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={
+          intensity
+        }
+        toneMapped={false}
+        roughness={0.3}
+      />
+    </mesh>
+  );
+}
+
+/* =========================================================
+   PANEL DE PARED
+========================================================= */
+
+function WallPanel({
+  side,
+  z,
+  accent,
+}) {
+  const x =
+    side === "left"
+      ? -28.55
+      : 28.55;
+
+  return (
+    <group
+      position={[
+        x,
         0,
-        rotation,
-        0,
+        z,
       ]}
     >
-      {/* panel profundo de pared */}
-      <RoundedBox
+      {/* panel principal */}
+
+      <mesh
         position={[
           0,
-          5.1,
-          -0.7,
+          6,
+          0,
         ]}
-        args={[
-          6.8,
-          10.8,
-          0.65,
-        ]}
-        radius={0.18}
-        smoothness={2}
       >
-        <meshStandardMaterial
-          color="#11161c"
-          roughness={0.72}
-          metalness={0.12}
+        <boxGeometry
+          args={[
+            0.5,
+            12,
+            8.7,
+          ]}
         />
-      </RoundedBox>
+
+        <meshStandardMaterial
+          color="#0b0e12"
+          roughness={0.55}
+          metalness={0.32}
+        />
+      </mesh>
 
       {/* panel interior */}
-      <RoundedBox
-        position={[
-          0,
-          5.1,
-          -0.34,
-        ]}
-        args={[
-          5.9,
-          9.8,
-          0.12,
-        ]}
-        radius={0.12}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#080b0f"
-          roughness={0.55}
-          metalness={0.22}
-        />
-      </RoundedBox>
 
-      {/* luz vertical exterior izquierda */}
-      <NeonLine
-        position={[
-          -3.12,
-          5.15,
-          0.03,
-        ]}
-        size={[
-          0.055,
-          8.7,
-          0.06,
-        ]}
-        color={accent}
-        intensity={0.75}
-      />
-
-      {/* luz vertical exterior derecha */}
-      <NeonLine
-        position={[
-          3.12,
-          5.15,
-          0.03,
-        ]}
-        size={[
-          0.055,
-          8.7,
-          0.06,
-        ]}
-        color={accent}
-        intensity={0.75}
-      />
-
-      {/* remate superior */}
       <mesh
         position={[
+          side === "left"
+            ? 0.28
+            : -0.28,
+          6,
           0,
-          10.18,
-          -0.28,
         ]}
       >
         <boxGeometry
           args={[
-            6.3,
-            0.32,
-            0.5,
+            0.14,
+            10.5,
+            7.65,
           ]}
         />
 
         <meshStandardMaterial
-          color="#222a32"
-          roughness={0.42}
-          metalness={0.3}
+          color="#151a20"
+          roughness={0.45}
+          metalness={0.28}
         />
       </mesh>
 
-      {/* zócalo inferior */}
-      <mesh
+      {/* luz superior */}
+
+      <GlowStrip
         position={[
+          side === "left"
+            ? 0.39
+            : -0.39,
+          11.25,
           0,
-          0.34,
-          -0.15,
         ]}
-      >
-        <boxGeometry
-          args={[
-            6.2,
-            0.55,
-            1.05,
-          ]}
-        />
+        size={[
+          0.05,
+          0.08,
+          6.9,
+        ]}
+        color={accent}
+        intensity={0.9}
+      />
 
-        <meshStandardMaterial
-          color="#171d23"
-          roughness={0.58}
-          metalness={0.22}
-        />
-      </mesh>
+      {/* luz inferior */}
+
+      <GlowStrip
+        position={[
+          side === "left"
+            ? 0.39
+            : -0.39,
+          0.55,
+          0,
+        ]}
+        size={[
+          0.05,
+          0.06,
+          6.9,
+        ]}
+        color={accent}
+        intensity={0.55}
+      />
     </group>
   );
 }
 
 /* =========================================================
-   ESTACIÓN DE JUEGO
+   FICHA / EXPOSITOR
 ========================================================= */
 
 function GameStation({
   game,
   position,
   rotation,
-  scale = 1,
 }) {
   const ref = useRef(null);
 
   const nearRef =
     useRef(false);
+
+  const [
+    near,
+    setNear,
+  ] = useState(false);
 
   const worldPosition =
     useMemo(
@@ -735,11 +669,6 @@ function GameStation({
         new THREE.Vector3(),
       []
     );
-
-  const [
-    near,
-    setNear,
-  ] = useState(false);
 
   const poster =
     useMemo(
@@ -769,8 +698,7 @@ function GameStation({
     );
 
     const player =
-      playerRuntime.body
-        .translation();
+      playerRuntime.body.translation();
 
     const dx =
       player.x -
@@ -787,8 +715,7 @@ function GameStation({
       );
 
     const isNear =
-      distance <
-      4.8 * scale;
+      distance < 5.4;
 
     if (
       isNear ===
@@ -829,98 +756,80 @@ function GameStation({
         rotation,
         0,
       ]}
-      scale={[
-        scale,
-        scale,
-        scale,
-      ]}
     >
-      {/* base */}
-      <RoundedBox
-        position={[
-          0,
-          0.25,
-          0,
-        ]}
-        args={[
-          3.9,
-          0.42,
-          1.25,
-        ]}
-        radius={0.13}
-        smoothness={3}
-      >
-        <meshStandardMaterial
-          color="#11161b"
-          roughness={0.5}
-          metalness={0.3}
-        />
-      </RoundedBox>
+      {/* -----------------------------------------
+          MARCO EXTERIOR
+      ----------------------------------------- */}
 
-      {/* soporte */}
       <RoundedBox
         position={[
           0,
-          1.08,
-          0,
+          5.7,
+          -0.18,
         ]}
         args={[
-          0.9,
-          1.35,
-          0.3,
-        ]}
-        radius={0.1}
-        smoothness={2}
-      >
-        <meshStandardMaterial
-          color="#303942"
-          roughness={0.42}
-          metalness={0.3}
-        />
-      </RoundedBox>
-
-      {/* marco exterior */}
-      <RoundedBox
-        position={[
-          0,
-          4.55,
-          0,
-        ]}
-        args={[
-          4.15,
-          6.35,
-          0.28,
+          5.6,
+          9.9,
+          0.48,
         ]}
         radius={0.18}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#0c1015"
+          color="#090b0f"
+          roughness={0.34}
+          metalness={0.48}
+        />
+      </RoundedBox>
+
+      {/* -----------------------------------------
+          MARCO INTERIOR
+      ----------------------------------------- */}
+
+      <RoundedBox
+        position={[
+          0,
+          5.7,
+          0.09,
+        ]}
+        args={[
+          5.05,
+          9.35,
+          0.18,
+        ]}
+        radius={0.12}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#161b21"
           emissive={
             game.accent
           }
           emissiveIntensity={
             near
-              ? 0.34
+              ? 0.28
               : 0.055
           }
           roughness={0.38}
-          metalness={0.28}
+          metalness={0.35}
         />
       </RoundedBox>
 
-      {/* pantalla / portada */}
+      {/* -----------------------------------------
+          PORTADA
+      ----------------------------------------- */}
+
       <mesh
         position={[
           0,
-          4.55,
-          0.155,
+          5.72,
+          0.195,
         ]}
       >
         <planeGeometry
           args={[
-            3.72,
-            5.82,
+            4.58,
+            8.72,
           ]}
         />
 
@@ -930,185 +839,659 @@ function GameStation({
         />
       </mesh>
 
-      {/* pequeña luz inferior */}
-      <NeonLine
+      {/* -----------------------------------------
+          LUCES LATERALES
+      ----------------------------------------- */}
+
+      <GlowStrip
         position={[
-          0,
-          1.82,
-          0.22,
+          -2.72,
+          5.7,
+          0.16,
         ]}
         size={[
-          2.6,
-          0.045,
-          0.045,
+          0.075,
+          8.9,
+          0.075,
         ]}
         color={
           game.accent
         }
         intensity={
           near
-            ? 1.8
-            : 0.75
+            ? 2
+            : 0.9
         }
       />
+
+      <GlowStrip
+        position={[
+          2.72,
+          5.7,
+          0.16,
+        ]}
+        size={[
+          0.075,
+          8.9,
+          0.075,
+        ]}
+        color={
+          game.accent
+        }
+        intensity={
+          near
+            ? 2
+            : 0.9
+        }
+      />
+
+      {/* -----------------------------------------
+          BASE
+      ----------------------------------------- */}
+
+      <RoundedBox
+        position={[
+          0,
+          0.38,
+          0.15,
+        ]}
+        args={[
+          5.9,
+          0.65,
+          1.25,
+        ]}
+        radius={0.16}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#11151a"
+          roughness={0.38}
+          metalness={0.42}
+        />
+      </RoundedBox>
+
+      {/* -----------------------------------------
+          TERMINAL INFORMATIVO
+      ----------------------------------------- */}
+
+      <group
+        position={[
+          0,
+          0,
+          2.55,
+        ]}
+      >
+        <mesh
+          position={[
+            0,
+            1.05,
+            0,
+          ]}
+          rotation={[
+            -0.35,
+            0,
+            0,
+          ]}
+        >
+          <boxGeometry
+            args={[
+              2.15,
+              1.05,
+              0.18,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#161c23"
+            roughness={0.28}
+            metalness={0.5}
+            emissive={
+              game.accent
+            }
+            emissiveIntensity={
+              0.06
+            }
+          />
+        </mesh>
+
+        <mesh
+          position={[
+            0,
+            0.48,
+            0.15,
+          ]}
+        >
+          <boxGeometry
+            args={[
+              0.3,
+              0.95,
+              0.3,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#171b20"
+            metalness={0.45}
+            roughness={0.35}
+          />
+        </mesh>
+
+        <mesh
+          position={[
+            0,
+            0.12,
+            0.15,
+          ]}
+        >
+          <boxGeometry
+            args={[
+              1.75,
+              0.2,
+              1.15,
+            ]}
+          />
+
+          <meshStandardMaterial
+            color="#101419"
+            metalness={0.4}
+            roughness={0.4}
+          />
+        </mesh>
+      </group>
+
+      {/* -----------------------------------------
+          COLISIÓN REAL
+      ----------------------------------------- */}
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <CuboidCollider
+          args={[
+            2.95,
+            5.25,
+            0.65,
+          ]}
+          position={[
+            0,
+            5.25,
+            0,
+          ]}
+        />
+
+        <CuboidCollider
+          args={[
+            1.25,
+            0.95,
+            0.8,
+          ]}
+          position={[
+            0,
+            0.95,
+            2.55,
+          ]}
+        />
+      </RigidBody>
     </group>
   );
 }
 
 /* =========================================================
-   ESCENARIO DEL VIDEO
+   BANCO
 ========================================================= */
 
-function VideoStage() {
+function Bench({
+  position,
+  rotation = 0,
+}) {
   return (
-    <group>
-      {/* fondo arquitectónico */}
+    <group
+      position={position}
+      rotation={[
+        0,
+        rotation,
+        0,
+      ]}
+    >
       <RoundedBox
         position={[
           0,
-          6.25,
-          ROOM_BACK_Z +
-            0.05,
+          0.48,
+          0,
         ]}
         args={[
-          31,
-          13,
+          5.5,
           0.75,
+          1.65,
         ]}
         radius={0.28}
         smoothness={3}
       >
         <meshStandardMaterial
-          color="#0b0f14"
-          roughness={0.6}
-          metalness={0.18}
+          color="#171a1f"
+          roughness={0.46}
+          metalness={0.22}
         />
       </RoundedBox>
 
-      {/* marco exterior */}
-      <mesh
+      <GlowStrip
         position={[
           0,
-          6.2,
-          ROOM_BACK_Z +
-            0.5,
+          0.14,
+          0.7,
         ]}
+        size={[
+          4.7,
+          0.05,
+          0.05,
+        ]}
+        color="#f3c47b"
+        intensity={0.7}
+      />
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
       >
-        <boxGeometry
+        <CuboidCollider
           args={[
-            24.7,
-            9.8,
-            0.32,
+            2.75,
+            0.45,
+            0.85,
+          ]}
+          position={[
+            0,
+            0.45,
+            0,
           ]}
         />
+      </RigidBody>
+    </group>
+  );
+}
 
+/* =========================================================
+   JARDINERA
+========================================================= */
+
+function Planter({
+  position,
+}) {
+  return (
+    <group
+      position={position}
+    >
+      <RoundedBox
+        position={[
+          0,
+          0.38,
+          0,
+        ]}
+        args={[
+          2.5,
+          0.7,
+          1.4,
+        ]}
+        radius={0.18}
+        smoothness={2}
+      >
         <meshStandardMaterial
-          color="#202832"
-          roughness={0.38}
-          metalness={0.35}
+          color="#15191d"
+          roughness={0.55}
+          metalness={0.25}
         />
-      </mesh>
+      </RoundedBox>
 
-      {/* hueco oscuro detrás del reproductor */}
+      {/* vegetación simple y barata */}
+
+      {[
+        [-0.7, 0.95, 0],
+        [-0.3, 1.15, 0.1],
+        [0.15, 1.0, -0.05],
+        [0.55, 1.2, 0.08],
+        [0.85, 0.9, -0.08],
+      ].map(
+        (
+          [
+            x,
+            y,
+            z,
+          ],
+          index
+        ) => (
+          <mesh
+            key={index}
+            position={[
+              x,
+              y,
+              z,
+            ]}
+            rotation={[
+              0,
+              0,
+              index % 2
+                ? 0.25
+                : -0.25,
+            ]}
+          >
+            <coneGeometry
+              args={[
+                0.22,
+                1.4,
+                5,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color="#31543c"
+              roughness={0.85}
+            />
+          </mesh>
+        )
+      )}
+    </group>
+  );
+}
+
+/* =========================================================
+   TOP 10 CENTRAL
+========================================================= */
+
+function TopTenIsland() {
+  return (
+    <group
+      position={[
+        0,
+        0,
+        -14,
+      ]}
+    >
+      <RoundedBox
+        position={[
+          0,
+          0.75,
+          0,
+        ]}
+        args={[
+          8.8,
+          1.35,
+          2.5,
+        ]}
+        radius={0.25}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#11151a"
+          roughness={0.32}
+          metalness={0.48}
+        />
+      </RoundedBox>
+
+      <GlowStrip
+        position={[
+          0,
+          0.15,
+          1.05,
+        ]}
+        size={[
+          7.8,
+          0.06,
+          0.06,
+        ]}
+        color="#f5c47c"
+        intensity={1}
+      />
+
+      <GlowStrip
+        position={[
+          0,
+          0.15,
+          -1.05,
+        ]}
+        size={[
+          7.8,
+          0.06,
+          0.06,
+        ]}
+        color="#f5c47c"
+        intensity={1}
+      />
+
+      <FlatText
+        text="TOP 10"
+        position={[
+          0,
+          1.46,
+          1.27,
+        ]}
+        width={6}
+        height={1.4}
+        color="#fff2d8"
+        glow="#f5b85c"
+        fontSize={100}
+      />
+
+      <FlatText
+        text="HOY"
+        position={[
+          0,
+          0.82,
+          1.29,
+        ]}
+        width={2.2}
+        height={0.55}
+        color="#ffffff"
+        fontSize={72}
+      />
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <CuboidCollider
+          args={[
+            4.4,
+            0.75,
+            1.25,
+          ]}
+          position={[
+            0,
+            0.75,
+            0,
+          ]}
+        />
+      </RigidBody>
+    </group>
+  );
+}
+
+/* =========================================================
+   ESCENARIO DE VIDEO
+========================================================= */
+
+function VideoStage() {
+  return (
+    <group>
+      {/* pared profunda */}
+
+      <RoundedBox
+        position={[
+          0,
+          6.3,
+          ROOM_BACK_Z +
+            0.05,
+        ]}
+        args={[
+          31,
+          12.5,
+          0.8,
+        ]}
+        radius={0.25}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#080a0d"
+          roughness={0.45}
+          metalness={0.3}
+        />
+      </RoundedBox>
+
+      {/* marco */}
+
+      <RoundedBox
+        position={[
+          0,
+          6.15,
+          ROOM_BACK_Z +
+            0.55,
+        ]}
+        args={[
+          24.8,
+          9.4,
+          0.42,
+        ]}
+        radius={0.18}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color="#20262d"
+          roughness={0.32}
+          metalness={0.5}
+        />
+      </RoundedBox>
+
+      {/* fondo negro */}
+
       <mesh
         position={[
           0,
-          6.2,
+          6.15,
           ROOM_BACK_Z +
-            0.69,
+            0.79,
         ]}
       >
         <planeGeometry
           args={[
             23.8,
-            8.9,
+            8.45,
           ]}
         />
 
         <meshStandardMaterial
-          color="#020304"
-          roughness={0.8}
+          color="#020203"
+          roughness={0.75}
         />
       </mesh>
 
-      {/* iluminación arquitectónica */}
-      <NeonLine
+      {/* iluminación cálida inferior */}
+
+      <GlowStrip
         position={[
           0,
-          11.15,
+          1.3,
           ROOM_BACK_Z +
-            0.72,
+            0.9,
         ]}
         size={[
-          22.8,
-          0.06,
-          0.06,
+          22.5,
+          0.08,
+          0.08,
         ]}
-        color="#58f1ff"
-        intensity={0.8}
+        color="#f1bb68"
+        intensity={0.85}
       />
 
-      <NeonLine
+      {/* iluminación fría superior */}
+
+      <GlowStrip
         position={[
-          -12.55,
-          6.2,
+          0,
+          11,
           ROOM_BACK_Z +
-            0.72,
+            0.9,
         ]}
         size={[
-          0.06,
-          9.7,
-          0.06,
+          22.5,
+          0.07,
+          0.07,
         ]}
-        color="#58f1ff"
-        intensity={0.55}
+        color="#8adfff"
+        intensity={0.65}
       />
 
-      <NeonLine
-        position={[
-          12.55,
-          6.2,
-          ROOM_BACK_Z +
-            0.72,
-        ]}
-        size={[
-          0.06,
-          9.7,
-          0.06,
-        ]}
-        color="#58f1ff"
-        intensity={0.55}
-      />
+      {/* plataforma */}
 
-      {/* plataforma baja */}
       <RoundedBox
         position={[
           0,
           0.28,
           ROOM_BACK_Z +
-            3.1,
+            3.4,
         ]}
         args={[
           27,
-          0.5,
+          0.48,
           5.8,
         ]}
         radius={0.18}
         smoothness={2}
       >
         <meshStandardMaterial
-          color="#12181e"
-          roughness={0.55}
-          metalness={0.22}
+          color="#11151a"
+          roughness={0.42}
+          metalness={0.35}
         />
       </RoundedBox>
+
+      {/* escalón */}
+
+      <RoundedBox
+        position={[
+          0,
+          0.11,
+          ROOM_BACK_Z +
+            6,
+        ]}
+        args={[
+          20,
+          0.2,
+          1.4,
+        ]}
+        radius={0.1}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color="#171b20"
+          roughness={0.42}
+          metalness={0.3}
+        />
+      </RoundedBox>
+
+      <GlowStrip
+        position={[
+          0,
+          0.23,
+          ROOM_BACK_Z +
+            6.65,
+        ]}
+        size={[
+          18.5,
+          0.04,
+          0.04,
+        ]}
+        color="#f5c477"
+        intensity={0.75}
+      />
+
+      {/* reproductor existente */}
 
       <FeaturedVideoWall
         position={[
           0,
           5.2,
           ROOM_BACK_Z +
-            0.9,
+            0.95,
         ]}
       />
     </group>
@@ -1123,357 +1506,145 @@ export default function PopularTodayHall() {
   const stations =
     useMemo(
       () => [
+        /* IZQUIERDA */
+
         {
           game: GAMES[0],
           position: [
-            -22.4,
+            -25.15,
             0,
-            -24,
+            -23.5,
           ],
           rotation:
             Math.PI / 2,
+          side: "left",
         },
+
         {
           game: GAMES[1],
           position: [
-            -22.4,
+            -25.15,
             0,
-            -14.5,
+            -14.3,
           ],
           rotation:
             Math.PI / 2,
+          side: "left",
         },
+
         {
           game: GAMES[2],
           position: [
-            -22.4,
+            -25.15,
             0,
-            -5,
+            -5.1,
           ],
           rotation:
             Math.PI / 2,
+          side: "left",
         },
+
         {
           game: GAMES[3],
           position: [
-            -22.4,
+            -25.15,
             0,
-            4.5,
+            4.1,
           ],
           rotation:
             Math.PI / 2,
+          side: "left",
         },
+
         {
           game: GAMES[4],
           position: [
-            -22.4,
+            -25.15,
             0,
-            14,
+            13.3,
           ],
           rotation:
             Math.PI / 2,
+          side: "left",
         },
+
+        /* DERECHA */
 
         {
           game: GAMES[5],
           position: [
-            22.4,
+            25.15,
             0,
-            14,
+            13.3,
           ],
           rotation:
             -Math.PI / 2,
+          side: "right",
         },
+
         {
           game: GAMES[6],
           position: [
-            22.4,
+            25.15,
             0,
-            4.5,
+            4.1,
           ],
           rotation:
             -Math.PI / 2,
+          side: "right",
         },
+
         {
           game: GAMES[7],
           position: [
-            22.4,
+            25.15,
             0,
-            -5,
+            -5.1,
           ],
           rotation:
             -Math.PI / 2,
+          side: "right",
         },
+
         {
           game: GAMES[8],
           position: [
-            22.4,
+            25.15,
             0,
-            -14.5,
+            -14.3,
           ],
           rotation:
             -Math.PI / 2,
+          side: "right",
         },
+
         {
           game: GAMES[9],
           position: [
-            22.4,
+            25.15,
             0,
-            -24,
+            -23.5,
           ],
           rotation:
             -Math.PI / 2,
+          side: "right",
         },
       ],
-      []
-    );
-
-  /* =======================================================
-     PANELES DE PARED
-  ======================================================= */
-
-  const wallPanels =
-    useMemo(
-      () => {
-        const items = [];
-
-        const zs = [
-          -24,
-          -14.5,
-          -5,
-          4.5,
-          14,
-        ];
-
-        zs.forEach(
-          (z) => {
-            items.push({
-              position: [
-                -28.35,
-                6,
-                z,
-              ],
-              scale: [
-                0.55,
-                6.1,
-                4.35,
-              ],
-            });
-
-            items.push({
-              position: [
-                28.35,
-                6,
-                z,
-              ],
-              scale: [
-                0.55,
-                6.1,
-                4.35,
-              ],
-            });
-          }
-        );
-
-        return items;
-      },
-      []
-    );
-
-  /* =======================================================
-     PILARES ENTRE MÓDULOS
-  ======================================================= */
-
-  const wallPillars =
-    useMemo(
-      () => {
-        const items = [];
-
-        const zs = [
-          -29,
-          -19.25,
-          -9.75,
-          -0.25,
-          9.25,
-          18.75,
-        ];
-
-        zs.forEach(
-          (z) => {
-            items.push({
-              position: [
-                -27.55,
-                6.1,
-                z,
-              ],
-              scale: [
-                0.38,
-                6.15,
-                0.34,
-              ],
-            });
-
-            items.push({
-              position: [
-                27.55,
-                6.1,
-                z,
-              ],
-              scale: [
-                0.38,
-                6.15,
-                0.34,
-              ],
-            });
-          }
-        );
-
-        return items;
-      },
-      []
-    );
-
-  /* =======================================================
-     TECHO TÉCNICO
-  ======================================================= */
-
-  const ceilingFrames =
-    useMemo(
-      () => {
-        const items = [];
-
-        [
-          -25,
-          -16,
-          -7,
-          2,
-          11,
-          20,
-        ].forEach(
-          (z) => {
-            items.push({
-              position: [
-                0,
-                12.45,
-                z,
-              ],
-              scale: [
-                23.8,
-                0.22,
-                0.32,
-              ],
-            });
-          }
-        );
-
-        return items;
-      },
-      []
-    );
-
-  const ceilingLongitudinal =
-    useMemo(
-      () => [
-        {
-          position: [
-            -17,
-            12.3,
-            -3,
-          ],
-          scale: [
-            0.32,
-            0.28,
-            27,
-          ],
-        },
-        {
-          position: [
-            -8.5,
-            12.3,
-            -3,
-          ],
-          scale: [
-            0.24,
-            0.24,
-            27,
-          ],
-        },
-        {
-          position: [
-            8.5,
-            12.3,
-            -3,
-          ],
-          scale: [
-            0.24,
-            0.24,
-            27,
-          ],
-        },
-        {
-          position: [
-            17,
-            12.3,
-            -3,
-          ],
-          scale: [
-            0.32,
-            0.28,
-            27,
-          ],
-        },
-      ],
-      []
-    );
-
-  /* =======================================================
-     PLACAS DEL SUELO
-  ======================================================= */
-
-  const floorPlates =
-    useMemo(
-      () => {
-        const items = [];
-
-        [
-          -25,
-          -16,
-          -7,
-          2,
-          11,
-          20,
-        ].forEach(
-          (z) => {
-            items.push({
-              position: [
-                0,
-                0.015,
-                z,
-              ],
-              scale: [
-                7.1,
-                0.025,
-                3.7,
-              ],
-            });
-          }
-        );
-
-        return items;
-      },
       []
     );
 
   return (
     <group>
       {/* ===================================================
-          SUELO GENERAL
+          SUELO OSCURO
+
+          No más carretera gris.
       =================================================== */}
 
       <mesh
         position={[
           0,
-          -0.1,
+          -0.11,
           -4,
         ]}
         receiveShadow
@@ -1482,20 +1653,20 @@ export default function PopularTodayHall() {
           args={[
             ROOM_HALF_WIDTH *
               2,
-            0.18,
+            0.2,
             60,
           ]}
         />
 
         <meshStandardMaterial
-          color="#080b0e"
-          roughness={0.8}
-          metalness={0.08}
+          color="#090b0e"
+          roughness={0.24}
+          metalness={0.38}
         />
       </mesh>
 
       {/* ===================================================
-          FRANJA CENTRAL
+          PAVIMENTO CENTRAL SUTIL
       =================================================== */}
 
       <mesh
@@ -1507,90 +1678,62 @@ export default function PopularTodayHall() {
       >
         <boxGeometry
           args={[
-            14.8,
+            17,
             0.025,
-            56,
+            55,
           ]}
         />
 
         <meshStandardMaterial
-          color="#10151a"
-          roughness={0.72}
-          metalness={0.1}
+          color="#101318"
+          roughness={0.28}
+          metalness={0.42}
         />
       </mesh>
 
-      <InstancedBoxes
-        items={floorPlates}
-        color="#151b21"
-        roughness={0.64}
-        metalness={0.15}
-      />
+      {/* juntas del suelo */}
 
-      {/* líneas discretas del recorrido */}
-
-      <NeonLine
-        position={[
-          -7.55,
-          0.055,
-          -3,
-        ]}
-        size={[
-          0.045,
-          0.025,
-          55,
-        ]}
-        color="#58f1ff"
-        intensity={0.45}
-      />
-
-      <NeonLine
-        position={[
-          7.55,
-          0.055,
-          -3,
-        ]}
-        size={[
-          0.045,
-          0.025,
-          55,
-        ]}
-        color="#58f1ff"
-        intensity={0.45}
-      />
+      {[
+        -25,
+        -19,
+        -13,
+        -7,
+        -1,
+        5,
+        11,
+        17,
+      ].map((z) => (
+        <GlowStrip
+          key={`floor-${z}`}
+          position={[
+            0,
+            0.035,
+            z,
+          ]}
+          size={[
+            15,
+            0.018,
+            0.025,
+          ]}
+          color="#82939d"
+          intensity={0.12}
+        />
+      ))}
 
       {/* ===================================================
-          PAREDES MODULARES
-      =================================================== */}
-
-      <InstancedBoxes
-        items={wallPanels}
-        color="#11171d"
-        roughness={0.76}
-        metalness={0.12}
-      />
-
-      <InstancedBoxes
-        items={wallPillars}
-        color="#28313a"
-        roughness={0.42}
-        metalness={0.35}
-      />
-
-      {/* ===================================================
-          ARQUITECTURA INDIVIDUAL DE LAS FICHAS
+          PAREDES DE GALERÍA
       =================================================== */}
 
       {stations.map(
         ({
           game,
           position,
-          rotation,
+          side,
         }) => (
-          <StationArchitecture
-            key={`architecture-${game.id}`}
-            position={position}
-            rotation={rotation}
+          <WallPanel
+            key={`wall-${game.id}`}
+            side={side}
+            z={position[2]}
             accent={
               game.accent
             }
@@ -1599,124 +1742,7 @@ export default function PopularTodayHall() {
       )}
 
       {/* ===================================================
-          TECHO
-      =================================================== */}
-
-      <InstancedBoxes
-        items={ceilingFrames}
-        color="#222a31"
-        roughness={0.42}
-        metalness={0.32}
-      />
-
-      <InstancedBoxes
-        items={
-          ceilingLongitudinal
-        }
-        color="#171d23"
-        roughness={0.46}
-        metalness={0.28}
-      />
-
-      {/* luces de techo integradas */}
-
-      {[
-        -25,
-        -16,
-        -7,
-        2,
-        11,
-        20,
-      ].map((z) => (
-        <group
-          key={`ceiling-light-${z}`}
-        >
-          <NeonLine
-            position={[
-              -12.5,
-              12.12,
-              z,
-            ]}
-            size={[
-              6,
-              0.055,
-              0.055,
-            ]}
-            color="#d9f7ff"
-            intensity={0.75}
-          />
-
-          <NeonLine
-            position={[
-              12.5,
-              12.12,
-              z,
-            ]}
-            size={[
-              6,
-              0.055,
-              0.055,
-            ]}
-            color="#d9f7ff"
-            intensity={0.75}
-          />
-        </group>
-      ))}
-
-      {/* ===================================================
-          CARTEL PRINCIPAL
-      =================================================== */}
-
-      <group
-        position={[
-          0,
-          0,
-          ROOM_BACK_Z,
-        ]}
-      >
-        <mesh
-          position={[
-            0,
-            12.65,
-            0.58,
-          ]}
-        >
-          <boxGeometry
-            args={[
-              20,
-              2.25,
-              0.42,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#111820"
-            roughness={0.42}
-            metalness={0.28}
-          />
-        </mesh>
-
-        <NeonWord
-          text="POPULARES HOY"
-          color="#58f1ff"
-          position={[
-            0,
-            12.7,
-            0.82,
-          ]}
-          width={15}
-          height={2.5}
-        />
-      </group>
-
-      {/* ===================================================
-          ESCENARIO Y VIDEO
-      =================================================== */}
-
-      <VideoStage />
-
-      {/* ===================================================
-          FICHAS
+          FICHAS + COLISIONES
       =================================================== */}
 
       {stations.map(
@@ -1730,10 +1756,291 @@ export default function PopularTodayHall() {
             game={game}
             position={position}
             rotation={rotation}
-            scale={1.42}
           />
         )
       )}
+
+      {/* ===================================================
+          LUZ ARQUITECTÓNICA SUPERIOR
+
+          IMPORTANTE:
+          queda únicamente en los laterales.
+          NO atraviesa la flecha/ventana.
+      =================================================== */}
+
+      {[
+        -24,
+        -15,
+        -6,
+        3,
+        12,
+      ].map((z) => (
+        <group
+          key={`roof-${z}`}
+        >
+          {/* izquierda */}
+
+          <mesh
+            position={[
+              -20,
+              12.1,
+              z,
+            ]}
+          >
+            <boxGeometry
+              args={[
+                13,
+                0.35,
+                0.55,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color="#171b20"
+              roughness={0.3}
+              metalness={0.48}
+            />
+          </mesh>
+
+          <GlowStrip
+            position={[
+              -20,
+              11.88,
+              z,
+            ]}
+            size={[
+              9,
+              0.055,
+              0.055,
+            ]}
+            color="#e7e1d4"
+            intensity={0.65}
+          />
+
+          {/* derecha */}
+
+          <mesh
+            position={[
+              20,
+              12.1,
+              z,
+            ]}
+          >
+            <boxGeometry
+              args={[
+                13,
+                0.35,
+                0.55,
+              ]}
+            />
+
+            <meshStandardMaterial
+              color="#171b20"
+              roughness={0.3}
+              metalness={0.48}
+            />
+          </mesh>
+
+          <GlowStrip
+            position={[
+              20,
+              11.88,
+              z,
+            ]}
+            size={[
+              9,
+              0.055,
+              0.055,
+            ]}
+            color="#e7e1d4"
+            intensity={0.65}
+          />
+        </group>
+      ))}
+
+      {/* ===================================================
+          MOLDURAS LONGITUDINALES DEL TECHO
+
+          También solo laterales.
+      =================================================== */}
+
+      <mesh
+        position={[
+          -16.8,
+          12.15,
+          -4,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.5,
+            0.45,
+            57,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#15191e"
+          metalness={0.5}
+          roughness={0.3}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          16.8,
+          12.15,
+          -4,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.5,
+            0.45,
+            57,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#15191e"
+          metalness={0.5}
+          roughness={0.3}
+        />
+      </mesh>
+
+      {/* ===================================================
+          ESCENARIO DE VIDEO
+      =================================================== */}
+
+      <VideoStage />
+
+      {/* ===================================================
+          ISLA TOP 10
+      =================================================== */}
+
+      <TopTenIsland />
+
+      {/* ===================================================
+          BANCOS
+
+          Disposición baja para no tapar las fichas.
+      =================================================== */}
+
+      <Bench
+        position={[
+          -7.2,
+          0,
+          -18.5,
+        ]}
+      />
+
+      <Bench
+        position={[
+          7.2,
+          0,
+          -18.5,
+        ]}
+      />
+
+      <Bench
+        position={[
+          -7.2,
+          0,
+          -9.5,
+        ]}
+      />
+
+      <Bench
+        position={[
+          7.2,
+          0,
+          -9.5,
+        ]}
+      />
+
+      {/* ===================================================
+          VEGETACIÓN PUNTUAL
+      =================================================== */}
+
+      <Planter
+        position={[
+          -12,
+          0,
+          -27.8,
+        ]}
+      />
+
+      <Planter
+        position={[
+          12,
+          0,
+          -27.8,
+        ]}
+      />
+
+      <Planter
+        position={[
+          -12,
+          0,
+          -16,
+        ]}
+      />
+
+      <Planter
+        position={[
+          12,
+          0,
+          -16,
+        ]}
+      />
+
+      {/* ===================================================
+          LUZ AMBIENTAL DE LA SALA
+
+          Solo 3 luces reales.
+          El resto del efecto viene de emissive.
+      =================================================== */}
+
+      <ambientLight
+        intensity={0.28}
+        color="#b8c7d5"
+      />
+
+      <pointLight
+        position={[
+          0,
+          9,
+          -24,
+        ]}
+        intensity={10}
+        distance={28}
+        decay={2}
+        color="#8bcfff"
+      />
+
+      <pointLight
+        position={[
+          -14,
+          7,
+          -5,
+        ]}
+        intensity={7}
+        distance={20}
+        decay={2}
+        color="#c58cff"
+      />
+
+      <pointLight
+        position={[
+          14,
+          7,
+          -5,
+        ]}
+        intensity={7}
+        distance={20}
+        decay={2}
+        color="#ffc47c"
+      />
     </group>
   );
 }
