@@ -247,6 +247,85 @@ function useMediaQuery(query) {
    UI BASE
 ========================================================= */
 
+function CollapsibleStory({
+  children,
+  accent = "#5fdcff",
+}) {
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  if (!children) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div
+        style={{
+          position: "relative",
+          maxHeight: expanded
+            ? "none"
+            : 155,
+          overflow: "hidden",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            whiteSpace: "pre-line",
+            color: "#bdc5ca",
+            fontSize: 13,
+            lineHeight: 1.7,
+          }}
+        >
+          {children}
+        </p>
+
+        {!expanded && (
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 65,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(to bottom,rgba(17,21,26,0),rgba(17,21,26,1))",
+            }}
+          />
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          setExpanded(
+            (current) => !current
+          )
+        }
+        style={{
+          marginTop: 10,
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          color: accent,
+          fontSize: 10,
+          fontWeight: 900,
+          letterSpacing: ".07em",
+          cursor: "pointer",
+        }}
+      >
+        {expanded
+          ? "OCULTAR HISTORIA"
+          : "VER HISTORIA COMPLETA"}
+      </button>
+    </div>
+  );
+}
+
 function Section({
   title,
   children,
@@ -687,7 +766,6 @@ function VideoPlayer({
 /* =========================================================
    GALERÍA
 ========================================================= */
-
 function Gallery({
   game,
 }) {
@@ -722,105 +800,344 @@ function Gallery({
     }, [game]);
 
   const [
-    selected,
-    setSelected,
-  ] = useState(null);
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0);
+
+  const [
+    fullscreen,
+    setFullscreen,
+  ] = useState(false);
 
   useEffect(() => {
-    setSelected(null);
+    setActiveIndex(0);
+    setFullscreen(false);
   }, [game?.id]);
 
   if (!images.length) {
     return null;
   }
 
+  const safeIndex =
+    Math.min(
+      activeIndex,
+      images.length - 1
+    );
+
+  const activeImage =
+    images[safeIndex];
+
+  function previousImage() {
+    setActiveIndex(
+      (current) =>
+        (
+          current -
+          1 +
+          images.length
+        ) %
+        images.length
+    );
+  }
+
+  function nextImage() {
+    setActiveIndex(
+      (current) =>
+        (
+          current +
+          1
+        ) %
+        images.length
+    );
+  }
+
   return (
     <>
       <Section title="Galería">
+        {/* IMAGEN PRINCIPAL */}
+
         <div
           style={{
-            display: "grid",
+            position:
+              "relative",
 
-            gridTemplateColumns:
-              "repeat(auto-fill,minmax(150px,1fr))",
+            width: "100%",
 
-            gap: 9,
+            aspectRatio:
+              "16 / 9",
+
+            overflow:
+              "hidden",
+
+            borderRadius: 16,
+
+            border:
+              "1px solid rgba(255,255,255,.1)",
+
+            background:
+              "#050608",
           }}
         >
-          {images
-            .slice(0, 12)
-            .map(
+          <button
+            type="button"
+            onClick={() =>
+              setFullscreen(true)
+            }
+            style={{
+              position:
+                "absolute",
+
+              inset: 0,
+
+              width: "100%",
+
+              height: "100%",
+
+              padding: 0,
+
+              border: 0,
+
+              background:
+                "transparent",
+
+              cursor:
+                "pointer",
+            }}
+          >
+            <img
+              src={activeImage}
+              alt=""
+              style={{
+                width: "100%",
+
+                height: "100%",
+
+                display:
+                  "block",
+
+                objectFit:
+                  "cover",
+              }}
+            />
+          </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Imagen anterior"
+                onClick={
+                  previousImage
+                }
+                style={{
+                  position:
+                    "absolute",
+
+                  zIndex: 3,
+
+                  left: 12,
+
+                  top: "50%",
+
+                  transform:
+                    "translateY(-50%)",
+
+                  ...navButtonStyle(),
+
+                  background:
+                    "rgba(5,7,9,.78)",
+
+                  backdropFilter:
+                    "blur(8px)",
+                }}
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                aria-label="Imagen siguiente"
+                onClick={
+                  nextImage
+                }
+                style={{
+                  position:
+                    "absolute",
+
+                  zIndex: 3,
+
+                  right: 12,
+
+                  top: "50%",
+
+                  transform:
+                    "translateY(-50%)",
+
+                  ...navButtonStyle(),
+
+                  background:
+                    "rgba(5,7,9,.78)",
+
+                  backdropFilter:
+                    "blur(8px)",
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
+
+          <div
+            style={{
+              position:
+                "absolute",
+
+              zIndex: 3,
+
+              right: 12,
+
+              bottom: 12,
+
+              padding:
+                "6px 10px",
+
+              borderRadius: 999,
+
+              background:
+                "rgba(0,0,0,.72)",
+
+              color:
+                "#ffffff",
+
+              fontSize: 10,
+
+              fontWeight: 850,
+
+              pointerEvents:
+                "none",
+            }}
+          >
+            {safeIndex + 1}
+            {" de "}
+            {images.length}
+          </div>
+        </div>
+
+        {/* MINIATURAS */}
+
+        {images.length > 1 && (
+          <div
+            style={{
+              display: "flex",
+
+              gap: 8,
+
+              marginTop: 10,
+
+              paddingBottom: 4,
+
+              overflowX:
+                "auto",
+
+              WebkitOverflowScrolling:
+                "touch",
+
+              scrollSnapType:
+                "x proximity",
+            }}
+          >
+            {images.map(
               (
                 image,
                 index
-              ) => (
-                <button
-                  key={
-                    `${image}-${index}`
-                  }
-                  type="button"
-                  onClick={() =>
-                    setSelected(
-                      index
-                    )
-                  }
-                  style={{
-                    position:
-                      "relative",
+              ) => {
+                const selected =
+                  index ===
+                  safeIndex;
 
-                    padding: 0,
-
-                    width:
-                      "100%",
-
-                    aspectRatio:
-                      "16 / 9",
-
-                    overflow:
-                      "hidden",
-
-                    border:
-                      "1px solid rgba(255,255,255,.08)",
-
-                    borderRadius:
-                      11,
-
-                    background:
-                      "#090b0e",
-
-                    cursor:
-                      "pointer",
-                  }}
-                >
-                  <img
-                    src={image}
-                    alt=""
-                    loading="lazy"
+                return (
+                  <button
+                    key={
+                      `${image}-${index}`
+                    }
+                    type="button"
+                    onClick={() =>
+                      setActiveIndex(
+                        index
+                      )
+                    }
                     style={{
-                      width:
-                        "100%",
+                      flex:
+                        "0 0 120px",
 
-                      height:
-                        "100%",
+                      width: 120,
 
-                      objectFit:
-                        "cover",
+                      aspectRatio:
+                        "16 / 9",
 
-                      display:
-                        "block",
+                      padding: 0,
+
+                      overflow:
+                        "hidden",
+
+                      border:
+                        selected
+                          ? "2px solid #ffffff"
+                          : "1px solid rgba(255,255,255,.09)",
+
+                      borderRadius:
+                        10,
+
+                      background:
+                        "#080a0d",
+
+                      opacity:
+                        selected
+                          ? 1
+                          : 0.62,
+
+                      cursor:
+                        "pointer",
+
+                      scrollSnapAlign:
+                        "start",
+
+                      transition:
+                        "opacity .18s ease, border-color .18s ease",
                     }}
-                  />
-                </button>
-              )
+                  >
+                    <img
+                      src={image}
+                      alt=""
+                      loading="lazy"
+                      style={{
+                        width:
+                          "100%",
+
+                        height:
+                          "100%",
+
+                        objectFit:
+                          "cover",
+
+                        display:
+                          "block",
+                      }}
+                    />
+                  </button>
+                );
+              }
             )}
-        </div>
+          </div>
+        )}
       </Section>
 
-      {selected !== null && (
+      {/* PANTALLA COMPLETA */}
+
+      {fullscreen && (
         <div
           role="presentation"
           onClick={() =>
-            setSelected(null)
+            setFullscreen(false)
           }
           style={{
             position:
@@ -840,18 +1157,20 @@ function Gallery({
             padding: 18,
 
             background:
-              "rgba(0,0,0,.92)",
+              "rgba(0,0,0,.94)",
           }}
         >
           <button
             type="button"
             aria-label="Cerrar galería"
             onClick={() =>
-              setSelected(null)
+              setFullscreen(false)
             }
             style={{
               position:
                 "absolute",
+
+              zIndex: 5,
 
               top: 16,
 
@@ -863,44 +1182,38 @@ function Gallery({
             ×
           </button>
 
-          <button
-            type="button"
-            aria-label="Imagen anterior"
-            onClick={(
-              event
-            ) => {
-              event.stopPropagation();
+          {images.length > 1 && (
+            <button
+              type="button"
+              aria-label="Imagen anterior"
+              onClick={(
+                event
+              ) => {
+                event.stopPropagation();
+                previousImage();
+              }}
+              style={{
+                position:
+                  "absolute",
 
-              setSelected(
-                (
-                  selected -
-                  1 +
-                  images.length
-                ) %
-                  images.length
-              );
-            }}
-            style={{
-              position:
-                "absolute",
+                zIndex: 5,
 
-              left: 16,
+                left: 16,
 
-              top: "50%",
+                top: "50%",
 
-              transform:
-                "translateY(-50%)",
+                transform:
+                  "translateY(-50%)",
 
-              ...navButtonStyle(),
-            }}
-          >
-            ‹
-          </button>
+                ...navButtonStyle(),
+              }}
+            >
+              ‹
+            </button>
+          )}
 
           <img
-            src={
-              images[selected]
-            }
+            src={activeImage}
             alt=""
             onClick={(
               event
@@ -909,10 +1222,10 @@ function Gallery({
             }
             style={{
               maxWidth:
-                "min(1200px,92vw)",
+                "min(1400px,94vw)",
 
               maxHeight:
-                "86vh",
+                "88vh",
 
               objectFit:
                 "contain",
@@ -922,38 +1235,35 @@ function Gallery({
             }}
           />
 
-          <button
-            type="button"
-            aria-label="Imagen siguiente"
-            onClick={(
-              event
-            ) => {
-              event.stopPropagation();
+          {images.length > 1 && (
+            <button
+              type="button"
+              aria-label="Imagen siguiente"
+              onClick={(
+                event
+              ) => {
+                event.stopPropagation();
+                nextImage();
+              }}
+              style={{
+                position:
+                  "absolute",
 
-              setSelected(
-                (
-                  selected +
-                  1
-                ) %
-                  images.length
-              );
-            }}
-            style={{
-              position:
-                "absolute",
+                zIndex: 5,
 
-              right: 16,
+                right: 16,
 
-              top: "50%",
+                top: "50%",
 
-              transform:
-                "translateY(-50%)",
+                transform:
+                  "translateY(-50%)",
 
-              ...navButtonStyle(),
-            }}
-          >
-            ›
-          </button>
+                ...navButtonStyle(),
+              }}
+            >
+              ›
+            </button>
+          )}
 
           <div
             style={{
@@ -969,17 +1279,17 @@ function Gallery({
                 999,
 
               background:
-                "rgba(0,0,0,.7)",
+                "rgba(0,0,0,.72)",
 
               color:
                 "#ffffff",
 
               fontSize: 11,
 
-              fontWeight: 800,
+              fontWeight: 850,
             }}
           >
-            {selected + 1}
+            {safeIndex + 1}
             {" de "}
             {images.length}
           </div>
@@ -2511,28 +2821,12 @@ export default function FullGameOverlay({
             )}
 
             {storyline && (
-              <Section title="Historia">
-                <p
-                  style={{
-                    margin: 0,
-
-                    whiteSpace:
-                      "pre-line",
-
-                    color:
-                      "#bdc5ca",
-
-                    fontSize:
-                      13,
-
-                    lineHeight:
-                      1.7,
-                  }}
-                >
-                  {storyline}
-                </p>
-              </Section>
-            )}
+  <Section title="Historia">
+    <CollapsibleStory accent={accent}>
+      {storyline}
+    </CollapsibleStory>
+  </Section>
+)}
           </div>
         )}
 
