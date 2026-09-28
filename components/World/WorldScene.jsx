@@ -66,32 +66,10 @@ export default function WorldScene() {
     setOpenedGame,
   ] = useState(null);
 
-  /*
-    Juego que se está mostrando
-    en la ficha completa.
-
-    Es independiente de openedGame
-    para poder alternar:
-
-    ficha rápida
-        ↓
-    ficha completa
-        ↓
-    ficha rápida
-  */
-
   const [
     fullGame,
     setFullGame,
   ] = useState(null);
-
-  /*
-    Buscador global de Tierra Vicio.
-
-    Vive como interfaz 2D por encima
-    del Canvas para no añadir carga
-    innecesaria al mundo 3D.
-  */
 
   const [
     searchOpen,
@@ -132,16 +110,6 @@ export default function WorldScene() {
     skyTestHour,
     setSkyTestHour,
   ] = useState(null);
-
-  /*
-    El mundo se considera bloqueado
-    con cualquier interfaz que requiera
-    interacción exclusiva:
-
-    - ficha rápida
-    - ficha completa
-    - buscador
-  */
 
   const overlayOpen =
     Boolean(
@@ -354,7 +322,7 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     ABRIR 2D DESDE EL MUNDO
+     ABRIR DESDE EL MUNDO
   ======================================================= */
 
   const openGame =
@@ -384,7 +352,7 @@ export default function WorldScene() {
     ]);
 
   /* =======================================================
-     CERRAR TODO Y VOLVER AL MUNDO
+     CERRAR
   ======================================================= */
 
   const closeGame =
@@ -399,10 +367,6 @@ export default function WorldScene() {
       setFullGame(null);
       setOpenedGame(null);
     }, []);
-
-  /* =======================================================
-     VOLVER DE FICHA COMPLETA
-  ======================================================= */
 
   const backToQuickGame =
     useCallback(() => {
@@ -472,6 +436,7 @@ export default function WorldScene() {
 
         if (!editing) {
           event.preventDefault();
+
           openSearch();
 
           return;
@@ -677,7 +642,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          BOTÓN BUSCADOR GLOBAL
+          BUSCADOR
       =================================================== */}
 
       {!overlayOpen && (
@@ -943,7 +908,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          MUNDO 3D
+          MUNDO
       =================================================== */}
 
       <Canvas
@@ -1054,186 +1019,147 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          JUEGOS NORMALES
+          BOTÓN ABRIR JUEGO
 
           MÓVIL:
-          Botón compacto en el lateral derecho,
-          ligeramente por debajo del centro.
+          - pequeño
+          - esquina/lateral derecho
+          - por encima de la zona de cámara
+          - tamaño fijo
+          - sin CSS heredado de la clase original
 
-          PC:
-          Conserva la clase y posición originales.
+          ESCRITORIO:
+          - comportamiento original
       =================================================== */}
 
       {nearbyGame &&
         !overlayOpen &&
-        !isVideoWall && (
-          <button
-            type="button"
-            className="world-interaction-button"
-            onClick={
-              openGame
-            }
-            style={
-              mobile
-                ? {
-                    position:
-                      "fixed",
-
-                    right:
-                      16,
-
-                    top:
-                      "58%",
-
-                    transform:
-                      "translateY(-50%)",
-
-                    zIndex:
-                      90,
-
-                    width:
-                      "auto",
-
-                    maxWidth:
-                      150,
-
-                    minHeight:
-                      42,
-
-                    padding:
-                      "8px 11px",
-
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
-                    justifyContent:
-                      "center",
-
-                    gap:
-                      6,
-
-                    border:
-                      "1px solid rgba(255,255,255,.22)",
-
-                    borderRadius:
-                      12,
-
-                    background:
-                      "rgba(5,8,12,.82)",
-
-                    backdropFilter:
-                      "blur(10px)",
-
-                    WebkitBackdropFilter:
-                      "blur(10px)",
-
-                    color:
-                      "#fff",
-
-                    fontSize:
-                      11,
-
-                    fontWeight:
-                      800,
-
-                    lineHeight:
-                      1.15,
-
-                    textAlign:
-                      "left",
-
-                    boxShadow:
-                      "0 6px 20px rgba(0,0,0,.28)",
-
-                    cursor:
-                      "pointer",
-
-                    touchAction:
-                      "manipulation",
-
-                    userSelect:
-                      "none",
-
-                    WebkitUserSelect:
-                      "none",
-                  }
-                : undefined
-            }
-          >
-            <span
-              className="world-interaction-icon"
-              style={
-                mobile
-                  ? {
-                      flex:
-                        "0 0 auto",
-
-                      width:
-                        24,
-
-                      height:
-                        24,
-
-                      display:
-                        "grid",
-
-                      placeItems:
-                        "center",
-
-                      borderRadius:
-                        7,
-
-                      background:
-                        "rgba(255,255,255,.1)",
-
-                      fontSize:
-                        14,
-                    }
-                  : undefined
+        !isVideoWall &&
+        (
+          mobile ? (
+            <button
+              type="button"
+              aria-label={`Abrir ${nearbyGame.title}`}
+              onClick={
+                openGame
               }
+              style={{
+                position:
+                  "fixed",
+
+                right:
+                  14,
+
+                bottom:
+                  150,
+
+                zIndex:
+                  100,
+
+                width:
+                  52,
+
+                minWidth:
+                  52,
+
+                maxWidth:
+                  52,
+
+                height:
+                  52,
+
+                minHeight:
+                  52,
+
+                maxHeight:
+                  52,
+
+                margin:
+                  0,
+
+                padding:
+                  0,
+
+                display:
+                  "grid",
+
+                placeItems:
+                  "center",
+
+                border:
+                  "1px solid rgba(255,255,255,.28)",
+
+                borderRadius:
+                  14,
+
+                background:
+                  "rgba(5,8,12,.82)",
+
+                backdropFilter:
+                  "blur(10px)",
+
+                WebkitBackdropFilter:
+                  "blur(10px)",
+
+                boxShadow:
+                  "0 5px 18px rgba(0,0,0,.30)",
+
+                color:
+                  "#fff",
+
+                fontSize:
+                  22,
+
+                fontWeight:
+                  800,
+
+                lineHeight:
+                  1,
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
+
+                userSelect:
+                  "none",
+
+                WebkitUserSelect:
+                  "none",
+
+                boxSizing:
+                  "border-box",
+              }}
             >
               ↗
-            </span>
-
-            <span
-              style={
-                mobile
-                  ? {
-                      display:
-                        "block",
-
-                      maxWidth:
-                        90,
-
-                      overflow:
-                        "hidden",
-
-                      whiteSpace:
-                        "nowrap",
-
-                      textOverflow:
-                        "ellipsis",
-                    }
-                  : undefined
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="world-interaction-button"
+              onClick={
+                openGame
               }
             >
-              Abrir{" "}
-              {nearbyGame.title}
-            </span>
+              <span className="world-interaction-icon">
+                ↗
+              </span>
 
-            {!mobile && (
+              <span>
+                Abrir{" "}
+                {nearbyGame.title}
+              </span>
+
               <small>
                 E
               </small>
-            )}
-          </button>
+            </button>
+          )
         )}
 
       {/* ===================================================
-          PANTALLA VIDEO
+          VIDEO
       =================================================== */}
 
       {isVideoWall &&
@@ -1315,13 +1241,15 @@ export default function WorldScene() {
       />
 
       {/* ===================================================
-          OVERLAYS 2D
+          OVERLAYS
       =================================================== */}
 
       {fullGame ? (
         <FullGameOverlay
           game={fullGame}
-          onClose={closeGame}
+          onClose={
+            closeGame
+          }
           onBack={
             backToQuickGame
           }
@@ -1329,13 +1257,21 @@ export default function WorldScene() {
       ) : openedGame?.overlayType ===
         "video" ? (
         <VideoOverlay
-          video={openedGame}
-          onClose={closeGame}
+          video={
+            openedGame
+          }
+          onClose={
+            closeGame
+          }
         />
       ) : openedGame ? (
         <RankingOverlay
-          game={openedGame}
-          onClose={closeGame}
+          game={
+            openedGame
+          }
+          onClose={
+            closeGame
+          }
         />
       ) : null}
     </>
