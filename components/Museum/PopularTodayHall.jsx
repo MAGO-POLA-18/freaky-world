@@ -26,68 +26,221 @@ import {
 
 /* =========================================================
    TIERRA VICIO
-   SALA ACTUALIDAD — GALERÍA 3D
+   SALA ACTUALIDAD
 
-   DISTRIBUCIÓN PROVISIONAL:
-   - Pared izquierda: 5 Próximos
-   - Pared derecha: 5 Populares
+   PARED IZQUIERDA
+   - 10 PRÓXIMOS
+   - 1 RANDOM PRÓXIMOS
 
-   Los motores siguen generando y persistiendo
-   10 Próximos + 10 Populares cada día.
+   PARED DERECHA
+   - 10 POPULARES
+   - 1 RANDOM POPULARES
 
-   Esta sala utiliza solamente 5 de cada selección
-   mientras mantenemos la arquitectura 3D actual.
+   TOTAL:
+   - 22 EXPOSITORES
 ========================================================= */
 
 const ROOM_BACK_Z = -34.25;
 const FINISHED_FLOOR_Y = 0.315;
 
+/*
+  11 posiciones por pared.
+
+  Cubrimos prácticamente toda la longitud útil
+  sin acercarnos demasiado a la pantalla del fondo
+  ni a la entrada.
+
+  Separación: 4.8 m.
+*/
+
+const WALL_Z_POSITIONS = [
+  -26,
+  -21.2,
+  -16.4,
+  -11.6,
+  -6.8,
+  -2,
+  2.8,
+  7.6,
+  12.4,
+  17.2,
+  22,
+];
+
+/*
+  El expositor original era demasiado ancho
+  para colocar 11 unidades.
+
+  Reducimos principalmente el ancho.
+  La altura baja menos para conservar presencia.
+*/
+
+const STATION_SCALE = [
+  0.72,
+  0.82,
+  0.72,
+];
+
 /* =========================================================
-   COLORES DE LOS 10 EXPOSITORES
+   COLORES
 ========================================================= */
 
 const ACCENTS = [
-  { accent: "#d95cff", accentDark: "#421653" },
-  { accent: "#29d9ff", accentDark: "#0a4555" },
-  { accent: "#ff6947", accentDark: "#5e1e12" },
-  { accent: "#3f8cff", accentDark: "#102b59" },
-  { accent: "#c957ff", accentDark: "#3d1554" },
-
-  { accent: "#42e8a1", accentDark: "#0c4e35" },
-  { accent: "#ffb03f", accentDark: "#5d3810" },
-  { accent: "#ff7647", accentDark: "#572012" },
-  { accent: "#39bfff", accentDark: "#10415a" },
-  { accent: "#f3ca57", accentDark: "#544315" },
+  {
+    accent: "#d95cff",
+    accentDark: "#421653",
+  },
+  {
+    accent: "#29d9ff",
+    accentDark: "#0a4555",
+  },
+  {
+    accent: "#ff6947",
+    accentDark: "#5e1e12",
+  },
+  {
+    accent: "#3f8cff",
+    accentDark: "#102b59",
+  },
+  {
+    accent: "#c957ff",
+    accentDark: "#3d1554",
+  },
+  {
+    accent: "#42e8a1",
+    accentDark: "#0c4e35",
+  },
+  {
+    accent: "#ffb03f",
+    accentDark: "#5d3810",
+  },
+  {
+    accent: "#ff7647",
+    accentDark: "#572012",
+  },
+  {
+    accent: "#39bfff",
+    accentDark: "#10415a",
+  },
+  {
+    accent: "#f3ca57",
+    accentDark: "#544315",
+  },
 ];
 
 /* =========================================================
    FALLBACK
 ========================================================= */
 
-const FALLBACK_GAMES = Array.from(
-  { length: 10 },
-  (_, index) => ({
-    id: `loading-${index + 1}`,
-    rank: index + 1,
-    title: "TIERRA VICIO",
-    subtitle: "Cargando juego...",
+function createFallbackGame(
+  section,
+  index
+) {
+  const accent =
+    ACCENTS[
+      index % ACCENTS.length
+    ];
+
+  const upcoming =
+    section === "upcoming";
+
+  return {
+    id:
+      `loading-${section}-${index}`,
+
+    rank:
+      index + 1,
+
+    title:
+      "TIERRA VICIO",
+
+    subtitle:
+      upcoming
+        ? "Cargando próximo..."
+        : "Cargando popular...",
+
     year: "",
     platform: "",
     score: "--",
     trend: "",
     cover: null,
-    ...ACCENTS[index],
-  })
-);
+
+    section,
+
+    ...accent,
+  };
+}
+
+const FALLBACK_UPCOMING =
+  Array.from(
+    { length: 10 },
+    (_, index) =>
+      createFallbackGame(
+        "upcoming",
+        index
+      )
+  );
+
+const FALLBACK_POPULAR =
+  Array.from(
+    { length: 10 },
+    (_, index) =>
+      createFallbackGame(
+        "popular",
+        index
+      )
+  );
+
+/* =========================================================
+   RANDOM — TARJETAS FÍSICAS
+========================================================= */
+
+const RANDOM_UPCOMING = {
+  id: "random-upcoming",
+  rank: "?",
+  title: "RANDOM",
+  subtitle: "PRÓXIMOS",
+  year: "",
+  platform: "",
+  score: "?",
+  trend: "",
+  cover: null,
+  section: "random-upcoming",
+  random: true,
+  accent: "#29d9ff",
+  accentDark: "#092d39",
+};
+
+const RANDOM_POPULAR = {
+  id: "random-popular",
+  rank: "?",
+  title: "RANDOM",
+  subtitle: "POPULARES",
+  year: "",
+  platform: "",
+  score: "?",
+  trend: "",
+  cover: null,
+  section: "random-popular",
+  random: true,
+  accent: "#ffb03f",
+  accentDark: "#4b2b08",
+};
 
 /* =========================================================
    NORMALIZAR JUEGO
-
-   Funciona tanto con el objeto ligero de Actualidad
-   como con objetos más completos de nuestra API.
 ========================================================= */
 
-function normalizeApiGame(game, index) {
+function normalizeApiGame(
+  game,
+  index,
+  section
+) {
+  const accent =
+    ACCENTS[
+      index % ACCENTS.length
+    ];
+
   const platforms =
     game?.platforms
       ?.map(
@@ -100,23 +253,29 @@ function normalizeApiGame(game, index) {
       .join(" · ") || "";
 
   const scoreValue =
-    typeof game?.totalRating === "number"
+    typeof game?.totalRating ===
+    "number"
       ? game.totalRating
-      : typeof game?.rating === "number"
+      : typeof game?.rating ===
+          "number"
         ? game.rating
         : null;
 
   const score =
     scoreValue !== null
-      ? (Number(scoreValue) / 10).toFixed(1)
+      ? (
+          Number(scoreValue) / 10
+        ).toFixed(1)
       : "--";
 
   return {
     ...game,
 
-    id: game?.id,
+    id:
+      game?.id,
 
-    rank: index + 1,
+    rank:
+      index + 1,
 
     title:
       game?.name ||
@@ -132,41 +291,30 @@ function normalizeApiGame(game, index) {
         ? String(game.year)
         : "",
 
-    platform: platforms,
+    platform:
+      platforms,
 
     score,
 
     trend: "",
 
+    section,
+
     accent:
-      ACCENTS[index]?.accent ||
-      "#5fdcff",
+      accent.accent,
 
     accentDark:
-      ACCENTS[index]?.accentDark ||
-      "#123b47",
+      accent.accentDark,
   };
 }
 
 /* =========================================================
-   EXTRAER JUEGOS DE RESPUESTA ACTUALIDAD
-
-   /api/actualidad/upcoming
-   /api/actualidad/popular
-
-   Cada entrada tiene:
-   {
-     position,
-     reason,
-     ...
-     game: {...}
-   }
+   RESPUESTA ACTUALIDAD
 ========================================================= */
 
 function normalizeActualidadGames(
   data,
-  startAccentIndex,
-  amount = 5
+  section
 ) {
   if (
     !data?.ok ||
@@ -176,25 +324,36 @@ function normalizeActualidadGames(
   }
 
   return data.games
-    .slice(0, amount)
-    .map((entry, index) => {
-      const rawGame =
-        entry?.game || entry;
+    .slice(0, 10)
+    .map(
+      (
+        entry,
+        index
+      ) => {
+        const rawGame =
+          entry?.game ||
+          entry;
 
-      return normalizeApiGame(
-        rawGame,
-        startAccentIndex + index
-      );
-    });
+        return normalizeApiGame(
+          rawGame,
+          index,
+          section
+        );
+      }
+    );
 }
 
 /* =========================================================
-   CANVAS — PORTADA FALLBACK
+   PORTADA FALLBACK
 ========================================================= */
 
-function createFallbackPosterTexture(game) {
+function createFallbackPosterTexture(
+  game
+) {
   const canvas =
-    document.createElement("canvas");
+    document.createElement(
+      "canvas"
+    );
 
   canvas.width = 640;
   canvas.height = 960;
@@ -225,7 +384,8 @@ function createFallbackPosterTexture(game) {
     "#050609"
   );
 
-  ctx.fillStyle = gradient;
+  ctx.fillStyle =
+    gradient;
 
   ctx.fillRect(
     0,
@@ -233,6 +393,115 @@ function createFallbackPosterTexture(game) {
     640,
     960
   );
+
+  /* RANDOM */
+
+  if (game.random) {
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = "#ffffff";
+
+    for (
+      let i = 0;
+      i < 7;
+      i += 1
+    ) {
+      ctx.beginPath();
+
+      ctx.arc(
+        80 + i * 90,
+        160 + (i % 2) * 100,
+        90,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle =
+      "rgba(255,255,255,.72)";
+
+    ctx.font =
+      "900 120px Arial";
+
+    ctx.fillText(
+      "?",
+      320,
+      340
+    );
+
+    ctx.fillStyle =
+      "#ffffff";
+
+    ctx.font =
+      "900 76px Arial";
+
+    ctx.fillText(
+      "RANDOM",
+      320,
+      650
+    );
+
+    ctx.font =
+      "800 34px Arial";
+
+    ctx.fillStyle =
+      game.accent;
+
+    ctx.fillText(
+      game.subtitle,
+      320,
+      715
+    );
+
+    ctx.font =
+      "600 22px Arial";
+
+    ctx.fillStyle =
+      "rgba(255,255,255,.65)";
+
+    ctx.fillText(
+      "DESCUBRIR JUEGO",
+      320,
+      790
+    );
+
+    ctx.strokeStyle =
+      game.accent;
+
+    ctx.lineWidth = 5;
+
+    ctx.strokeRect(
+      70,
+      835,
+      500,
+      3
+    );
+
+    const texture =
+      new THREE.CanvasTexture(
+        canvas
+      );
+
+    texture.colorSpace =
+      THREE.SRGBColorSpace;
+
+    texture.minFilter =
+      THREE.LinearFilter;
+
+    texture.magFilter =
+      THREE.LinearFilter;
+
+    texture.anisotropy = 4;
+
+    return texture;
+  }
+
+  /* JUEGO NORMAL */
 
   ctx.globalAlpha = 0.12;
   ctx.fillStyle = "#ffffff";
@@ -287,9 +556,11 @@ function createFallbackPosterTexture(game) {
     72
   );
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle =
+    "#ffffff";
 
-  ctx.font = "900 39px Arial";
+  ctx.font =
+    "900 39px Arial";
 
   ctx.fillText(
     `#${game.rank}`,
@@ -297,9 +568,11 @@ function createFallbackPosterTexture(game) {
     78
   );
 
-  ctx.textAlign = "right";
+  ctx.textAlign =
+    "right";
 
-  ctx.font = "900 36px Arial";
+  ctx.font =
+    "900 36px Arial";
 
   ctx.fillText(
     game.score,
@@ -307,11 +580,11 @@ function createFallbackPosterTexture(game) {
     76
   );
 
-  ctx.textAlign = "left";
+  ctx.textAlign =
+    "left";
 
-  ctx.font = "900 52px Arial";
-
-  ctx.fillStyle = "#ffffff";
+  ctx.font =
+    "900 52px Arial";
 
   const words =
     game.title.split(" ");
@@ -319,27 +592,31 @@ function createFallbackPosterTexture(game) {
   let line = "";
   let y = 730;
 
-  words.forEach((word) => {
-    const test =
-      `${line}${word} `;
+  words.forEach(
+    (word) => {
+      const test =
+        `${line}${word} `;
 
-    if (
-      ctx.measureText(test).width >
-        570 &&
-      line
-    ) {
-      ctx.fillText(
-        line.trim(),
-        34,
-        y
-      );
+      if (
+        ctx.measureText(test)
+          .width > 570 &&
+        line
+      ) {
+        ctx.fillText(
+          line.trim(),
+          34,
+          y
+        );
 
-      line = `${word} `;
-      y += 58;
-    } else {
-      line = test;
+        line =
+          `${word} `;
+
+        y += 58;
+      } else {
+        line = test;
+      }
     }
-  });
+  );
 
   ctx.fillText(
     line.trim(),
@@ -347,10 +624,11 @@ function createFallbackPosterTexture(game) {
     y
   );
 
-  ctx.font = "600 23px Arial";
+  ctx.font =
+    "600 23px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.68)";
+    "rgba(255,255,255,.68)";
 
   ctx.fillText(
     game.subtitle,
@@ -358,7 +636,8 @@ function createFallbackPosterTexture(game) {
     840
   );
 
-  ctx.fillStyle = game.accent;
+  ctx.fillStyle =
+    game.accent;
 
   ctx.fillRect(
     35,
@@ -367,14 +646,16 @@ function createFallbackPosterTexture(game) {
     4
   );
 
-  ctx.font = "700 19px Arial";
+  ctx.font =
+    "700 19px Arial";
 
   ctx.fillStyle =
-    "rgba(255,255,255,0.78)";
+    "rgba(255,255,255,.78)";
 
   ctx.fillText(
     `${game.year}${
-      game.year && game.platform
+      game.year &&
+      game.platform
         ? "  ·  "
         : ""
     }${game.platform}`,
@@ -383,7 +664,9 @@ function createFallbackPosterTexture(game) {
   );
 
   const texture =
-    new THREE.CanvasTexture(canvas);
+    new THREE.CanvasTexture(
+      canvas
+    );
 
   texture.colorSpace =
     THREE.SRGBColorSpace;
@@ -400,7 +683,7 @@ function createFallbackPosterTexture(game) {
 }
 
 /* =========================================================
-   LED / NEÓN
+   LED
 ========================================================= */
 
 function Led({
@@ -415,12 +698,16 @@ function Led({
       position={position}
       rotation={rotation}
     >
-      <boxGeometry args={size} />
+      <boxGeometry
+        args={size}
+      />
 
       <meshStandardMaterial
         color={color}
         emissive={color}
-        emissiveIntensity={intensity}
+        emissiveIntensity={
+          intensity
+        }
         toneMapped={false}
         roughness={0.18}
         metalness={0.05}
@@ -430,7 +717,7 @@ function Led({
 }
 
 /* =========================================================
-   PANEL ARQUITECTÓNICO DE PARED
+   PANEL DE PARED COMPACTO
 ========================================================= */
 
 function GalleryBay({
@@ -448,8 +735,25 @@ function GalleryBay({
     left ? 0.32 : -0.32;
 
   return (
-    <group position={[x, 0, z]}>
-      <mesh position={[0, 6.15, 0]}>
+    <group
+      position={[
+        x,
+        0,
+        z,
+      ]}
+      scale={[
+        1,
+        0.82,
+        0.52,
+      ]}
+    >
+      <mesh
+        position={[
+          0,
+          6.15,
+          0,
+        ]}
+      >
         <boxGeometry
           args={[
             0.55,
@@ -463,7 +767,9 @@ function GalleryBay({
           roughness={0.34}
           metalness={0.52}
           clearcoat={0.18}
-          clearcoatRoughness={0.42}
+          clearcoatRoughness={
+            0.42
+          }
         />
       </mesh>
 
@@ -545,10 +851,12 @@ function GalleryBay({
 }
 
 /* =========================================================
-   PORTADA REAL / FALLBACK
+   PORTADA
 ========================================================= */
 
-function GamePoster({ game }) {
+function GamePoster({
+  game,
+}) {
   const fallbackTexture =
     useMemo(
       () =>
@@ -562,17 +870,24 @@ function GamePoster({ game }) {
     return () => {
       fallbackTexture.dispose();
     };
-  }, [fallbackTexture]);
+  }, [
+    fallbackTexture,
+  ]);
 
   const realCover =
     game.cover?.large ||
     game.cover?.medium ||
     null;
 
-  if (realCover) {
+  if (
+    realCover &&
+    !game.random
+  ) {
     return (
       <GameCoverMaterial
-        imageUrl={realCover}
+        imageUrl={
+          realCover
+        }
         fallbackColor={
           game.accentDark
         }
@@ -582,14 +897,16 @@ function GamePoster({ game }) {
 
   return (
     <meshBasicMaterial
-      map={fallbackTexture}
+      map={
+        fallbackTexture
+      }
       toneMapped={false}
     />
   );
 }
 
 /* =========================================================
-   EXPOSITOR / PANTALLA
+   EXPOSITOR COMPACTO
 ========================================================= */
 
 function GameStation({
@@ -597,11 +914,16 @@ function GameStation({
   position,
   rotation,
 }) {
-  const ref = useRef(null);
-  const nearRef = useRef(false);
+  const ref =
+    useRef(null);
 
-  const [near, setNear] =
-    useState(false);
+  const nearRef =
+    useRef(false);
+
+  const [
+    near,
+    setNear,
+  ] = useState(false);
 
   const worldPosition =
     useMemo(
@@ -639,8 +961,14 @@ function GameStation({
         dz * dz
       );
 
+    /*
+      Al haber más pantallas juntas
+      reducimos ligeramente el radio
+      para que dos vecinas no compitan.
+    */
+
     const isNear =
-      distance < 5.6;
+      distance < 4.35;
 
     if (
       isNear ===
@@ -649,22 +977,29 @@ function GameStation({
       return;
     }
 
-    nearRef.current = isNear;
-    setNear(isNear);
+    nearRef.current =
+      isNear;
+
+    setNear(
+      isNear
+    );
 
     window.dispatchEvent(
       new CustomEvent(
         "freaky:game-near",
         {
-          detail: isNear
-            ? {
-                near: true,
-                game,
-              }
-            : {
-                near: false,
-                game,
-              },
+          detail:
+            isNear
+              ? {
+                  near:
+                    true,
+                  game,
+                }
+              : {
+                  near:
+                    false,
+                  game,
+                },
         }
       )
     );
@@ -679,6 +1014,9 @@ function GameStation({
         rotation,
         0,
       ]}
+      scale={
+        STATION_SCALE
+      }
     >
       <RoundedBox
         position={[
@@ -699,7 +1037,9 @@ function GameStation({
           roughness={0.25}
           metalness={0.62}
           clearcoat={0.35}
-          clearcoatRoughness={0.3}
+          clearcoatRoughness={
+            0.3
+          }
         />
       </RoundedBox>
 
@@ -721,9 +1061,13 @@ function GameStation({
           color="#151a20"
           roughness={0.28}
           metalness={0.58}
-          emissive={game.accent}
+          emissive={
+            game.accent
+          }
           emissiveIntensity={
-            near ? 0.22 : 0.045
+            near
+              ? 0.22
+              : 0.045
           }
         />
       </RoundedBox>
@@ -742,7 +1086,9 @@ function GameStation({
           ]}
         />
 
-        <GamePoster game={game} />
+        <GamePoster
+          game={game}
+        />
       </mesh>
 
       <Led
@@ -756,9 +1102,13 @@ function GameStation({
           9.55,
           0.09,
         ]}
-        color={game.accent}
+        color={
+          game.accent
+        }
         intensity={
-          near ? 4.2 : 2.7
+          near
+            ? 4.2
+            : 2.7
         }
       />
 
@@ -773,9 +1123,13 @@ function GameStation({
           9.55,
           0.09,
         ]}
-        color={game.accent}
+        color={
+          game.accent
+        }
         intensity={
-          near ? 4.2 : 2.7
+          near
+            ? 4.2
+            : 2.7
         }
       />
 
@@ -790,9 +1144,13 @@ function GameStation({
           0.085,
           0.09,
         ]}
-        color={game.accent}
+        color={
+          game.accent
+        }
         intensity={
-          near ? 4 : 2.4
+          near
+            ? 4
+            : 2.4
         }
       />
 
@@ -849,8 +1207,14 @@ function GameStation({
             color="#20262d"
             roughness={0.24}
             metalness={0.62}
-            emissive={game.accent}
-            emissiveIntensity={0.12}
+            emissive={
+              game.accent
+            }
+            emissiveIntensity={
+              game.random
+                ? 0.28
+                : 0.12
+            }
           />
         </mesh>
 
@@ -870,8 +1234,14 @@ function GameStation({
             0.04,
             0.025,
           ]}
-          color={game.accent}
-          intensity={2}
+          color={
+            game.accent
+          }
+          intensity={
+            game.random
+              ? 3
+              : 2
+          }
         />
 
         <mesh
@@ -956,17 +1326,48 @@ function GameStation({
    JARDINERA
 ========================================================= */
 
-function Planter({ position }) {
+function Planter({
+  position,
+}) {
   const leaves = [
-    [-0.7, 1.05, 0, -0.25],
-    [-0.35, 1.25, 0.05, 0.18],
-    [0, 1.05, -0.08, -0.12],
-    [0.38, 1.28, 0.03, 0.24],
-    [0.72, 1.02, -0.04, -0.18],
+    [
+      -0.7,
+      1.05,
+      0,
+      -0.25,
+    ],
+    [
+      -0.35,
+      1.25,
+      0.05,
+      0.18,
+    ],
+    [
+      0,
+      1.05,
+      -0.08,
+      -0.12,
+    ],
+    [
+      0.38,
+      1.28,
+      0.03,
+      0.24,
+    ],
+    [
+      0.72,
+      1.02,
+      -0.04,
+      -0.18,
+    ],
   ];
 
   return (
-    <group position={position}>
+    <group
+      position={
+        position
+      }
+    >
       <RoundedBox
         position={[
           0,
@@ -991,12 +1392,21 @@ function Planter({ position }) {
 
       {leaves.map(
         (
-          [x, y, z, r],
+          [
+            x,
+            y,
+            z,
+            r,
+          ],
           index
         ) => (
           <mesh
             key={index}
-            position={[x, y, z]}
+            position={[
+              x,
+              y,
+              z,
+            ]}
             rotation={[
               0,
               0,
@@ -1023,7 +1433,7 @@ function Planter({ position }) {
 }
 
 /* =========================================================
-   ESCENARIO DEL FONDO
+   PANTALLA DEL FONDO
 ========================================================= */
 
 function VideoStage() {
@@ -1033,7 +1443,8 @@ function VideoStage() {
         position={[
           0,
           6.4,
-          ROOM_BACK_Z + 0.18,
+          ROOM_BACK_Z +
+            0.18,
         ]}
         args={[
           32,
@@ -1055,7 +1466,8 @@ function VideoStage() {
         position={[
           -14.5,
           6.1,
-          ROOM_BACK_Z + 0.75,
+          ROOM_BACK_Z +
+            0.75,
         ]}
         args={[
           2.4,
@@ -1076,7 +1488,8 @@ function VideoStage() {
         position={[
           14.5,
           6.1,
-          ROOM_BACK_Z + 0.75,
+          ROOM_BACK_Z +
+            0.75,
         ]}
         args={[
           2.4,
@@ -1097,7 +1510,8 @@ function VideoStage() {
         position={[
           0,
           6.1,
-          ROOM_BACK_Z + 0.72,
+          ROOM_BACK_Z +
+            0.72,
         ]}
         args={[
           24.8,
@@ -1119,7 +1533,8 @@ function VideoStage() {
         position={[
           0,
           11.02,
-          ROOM_BACK_Z + 0.98,
+          ROOM_BACK_Z +
+            0.98,
         ]}
         size={[
           23.6,
@@ -1134,7 +1549,8 @@ function VideoStage() {
         position={[
           -12.2,
           6.1,
-          ROOM_BACK_Z + 0.98,
+          ROOM_BACK_Z +
+            0.98,
         ]}
         size={[
           0.07,
@@ -1149,7 +1565,8 @@ function VideoStage() {
         position={[
           12.2,
           6.1,
-          ROOM_BACK_Z + 0.98,
+          ROOM_BACK_Z +
+            0.98,
         ]}
         size={[
           0.07,
@@ -1164,7 +1581,8 @@ function VideoStage() {
         position={[
           0,
           0.58,
-          ROOM_BACK_Z + 3.4,
+          ROOM_BACK_Z +
+            3.4,
         ]}
         args={[
           29,
@@ -1186,7 +1604,8 @@ function VideoStage() {
         position={[
           0,
           0.85,
-          ROOM_BACK_Z + 6.25,
+          ROOM_BACK_Z +
+            6.25,
         ]}
         size={[
           25,
@@ -1201,7 +1620,8 @@ function VideoStage() {
         position={[
           -12.5,
           0.3,
-          ROOM_BACK_Z + 5.6,
+          ROOM_BACK_Z +
+            5.6,
         ]}
       />
 
@@ -1209,7 +1629,8 @@ function VideoStage() {
         position={[
           12.5,
           0.3,
-          ROOM_BACK_Z + 5.6,
+          ROOM_BACK_Z +
+            5.6,
         ]}
       />
 
@@ -1217,7 +1638,8 @@ function VideoStage() {
         position={[
           0,
           5.2,
-          ROOM_BACK_Z + 1,
+          ROOM_BACK_Z +
+            1,
         ]}
       />
     </group>
@@ -1240,85 +1662,89 @@ function PremiumCeiling() {
 
   return (
     <group>
-      {zs.map((z) => (
-        <group key={z}>
-          <mesh
-            position={[
-              -20.8,
-              12.25,
-              z,
-            ]}
+      {zs.map(
+        (z) => (
+          <group
+            key={z}
           >
-            <boxGeometry
-              args={[
-                13.5,
-                0.38,
-                1,
+            <mesh
+              position={[
+                -20.8,
+                12.25,
+                z,
               ]}
-            />
+            >
+              <boxGeometry
+                args={[
+                  13.5,
+                  0.38,
+                  1,
+                ]}
+              />
 
-            <meshPhysicalMaterial
-              color="#171b20"
-              roughness={0.24}
-              metalness={0.58}
-              clearcoat={0.18}
-            />
-          </mesh>
+              <meshPhysicalMaterial
+                color="#171b20"
+                roughness={0.24}
+                metalness={0.58}
+                clearcoat={0.18}
+              />
+            </mesh>
 
-          <Led
-            position={[
-              -20.8,
-              12.02,
-              z,
-            ]}
-            size={[
-              9.5,
-              0.07,
-              0.1,
-            ]}
-            color="#fff0d3"
-            intensity={2}
-          />
-
-          <mesh
-            position={[
-              20.8,
-              12.25,
-              z,
-            ]}
-          >
-            <boxGeometry
-              args={[
-                13.5,
-                0.38,
-                1,
+            <Led
+              position={[
+                -20.8,
+                12.02,
+                z,
               ]}
+              size={[
+                9.5,
+                0.07,
+                0.1,
+              ]}
+              color="#fff0d3"
+              intensity={2}
             />
 
-            <meshPhysicalMaterial
-              color="#171b20"
-              roughness={0.24}
-              metalness={0.58}
-              clearcoat={0.18}
-            />
-          </mesh>
+            <mesh
+              position={[
+                20.8,
+                12.25,
+                z,
+              ]}
+            >
+              <boxGeometry
+                args={[
+                  13.5,
+                  0.38,
+                  1,
+                ]}
+              />
 
-          <Led
-            position={[
-              20.8,
-              12.02,
-              z,
-            ]}
-            size={[
-              9.5,
-              0.07,
-              0.1,
-            ]}
-            color="#fff0d3"
-            intensity={2}
-          />
-        </group>
-      ))}
+              <meshPhysicalMaterial
+                color="#171b20"
+                roughness={0.24}
+                metalness={0.58}
+                clearcoat={0.18}
+              />
+            </mesh>
+
+            <Led
+              position={[
+                20.8,
+                12.02,
+                z,
+              ]}
+              size={[
+                9.5,
+                0.07,
+                0.1,
+              ]}
+              color="#fff0d3"
+              intensity={2}
+            />
+          </group>
+        )
+      )}
 
       <mesh
         position={[
@@ -1470,20 +1896,27 @@ function GalleryLighting() {
 ========================================================= */
 
 export default function PopularTodayHall() {
-  const [games, setGames] =
-    useState(FALLBACK_GAMES);
+  const [
+    upcomingGames,
+    setUpcomingGames,
+  ] = useState(
+    FALLBACK_UPCOMING
+  );
+
+  const [
+    popularGames,
+    setPopularGames,
+  ] = useState(
+    FALLBACK_POPULAR
+  );
 
   /* =======================================================
-     CARGAR LAS DOS SELECCIONES DIARIAS
+     CARGA 10 + 10
 
-     Próximos:
-     /api/actualidad/upcoming
+     No descargamos catálogo completo.
 
-     Populares:
-     /api/actualidad/popular
-
-     Ambos endpoints devuelven 10 juegos.
-     La sala actual utiliza 5 de cada uno.
+     Solo consumimos las selecciones diarias
+     ya calculadas y persistidas por Tierra Vicio.
   ======================================================= */
 
   useEffect(() => {
@@ -1494,31 +1927,28 @@ export default function PopularTodayHall() {
         const [
           upcomingResponse,
           popularResponse,
-        ] = await Promise.all([
-          fetch(
-            "/api/actualidad/upcoming",
-            {
-              method: "GET",
-              cache: "no-store",
-            }
-          ),
+        ] =
+          await Promise.all([
+            fetch(
+              "/api/actualidad/upcoming"
+            ),
 
-          fetch(
-            "/api/actualidad/popular",
-            {
-              method: "GET",
-              cache: "no-store",
-            }
-          ),
-        ]);
+            fetch(
+              "/api/actualidad/popular"
+            ),
+          ]);
 
-        if (!upcomingResponse.ok) {
+        if (
+          !upcomingResponse.ok
+        ) {
           throw new Error(
             `Upcoming respondió ${upcomingResponse.status}`
           );
         }
 
-        if (!popularResponse.ok) {
+        if (
+          !popularResponse.ok
+        ) {
           throw new Error(
             `Popular respondió ${popularResponse.status}`
           );
@@ -1527,50 +1957,49 @@ export default function PopularTodayHall() {
         const [
           upcomingData,
           popularData,
-        ] = await Promise.all([
-          upcomingResponse.json(),
-          popularResponse.json(),
-        ]);
+        ] =
+          await Promise.all([
+            upcomingResponse.json(),
+            popularResponse.json(),
+          ]);
 
-        const upcomingGames =
+        const nextUpcoming =
           normalizeActualidadGames(
             upcomingData,
-            0,
-            5
+            "upcoming"
           );
 
-        const popularGames =
+        const nextPopular =
           normalizeActualidadGames(
             popularData,
-            5,
-            5
+            "popular"
           );
 
         if (
-          upcomingGames.length !== 5 ||
-          popularGames.length !== 5
+          nextUpcoming.length !==
+            10 ||
+          nextPopular.length !==
+            10
         ) {
           throw new Error(
-            "Actualidad no devolvió 5 Próximos y 5 Populares."
+            "Actualidad no devolvió 10 Próximos y 10 Populares."
           );
         }
 
-        if (active) {
-          setGames([
-            ...upcomingGames,
-            ...popularGames,
-          ]);
+        if (!active) {
+          return;
         }
+
+        setUpcomingGames(
+          nextUpcoming
+        );
+
+        setPopularGames(
+          nextPopular
+        );
       } catch (error) {
-        /*
-          La sala nunca desaparece.
-
-          Si una de las APIs falla conservamos
-          las tarjetas fallback.
-        */
-
         console.error(
-          "[Tierra Vicio / PopularTodayHall]",
+          "[Tierra Vicio / Actualidad]",
           error
         );
       }
@@ -1584,136 +2013,93 @@ export default function PopularTodayHall() {
   }, []);
 
   /* =======================================================
-     10 EXPOSITORES ACTUALES
+     11 IZQUIERDA
 
-     0-4  = PRÓXIMOS / pared izquierda
-     5-9  = POPULARES / pared derecha
+     10 PRÓXIMOS
+     + RANDOM
   ======================================================= */
+
+  const leftStations =
+    useMemo(() => {
+      const games = [
+        ...upcomingGames,
+        RANDOM_UPCOMING,
+      ];
+
+      return games.map(
+        (
+          game,
+          index
+        ) => ({
+          game,
+
+          position: [
+            -25.3,
+            0.3,
+            WALL_Z_POSITIONS[
+              index
+            ],
+          ],
+
+          rotation:
+            Math.PI / 2,
+
+          side: "left",
+        })
+      );
+    }, [
+      upcomingGames,
+    ]);
+
+  /* =======================================================
+     11 DERECHA
+
+     10 POPULARES
+     + RANDOM
+  ======================================================= */
+
+  const rightStations =
+    useMemo(() => {
+      const games = [
+        ...popularGames,
+        RANDOM_POPULAR,
+      ];
+
+      return games.map(
+        (
+          game,
+          index
+        ) => ({
+          game,
+
+          position: [
+            25.3,
+            0.3,
+            WALL_Z_POSITIONS[
+              index
+            ],
+          ],
+
+          rotation:
+            -Math.PI / 2,
+
+          side: "right",
+        })
+      );
+    }, [
+      popularGames,
+    ]);
 
   const stations =
     useMemo(
       () => [
-        {
-          game: games[0],
-          position: [
-            -25.3,
-            0.3,
-            -24,
-          ],
-          rotation:
-            Math.PI / 2,
-          side: "left",
-        },
-
-        {
-          game: games[1],
-          position: [
-            -25.3,
-            0.3,
-            -14.2,
-          ],
-          rotation:
-            Math.PI / 2,
-          side: "left",
-        },
-
-        {
-          game: games[2],
-          position: [
-            -25.3,
-            0.3,
-            -4.4,
-          ],
-          rotation:
-            Math.PI / 2,
-          side: "left",
-        },
-
-        {
-          game: games[3],
-          position: [
-            -25.3,
-            0.3,
-            5.4,
-          ],
-          rotation:
-            Math.PI / 2,
-          side: "left",
-        },
-
-        {
-          game: games[4],
-          position: [
-            -25.3,
-            0.3,
-            15.2,
-          ],
-          rotation:
-            Math.PI / 2,
-          side: "left",
-        },
-
-        {
-          game: games[5],
-          position: [
-            25.3,
-            0.3,
-            15.2,
-          ],
-          rotation:
-            -Math.PI / 2,
-          side: "right",
-        },
-
-        {
-          game: games[6],
-          position: [
-            25.3,
-            0.3,
-            5.4,
-          ],
-          rotation:
-            -Math.PI / 2,
-          side: "right",
-        },
-
-        {
-          game: games[7],
-          position: [
-            25.3,
-            0.3,
-            -4.4,
-          ],
-          rotation:
-            -Math.PI / 2,
-          side: "right",
-        },
-
-        {
-          game: games[8],
-          position: [
-            25.3,
-            0.3,
-            -14.2,
-          ],
-          rotation:
-            -Math.PI / 2,
-          side: "right",
-        },
-
-        {
-          game: games[9],
-          position: [
-            25.3,
-            0.3,
-            -24,
-          ],
-          rotation:
-            -Math.PI / 2,
-          side: "right",
-        },
+        ...leftStations,
+        ...rightStations,
       ],
-      [games]
+      [
+        leftStations,
+        rightStations,
+      ]
     );
 
   return (
@@ -1722,7 +2108,6 @@ export default function PopularTodayHall() {
           SUELO
 
           NO TOCAMOS TODAVÍA LA FRANJA GRIS.
-          Primero identificaremos qué componente la genera.
       =================================================== */}
 
       <mesh
@@ -1750,7 +2135,9 @@ export default function PopularTodayHall() {
           roughness={0.2}
           metalness={0.48}
           clearcoat={0.32}
-          clearcoatRoughness={0.24}
+          clearcoatRoughness={
+            0.24
+          }
         />
       </mesh>
 
@@ -1764,73 +2151,79 @@ export default function PopularTodayHall() {
         9,
         15,
         21,
-      ].map((z) => (
-        <group
-          key={`floor-panel-${z}`}
-        >
-          <mesh
-            position={[
-              0,
-              FINISHED_FLOOR_Y +
-                0.006,
-              z,
-            ]}
-            rotation={[
-              -Math.PI / 2,
-              0,
-              0,
-            ]}
+      ].map(
+        (z) => (
+          <group
+            key={
+              `floor-panel-${z}`
+            }
           >
-            <planeGeometry
-              args={[
-                16,
-                5.55,
+            <mesh
+              position={[
+                0,
+                FINISHED_FLOOR_Y +
+                  0.006,
+                z,
               ]}
+              rotation={[
+                -Math.PI / 2,
+                0,
+                0,
+              ]}
+            >
+              <planeGeometry
+                args={[
+                  16,
+                  5.55,
+                ]}
+              />
+
+              <meshPhysicalMaterial
+                color="#11151a"
+                roughness={0.18}
+                metalness={0.5}
+                clearcoat={0.25}
+              />
+            </mesh>
+
+            <Led
+              position={[
+                -8.2,
+                FINISHED_FLOOR_Y +
+                  0.018,
+                z,
+              ]}
+              size={[
+                0.035,
+                0.025,
+                5,
+              ]}
+              color="#536875"
+              intensity={0.4}
             />
 
-            <meshPhysicalMaterial
-              color="#11151a"
-              roughness={0.18}
-              metalness={0.5}
-              clearcoat={0.25}
+            <Led
+              position={[
+                8.2,
+                FINISHED_FLOOR_Y +
+                  0.018,
+                z,
+              ]}
+              size={[
+                0.035,
+                0.025,
+                5,
+              ]}
+              color="#536875"
+              intensity={0.4}
             />
-          </mesh>
+          </group>
+        )
+      )}
 
-          <Led
-            position={[
-              -8.2,
-              FINISHED_FLOOR_Y +
-                0.018,
-              z,
-            ]}
-            size={[
-              0.035,
-              0.025,
-              5,
-            ]}
-            color="#536875"
-            intensity={0.4}
-          />
-
-          <Led
-            position={[
-              8.2,
-              FINISHED_FLOOR_Y +
-                0.018,
-              z,
-            ]}
-            size={[
-              0.035,
-              0.025,
-              5,
-            ]}
-            color="#536875"
-            intensity={0.4}
-          />
-        </group>
-      ))}
-
-      {/* GALERÍAS */}
+      {/* ===================================================
+          22 PANELES ARQUITECTÓNICOS
+      =================================================== */}
 
       {stations.map(
         ({
@@ -1839,27 +2232,45 @@ export default function PopularTodayHall() {
           side,
         }) => (
           <GalleryBay
-            key={`bay-${game.id}`}
+            key={
+              `bay-${side}-${game.id}`
+            }
             side={side}
-            z={position[2]}
-            accent={game.accent}
+            z={
+              position[2]
+            }
+            accent={
+              game.accent
+            }
           />
         )
       )}
 
-      {/* JUEGOS */}
+      {/* ===================================================
+          22 EXPOSITORES
+
+          10 próximos + Random
+          10 populares + Random
+      =================================================== */}
 
       {stations.map(
         ({
           game,
           position,
           rotation,
+          side,
         }) => (
           <GameStation
-            key={game.id}
+            key={
+              `station-${side}-${game.id}`
+            }
             game={game}
-            position={position}
-            rotation={rotation}
+            position={
+              position
+            }
+            rotation={
+              rotation
+            }
           />
         )
       )}
@@ -1867,19 +2278,6 @@ export default function PopularTodayHall() {
       <PremiumCeiling />
 
       <VideoStage />
-
-      {/*
-        ELIMINADOS DE ESTA VERSIÓN:
-
-        - Isla central TOP 10
-        - Banco izquierdo trasero
-        - Banco derecho trasero
-        - Banco izquierdo delantero
-        - Banco derecho delantero
-
-        Son los cinco bloques que ocupaban
-        el espacio central delante de la pantalla.
-      */}
 
       <Planter
         position={[
