@@ -1098,9 +1098,9 @@ function hasMinimumPopularitySignal(
     );
 
   return (
-    totalRatingCount >= 3 ||
-    ratingCount >= 3 ||
-    hypes >= 15
+    totalRatingCount >= 5 ||
+    ratingCount >= 5 ||
+    hypes >= 50
   );
 }
 
