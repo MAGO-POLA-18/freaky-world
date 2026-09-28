@@ -19,9 +19,7 @@ function getEnvironment() {
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
-    throw new Error(
-      "Falta SUPABASE_URL."
-    );
+    throw new Error("Falta SUPABASE_URL.");
   }
 
   if (!supabaseSecret) {
@@ -33,39 +31,37 @@ function getEnvironment() {
   return {
     supabaseUrl:
       supabaseUrl.replace(/\/+$/, ""),
-
     supabaseSecret,
   };
 }
 
 /* =========================================================
-   PETICIÓN A SUPABASE
+   SUPABASE
 ========================================================= */
 
 async function supabaseGet(
   environment,
   path
 ) {
-  const response =
-    await fetch(
-      `${environment.supabaseUrl}/rest/v1/${path}`,
-      {
-        method: "GET",
+  const response = await fetch(
+    `${environment.supabaseUrl}/rest/v1/${path}`,
+    {
+      method: "GET",
 
-        headers: {
-          apikey:
-            environment.supabaseSecret,
+      headers: {
+        apikey:
+          environment.supabaseSecret,
 
-          Authorization:
-            `Bearer ${environment.supabaseSecret}`,
+        Authorization:
+          `Bearer ${environment.supabaseSecret}`,
 
-          Accept:
-            "application/json",
-        },
+        Accept:
+          "application/json",
+      },
 
-        cache: "no-store",
-      }
-    );
+      cache: "no-store",
+    }
+  );
 
   if (!response.ok) {
     const errorText =
@@ -95,6 +91,257 @@ function uniqueNumbers(values) {
         )
     ),
   ];
+}
+
+function parseGameId(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const normalized =
+    String(value).trim();
+
+  if (!/^\d+$/.test(normalized)) {
+    return NaN;
+  }
+
+  const id =
+    Number(normalized);
+
+  if (
+    !Number.isSafeInteger(id) ||
+    id <= 0
+  ) {
+    return NaN;
+  }
+
+  return id;
+}
+
+function parsePositiveInteger(
+  value,
+  fallback
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  const normalized =
+    String(value).trim();
+
+  if (!/^\d+$/.test(normalized)) {
+    return fallback;
+  }
+
+  const number =
+    Number(normalized);
+
+  if (
+    !Number.isSafeInteger(number) ||
+    number <= 0
+  ) {
+    return fallback;
+  }
+
+  return number;
+}
+
+function cleanSearch(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value)
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 100);
+}
+
+function escapePostgrestLike(value) {
+  return String(value)
+    .replace(/[%*_(),]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/* =========================================================
+   CAMPOS DE FICHA COMPLETA
+========================================================= */
+
+const GAME_SELECT_FIELDS = [
+  "id",
+  "slug",
+  "name",
+
+  "summary",
+  "summary_es",
+
+  "storyline",
+  "storyline_es",
+
+  "translation_status",
+  "translation_source",
+  "translation_updated_at",
+
+  "first_release_date",
+  "release_year",
+
+  "category",
+  "status",
+  "release_type",
+
+  "rating",
+  "rating_count",
+  "total_rating",
+  "total_rating_count",
+  "hypes",
+
+  "cover_image_id",
+  "cover_small_url",
+  "cover_medium_url",
+  "cover_large_url",
+
+  "developer",
+  "publisher",
+
+  "franchise_name",
+  "collection_name",
+
+  "checksum",
+  "igdb_url",
+  "source",
+  "active",
+
+  "editorial_summary",
+
+  "freaky_official_score",
+  "freaky_official_votes",
+
+  "community_score",
+  "community_votes",
+
+  "manual_trailer_youtube_id",
+  "manual_trailer_url",
+
+  "data_sources",
+  "featured",
+].join(",");
+
+/* =========================================================
+   CAMPOS LIGEROS
+
+   Estos son los únicos datos que se descargan para:
+   - biblioteca
+   - buscador
+   - resultados
+   - tarjetas
+
+   NO cargamos vídeos, galerías, idiomas, etc.
+========================================================= */
+
+const LIGHT_GAME_FIELDS = [
+  "id",
+  "slug",
+  "name",
+  "release_year",
+  "first_release_date",
+  "developer",
+  "publisher",
+  "cover_small_url",
+  "cover_medium_url",
+  "cover_large_url",
+  "rating",
+  "rating_count",
+  "total_rating",
+  "total_rating_count",
+  "hypes",
+  "freaky_official_score",
+  "freaky_official_votes",
+  "community_score",
+  "community_votes",
+  "featured",
+  "active",
+].join(",");
+
+/* =========================================================
+   FORMATO LIGERO
+========================================================= */
+
+function createLightGame(game) {
+  return {
+    id:
+      game.id,
+
+    slug:
+      game.slug,
+
+    name:
+      game.name,
+
+    year:
+      game.release_year,
+
+    releaseDate:
+      game.first_release_date,
+
+    developer:
+      game.developer,
+
+    publisher:
+      game.publisher,
+
+    cover: {
+      small:
+        game.cover_small_url,
+
+      medium:
+        game.cover_medium_url,
+
+      large:
+        game.cover_large_url,
+    },
+
+    rating:
+      game.rating,
+
+    ratingCount:
+      game.rating_count,
+
+    totalRating:
+      game.total_rating,
+
+    totalRatingCount:
+      game.total_rating_count,
+
+    hypes:
+      game.hypes,
+
+    freakyOfficialScore:
+      game.freaky_official_score,
+
+    freakyOfficialVotes:
+      game.freaky_official_votes,
+
+    communityScore:
+      game.community_score,
+
+    communityVotes:
+      game.community_votes,
+
+    featured:
+      game.featured,
+
+    active:
+      game.active,
+  };
 }
 
 /* =========================================================
@@ -133,9 +380,7 @@ async function loadCatalogRelation({
           id !== undefined
       );
 
-  if (
-    ids.length === 0
-  ) {
+  if (!ids.length) {
     return [];
   }
 
@@ -194,9 +439,7 @@ async function loadPlatforms(
       )
       .filter(Boolean);
 
-  if (
-    ids.length === 0
-  ) {
+  if (!ids.length) {
     return [];
   }
 
@@ -228,19 +471,6 @@ async function loadPlatforms(
 
 /* =========================================================
    SIMILARES
-
-   game_similar_games guarda los IDs de IGDB.
-
-   Acá resolvemos esos IDs contra nuestra biblioteca.
-
-   Si el juego YA existe:
-   devolvemos sus datos mínimos.
-
-   Si todavía NO existe:
-   conservamos el ID y marcamos available=false.
-
-   IMPORTANTE:
-   esta API NO importa automáticamente juegos.
 ========================================================= */
 
 async function loadSimilarGames(
@@ -273,9 +503,7 @@ async function loadSimilarGames(
       )
     );
 
-  if (
-    ids.length === 0
-  ) {
+  if (!ids.length) {
     return [];
   }
 
@@ -333,7 +561,6 @@ async function loadSimilarGames(
           id,
           position:
             relation.position,
-
           available:
             false,
         };
@@ -404,7 +631,7 @@ async function loadSimilarGames(
 }
 
 /* =========================================================
-   CARGAR FICHA MAESTRA
+   FICHA COMPLETA
 ========================================================= */
 
 async function loadCompleteGame(
@@ -426,137 +653,112 @@ async function loadCompleteGame(
     similarGames,
     ageRatings,
     languages,
-  ] =
-    await Promise.all([
-      loadPlatforms(
-        environment,
-        game.id
-      ),
+  ] = await Promise.all([
+    loadPlatforms(
+      environment,
+      game.id
+    ),
 
-      supabaseGet(
-        environment,
-        `game_videos?select=id,name,youtube_id,youtube_url,position&game_id=eq.${game.id}&order=position.asc`
-      ),
+    supabaseGet(
+      environment,
+      `game_videos?select=id,name,youtube_id,youtube_url,position&game_id=eq.${game.id}&order=position.asc`
+    ),
 
-      supabaseGet(
-        environment,
-        `game_screenshots?select=id,image_id,image_url,position&game_id=eq.${game.id}&order=position.asc`
-      ),
+    supabaseGet(
+      environment,
+      `game_screenshots?select=id,image_id,image_url,position&game_id=eq.${game.id}&order=position.asc`
+    ),
 
-      supabaseGet(
-        environment,
-        `game_artworks?select=id,image_id,image_url,position&game_id=eq.${game.id}&order=position.asc`
-      ),
+    supabaseGet(
+      environment,
+      `game_artworks?select=id,image_id,image_url,position&game_id=eq.${game.id}&order=position.asc`
+    ),
 
-      supabaseGet(
-        environment,
-        `game_alternative_names?select=id,name,comment,position&game_id=eq.${game.id}&order=position.asc`
-      ),
+    supabaseGet(
+      environment,
+      `game_alternative_names?select=id,name,comment,position&game_id=eq.${game.id}&order=position.asc`
+    ),
 
-      loadCatalogRelation({
-        environment,
-        gameId:
-          game.id,
+    loadCatalogRelation({
+      environment,
+      gameId:
+        game.id,
+      relationTable:
+        "game_genres",
+      relationColumn:
+        "genre_id",
+      catalogTable:
+        "genres",
+    }),
 
-        relationTable:
-          "game_genres",
+    loadCatalogRelation({
+      environment,
+      gameId:
+        game.id,
+      relationTable:
+        "game_themes",
+      relationColumn:
+        "theme_id",
+      catalogTable:
+        "themes",
+    }),
 
-        relationColumn:
-          "genre_id",
+    loadCatalogRelation({
+      environment,
+      gameId:
+        game.id,
+      relationTable:
+        "game_game_modes",
+      relationColumn:
+        "game_mode_id",
+      catalogTable:
+        "game_modes",
+    }),
 
-        catalogTable:
-          "genres",
-      }),
+    loadCatalogRelation({
+      environment,
+      gameId:
+        game.id,
+      relationTable:
+        "game_player_perspectives",
+      relationColumn:
+        "perspective_id",
+      catalogTable:
+        "player_perspectives",
+    }),
 
-      loadCatalogRelation({
-        environment,
-        gameId:
-          game.id,
+    loadCatalogRelation({
+      environment,
+      gameId:
+        game.id,
+      relationTable:
+        "game_game_engines",
+      relationColumn:
+        "engine_id",
+      catalogTable:
+        "game_engines",
+    }),
 
-        relationTable:
-          "game_themes",
+    supabaseGet(
+      environment,
+      `game_websites?select=id,category,url,trusted,position&game_id=eq.${game.id}&order=position.asc`
+    ),
 
-        relationColumn:
-          "theme_id",
+    loadSimilarGames(
+      environment,
+      game.id
+    ),
 
-        catalogTable:
-          "themes",
-      }),
+    supabaseGet(
+      environment,
+      `game_age_ratings?select=id,organization,rating,synopsis,content_descriptors&game_id=eq.${game.id}`
+    ),
 
-      loadCatalogRelation({
-        environment,
-        gameId:
-          game.id,
-
-        relationTable:
-          "game_game_modes",
-
-        relationColumn:
-          "game_mode_id",
-
-        catalogTable:
-          "game_modes",
-      }),
-
-      loadCatalogRelation({
-        environment,
-        gameId:
-          game.id,
-
-        relationTable:
-          "game_player_perspectives",
-
-        relationColumn:
-          "perspective_id",
-
-        catalogTable:
-          "player_perspectives",
-      }),
-
-      loadCatalogRelation({
-        environment,
-        gameId:
-          game.id,
-
-        relationTable:
-          "game_game_engines",
-
-        relationColumn:
-          "engine_id",
-
-        catalogTable:
-          "game_engines",
-      }),
-
-      supabaseGet(
-        environment,
-        `game_websites?select=id,category,url,trusted,position&game_id=eq.${game.id}&order=position.asc`
-      ),
-
-      loadSimilarGames(
-        environment,
-        game.id
-      ),
-
-      supabaseGet(
-        environment,
-        `game_age_ratings?select=id,organization,rating,synopsis,content_descriptors&game_id=eq.${game.id}`
-      ),
-
-      supabaseGet(
-        environment,
-        `game_languages?select=id,language_id,language_name,native_name,audio,subtitles,interface&game_id=eq.${game.id}`
-      ),
-    ]);
-
-  /* =======================================================
-     TEXTOS
-
-     Para interfaz usamos español si existe.
-
-     También devolvemos explícitamente originales y español
-     para no perder ninguna versión.
-  ======================================================= */
+    supabaseGet(
+      environment,
+      `game_languages?select=id,language_id,language_name,native_name,audio,subtitles,interface&game_id=eq.${game.id}`
+    ),
+  ]);
 
   const displaySummary =
     game.summary_es ||
@@ -569,10 +771,6 @@ async function loadCompleteGame(
     null;
 
   return {
-    /* =====================================================
-       IDENTIDAD
-    ===================================================== */
-
     id:
       game.id,
 
@@ -581,10 +779,6 @@ async function loadCompleteGame(
 
     name:
       game.name,
-
-    /* =====================================================
-       TEXTOS
-    ===================================================== */
 
     summary:
       displaySummary,
@@ -631,10 +825,6 @@ async function loadCompleteGame(
         ),
     },
 
-    /* =====================================================
-       LANZAMIENTO
-    ===================================================== */
-
     releaseDate:
       game.first_release_date,
 
@@ -650,10 +840,6 @@ async function loadCompleteGame(
     releaseType:
       game.release_type,
 
-    /* =====================================================
-       EMPRESAS / SAGA
-    ===================================================== */
-
     developer:
       game.developer,
 
@@ -665,10 +851,6 @@ async function loadCompleteGame(
 
     collection:
       game.collection_name,
-
-    /* =====================================================
-       PUNTUACIONES IGDB
-    ===================================================== */
 
     rating:
       game.rating,
@@ -685,10 +867,6 @@ async function loadCompleteGame(
     hypes:
       game.hypes,
 
-    /* =====================================================
-       PUNTUACIONES FREAKY
-    ===================================================== */
-
     freakyOfficialScore:
       game.freaky_official_score,
 
@@ -700,10 +878,6 @@ async function loadCompleteGame(
 
     communityVotes:
       game.community_votes,
-
-    /* =====================================================
-       PORTADA
-    ===================================================== */
 
     cover: {
       imageId:
@@ -719,10 +893,6 @@ async function loadCompleteGame(
         game.cover_large_url,
     },
 
-    /* =====================================================
-       CLASIFICACIÓN
-    ===================================================== */
-
     platforms,
 
     genres,
@@ -736,10 +906,6 @@ async function loadCompleteGame(
 
     gameEngines:
       engines,
-
-    /* =====================================================
-       VÍDEOS
-    ===================================================== */
 
     videos:
       videos.map(
@@ -772,10 +938,6 @@ async function loadCompleteGame(
               game.manual_trailer_url,
           }
         : null,
-
-    /* =====================================================
-       GALERÍA
-    ===================================================== */
 
     screenshots:
       screenshots.map(
@@ -811,10 +973,6 @@ async function loadCompleteGame(
         })
       ),
 
-    /* =====================================================
-       TÍTULOS ALTERNATIVOS
-    ===================================================== */
-
     alternativeNames:
       alternativeNames.map(
         (item) => ({
@@ -831,10 +989,6 @@ async function loadCompleteGame(
             item.position,
         })
       ),
-
-    /* =====================================================
-       EDADES
-    ===================================================== */
 
     ageRatings:
       ageRatings.map(
@@ -856,10 +1010,6 @@ async function loadCompleteGame(
             [],
         })
       ),
-
-    /* =====================================================
-       IDIOMAS
-    ===================================================== */
 
     languages:
       languages.map(
@@ -887,10 +1037,6 @@ async function loadCompleteGame(
         })
       ),
 
-    /* =====================================================
-       WEBS
-    ===================================================== */
-
     websites:
       websites.map(
         (website) => ({
@@ -911,21 +1057,7 @@ async function loadCompleteGame(
         })
       ),
 
-    /* =====================================================
-       SIMILARES
-
-       available=true:
-       ya está en nuestra biblioteca.
-
-       available=false:
-       IGDB lo relaciona pero todavía no lo importamos.
-    ===================================================== */
-
     similarGames,
-
-    /* =====================================================
-       METADATOS
-    ===================================================== */
 
     igdbUrl:
       game.igdb_url,
@@ -949,118 +1081,170 @@ async function loadCompleteGame(
 }
 
 /* =========================================================
-   CAMPOS BASE DE GAMES
-
-   Centralizados para poder usarlos tanto en:
-   /api/games
-   como en:
-   /api/games?id=40
+   FICHA POR ID
 ========================================================= */
 
-const GAME_SELECT_FIELDS = [
-  "id",
-  "slug",
-  "name",
+async function getGameById(
+  environment,
+  id
+) {
+  const games =
+    await supabaseGet(
+      environment,
+      [
+        "games",
+        "?select=",
+        GAME_SELECT_FIELDS,
+        `&id=eq.${id}`,
+        "&limit=1",
+      ].join("")
+    );
 
-  "summary",
-  "summary_es",
-
-  "storyline",
-  "storyline_es",
-
-  "translation_status",
-  "translation_source",
-  "translation_updated_at",
-
-  "first_release_date",
-  "release_year",
-
-  "category",
-  "status",
-  "release_type",
-
-  "rating",
-  "rating_count",
-  "total_rating",
-  "total_rating_count",
-  "hypes",
-
-  "cover_image_id",
-  "cover_small_url",
-  "cover_medium_url",
-  "cover_large_url",
-
-  "developer",
-  "publisher",
-
-  "franchise_name",
-  "collection_name",
-
-  "checksum",
-  "igdb_url",
-  "source",
-  "active",
-
-  "editorial_summary",
-
-  "freaky_official_score",
-  "freaky_official_votes",
-
-  "community_score",
-  "community_votes",
-
-  "manual_trailer_youtube_id",
-  "manual_trailer_url",
-
-  "data_sources",
-  "featured",
-].join(",");
-
-/* =========================================================
-   VALIDAR ID
-========================================================= */
-
-function parseGameId(value) {
   if (
-    value === null ||
-    value === undefined ||
-    value === ""
+    !games ||
+    games.length === 0
   ) {
     return null;
   }
 
-  const normalized =
-    String(value).trim();
+  return loadCompleteGame(
+    environment,
+    games[0]
+  );
+}
 
-  if (
-    !/^\d+$/.test(
-      normalized
-    )
-  ) {
-    return NaN;
+/* =========================================================
+   BIBLIOTECA LIGERA
+
+   IMPORTANTE:
+   Nunca construye fichas completas.
+
+   Solo devuelve los datos necesarios
+   para mostrar tarjetas.
+========================================================= */
+
+async function getLibrary({
+  environment,
+  search,
+  page,
+  limit,
+}) {
+  const offset =
+    (page - 1) * limit;
+
+  const fetchLimit =
+    limit + 1;
+
+  const parts = [
+    "games",
+    "?select=",
+    LIGHT_GAME_FIELDS,
+    "&active=eq.true",
+  ];
+
+  if (search) {
+    const safeSearch =
+      escapePostgrestLike(search);
+
+    if (safeSearch) {
+      parts.push(
+        `&name=ilike.*${encodeURIComponent(
+          safeSearch
+        )}*`
+      );
+    }
   }
 
-  const id =
-    Number(normalized);
+  /*
+   * Para búsquedas ordenamos primero por nombre.
+   *
+   * Para biblioteca general usamos cantidad de
+   * valoraciones como orden estable inicial.
+   *
+   * Más adelante Populares Hoy tendrá su endpoint
+   * y su lógica independiente.
+   */
 
-  if (
-    !Number.isSafeInteger(id) ||
-    id <= 0
-  ) {
-    return NaN;
+  if (search) {
+    parts.push(
+      "&order=name.asc,id.asc"
+    );
+  } else {
+    parts.push(
+      "&order=total_rating_count.desc.nullslast,id.asc"
+    );
   }
 
-  return id;
+  parts.push(
+    `&offset=${offset}`
+  );
+
+  parts.push(
+    `&limit=${fetchLimit}`
+  );
+
+  const rows =
+    await supabaseGet(
+      environment,
+      parts.join("")
+    );
+
+  const hasMore =
+    rows.length > limit;
+
+  const visibleRows =
+    hasMore
+      ? rows.slice(0, limit)
+      : rows;
+
+  return {
+    games:
+      visibleRows.map(
+        createLightGame
+      ),
+
+    pagination: {
+      page,
+
+      limit,
+
+      returned:
+        visibleRows.length,
+
+      hasMore,
+
+      nextPage:
+        hasMore
+          ? page + 1
+          : null,
+
+      previousPage:
+        page > 1
+          ? page - 1
+          : null,
+    },
+  };
 }
 
 /* =========================================================
    GET /api/games
 
+   EJEMPLOS
+
+   Ficha completa:
+   /api/games?id=40
+
    Biblioteca:
    /api/games
 
-   Ficha individual:
-   /api/games?id=40
+   Biblioteca paginada:
+   /api/games?page=2&limit=24
+
+   Búsqueda:
+   /api/games?search=mafia
+
+   Búsqueda paginada:
+   /api/games?search=resident&page=2&limit=20
 ========================================================= */
 
 export async function GET(
@@ -1075,16 +1259,16 @@ export async function GET(
         request.url
       );
 
+    /* =====================================================
+       ID
+    ===================================================== */
+
     const requestedId =
       parseGameId(
         searchParams.get(
           "id"
         )
       );
-
-    /* =====================================================
-       ID INVÁLIDO
-    ===================================================== */
 
     if (
       Number.isNaN(
@@ -1107,28 +1291,21 @@ export async function GET(
     }
 
     /* =====================================================
-       FICHA INDIVIDUAL
+       FICHA COMPLETA
+
+       Tiene prioridad sobre cualquier otro parámetro.
     ===================================================== */
 
     if (
       requestedId !== null
     ) {
-      const games =
-        await supabaseGet(
+      const game =
+        await getGameById(
           environment,
-          [
-            "games",
-            "?select=",
-            GAME_SELECT_FIELDS,
-            `&id=eq.${requestedId}`,
-            "&limit=1",
-          ].join("")
+          requestedId
         );
 
-      if (
-        !games ||
-        games.length === 0
-      ) {
+      if (!game) {
         return NextResponse.json(
           {
             ok:
@@ -1141,7 +1318,7 @@ export async function GET(
               requestedId,
 
             error:
-              `El juego ${requestedId} no existe todavía en la biblioteca de Freaky World.`,
+              `El juego ${requestedId} no existe todavía en la biblioteca de Tierra Vicio.`,
           },
           {
             status:
@@ -1155,12 +1332,6 @@ export async function GET(
         );
       }
 
-      const completeGame =
-        await loadCompleteGame(
-          environment,
-          games[0]
-        );
-
       return NextResponse.json(
         {
           ok:
@@ -1170,10 +1341,9 @@ export async function GET(
             true,
 
           source:
-            "Freaky World Database",
+            "Tierra Vicio Database",
 
-          game:
-            completeGame,
+          game,
         },
         {
           status:
@@ -1188,36 +1358,66 @@ export async function GET(
     }
 
     /* =====================================================
-       BIBLIOTECA
-
-       Ya NO limitamos a los 10 juegos iniciales.
-
-       Todo juego activo incorporado a Freaky World
-       puede aparecer en esta API.
+       BIBLIOTECA / BUSCADOR
     ===================================================== */
 
-    const games =
-      await supabaseGet(
-        environment,
-        [
-          "games",
-          "?select=",
-          GAME_SELECT_FIELDS,
-          "&active=eq.true",
-          "&order=total_rating_count.desc.nullslast",
-        ].join("")
-      );
-
-    const completeGames =
-      await Promise.all(
-        games.map(
-          (game) =>
-            loadCompleteGame(
-              environment,
-              game
-            )
+    const search =
+      cleanSearch(
+        searchParams.get(
+          "search"
+        ) ||
+        searchParams.get(
+          "q"
         )
       );
+
+    const page =
+      Math.min(
+        parsePositiveInteger(
+          searchParams.get(
+            "page"
+          ),
+          1
+        ),
+        100000
+      );
+
+    /*
+     * Búsqueda:
+     * máximo 20 por consulta.
+     *
+     * Biblioteca:
+     * máximo 50.
+     */
+
+    const requestedLimit =
+      parsePositiveInteger(
+        searchParams.get(
+          "limit"
+        ),
+        search
+          ? 20
+          : 24
+      );
+
+    const maxLimit =
+      search
+        ? 20
+        : 50;
+
+    const limit =
+      Math.min(
+        requestedLimit,
+        maxLimit
+      );
+
+    const result =
+      await getLibrary({
+        environment,
+        search,
+        page,
+        limit,
+      });
 
     return NextResponse.json(
       {
@@ -1225,27 +1425,47 @@ export async function GET(
           true,
 
         source:
-          "Freaky World Database",
+          "Tierra Vicio Database",
+
+        mode:
+          search
+            ? "search"
+            : "library",
+
+        query:
+          search ||
+          null,
 
         count:
-          completeGames.length,
+          result.games.length,
+
+        pagination:
+          result.pagination,
 
         games:
-          completeGames,
+          result.games,
       },
       {
         status:
           200,
 
         headers: {
+          /*
+           * Pequeña caché.
+           *
+           * No afecta a las fichas individuales.
+           * Evita repetir consultas idénticas
+           * continuamente al navegar.
+           */
+
           "Cache-Control":
-            "no-store, max-age=0",
+            "public, s-maxage=30, stale-while-revalidate=120",
         },
       }
     );
   } catch (error) {
     console.error(
-      "[Freaky World / Games API]",
+      "[Tierra Vicio / Games API]",
       error
     );
 
