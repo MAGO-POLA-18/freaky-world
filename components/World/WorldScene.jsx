@@ -29,6 +29,7 @@ import RankingOverlay from "./RankingOverlay";
 import FullGameOverlay from "./FullGameOverlay";
 import VideoOverlay from "./VideoOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
+import GameSearchOverlay from "./GameSearchOverlay";
 
 /* =========================================================
    CALIDAD
@@ -84,6 +85,19 @@ export default function WorldScene() {
     setFullGame,
   ] = useState(null);
 
+  /*
+    Buscador global de Tierra Vicio.
+
+    Vive como interfaz 2D por encima
+    del Canvas para no añadir carga
+    innecesaria al mundo 3D.
+  */
+
+  const [
+    searchOpen,
+    setSearchOpen,
+  ] = useState(false);
+
   const [
     quality,
     setQuality,
@@ -121,14 +135,19 @@ export default function WorldScene() {
 
   /*
     El mundo se considera bloqueado
-    tanto con la ficha rápida
-    como con la ficha completa.
+    con cualquier interfaz que requiera
+    interacción exclusiva:
+
+    - ficha rápida
+    - ficha completa
+    - buscador
   */
 
   const overlayOpen =
     Boolean(
       openedGame ||
-      fullGame
+      fullGame ||
+      searchOpen
     );
 
   const isVideoWall =
@@ -242,12 +261,12 @@ export default function WorldScene() {
   /* =======================================================
      ABRIR FICHA COMPLETA
 
-     RankingOverlay ya dispara:
+     Tanto RankingOverlay como el
+     buscador pueden terminar abriendo
+     esta misma ficha.
 
-     freaky:open-full-game
-
-     Acá lo escuchamos y cambiamos
-     de ficha rápida a ficha completa.
+     Toda Tierra Vicio utiliza así
+     una única ficha completa.
   ======================================================= */
 
   useEffect(() => {
@@ -267,6 +286,7 @@ export default function WorldScene() {
       playerInput.dashRequested =
         false;
 
+      setSearchOpen(false);
       setFullGame(game);
     };
 
@@ -284,7 +304,74 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR 2D
+     BUSCADOR GLOBAL
+  ======================================================= */
+
+  const openSearch =
+    useCallback(() => {
+      if (
+        openedGame ||
+        fullGame
+      ) {
+        return;
+      }
+
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+
+      setShowTutorial(false);
+      setSearchOpen(true);
+    }, [
+      openedGame,
+      fullGame,
+    ]);
+
+  const closeSearch =
+    useCallback(() => {
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+
+      setSearchOpen(false);
+    }, []);
+
+  /*
+    El resultado que llega desde
+    GameSearchOverlay es deliberadamente
+    ligero.
+
+    FullGameOverlay se encargará de
+    cargar /api/games?id=... y obtener
+    la ficha maestra completa.
+  */
+
+  const selectSearchGame =
+    useCallback(
+      (game) => {
+        if (!game?.id) {
+          return;
+        }
+
+        playerInput.x = 0;
+        playerInput.y = 0;
+
+        playerInput.dashRequested =
+          false;
+
+        setSearchOpen(false);
+        setOpenedGame(null);
+        setFullGame(game);
+      },
+      []
+    );
+
+  /* =======================================================
+     ABRIR 2D DESDE EL MUNDO
   ======================================================= */
 
   const openGame =
@@ -302,11 +389,7 @@ export default function WorldScene() {
       playerInput.dashRequested =
         false;
 
-      /*
-        Por seguridad limpiamos
-        cualquier ficha completa anterior.
-      */
-
+      setSearchOpen(false);
       setFullGame(null);
 
       setOpenedGame(
@@ -329,13 +412,13 @@ export default function WorldScene() {
       playerInput.dashRequested =
         false;
 
+      setSearchOpen(false);
       setFullGame(null);
       setOpenedGame(null);
     }, []);
 
   /* =======================================================
      VOLVER DE FICHA COMPLETA
-     A FICHA RÁPIDA
   ======================================================= */
 
   const backToQuickGame =
@@ -358,18 +441,25 @@ export default function WorldScene() {
       event
     ) => {
       /*
-        Si estamos en ficha completa,
-        dejamos que FullGameOverlay
-        gestione Escape.
+        Mientras escribimos en el buscador
+        no permitimos que WASD/E/P disparen
+        acciones del mundo.
 
-        Así Escape cierra todo y vuelve
-        al mundo mediante onClose.
+        Escape lo gestiona
+        GameSearchOverlay.
       */
+
+      if (searchOpen) {
+        return;
+      }
 
       if (
         event.code ===
           "Escape" &&
-        overlayOpen
+        (
+          openedGame ||
+          fullGame
+        )
       ) {
         event.preventDefault();
 
@@ -387,11 +477,45 @@ export default function WorldScene() {
         event.preventDefault();
 
         openGame();
+
+        return;
+      }
+
+      /*
+        Atajo de escritorio:
+        F abre el buscador global.
+
+        No usamos una letra habitual
+        de movimiento.
+      */
+
+      if (
+        event.code ===
+          "KeyF" &&
+        !overlayOpen
+      ) {
+        const target =
+          event.target;
+
+        const editing =
+          target instanceof
+            HTMLInputElement ||
+          target instanceof
+            HTMLTextAreaElement ||
+          target?.isContentEditable;
+
+        if (!editing) {
+          event.preventDefault();
+          openSearch();
+
+          return;
+        }
       }
 
       if (
         event.code ===
-        "KeyP"
+          "KeyP" &&
+        !overlayOpen
       ) {
         setShowStats(
           (current) =>
@@ -413,8 +537,12 @@ export default function WorldScene() {
     };
   }, [
     nearbyGame,
+    openedGame,
+    fullGame,
+    searchOpen,
     overlayOpen,
     openGame,
+    openSearch,
     closeGame,
   ]);
 
@@ -537,6 +665,9 @@ export default function WorldScene() {
                       <br />
 
                       E para abrir en 2D
+                      <br />
+
+                      F para buscar juegos
                     </>
                   )}
                 </div>
@@ -568,6 +699,9 @@ export default function WorldScene() {
 
                   fontSize:
                     20,
+
+                  cursor:
+                    "pointer",
                 }}
               >
                 ×
@@ -577,10 +711,83 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          FPS
+          BOTÓN BUSCADOR GLOBAL
       =================================================== */}
 
       {!overlayOpen && (
+        <button
+          type="button"
+          aria-label="Buscar juegos"
+          onClick={
+            openSearch
+          }
+          style={{
+            position:
+              "fixed",
+
+            top:
+              14,
+
+            right:
+              mobile
+                ? 62
+                : 70,
+
+            zIndex:
+              80,
+
+            width:
+              38,
+
+            height:
+              34,
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            padding:
+              0,
+
+            border:
+              "1px solid rgba(255,255,255,.14)",
+
+            borderRadius:
+              9,
+
+            background:
+              "rgba(0,0,0,.48)",
+
+            backdropFilter:
+              "blur(8px)",
+
+            color:
+              "#fff",
+
+            fontSize:
+              19,
+
+            fontWeight:
+              800,
+
+            cursor:
+              "pointer",
+
+            touchAction:
+              "manipulation",
+          }}
+        >
+          ⌕
+        </button>
+      )}
+
+      {/* ===================================================
+          FPS
+      =================================================== */}
+
+            {!overlayOpen && (
         <>
           <button
             type="button"
@@ -623,6 +830,9 @@ export default function WorldScene() {
 
               fontWeight:
                 800,
+
+              cursor:
+                "pointer",
             }}
           >
             FPS
@@ -743,6 +953,9 @@ export default function WorldScene() {
 
                           fontSize:
                             10,
+
+                          cursor:
+                            "pointer",
                         }}
                       >
                         {hour ===
@@ -766,14 +979,17 @@ export default function WorldScene() {
       {/* ===================================================
           MUNDO 3D
 
-          Ya NO existe:
-          - CSS3DRenderer externo
-          - YouTubeScreen3D
-          - iframe global
-          - controles de vídeo flotantes
+          El Canvas permanece montado
+          aunque abramos:
 
-          La pantalla YouTube vive dentro
-          de PopularTodayHall.
+          - buscador
+          - ficha rápida
+          - ficha completa
+          - vídeo 2D
+
+          De esta manera cerrar una interfaz
+          devuelve al usuario exactamente
+          al mismo punto del mundo.
       =================================================== */}
 
       <Canvas
@@ -877,6 +1093,11 @@ export default function WorldScene() {
 
       {/* ===================================================
           CONTROLES MÓVILES
+
+          Se ocultan también mientras
+          el buscador está abierto porque
+          searchOpen forma parte de
+          overlayOpen.
       =================================================== */}
 
       {!overlayOpen && (
@@ -915,14 +1136,12 @@ export default function WorldScene() {
       {/* ===================================================
           PANTALLA VIDEO
 
-          No ponemos PLAY acá.
+          PLAY / PAUSA / BARRA / VOLUMEN
+          continúan perteneciendo a la
+          pantalla YouTube del mundo 3D.
 
-          PLAY/PAUSA/BARRA/VOLUMEN son
-          los controles nativos de YouTube
-          dentro de la pantalla.
-
-          Este botón solamente permite
-          abrir el mismo contenido en 2D.
+          Este botón únicamente abre
+          ese contenido en 2D.
       =================================================== */}
 
       {isVideoWall &&
@@ -976,6 +1195,9 @@ export default function WorldScene() {
               fontWeight:
                 850,
 
+              cursor:
+                "pointer",
+
               touchAction:
                 "manipulation",
             }}
@@ -983,6 +1205,32 @@ export default function WorldScene() {
             ↗ Abrir en 2D
           </button>
         )}
+
+      {/* ===================================================
+          BUSCADOR GLOBAL
+
+          Está fuera del Canvas.
+          No crea geometría ni texturas 3D.
+
+          Las búsquedas se realizan contra:
+          /api/games?search=...
+
+          Al seleccionar un resultado
+          pasamos directamente a la ficha
+          completa.
+      =================================================== */}
+
+      <GameSearchOverlay
+        open={
+          searchOpen
+        }
+        onClose={
+          closeSearch
+        }
+        onSelectGame={
+          selectSearchGame
+        }
+      />
 
       {/* ===================================================
           OVERLAYS 2D
@@ -993,12 +1241,12 @@ export default function WorldScene() {
           2. VideoOverlay
           3. Ficha rápida
 
-          De esta forma nunca quedan
-          dos interfaces visibles
-          simultáneamente.
+          El buscador se controla de forma
+          independiente mediante su prop
+          "open".
       =================================================== */}
 
-      {fullGame ? (
+            {fullGame ? (
         <FullGameOverlay
           game={fullGame}
           onClose={closeGame}
