@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
+import { randomInt } from "node:crypto";
 
 /* =========================================================
    TIERRA VICIO
-   ACTUALIDAD · PRÓXIMOS · RANDOM V1
+   ACTUALIDAD · PRÓXIMOS · RANDOM V2
 
-   OBJETIVO
-
-   - Elegir un próximo lanzamiento al azar.
-   - No descargar el catálogo completo al cliente.
-   - No modificar los 10 juegos seleccionados por V4.
-   - Entregar portadas adicionales para la animación
-     visual de la ruleta.
+   - Sorteo sobre TODO el catálogo válido de próximos.
+   - No descarga el catálogo completo.
+   - 1 consulta para contar.
+   - 1 consulta pequeña para obtener ganador + animación.
+   - Sin caché: cada pulsación es una tirada nueva.
 ========================================================= */
 
 export const runtime = "nodejs";
@@ -20,14 +19,8 @@ export const dynamic = "force-dynamic";
    CONFIGURACIÓN
 ========================================================= */
 
-const RANDOM_POOL_SIZE = 500;
-const ANIMATION_COVERS = 12;
-
-/*
- * Buscamos dentro de un horizonte amplio.
- * Así Random sirve también para descubrir juegos
- * que todavía faltan varios meses.
- */
+const ANIMATION_COUNT = 12;
+const WINDOW_SIZE = ANIMATION_COUNT + 1;
 const MAX_FUTURE_DAYS = 365;
 
 /* =========================================================
@@ -55,55 +48,32 @@ function getEnvironment() {
 
   return {
     supabaseUrl:
-      supabaseUrl.replace(
-        /\/+$/,
-        ""
-      ),
+      supabaseUrl.replace(/\/+$/, ""),
 
     supabaseSecret,
   };
 }
 
 /* =========================================================
-   SUPABASE
+   HEADERS SUPABASE
 ========================================================= */
 
-async function supabaseGet(
+function createSupabaseHeaders(
   environment,
-  path
+  extra = {}
 ) {
-  const response =
-    await fetch(
-      `${environment.supabaseUrl}/rest/v1/${path}`,
-      {
-        method: "GET",
+  return {
+    apikey:
+      environment.supabaseSecret,
 
-        headers: {
-          apikey:
-            environment.supabaseSecret,
+    Authorization:
+      `Bearer ${environment.supabaseSecret}`,
 
-          Authorization:
-            `Bearer ${environment.supabaseSecret}`,
+    Accept:
+      "application/json",
 
-          Accept:
-            "application/json",
-        },
-
-        cache:
-          "no-store",
-      }
-    );
-
-  if (!response.ok) {
-    const errorText =
-      await response.text();
-
-    throw new Error(
-      `Supabase respondió ${response.status}: ${errorText}`
-    );
-  }
-
-  return response.json();
+    ...extra,
+  };
 }
 
 /* =========================================================
@@ -142,6 +112,269 @@ const GAME_FIELDS = [
   "featured",
   "active",
 ].join(",");
+
+/* =========================================================
+   FECHAS
+========================================================= */
+
+function getFutureWindow() {
+  const now =
+    new Date();
+
+  const future =
+    new Date(now);
+
+  future.setUTCDate(
+    future.getUTCDate() +
+      MAX_FUTURE_DAYS
+  );
+
+  return {
+    nowIso:
+      now.toISOString(),
+
+    futureIso:
+      future.toISOString(),
+  };
+}
+
+/* =========================================================
+   FILTROS COMUNES
+
+   IMPORTANTE:
+   Todavía NO filtramos DLC / ediciones / remasters
+   por category o release_type.
+
+   Primero queremos validar el Random completo.
+   Ese filtro será una capa independiente después.
+========================================================= */
+
+function createFilterQuery({
+  nowIso,
+  futureIso,
+  excludeId = null,
+}) {
+  const parts = [
+    "active=eq.true",
+
+    "first_release_date=not.is.null",
+
+    `first_release_date=gt.${encodeURIComponent(
+      nowIso
+    )}`,
+
+    `first_release_date=lte.${encodeURIComponent(
+      futureIso
+    )}`,
+
+    "cover_medium_url=not.is.null",
+  ];
+
+  if (excludeId) {
+    parts.push(
+      `id=neq.${excludeId}`
+    );
+  }
+
+  return parts.join("&");
+}
+
+/* =========================================================
+   EXCLUDE
+
+   Más adelante el panel puede llamar:
+
+   /random?exclude=123
+
+   para evitar que salga inmediatamente el mismo juego
+   dos veces seguidas.
+========================================================= */
+
+function parseExcludeId(value) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed =
+    Number.parseInt(
+      value,
+      10
+    );
+
+  if (
+    !Number.isFinite(parsed) ||
+    parsed <= 0
+  ) {
+    return null;
+  }
+
+  return parsed;
+}
+
+/* =========================================================
+   CONTAR TODO EL POOL
+
+   Pedimos únicamente 1 ID.
+   Supabase nos informa el total mediante Content-Range.
+
+   Ejemplo:
+   0-0/693
+
+   Esto evita descargar 693 registros sólo para elegir uno.
+========================================================= */
+
+async function countUpcomingGames(
+  environment,
+  filters
+) {
+  const url =
+    `${environment.supabaseUrl}` +
+    `/rest/v1/games` +
+    `?select=id` +
+    `&${filters}` +
+    `&limit=1`;
+
+  const response =
+    await fetch(
+      url,
+      {
+        method:
+          "GET",
+
+        headers:
+          createSupabaseHeaders(
+            environment,
+            {
+              Prefer:
+                "count=exact",
+
+              Range:
+                "0-0",
+            }
+          ),
+
+        cache:
+          "no-store",
+      }
+    );
+
+  if (!response.ok) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `Error contando próximos: ${response.status} ${errorText}`
+    );
+  }
+
+  const contentRange =
+    response.headers.get(
+      "content-range"
+    );
+
+  if (!contentRange) {
+    throw new Error(
+      "Supabase no devolvió Content-Range al contar próximos."
+    );
+  }
+
+  const separatorIndex =
+    contentRange.lastIndexOf("/");
+
+  if (separatorIndex === -1) {
+    throw new Error(
+      `Content-Range inválido: ${contentRange}`
+    );
+  }
+
+  const totalText =
+    contentRange.slice(
+      separatorIndex + 1
+    );
+
+  const total =
+    Number.parseInt(
+      totalText,
+      10
+    );
+
+  if (
+    !Number.isFinite(total) ||
+    total < 0
+  ) {
+    throw new Error(
+      `No se pudo interpretar el total de próximos: ${contentRange}`
+    );
+  }
+
+  return total;
+}
+
+/* =========================================================
+   CARGAR VENTANA PEQUEÑA
+
+   El ganador se determina ANTES de hacer esta consulta.
+
+   Ejemplo:
+
+   total = 693
+   posición sorteada = 421
+
+   Traemos solamente una pequeña ventana que contiene
+   la posición 421.
+
+   Así cada posición del catálogo sigue teniendo
+   posibilidad real de salir.
+========================================================= */
+
+async function loadWindow(
+  environment,
+  filters,
+  offset,
+  limit
+) {
+  const url =
+    `${environment.supabaseUrl}` +
+    `/rest/v1/games` +
+    `?select=${GAME_FIELDS}` +
+    `&${filters}` +
+    `&order=first_release_date.asc,id.asc` +
+    `&offset=${offset}` +
+    `&limit=${limit}`;
+
+  const response =
+    await fetch(
+      url,
+      {
+        method:
+          "GET",
+
+        headers:
+          createSupabaseHeaders(
+            environment
+          ),
+
+        cache:
+          "no-store",
+      }
+    );
+
+  if (!response.ok) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `Error cargando ventana Random: ${response.status} ${errorText}`
+    );
+  }
+
+  const data =
+    await response.json();
+
+  return Array.isArray(data)
+    ? data
+    : [];
+}
 
 /* =========================================================
    JUEGO LIGERO
@@ -217,69 +450,31 @@ function createLightGame(game) {
 }
 
 /* =========================================================
-   FECHAS
+   PORTADA LIGERA
 ========================================================= */
 
-function getFutureWindow() {
-  const now =
-    new Date();
-
-  const future =
-    new Date(now);
-
-  future.setUTCDate(
-    future.getUTCDate() +
-      MAX_FUTURE_DAYS
-  );
-
+function createCover(game) {
   return {
-    nowIso:
-      now.toISOString(),
+    id:
+      game.id,
 
-    futureIso:
-      future.toISOString(),
+    name:
+      game.name,
+
+    cover:
+      game.cover_medium_url ||
+      game.cover_small_url ||
+      game.cover_large_url,
   };
 }
 
 /* =========================================================
-   RANDOM SEGURO
-========================================================= */
+   BARAJAR ANIMACIÓN
 
-function randomIndex(length) {
-  if (
-    !Number.isInteger(length) ||
-    length <= 0
-  ) {
-    return 0;
-  }
+   Esto NO determina el ganador.
+   El ganador ya fue elegido uniformemente por offset.
 
-  /*
-   * crypto está disponible en runtime Node moderno.
-   *
-   * No necesitamos aleatoriedad criptográfica,
-   * pero evita depender de Math.random() y nos
-   * da una tirada limpia por petición.
-   */
-
-  const values =
-    new Uint32Array(1);
-
-  crypto.getRandomValues(
-    values
-  );
-
-  return (
-    values[0] %
-    length
-  );
-}
-
-/* =========================================================
-   BARAJAR
-
-   Sólo se utiliza sobre el pequeño pool ya recuperado
-   desde Supabase. Nunca se envía el catálogo completo
-   al navegador.
+   Sólo cambia el orden visual de las portadas de ruleta.
 ========================================================= */
 
 function shuffle(items) {
@@ -293,7 +488,7 @@ function shuffle(items) {
     index -= 1
   ) {
     const target =
-      randomIndex(
+      randomInt(
         index + 1
       );
 
@@ -310,125 +505,50 @@ function shuffle(items) {
 }
 
 /* =========================================================
-   CARGAR POOL RANDOM
-========================================================= */
-
-async function loadRandomPool(
-  environment
-) {
-  const {
-    nowIso,
-    futureIso,
-  } =
-    getFutureWindow();
-
-  /*
-   * Importante:
-   *
-   * Supabase devuelve como máximo 500 candidatos.
-   *
-   * El cliente recibe únicamente:
-   *
-   * - el ganador
-   * - unas pocas portadas para animación
-   */
-
-  return supabaseGet(
-    environment,
-    [
-      "games",
-
-      "?select=",
-      GAME_FIELDS,
-
-      "&active=eq.true",
-
-      "&first_release_date=not.is.null",
-
-      `&first_release_date=gt.${encodeURIComponent(
-        nowIso
-      )}`,
-
-      `&first_release_date=lte.${encodeURIComponent(
-        futureIso
-      )}`,
-
-      "&cover_medium_url=not.is.null",
-
-      "&order=first_release_date.asc,id.asc",
-
-      `&limit=${RANDOM_POOL_SIZE}`,
-    ].join("")
-  );
-}
-
-/* =========================================================
-   PORTADAS PARA LA ANIMACIÓN
-========================================================= */
-
-function createAnimationCovers(
-  games,
-  winnerId
-) {
-  const available =
-    games.filter(
-      (game) =>
-        String(game.id) !==
-          String(winnerId) &&
-        (
-          game.cover_medium_url ||
-          game.cover_small_url ||
-          game.cover_large_url
-        )
-    );
-
-  const shuffled =
-    shuffle(
-      available
-    );
-
-  return shuffled
-    .slice(
-      0,
-      ANIMATION_COVERS
-    )
-    .map(
-      (game) => ({
-        id:
-          game.id,
-
-        name:
-          game.name,
-
-        cover:
-          game.cover_medium_url ||
-          game.cover_small_url ||
-          game.cover_large_url,
-      })
-    );
-}
-
-/* =========================================================
    GET
 ========================================================= */
 
-export async function GET() {
+export async function GET(request) {
   try {
     const environment =
       getEnvironment();
 
-    /* =====================================================
-       1 · POOL
-    ===================================================== */
-
-    const pool =
-      await loadRandomPool(
-        environment
+    const requestUrl =
+      new URL(
+        request.url
       );
 
-    if (
-      pool.length === 0
-    ) {
+    const excludeId =
+      parseExcludeId(
+        requestUrl.searchParams.get(
+          "exclude"
+        )
+      );
+
+    const {
+      nowIso,
+      futureIso,
+    } =
+      getFutureWindow();
+
+    const filters =
+      createFilterQuery({
+        nowIso,
+        futureIso,
+        excludeId,
+      });
+
+    /* =====================================================
+       1 · CONTAMOS TODO EL CATÁLOGO VÁLIDO
+    ===================================================== */
+
+    const total =
+      await countUpcomingGames(
+        environment,
+        filters
+      );
+
+    if (total === 0) {
       return NextResponse.json(
         {
           ok:
@@ -450,46 +570,109 @@ export async function GET() {
     }
 
     /* =====================================================
-       2 · GANADOR
+       2 · POSICIÓN GANADORA
+
+       randomInt(total) produce:
+       0 ... total - 1
     ===================================================== */
 
-    const winner =
-      pool[
-        randomIndex(
-          pool.length
-        )
-      ];
+    const winnerOffset =
+      randomInt(total);
 
     /* =====================================================
-       3 · PORTADAS DE ANIMACIÓN
+       3 · VENTANA
+
+       Queremos tener varias portadas alrededor del ganador
+       para la animación.
+
+       Si estamos cerca del final, movemos el inicio hacia
+       atrás para seguir obteniendo hasta WINDOW_SIZE juegos.
     ===================================================== */
 
-    const animation =
-      createAnimationCovers(
-        pool,
-        winner.id
+    const maximumWindowStart =
+      Math.max(
+        0,
+        total - WINDOW_SIZE
       );
 
-    /*
-     * La última portada siempre es el ganador.
-     *
-     * Así el frontend puede:
-     *
-     * rápida → rápida → rápida → lenta → GANADOR
-     */
+    const windowStart =
+      Math.min(
+        winnerOffset,
+        maximumWindowStart
+      );
 
-    animation.push({
-      id:
-        winner.id,
+    const games =
+      await loadWindow(
+        environment,
+        filters,
+        windowStart,
+        Math.min(
+          WINDOW_SIZE,
+          total
+        )
+      );
 
-      name:
-        winner.name,
+    if (games.length === 0) {
+      throw new Error(
+        "La ventana Random quedó vacía."
+      );
+    }
 
-      cover:
-        winner.cover_medium_url ||
-        winner.cover_small_url ||
-        winner.cover_large_url,
-    });
+    /* =====================================================
+       4 · LOCALIZAMOS AL GANADOR REAL
+
+       La posición ganadora es global.
+       Convertimos esa posición a índice dentro
+       de nuestra pequeña ventana.
+    ===================================================== */
+
+    const winnerIndex =
+      winnerOffset -
+      windowStart;
+
+    const winner =
+      games[winnerIndex];
+
+    if (!winner) {
+      throw new Error(
+        `No se encontró el ganador Random en la posición ${winnerOffset}.`
+      );
+    }
+
+    /* =====================================================
+       5 · PORTADAS PARA LA RULETA
+
+       Excluimos temporalmente al ganador.
+       Lo añadimos SIEMPRE al final.
+
+       Así la animación puede desacelerar y terminar
+       exactamente sobre el juego sorteado.
+    ===================================================== */
+
+    const otherGames =
+      games.filter(
+        (game) =>
+          String(game.id) !==
+          String(winner.id)
+      );
+
+    const animationGames =
+      shuffle(
+        otherGames
+      )
+        .slice(
+          0,
+          ANIMATION_COUNT
+        )
+        .map(
+          createCover
+        );
+
+    animationGames.push(
+      createCover(
+        winner
+      )
+    );
 
     /* =====================================================
        RESPUESTA
@@ -504,7 +687,7 @@ export async function GET() {
           "Tierra Vicio Database",
 
         mode:
-          "actualidad-upcoming-random",
+          "actualidad-upcoming-random-v2",
 
         generatedAt:
           new Date()
@@ -515,18 +698,28 @@ export async function GET() {
             "upcoming",
 
           candidateCount:
-            pool.length,
+            total,
 
           horizonDays:
             MAX_FUTURE_DAYS,
+
+          excludedGameId:
+            excludeId,
+        },
+
+        draw: {
+          winnerOffset,
+          windowStart,
+          windowSize:
+            games.length,
         },
 
         animation: {
           count:
-            animation.length,
+            animationGames.length,
 
           covers:
-            animation,
+            animationGames,
         },
 
         game:
@@ -538,18 +731,18 @@ export async function GET() {
         status:
           200,
 
-        /*
-         * Cada pulsación debe producir una nueva tirada.
-         */
         headers: {
           "Cache-Control":
             "no-store, max-age=0",
+
+          Pragma:
+            "no-cache",
         },
       }
     );
   } catch (error) {
     console.error(
-      "[Tierra Vicio / Actualidad / Upcoming Random]",
+      "[Tierra Vicio / Actualidad / Upcoming Random V2]",
       error
     );
 
