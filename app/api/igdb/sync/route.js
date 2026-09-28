@@ -827,6 +827,232 @@ function getLanguageSupportFlags(
 }
 
 /* =========================================================
+   LANZAMIENTOS RECIENTES IGDB
+
+   Alimenta Actualidad · Populares.
+
+   El motor Popular V1 trabaja con tres ventanas:
+   - 0 a 30 días
+   - 31 a 90 días
+   - 91 a 365 días
+
+   No importamos simplemente los últimos N juegos porque
+   eso podría llenar la base con lanzamientos de pocas
+   semanas y dejar vacías las ventanas más antiguas.
+
+   Con limit=500:
+   - 200 muy recientes
+   - 150 recientes
+   - 150 consolidados
+========================================================= */
+
+async function getRecentGamesFromIGDB(
+  accessToken,
+  clientId,
+  limit
+) {
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const DAY =
+    24 * 60 * 60;
+
+  const day30 =
+    now - 30 * DAY;
+
+  const day90 =
+    now - 90 * DAY;
+
+  const day365 =
+    now - 365 * DAY;
+
+  /*
+    Repartimos el límite global respetando las mismas
+    ventanas que utiliza Popular V1.
+
+    Para limit=500:
+    200 / 150 / 150.
+  */
+
+  const veryRecentLimit =
+    Math.min(
+      limit,
+      Math.max(
+        1,
+        Math.floor(
+          limit * 0.4
+        )
+      )
+    );
+
+  const remainingAfterVeryRecent =
+    Math.max(
+      0,
+      limit -
+        veryRecentLimit
+    );
+
+  const recentLimit =
+    remainingAfterVeryRecent > 0
+      ? Math.min(
+          remainingAfterVeryRecent,
+          Math.max(
+            1,
+            Math.floor(
+              limit * 0.3
+            )
+          )
+        )
+      : 0;
+
+  const establishedLimit =
+    Math.max(
+      0,
+      limit -
+        veryRecentLimit -
+        recentLimit
+    );
+
+  /*
+    POOL 1
+    Lanzamientos de los últimos 30 días.
+
+    Aquí priorizamos fecha porque Popular necesita
+    disponer de una fotografía reciente completa.
+  */
+
+  const veryRecentQuery = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${day30}
+      & first_release_date <= ${now};
+
+    sort first_release_date desc;
+
+    limit ${veryRecentLimit};
+  `;
+
+  /*
+    POOL 2
+    Juegos publicados entre 31 y 90 días.
+
+    Dentro de esta ventana priorizamos atención.
+  */
+
+  const recentQuery =
+    recentLimit > 0
+      ? `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${day90}
+      & first_release_date <= ${day30};
+
+    sort total_rating_count desc;
+
+    limit ${recentLimit};
+  `
+      : null;
+
+  /*
+    POOL 3
+    Juegos publicados entre 91 y 365 días.
+
+    Aquí la señal de atención es especialmente importante:
+    queremos títulos que todavía tengan relevancia suficiente
+    para competir como consolidados en Popular V1.
+  */
+
+  const establishedQuery =
+    establishedLimit > 0
+      ? `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date >= ${day365}
+      & first_release_date <= ${day90};
+
+    sort total_rating_count desc;
+
+    limit ${establishedLimit};
+  `
+      : null;
+
+  const [
+    veryRecentGames,
+    recentGames,
+    establishedGames,
+  ] =
+    await Promise.all([
+      requestIGDBGames(
+        accessToken,
+        clientId,
+        veryRecentQuery
+      ),
+
+      recentQuery
+        ? requestIGDBGames(
+            accessToken,
+            clientId,
+            recentQuery
+          )
+        : Promise.resolve([]),
+
+      establishedQuery
+        ? requestIGDBGames(
+            accessToken,
+            clientId,
+            establishedQuery
+          )
+        : Promise.resolve([]),
+    ]);
+
+  /*
+    Protegemos contra duplicados por cambios de fecha
+    o inconsistencias temporales de IGDB.
+  */
+
+  const gamesById =
+    new Map();
+
+  for (
+    const game of [
+      ...veryRecentGames,
+      ...recentGames,
+      ...establishedGames,
+    ]
+  ) {
+    if (
+      game?.id !== null &&
+      game?.id !== undefined
+    ) {
+      gamesById.set(
+        game.id,
+        game
+      );
+    }
+  }
+
+  return [
+    ...gamesById.values(),
+  ].slice(
+    0,
+    limit
+  );
+}
+/* =========================================================
    NORMALIZAR JUEGO
 ========================================================= */
 
@@ -4161,6 +4387,143 @@ async function runUpcomingSync({
 }
 
 /* =========================================================
+   LANZAMIENTOS RECIENTES
+========================================================= */
+
+async function runRecentSync({
+  limit,
+}) {
+  const startedAt =
+    Date.now();
+
+  const environment =
+    getEnvironment();
+
+  const accessToken =
+    await getTwitchAccessToken(
+      environment.igdbClientId,
+      environment.igdbClientSecret
+    );
+
+  const rawGames =
+    await getRecentGamesFromIGDB(
+      accessToken,
+      environment.igdbClientId,
+      limit
+    );
+
+  const games =
+    rawGames.map(
+      normalizeGame
+    );
+
+  const gameIds =
+    games.map(
+      (game) => game.id
+    );
+
+  const existingIds =
+    await getExistingGameIds(
+      environment,
+      gameIds
+    );
+
+  const created =
+    games.filter(
+      (game) =>
+        !existingIds.has(
+          game.id
+        )
+    ).length;
+
+  const updated =
+    games.length -
+    created;
+
+  /*
+    Utilizamos exactamente el mismo guardado bulk
+    que los demás importadores.
+
+    createGameRow() deja active=true, requisito que
+    utiliza Popular V1 para aceptar el juego como candidato.
+  */
+
+  await syncGamesBulk(
+    environment,
+    games
+  );
+
+  const durationMs =
+    Date.now() -
+    startedAt;
+
+  return {
+    ok: true,
+
+    mode:
+      "recent",
+
+    message:
+      "Lanzamientos recientes sincronizados correctamente para Popular.",
+
+    strategy:
+      "recent-popular-bulk-supabase",
+
+    requestedLimit:
+      limit,
+
+    received:
+      rawGames.length,
+
+    processed:
+      games.length,
+
+    created,
+
+    updated,
+
+    failed:
+      0,
+
+    durationMs,
+
+    durationSeconds:
+      Number(
+        (
+          durationMs /
+          1000
+        ).toFixed(2)
+      ),
+
+    games:
+      games.map(
+        (game) => ({
+          id:
+            game.id,
+
+          name:
+            game.name,
+
+          firstReleaseDate:
+            game.firstReleaseDate,
+
+          totalRatingCount:
+            game.totalRatingCount,
+
+          created:
+            !existingIds.has(
+              game.id
+            ),
+
+          updated:
+            existingIds.has(
+              game.id
+            ),
+        })
+      ),
+  };
+}
+/* =========================================================
    VALIDACIONES
 ========================================================= */
 
@@ -4403,6 +4766,29 @@ export async function GET(
       );
     }
 
+         /* =====================================================
+       IMPORTACIÓN DE LANZAMIENTOS RECIENTES
+    ===================================================== */
+
+    if (mode === "recent") {
+      const limit =
+        parseBulkLimit(
+          searchParams.get(
+            "limit"
+          )
+        );
+
+      const result =
+        await runRecentSync({
+          limit,
+        });
+
+      return jsonResponse(
+        result,
+        200
+      );
+    }
+     
     /* =====================================================
        MODO DESCONOCIDO
     ===================================================== */
@@ -4418,10 +4804,11 @@ export async function GET(
           error:
             `Modo desconocido: ${mode}.`,
 
-          availableModes: [
+                   availableModes: [
             "general",
             "bulk",
             "upcoming",
+            "recent",
           ],
         },
         400
