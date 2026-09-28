@@ -12,6 +12,14 @@ const STATE_ID = 1;
 const DEFAULT_BATCH_SIZE = 100;
 const MAX_BATCH_SIZE = 500;
 
+/*
+  Objetivo inicial de Tierra Vicio.
+
+  Cuando queramos ampliar la biblioteca, por ejemplo a
+  10.000 juegos, solamente cambiamos este valor.
+*/
+const TARGET_GAME_COUNT = 5000;
+
 /* =========================================================
    ENVIRONMENT
 ========================================================= */
@@ -24,9 +32,7 @@ function getEnvironment() {
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl) {
-    throw new Error(
-      "Falta SUPABASE_URL."
-    );
+    throw new Error("Falta SUPABASE_URL.");
   }
 
   if (!supabaseSecret) {
@@ -50,36 +56,31 @@ async function supabaseRequest(
   path,
   options = {}
 ) {
-  const response =
-    await fetch(
-      `${environment.supabaseUrl}/rest/v1/${path}`,
-      {
-        ...options,
+  const response = await fetch(
+    `${environment.supabaseUrl}/rest/v1/${path}`,
+    {
+      ...options,
 
-        headers: {
-          apikey:
-            environment.supabaseSecret,
+      headers: {
+        apikey: environment.supabaseSecret,
 
-          Authorization:
-            `Bearer ${environment.supabaseSecret}`,
+        Authorization:
+          `Bearer ${environment.supabaseSecret}`,
 
-          "Content-Type":
-            "application/json",
+        "Content-Type": "application/json",
 
-          Prefer:
-            options.prefer ||
-            "return=representation",
+        Prefer:
+          options.prefer ||
+          "return=representation",
 
-          ...(options.headers || {}),
-        },
+        ...(options.headers || {}),
+      },
 
-        cache:
-          "no-store",
-      }
-    );
+      cache: "no-store",
+    }
+  );
 
-  const text =
-    await response.text();
+  const text = await response.text();
 
   if (!response.ok) {
     throw new Error(
@@ -99,20 +100,69 @@ async function supabaseRequest(
 }
 
 /* =========================================================
+   CONTAR JUEGOS REALES
+========================================================= */
+
+async function getGameCount(environment) {
+  const response = await fetch(
+    `${environment.supabaseUrl}/rest/v1/games?select=id`,
+    {
+      method: "HEAD",
+
+      headers: {
+        apikey: environment.supabaseSecret,
+
+        Authorization:
+          `Bearer ${environment.supabaseSecret}`,
+
+        Prefer: "count=exact",
+      },
+
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+
+    throw new Error(
+      `No se pudo contar games. Supabase respondió ${response.status}: ${text}`
+    );
+  }
+
+  const contentRange =
+    response.headers.get("content-range");
+
+  if (!contentRange) {
+    throw new Error(
+      "Supabase no devolvió content-range al contar games."
+    );
+  }
+
+  const match =
+    contentRange.match(/\/(\d+)$/);
+
+  if (!match) {
+    throw new Error(
+      `No se pudo interpretar el conteo de games: ${contentRange}`
+    );
+  }
+
+  return Number(match[1]);
+}
+
+/* =========================================================
    STATE
 ========================================================= */
 
-async function getImportState(
-  environment
-) {
-  const rows =
-    await supabaseRequest(
-      environment,
-      `igdb_import_state?id=eq.${STATE_ID}&select=*`,
-      {
-        method: "GET",
-      }
-    );
+async function getImportState(environment) {
+  const rows = await supabaseRequest(
+    environment,
+    `igdb_import_state?id=eq.${STATE_ID}&select=*`,
+    {
+      method: "GET",
+    }
+  );
 
   if (
     !Array.isArray(rows) ||
@@ -132,30 +182,24 @@ async function updateImportState(
 ) {
   const payload = {
     ...values,
-    updated_at:
-      new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
-  const rows =
-    await supabaseRequest(
-      environment,
-      `igdb_import_state?id=eq.${STATE_ID}`,
-      {
-        method: "PATCH",
+  const rows = await supabaseRequest(
+    environment,
+    `igdb_import_state?id=eq.${STATE_ID}`,
+    {
+      method: "PATCH",
 
-        prefer:
-          "return=representation",
+      prefer: "return=representation",
 
-        body:
-          JSON.stringify(payload),
-      }
-    );
-
-  return (
-    Array.isArray(rows)
-      ? rows[0]
-      : rows
+      body: JSON.stringify(payload),
+    }
   );
+
+  return Array.isArray(rows)
+    ? rows[0]
+    : rows;
 }
 
 /* =========================================================
@@ -163,8 +207,7 @@ async function updateImportState(
 ========================================================= */
 
 function clampBatchSize(value) {
-  const parsed =
-    Number(value);
+  const parsed = Number(value);
 
   if (
     !Number.isSafeInteger(parsed) ||
@@ -180,38 +223,45 @@ function clampBatchSize(value) {
 }
 
 function getBaseUrl(request) {
-  const url =
-    new URL(request.url);
-
-  return url.origin;
+  return new URL(request.url).origin;
 }
 
 function jsonResponse(
   data,
   status = 200
 ) {
-  return NextResponse.json(
-    data,
-    {
-      status,
+  return NextResponse.json(data, {
+    status,
 
-      headers: {
-        "Cache-Control":
-          "no-store, no-cache, must-revalidate",
-      },
-    }
-  );
+    headers: {
+      "Cache-Control":
+        "no-store, no-cache, must-revalidate",
+    },
+  });
+}
+
+/* =========================================================
+   INFORMACIÓN DEL OBJETIVO
+========================================================= */
+
+function buildTargetInfo(gameCount) {
+  return {
+    target: TARGET_GAME_COUNT,
+
+    current: gameCount,
+
+    remaining: Math.max(
+      0,
+      TARGET_GAME_COUNT - gameCount
+    ),
+
+    reached:
+      gameCount >= TARGET_GAME_COUNT,
+  };
 }
 
 /* =========================================================
    LLAMAR AL IMPORTADOR REAL
-
-   No duplicamos la lógica IGDB.
-
-   Este endpoint solamente controla el proceso.
-   El trabajo real continúa haciéndolo:
-
-   /api/igdb/sync?mode=bulk
 ========================================================= */
 
 async function runBulkBatch({
@@ -219,8 +269,7 @@ async function runBulkBatch({
   after,
   limit,
 }) {
-  const baseUrl =
-    getBaseUrl(request);
+  const baseUrl = getBaseUrl(request);
 
   const url =
     `${baseUrl}/api/igdb/sync` +
@@ -228,30 +277,22 @@ async function runBulkBatch({
     `&after=${after}` +
     `&limit=${limit}`;
 
-  const response =
-    await fetch(
-      url,
-      {
-        method: "GET",
+  const response = await fetch(url, {
+    method: "GET",
 
-        headers: {
-          "Cache-Control":
-            "no-cache",
-        },
+    headers: {
+      "Cache-Control": "no-cache",
+    },
 
-        cache:
-          "no-store",
-      }
-    );
+    cache: "no-store",
+  });
 
-  const text =
-    await response.text();
+  const text = await response.text();
 
   let data;
 
   try {
-    data =
-      JSON.parse(text);
+    data = JSON.parse(text);
   } catch {
     throw new Error(
       `El importador devolvió una respuesta inválida: ${text.slice(
@@ -285,66 +326,161 @@ async function executeAutomaticBatch(
     getEnvironment();
 
   const state =
-    await getImportState(
-      environment
-    );
+    await getImportState(environment);
 
-  if (
-    state.status ===
-    "finished"
-  ) {
+  /*
+    Contamos la biblioteca REAL antes de importar.
+  */
+
+  const gameCountBefore =
+    await getGameCount(environment);
+
+  const targetBefore =
+    buildTargetInfo(gameCountBefore);
+
+  /*
+    Si ya tenemos 5.000 o más, no tocamos IGDB.
+  */
+
+  if (targetBefore.reached) {
+    const savedState =
+      await updateImportState(
+        environment,
+        {
+          status: "target-reached",
+          last_error: null,
+        }
+      );
+
     return {
       ok: true,
 
-      action:
-        "nothing-to-do",
+      action: "target-reached",
 
       message:
-        "La importación IGDB ya está terminada.",
+        `Objetivo alcanzado: ${gameCountBefore} juegos en la biblioteca.`,
+
+      target: targetBefore,
+
+      state: savedState,
+    };
+  }
+
+  /*
+    Si IGDB realmente terminó, tampoco seguimos.
+  */
+
+  if (state.status === "finished") {
+    return {
+      ok: true,
+
+      action: "nothing-to-do",
+
+      message:
+        "IGDB ya no devolvió más juegos para importar.",
+
+      target: targetBefore,
 
       state,
     };
   }
 
-  if (
-    state.status ===
-    "paused"
-  ) {
+  /*
+    Pausa manual.
+  */
+
+  if (state.status === "paused") {
     return {
       ok: true,
 
-      action:
-        "paused",
+      action: "paused",
 
       message:
         "El importador está pausado.",
 
+      target: targetBefore,
+
       state,
     };
   }
 
-  const after =
-    Number(
-      state.cursor_after || 0
-    );
+  /*
+    target-reached significa que habíamos llegado al
+    objetivo configurado anteriormente.
 
-  const limit =
-    clampBatchSize(
-      state.batch_size
+    Si posteriormente aumentamos TARGET_GAME_COUNT,
+    permitimos continuar automáticamente.
+  */
+
+  if (
+    state.status === "target-reached" &&
+    !targetBefore.reached
+  ) {
+    await updateImportState(
+      environment,
+      {
+        status: "running",
+        last_error: null,
+      }
     );
+  }
+
+  const after =
+    Number(state.cursor_after || 0);
+
+  const configuredBatchSize =
+    clampBatchSize(state.batch_size);
 
   /*
-    Marcamos running antes de empezar.
+    Nunca pedimos más juegos de los que faltan para
+    alcanzar el objetivo.
+
+    Ejemplo:
+    biblioteca = 4.963
+    faltan = 37
+    último lote = 37
   */
+
+  const remaining =
+    TARGET_GAME_COUNT -
+    gameCountBefore;
+
+  const limit =
+    Math.min(
+      configuredBatchSize,
+      remaining
+    );
+
+  if (limit <= 0) {
+    const savedState =
+      await updateImportState(
+        environment,
+        {
+          status: "target-reached",
+          last_error: null,
+        }
+      );
+
+    return {
+      ok: true,
+
+      action: "target-reached",
+
+      target:
+        buildTargetInfo(
+          gameCountBefore
+        ),
+
+      state: savedState,
+    };
+  }
 
   await updateImportState(
     environment,
     {
-      status:
-        "running",
+      status: "running",
 
-      last_error:
-        null,
+      last_error: null,
 
       last_run_at:
         new Date().toISOString(),
@@ -360,24 +496,16 @@ async function executeAutomaticBatch(
       });
 
     const processed =
-      Number(
-        batch.processed || 0
-      );
+      Number(batch.processed || 0);
 
     const created =
-      Number(
-        batch.created || 0
-      );
+      Number(batch.created || 0);
 
     const updated =
-      Number(
-        batch.updated || 0
-      );
+      Number(batch.updated || 0);
 
     const failed =
-      Number(
-        batch.failed || 0
-      );
+      Number(batch.failed || 0);
 
     const nextAfter =
       Number(
@@ -385,14 +513,45 @@ async function executeAutomaticBatch(
         after
       );
 
-    const finished =
-      Boolean(
-        batch.finished
-      );
+    const igdbFinished =
+      Boolean(batch.finished);
+
+    /*
+      Volvemos a contar Supabase después del lote.
+
+      Este número manda sobre los contadores internos.
+    */
+
+    const gameCountAfter =
+      await getGameCount(environment);
+
+    const targetAfter =
+      buildTargetInfo(gameCountAfter);
+
+    let nextStatus =
+      "running";
+
+    let action =
+      "batch-complete";
+
+    if (igdbFinished) {
+      nextStatus =
+        "finished";
+
+      action =
+        "finished";
+    } else if (
+      targetAfter.reached
+    ) {
+      nextStatus =
+        "target-reached";
+
+      action =
+        "target-reached";
+    }
 
     const nextState = {
-      cursor_after:
-        nextAfter,
+      cursor_after: nextAfter,
 
       total_processed:
         Number(
@@ -421,19 +580,16 @@ async function executeAutomaticBatch(
         batch.durationSeconds ??
         null,
 
-      last_error:
-        null,
+      last_error: null,
 
       last_run_at:
         new Date().toISOString(),
 
       status:
-        finished
-          ? "finished"
-          : "running",
+        nextStatus,
 
       finished_at:
-        finished
+        igdbFinished
           ? new Date().toISOString()
           : null,
     };
@@ -447,10 +603,14 @@ async function executeAutomaticBatch(
     return {
       ok: true,
 
-      action:
-        finished
-          ? "finished"
-          : "batch-complete",
+      action,
+
+      message:
+        targetAfter.reached
+          ? `Objetivo alcanzado: ${gameCountAfter} juegos.`
+          : igdbFinished
+            ? "IGDB no devolvió más juegos."
+            : `Lote completado. Biblioteca: ${gameCountAfter}/${TARGET_GAME_COUNT}.`,
 
       batch: {
         requestedAfter:
@@ -469,12 +629,27 @@ async function executeAutomaticBatch(
 
         nextAfter,
 
-        finished,
+        igdbFinished,
 
         durationSeconds:
           batch.durationSeconds ??
           null,
       },
+
+      library: {
+        before:
+          gameCountBefore,
+
+        after:
+          gameCountAfter,
+
+        added:
+          gameCountAfter -
+          gameCountBefore,
+      },
+
+      target:
+        targetAfter,
 
       state:
         savedState,
@@ -488,8 +663,7 @@ async function executeAutomaticBatch(
     await updateImportState(
       environment,
       {
-        status:
-          "error",
+        status: "error",
 
         last_error:
           message,
@@ -512,22 +686,15 @@ async function executeAutomaticBatch(
    ?action=resume
    ?action=run
    ?action=reset
-
-   El cron utilizará:
-   ?action=run
 ========================================================= */
 
-export async function GET(
-  request
-) {
+export async function GET(request) {
   try {
     const environment =
       getEnvironment();
 
     const url =
-      new URL(
-        request.url
-      );
+      new URL(request.url);
 
     const action =
       String(
@@ -542,37 +709,91 @@ export async function GET(
        STATUS
     ===================================================== */
 
-    if (
-      action ===
-      "status"
-    ) {
-      const state =
-        await getImportState(
-          environment
-        );
+    if (action === "status") {
+      const [
+        state,
+        gameCount,
+      ] =
+        await Promise.all([
+          getImportState(
+            environment
+          ),
+
+          getGameCount(
+            environment
+          ),
+        ]);
 
       return jsonResponse({
         ok: true,
-        action:
-          "status",
+
+        action: "status",
+
+        library: {
+          games: gameCount,
+        },
+
+        target:
+          buildTargetInfo(
+            gameCount
+          ),
+
         state,
       });
     }
 
     /* =====================================================
        START
-
-       Empieza desde el cursor que ya está guardado.
     ===================================================== */
 
-    if (
-      action ===
-      "start"
-    ) {
-      const state =
-        await getImportState(
-          environment
+    if (action === "start") {
+      const [
+        state,
+        gameCount,
+      ] =
+        await Promise.all([
+          getImportState(
+            environment
+          ),
+
+          getGameCount(
+            environment
+          ),
+        ]);
+
+      const target =
+        buildTargetInfo(
+          gameCount
         );
+
+      if (target.reached) {
+        const savedState =
+          await updateImportState(
+            environment,
+            {
+              status:
+                "target-reached",
+
+              last_error:
+                null,
+            }
+          );
+
+        return jsonResponse({
+          ok: true,
+
+          action:
+            "target-reached",
+
+          message:
+            `La biblioteca ya tiene ${gameCount} juegos. Objetivo alcanzado.`,
+
+          target,
+
+          state:
+            savedState,
+        });
+      }
 
       if (
         state.status ===
@@ -581,11 +802,12 @@ export async function GET(
         return jsonResponse({
           ok: true,
 
-          action:
-            "start",
+          action: "start",
 
           message:
-            "La importación ya figura como terminada. Usá reset si querés comenzar otra vez.",
+            "IGDB ya figura como completamente recorrido.",
+
+          target,
 
           state,
         });
@@ -606,11 +828,12 @@ export async function GET(
       return jsonResponse({
         ok: true,
 
-        action:
-          "start",
+        action: "start",
 
         message:
-          "Importador activado.",
+          `Importador activado. Biblioteca: ${gameCount}/${TARGET_GAME_COUNT}.`,
+
+        target,
 
         state:
           savedState,
@@ -621,10 +844,7 @@ export async function GET(
        PAUSE
     ===================================================== */
 
-    if (
-      action ===
-      "pause"
-    ) {
+    if (action === "pause") {
       const savedState =
         await updateImportState(
           environment,
@@ -634,14 +854,23 @@ export async function GET(
           }
         );
 
+      const gameCount =
+        await getGameCount(
+          environment
+        );
+
       return jsonResponse({
         ok: true,
 
-        action:
-          "pause",
+        action: "pause",
 
         message:
           "Importador pausado.",
+
+        target:
+          buildTargetInfo(
+            gameCount
+          ),
 
         state:
           savedState,
@@ -652,14 +881,51 @@ export async function GET(
        RESUME
     ===================================================== */
 
-    if (
-      action ===
-      "resume"
-    ) {
-      const state =
-        await getImportState(
-          environment
+    if (action === "resume") {
+      const [
+        state,
+        gameCount,
+      ] =
+        await Promise.all([
+          getImportState(
+            environment
+          ),
+
+          getGameCount(
+            environment
+          ),
+        ]);
+
+      const target =
+        buildTargetInfo(
+          gameCount
         );
+
+      if (target.reached) {
+        const savedState =
+          await updateImportState(
+            environment,
+            {
+              status:
+                "target-reached",
+            }
+          );
+
+        return jsonResponse({
+          ok: true,
+
+          action:
+            "target-reached",
+
+          message:
+            `La biblioteca ya alcanzó el objetivo de ${TARGET_GAME_COUNT} juegos.`,
+
+          target,
+
+          state:
+            savedState,
+        });
+      }
 
       if (
         state.status ===
@@ -673,7 +939,11 @@ export async function GET(
               "resume",
 
             message:
-              "La importación ya está terminada.",
+              "IGDB ya figura como completamente recorrido.",
+
+            target,
+
+            state,
           },
           400
         );
@@ -698,7 +968,9 @@ export async function GET(
           "resume",
 
         message:
-          "Importador reanudado.",
+          `Importador reanudado. Biblioteca: ${gameCount}/${TARGET_GAME_COUNT}.`,
+
+        target,
 
         state:
           savedState,
@@ -708,17 +980,10 @@ export async function GET(
     /* =====================================================
        RUN
 
-       Procesa EXACTAMENTE UN lote.
-
-       Esto permite que Vercel Cron invoque el endpoint
-       periódicamente sin crear una cadena infinita
-       dentro de una sola Function.
+       Procesa exactamente UN lote.
     ===================================================== */
 
-    if (
-      action ===
-      "run"
-    ) {
+    if (action === "run") {
       const result =
         await executeAutomaticBatch(
           request
@@ -732,22 +997,18 @@ export async function GET(
     /* =====================================================
        RESET
 
-       Lo dejamos disponible, pero NO lo utilizaremos
-       ahora.
+       NO lo utilizaremos ahora.
 
-       Vuelve a ID 0.
+       Reinicia el cursor a cero y pausa el proceso.
+       No borra juegos de Supabase.
     ===================================================== */
 
-    if (
-      action ===
-      "reset"
-    ) {
+    if (action === "reset") {
       const savedState =
         await updateImportState(
           environment,
           {
-            cursor_after:
-              0,
+            cursor_after: 0,
 
             batch_size:
               DEFAULT_BATCH_SIZE,
@@ -755,17 +1016,13 @@ export async function GET(
             status:
               "paused",
 
-            total_processed:
-              0,
+            total_processed: 0,
 
-            total_created:
-              0,
+            total_created: 0,
 
-            total_updated:
-              0,
+            total_updated: 0,
 
-            total_failed:
-              0,
+            total_failed: 0,
 
             last_batch_processed:
               0,
@@ -773,25 +1030,31 @@ export async function GET(
             last_duration_seconds:
               null,
 
-            last_error:
-              null,
+            last_error: null,
 
-            last_run_at:
-              null,
+            last_run_at: null,
 
-            finished_at:
-              null,
+            finished_at: null,
           }
+        );
+
+      const gameCount =
+        await getGameCount(
+          environment
         );
 
       return jsonResponse({
         ok: true,
 
-        action:
-          "reset",
+        action: "reset",
 
         message:
-          "Estado del importador reiniciado.",
+          "Estado del importador reiniciado. Los juegos existentes NO fueron borrados.",
+
+        target:
+          buildTargetInfo(
+            gameCount
+          ),
 
         state:
           savedState,
