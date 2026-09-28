@@ -1270,10 +1270,8 @@ async function getUpcomingGames({
    * que PostgreSQL haga el filtrado.
    */
 
-  const nowUnix =
-    Math.floor(
-      Date.now() / 1000
-    );
+    const nowIso =
+    new Date().toISOString();
 
   const rows =
     await supabaseGet(
@@ -1287,7 +1285,9 @@ async function getUpcomingGames({
 
         "&first_release_date=not.is.null",
 
-        `&first_release_date=gt.${nowUnix}`,
+      `&first_release_date=gt.${encodeURIComponent(
+          nowIso
+        )}`,     
 
         "&order=first_release_date.asc,id.asc",
 
