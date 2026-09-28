@@ -1873,4 +1873,250 @@ export async function GET(
             ),
         },
         {
-          status: 200
+          status: 200,
+
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=3600, stale-while-revalidate=7200",
+          },
+        }
+      );
+    }
+
+    /* =====================================================
+       2 · CANDIDATOS + HISTORIAL
+    ===================================================== */
+
+    const [
+      candidateResult,
+      history,
+    ] =
+      await Promise.all([
+        loadCandidates(
+          environment
+        ),
+
+        loadExposureHistory(
+          environment,
+          dayKey
+        ),
+      ]);
+
+    const {
+      candidates,
+      poolStats,
+    } =
+      candidateResult;
+
+    /* =====================================================
+       3 · MEMORIA
+    ===================================================== */
+
+    const exposureMap =
+      buildExposureMap(
+        history,
+        dayKey
+      );
+
+    /* =====================================================
+       4 · SCORING
+    ===================================================== */
+
+    const scored =
+      scoreCandidates(
+        candidates,
+        dayKey,
+        exposureMap
+      );
+
+    /* =====================================================
+       5 · SELECCIÓN
+    ===================================================== */
+
+    const selected =
+      selectDailyGames(
+        scored,
+        limit
+      );
+
+    /* =====================================================
+       6 · GUARDAR
+    ===================================================== */
+
+    await saveDailySelection(
+      environment,
+      dayKey,
+      selected
+    );
+
+    /* =====================================================
+       7 · ESTADÍSTICAS
+    ===================================================== */
+
+    const pools = {
+      veryRecent:
+        scored.filter(
+          (item) =>
+            item.daysSinceRelease >= 0 &&
+            item.daysSinceRelease <= 30
+        ).length,
+
+      recent:
+        scored.filter(
+          (item) =>
+            item.daysSinceRelease >= 31 &&
+            item.daysSinceRelease <= 90
+        ).length,
+
+      established:
+        scored.filter(
+          (item) =>
+            item.daysSinceRelease >= 91 &&
+            item.daysSinceRelease <= 365
+        ).length,
+    };
+
+    /* =====================================================
+       RESPUESTA
+    ===================================================== */
+
+    return NextResponse.json(
+      {
+        ok: true,
+
+        source:
+          "Tierra Vicio Database",
+
+        mode:
+          "actualidad-popular",
+
+        date:
+          dayKey,
+
+        generatedAt:
+          new Date()
+            .toISOString(),
+
+        persisted:
+          true,
+
+        generatedNow:
+          true,
+
+        candidateCount:
+          candidates.length,
+
+        candidateSources:
+          poolStats,
+
+        history: {
+          days:
+            HISTORY_DAYS,
+
+          rows:
+            history.length,
+
+          gamesWithHistory:
+            exposureMap.size,
+        },
+
+        count:
+          selected.length,
+
+        selection: {
+          algorithm:
+            "tierra-vicio-popular-v1",
+
+          automatic:
+            true,
+
+          dailyRotation:
+            true,
+
+          exposureMemory:
+            true,
+
+          historyDays:
+            HISTORY_DAYS,
+
+          lookbackDays:
+            LOOKBACK_DAYS,
+
+          composition: {
+            veryRecent:
+              4,
+
+            recent:
+              3,
+
+            established:
+              2,
+
+            wildcard:
+              1,
+          },
+
+          windows: {
+            veryRecent:
+              "0-30 days",
+
+            recent:
+              "31-90 days",
+
+            established:
+              "91-365 days",
+
+            wildcard:
+              "best remaining candidate",
+          },
+
+          pools,
+        },
+
+        games:
+          selected.map(
+            (
+              item,
+              index
+            ) =>
+              createSelectionGame(
+                item,
+                index + 1
+              )
+          ),
+      },
+      {
+        status: 200,
+
+        headers: {
+          "Cache-Control":
+            "public, s-maxage=3600, stale-while-revalidate=7200",
+        },
+      }
+    );
+  } catch (error) {
+    console.error(
+      "[Tierra Vicio / Actualidad / Popular V1]",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        ok: false,
+
+        error:
+          error instanceof Error
+            ? error.message
+            : "Error desconocido generando Populares.",
+      },
+      {
+        status: 500,
+
+        headers: {
+          "Cache-Control":
+            "no-store, max-age=0",
+        },
+      }
+    );
+  }
+}
