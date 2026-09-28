@@ -1,8 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/igdb/auto-import?action=run",
-      "schedule": "*/5 * * * *"
-    }
-  ]
-}
+{}
