@@ -1,0 +1,19 @@
+name: IGDB Auto Import
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+
+  workflow_dispatch:
+
+jobs:
+  import-games:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run next IGDB import batch
+        run: |
+          curl --fail --show-error --silent \
+            --retry 2 \
+            --max-time 240 \
+            "https://freaky-world.vercel.app/api/igdb/auto-import?action=run"
