@@ -172,6 +172,26 @@ function escapePostgrestLike(value) {
     .trim();
 }
 
+function parseBoolean(value) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return false;
+  }
+
+  const normalized =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+  return (
+    normalized === "true" ||
+    normalized === "1" ||
+    normalized === "yes"
+  );
+}
+
 /* =========================================================
    CAMPOS DE FICHA COMPLETA
 ========================================================= */
@@ -238,13 +258,14 @@ const GAME_SELECT_FIELDS = [
 /* =========================================================
    CAMPOS LIGEROS
 
-   Estos son los únicos datos que se descargan para:
+   Se utilizan para:
    - biblioteca
    - buscador
-   - resultados
-   - tarjetas
+   - próximos lanzamientos
+   - tarjetas 2D/3D
 
-   NO cargamos vídeos, galerías, idiomas, etc.
+   Las relaciones pesadas solo se cargan al abrir
+   la ficha completa de un juego.
 ========================================================= */
 
 const LIGHT_GAME_FIELDS = [
@@ -990,7 +1011,7 @@ async function loadCompleteGame(
         })
       ),
 
-    ageRatings:
+         ageRatings:
       ageRatings.map(
         (item) => ({
           id:
@@ -1116,11 +1137,14 @@ async function getGameById(
 /* =========================================================
    BIBLIOTECA LIGERA
 
-   IMPORTANTE:
    Nunca construye fichas completas.
 
-   Solo devuelve los datos necesarios
-   para mostrar tarjetas.
+   Se utiliza para:
+   - biblioteca
+   - búsqueda
+
+   Populares y Próximos mantienen
+   sus propias reglas.
 ========================================================= */
 
 async function getLibrary({
@@ -1154,16 +1178,6 @@ async function getLibrary({
       );
     }
   }
-
-  /*
-   * Para búsquedas ordenamos primero por nombre.
-   *
-   * Para biblioteca general usamos cantidad de
-   * valoraciones como orden estable inicial.
-   *
-   * Más adelante Populares Hoy tendrá su endpoint
-   * y su lógica independiente.
-   */
 
   if (search) {
     parts.push(
@@ -1227,24 +1241,122 @@ async function getLibrary({
 }
 
 /* =========================================================
+   PRÓXIMOS LANZAMIENTOS
+
+   IMPORTANTE:
+   - consulta directamente Supabase
+   - no descarga la biblioteca completa
+   - solo devuelve campos ligeros
+   - ordena cronológicamente
+   - admite paginación
+========================================================= */
+
+async function getUpcomingGames({
+  environment,
+  page,
+  limit,
+}) {
+  const offset =
+    (page - 1) * limit;
+
+  const fetchLimit =
+    limit + 1;
+
+  /*
+   * IGDB guarda first_release_date como
+   * timestamp Unix en segundos.
+   *
+   * Calculamos "ahora" una sola vez para
+   * que PostgreSQL haga el filtrado.
+   */
+
+  const nowUnix =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const rows =
+    await supabaseGet(
+      environment,
+      [
+        "games",
+        "?select=",
+        LIGHT_GAME_FIELDS,
+
+        "&active=eq.true",
+
+        "&first_release_date=not.is.null",
+
+        `&first_release_date=gt.${nowUnix}`,
+
+        "&order=first_release_date.asc,id.asc",
+
+        `&offset=${offset}`,
+
+        `&limit=${fetchLimit}`,
+      ].join("")
+    );
+
+  const hasMore =
+    rows.length > limit;
+
+  const visibleRows =
+    hasMore
+      ? rows.slice(0, limit)
+      : rows;
+
+  return {
+    games:
+      visibleRows.map(
+        createLightGame
+      ),
+
+    pagination: {
+      page,
+
+      limit,
+
+      returned:
+        visibleRows.length,
+
+      hasMore,
+
+      nextPage:
+        hasMore
+          ? page + 1
+          : null,
+
+      previousPage:
+        page > 1
+          ? page - 1
+          : null,
+    },
+  };
+}
+
+/* =========================================================
    GET /api/games
 
-   EJEMPLOS
-
-   Ficha completa:
+   FICHA COMPLETA
    /api/games?id=40
 
-   Biblioteca:
+   BIBLIOTECA
    /api/games
 
-   Biblioteca paginada:
+   BIBLIOTECA PAGINADA
    /api/games?page=2&limit=24
 
-   Búsqueda:
+   BÚSQUEDA
    /api/games?search=mafia
 
-   Búsqueda paginada:
+   BÚSQUEDA PAGINADA
    /api/games?search=resident&page=2&limit=20
+
+   PRÓXIMOS
+   /api/games?upcoming=true
+
+   PRÓXIMOS PAGINADOS
+   /api/games?upcoming=true&page=2&limit=20
 ========================================================= */
 
 export async function GET(
@@ -1358,8 +1470,15 @@ export async function GET(
     }
 
     /* =====================================================
-       BIBLIOTECA / BUSCADOR
+       MODOS LIGEROS
     ===================================================== */
+
+    const upcoming =
+      parseBoolean(
+        searchParams.get(
+          "upcoming"
+        )
+      );
 
     const search =
       cleanSearch(
@@ -1382,9 +1501,14 @@ export async function GET(
         100000
       );
 
-    /*
+      /*
+     * Límites según el tipo de consulta.
+     *
      * Búsqueda:
-     * máximo 20 por consulta.
+     * máximo 20.
+     *
+     * Próximos:
+     * máximo 50.
      *
      * Biblioteca:
      * máximo 50.
@@ -1397,7 +1521,9 @@ export async function GET(
         ),
         search
           ? 20
-          : 24
+          : upcoming
+            ? 20
+            : 24
       );
 
     const maxLimit =
@@ -1410,6 +1536,67 @@ export async function GET(
         requestedLimit,
         maxLimit
       );
+
+    /* =====================================================
+       PRÓXIMOS LANZAMIENTOS
+
+       Tiene prioridad sobre biblioteca/búsqueda.
+
+       No construye fichas completas.
+    ===================================================== */
+
+    if (upcoming) {
+      const result =
+        await getUpcomingGames({
+          environment,
+          page,
+          limit,
+        });
+
+      return NextResponse.json(
+        {
+          ok:
+            true,
+
+          source:
+            "Tierra Vicio Database",
+
+          mode:
+            "upcoming",
+
+          count:
+            result.games.length,
+
+          pagination:
+            result.pagination,
+
+          games:
+            result.games,
+        },
+        {
+          status:
+            200,
+
+          headers: {
+            /*
+             * Los próximos lanzamientos no necesitan
+             * recalcularse en cada visita.
+             *
+             * Vercel puede reutilizar esta respuesta
+             * durante 5 minutos y servir una versión
+             * anterior mientras la renueva.
+             */
+
+            "Cache-Control":
+              "public, s-maxage=300, stale-while-revalidate=1800",
+          },
+        }
+      );
+    }
+
+    /* =====================================================
+       BIBLIOTECA / BUSCADOR
+    ===================================================== */
 
     const result =
       await getLibrary({
@@ -1450,14 +1637,6 @@ export async function GET(
           200,
 
         headers: {
-          /*
-           * Pequeña caché.
-           *
-           * No afecta a las fichas individuales.
-           * Evita repetir consultas idénticas
-           * continuamente al navegar.
-           */
-
           "Cache-Control":
             "public, s-maxage=30, stale-while-revalidate=120",
         },
@@ -1490,4 +1669,4 @@ export async function GET(
       }
     );
   }
-}
+} 
