@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 /* =========================================================
    TIERRA VICIO
-   ACTUALIDAD · POPULARES · V1
+   ACTUALIDAD · POPULARES · V2
 
    OBJETIVOS
 
@@ -698,6 +698,10 @@ async function loadCandidates(
    HISTORIAL DE EXPOSICIÓN
 ========================================================= */
 
+/* =========================================================
+   HISTORIAL DE EXPOSICIÓN
+========================================================= */
+
 async function loadExposureHistory(
   environment,
   dayKey
@@ -909,13 +913,6 @@ function getExposurePenalty(
     penalty += 1.5;
   }
 
-  /*
-   * PROTECCIÓN DE LANZAMIENTO
-   *
-   * Un juego recién lanzado puede seguir siendo
-   * noticia varios días seguidos.
-   */
-
   let protection = 1;
 
   if (daysSinceRelease <= 3) {
@@ -980,10 +977,6 @@ function getReturnBonus(
 
 /* =========================================================
    NORMALIZADOR DE ATENCIÓN
-
-   Se usa escala logarítmica para impedir que un juego
-   con cientos de miles de votos aplaste completamente
-   a un lanzamiento nuevo.
 ========================================================= */
 
 function createAttentionNormalizer(
@@ -1036,12 +1029,83 @@ function createAttentionNormalizer(
 }
 
 /* =========================================================
+   NORMALIZADOR DE HYPE
+========================================================= */
+
+function createHypeNormalizer(
+  candidates
+) {
+  const maximum =
+    Math.max(
+      1,
+      ...candidates.map(
+        (game) =>
+          numberOrZero(
+            game.hypes
+          )
+      )
+    );
+
+  const maximumLog =
+    Math.log1p(
+      maximum
+    );
+
+  return function normalizeHype(
+    game
+  ) {
+    const hypes =
+      Math.max(
+        0,
+        numberOrZero(
+          game.hypes
+        )
+      );
+
+    if (
+      maximumLog <= 0
+    ) {
+      return 0;
+    }
+
+    return (
+      Math.log1p(hypes) /
+      maximumLog
+    ) * 100;
+  };
+}
+
+/* =========================================================
+   SEÑAL MÍNIMA DE POPULARIDAD
+========================================================= */
+
+function hasMinimumPopularitySignal(
+  game
+) {
+  const totalRatingCount =
+    numberOrZero(
+      game.total_rating_count
+    );
+
+  const ratingCount =
+    numberOrZero(
+      game.rating_count
+    );
+
+  const hypes =
+    numberOrZero(
+      game.hypes
+    );
+
+  return (
+    totalRatingCount >= 3 ||
+    ratingCount >= 3 ||
+    hypes >= 15
+  );
+}
+
+/* =========================================================
    CONFIANZA / CALIDAD
-
-   Señal pequeña.
-
-   No queremos convertir "Popular" en
-   "Mejor puntuado".
 ========================================================= */
 
 function getQualityConfidence(
@@ -1082,7 +1146,7 @@ function getQualityConfidence(
 }
 
 /* =========================================================
-   SCORING
+   SCORING · POPULAR V2
 ========================================================= */
 
 function scoreCandidates(
@@ -1095,6 +1159,11 @@ function scoreCandidates(
       candidates
     );
 
+  const normalizeHype =
+    createHypeNormalizer(
+      candidates
+    );
+
   return candidates
     .map((game) => {
       const daysSinceRelease =
@@ -1104,6 +1173,11 @@ function scoreCandidates(
 
       const attentionScore =
         normalizeAttention(
+          game
+        );
+
+      const hypeScore =
+        normalizeHype(
           game
         );
 
@@ -1149,22 +1223,14 @@ function scoreCandidates(
           ? 5
           : 0;
 
-      /*
-       * POPULARIDAD V1
-       *
-       * Atención es la señal principal.
-       * Frescura evita una pared puramente histórica.
-       * Launch boost favorece el momento del estreno.
-       * Calidad sólo aporta una señal pequeña.
-       */
-
       const baseScore =
-        attentionScore * 0.55 +
-        freshnessScore * 0.3 +
-        launchBoost * 0.15 +
+        attentionScore * 0.45 +
+        hypeScore * 0.25 +
+        freshnessScore * 0.18 +
+        launchBoost * 0.07 +
         qualityConfidence +
         featuredBoost +
-        rotation * 3;
+        rotation * 2;
 
       const score =
         baseScore +
@@ -1177,6 +1243,8 @@ function scoreCandidates(
         daysSinceRelease,
 
         attentionScore,
+
+        hypeScore,
 
         freshnessScore,
 
@@ -1222,13 +1290,6 @@ function scoreCandidates(
 
 /* =========================================================
    SELECCIÓN
-
-   Buscamos mezcla, no diez juegos del mismo momento.
-
-   4 · MUY RECIENTES  0-30 días
-   3 · RECIENTES      31-90 días
-   2 · CONSOLIDADOS   91-365 días
-   1 · COMODÍN
 ========================================================= */
 
 function selectDailyGames(
@@ -1236,6 +1297,7 @@ function selectDailyGames(
   limit
 ) {
   const selected = [];
+
   const selectedIds =
     new Set();
 
@@ -1283,7 +1345,10 @@ function selectDailyGames(
     scored.filter(
       (item) =>
         item.daysSinceRelease >= 0 &&
-        item.daysSinceRelease <= 30
+        item.daysSinceRelease <= 30 &&
+        hasMinimumPopularitySignal(
+          item.game
+        )
     );
 
   take(
@@ -1333,11 +1398,6 @@ function selectDailyGames(
     "wildcard"
   );
 
-  /*
-   * Si alguna ventana no tiene candidatos suficientes,
-   * completamos con el ranking general.
-   */
-
   take(
     scored,
     limit,
@@ -1353,6 +1413,7 @@ function selectDailyGames(
 /* =========================================================
    GUARDAR SELECCIÓN
 ========================================================= */
+
 
 async function saveDailySelection(
   environment,
@@ -1400,6 +1461,13 @@ async function saveDailySelection(
           attention:
             Number(
               item.attentionScore.toFixed(
+                4
+              )
+            ),
+
+          hype:
+            Number(
+              item.hypeScore.toFixed(
                 4
               )
             ),
@@ -1455,7 +1523,7 @@ async function saveDailySelection(
             0,
 
           algorithm:
-            "tierra-vicio-popular-v1",
+            "tierra-vicio-popular-v2",
         },
 
         manual_override:
@@ -1614,6 +1682,13 @@ function createSelectionGame(
           )
         ),
 
+      hype:
+        Number(
+          item.hypeScore.toFixed(
+            2
+          )
+        ),
+
       freshness:
         Number(
           item.freshnessScore.toFixed(
@@ -1704,6 +1779,9 @@ function createStoredSelectionGame(
       attention:
         metadata.attention ?? 0,
 
+      hype:
+        metadata.hype ?? 0,
+
       freshness:
         metadata.freshness ?? 0,
 
@@ -1750,6 +1828,7 @@ function createStoredSelectionGame(
    GET
 ========================================================= */
 
+
 export async function GET(
   request
 ) {
@@ -1781,6 +1860,21 @@ export async function GET(
     const dayKey =
       getDayKey();
 
+    const refresh =
+      [
+        "1",
+        "true",
+        "yes",
+      ].includes(
+        String(
+          searchParams.get(
+            "refresh"
+          ) || ""
+        )
+          .trim()
+          .toLowerCase()
+      );
+
     /* =====================================================
        1 · ¿YA EXISTE LA SELECCIÓN DE HOY?
     ===================================================== */
@@ -1792,6 +1886,7 @@ export async function GET(
       );
 
     if (
+      !refresh &&
       todayRows.length >=
       Math.min(
         limit,
@@ -1835,7 +1930,7 @@ export async function GET(
 
           selection: {
             algorithm:
-              "tierra-vicio-popular-v1",
+              "tierra-vicio-popular-v2",
 
             automatic:
               true,
@@ -1958,7 +2053,10 @@ export async function GET(
         scored.filter(
           (item) =>
             item.daysSinceRelease >= 0 &&
-            item.daysSinceRelease <= 30
+            item.daysSinceRelease <= 30 &&
+            hasMinimumPopularitySignal(
+              item.game
+            )
         ).length,
 
       recent:
@@ -2003,6 +2101,9 @@ export async function GET(
         generatedNow:
           true,
 
+        refreshed:
+          refresh,
+
         candidateCount:
           candidates.length,
 
@@ -2025,7 +2126,7 @@ export async function GET(
 
         selection: {
           algorithm:
-            "tierra-vicio-popular-v1",
+            "tierra-vicio-popular-v2",
 
           automatic:
             true,
@@ -2096,7 +2197,7 @@ export async function GET(
     );
   } catch (error) {
     console.error(
-      "[Tierra Vicio / Actualidad / Popular V1]",
+      "[Tierra Vicio / Actualidad / Popular V2]",
       error
     );
 
