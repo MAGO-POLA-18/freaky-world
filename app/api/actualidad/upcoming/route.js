@@ -2,7 +2,18 @@ import { NextResponse } from "next/server";
 
 /* =========================================================
    TIERRA VICIO
-   ACTUALIDAD · PRÓXIMOS LANZAMIENTOS · V3
+   ACTUALIDAD · PRÓXIMOS LANZAMIENTOS · V4
+
+   OBJETIVOS
+
+   - Próximos relevantes.
+   - Lanzamientos cercanos.
+   - Grandes juegos futuros.
+   - Rotación diaria perceptible.
+   - Evitar repetición excesiva.
+   - Mantener juegos importantes cuando corresponde.
+   - Guardar la selección diaria.
+   - No consultar IGDB desde visitantes.
 ========================================================= */
 
 export const runtime = "nodejs";
@@ -15,32 +26,25 @@ export const dynamic = "force-dynamic";
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
 
-/*
- * En V3 dejamos de depender de:
- *
- * "los primeros 500 juegos por fecha".
- *
- * Construimos dos pools:
- *
- * 1. FUTUROS CERCANOS
- *    Garantiza representación de lanzamientos próximos.
- *
- * 2. FUTUROS RELEVANTES
- *    Ordenados por hype.
- *    Permite que juegos importantes de meses posteriores
- *    entren en el conjunto de candidatos.
- *
- * Después:
- *
- * - deduplicamos
- * - puntuamos
- * - aplicamos el mismo 3 + 3 + 3 + 1
- *
- * Seguimos SIN consultar IGDB desde este endpoint.
- */
-
 const NEAREST_CANDIDATE_LIMIT = 500;
 const HYPE_CANDIDATE_LIMIT = 500;
+
+/*
+ * Cuántos días miramos hacia atrás para conocer
+ * la exposición reciente de cada juego.
+ */
+const HISTORY_DAYS = 14;
+
+/*
+ * La penalización NO elimina juegos.
+ *
+ * Sólo reduce temporalmente su prioridad cuando
+ * llevan demasiada exposición.
+ *
+ * La proximidad y la relevancia pueden superar
+ * esta penalización.
+ */
+const MAX_EXPOSURE_PENALTY = 24;
 
 /* =========================================================
    ENTORNO
@@ -77,7 +81,7 @@ function getEnvironment() {
 }
 
 /* =========================================================
-   SUPABASE
+   SUPABASE · GET
 ========================================================= */
 
 async function supabaseGet(
@@ -111,11 +115,70 @@ async function supabaseGet(
       await response.text();
 
     throw new Error(
-      `Supabase respondió ${response.status}: ${errorText}`
+      `Supabase GET ${response.status}: ${errorText}`
     );
   }
 
   return response.json();
+}
+
+/* =========================================================
+   SUPABASE · POST
+========================================================= */
+
+async function supabasePost(
+  environment,
+  path,
+  body
+) {
+  const response =
+    await fetch(
+      `${environment.supabaseUrl}/rest/v1/${path}`,
+      {
+        method: "POST",
+
+        headers: {
+          apikey:
+            environment.supabaseSecret,
+
+          Authorization:
+            `Bearer ${environment.supabaseSecret}`,
+
+          Accept:
+            "application/json",
+
+          "Content-Type":
+            "application/json",
+
+          Prefer:
+            "return=representation,resolution=merge-duplicates",
+        },
+
+        body:
+          JSON.stringify(body),
+
+        cache:
+          "no-store",
+      }
+    );
+
+  if (!response.ok) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `Supabase POST ${response.status}: ${errorText}`
+    );
+  }
+
+  const text =
+    await response.text();
+
+  if (!text) {
+    return [];
+  }
+
+  return JSON.parse(text);
 }
 
 /* =========================================================
@@ -171,11 +234,25 @@ function clamp(
 }
 
 /* =========================================================
-   FECHA DIARIA
+   FECHAS
 ========================================================= */
 
 function getDayKey() {
   return new Date()
+    .toISOString()
+    .slice(0, 10);
+}
+
+function getPastDateKey(daysAgo) {
+  const date =
+    new Date();
+
+  date.setUTCDate(
+    date.getUTCDate() -
+      daysAgo
+  );
+
+  return date
     .toISOString()
     .slice(0, 10);
 }
@@ -311,7 +388,7 @@ function getProximityScore(days) {
 }
 
 /* =========================================================
-   CAMPOS DE CANDIDATOS
+   CAMPOS
 ========================================================= */
 
 const CANDIDATE_FIELDS = [
@@ -421,7 +498,7 @@ function createLightGame(game) {
 }
 
 /* =========================================================
-   CARGAR CANDIDATOS CERCANOS
+   CANDIDATOS CERCANOS
 ========================================================= */
 
 async function loadNearestCandidates(
@@ -451,7 +528,7 @@ async function loadNearestCandidates(
 }
 
 /* =========================================================
-   CARGAR CANDIDATOS RELEVANTES
+   CANDIDATOS POR HYPE
 ========================================================= */
 
 async function loadHypeCandidates(
@@ -483,7 +560,7 @@ async function loadHypeCandidates(
 }
 
 /* =========================================================
-   CARGAR TODOS LOS CANDIDATOS
+   CARGAR CANDIDATOS
 ========================================================= */
 
 async function loadCandidates(
@@ -492,11 +569,6 @@ async function loadCandidates(
   const nowIso =
     new Date()
       .toISOString();
-
-  /*
-   * Las dos consultas son independientes.
-   * Las ejecutamos juntas para reducir latencia.
-   */
 
   const [
     nearestCandidates,
@@ -513,13 +585,6 @@ async function loadCandidates(
         nowIso
       ),
     ]);
-
-  /*
-   * Deduplicación por ID.
-   *
-   * Si un juego aparece en ambos pools,
-   * sólo ocupa una posición.
-   */
 
   const gamesById =
     new Map();
@@ -562,7 +627,334 @@ async function loadCandidates(
 }
 
 /* =========================================================
-   NORMALIZACIÓN DEL HYPE
+   HISTORIAL DE EXPOSICIÓN
+========================================================= */
+
+async function loadExposureHistory(
+  environment,
+  dayKey
+) {
+  const fromDate =
+    getPastDateKey(
+      HISTORY_DAYS
+    );
+
+  return supabaseGet(
+    environment,
+    [
+      "actualidad_slots",
+
+      "?select=",
+      [
+        "selection_date",
+        "slot",
+        "game_id",
+        "reason",
+        "manual_override",
+        "locked",
+      ].join(","),
+
+      "&section=eq.upcoming",
+
+      `&selection_date=gte.${fromDate}`,
+
+      `&selection_date=lt.${dayKey}`,
+
+      "&order=selection_date.desc,slot.asc",
+    ].join("")
+  );
+}
+
+/* =========================================================
+   MAPA DE EXPOSICIÓN
+========================================================= */
+
+function buildExposureMap(
+  history,
+  dayKey
+) {
+  const map =
+    new Map();
+
+  const today =
+    new Date(
+      `${dayKey}T00:00:00.000Z`
+    );
+
+  for (
+    const row of history
+  ) {
+    const id =
+      String(
+        row.game_id
+      );
+
+    if (
+      !map.has(id)
+    ) {
+      map.set(
+        id,
+        {
+          appearances:
+            0,
+
+          consecutiveDays:
+            0,
+
+          lastSeenDaysAgo:
+            null,
+
+          dates:
+            new Set(),
+        }
+      );
+    }
+
+    const entry =
+      map.get(id);
+
+    const dateKey =
+      row.selection_date;
+
+    if (
+      entry.dates.has(
+        dateKey
+      )
+    ) {
+      continue;
+    }
+
+    entry.dates.add(
+      dateKey
+    );
+
+    entry.appearances += 1;
+
+    const date =
+      new Date(
+        `${dateKey}T00:00:00.000Z`
+      );
+
+    const daysAgo =
+      Math.round(
+        (
+          today.getTime() -
+          date.getTime()
+        ) /
+          86400000
+      );
+
+    if (
+      entry.lastSeenDaysAgo === null ||
+      daysAgo <
+        entry.lastSeenDaysAgo
+    ) {
+      entry.lastSeenDaysAgo =
+        daysAgo;
+    }
+  }
+
+  /*
+   * Calculamos días consecutivos hacia atrás.
+   */
+
+  for (
+    const entry of map.values()
+  ) {
+    let consecutive =
+      0;
+
+    for (
+      let daysAgo = 1;
+      daysAgo <= HISTORY_DAYS;
+      daysAgo += 1
+    ) {
+      const date =
+        new Date(today);
+
+      date.setUTCDate(
+        date.getUTCDate() -
+          daysAgo
+      );
+
+      const key =
+        date
+          .toISOString()
+          .slice(0, 10);
+
+      if (
+        entry.dates.has(key)
+      ) {
+        consecutive += 1;
+      } else {
+        break;
+      }
+    }
+
+    entry.consecutiveDays =
+      consecutive;
+  }
+
+  return map;
+}
+
+/* =========================================================
+   PENALIZACIÓN POR EXPOSICIÓN
+
+   PRINCIPIO:
+
+   Un juego no desaparece porque haya salido ayer.
+
+   Pero si lleva varios días apareciendo,
+   damos espacio a alternativas comparables.
+
+   Cuanto más cerca está el lanzamiento,
+   menor es la penalización efectiva.
+========================================================= */
+
+function getExposurePenalty(
+  exposure,
+  daysUntilRelease
+) {
+  if (!exposure) {
+    return 0;
+  }
+
+  const appearances =
+    exposure.appearances || 0;
+
+  const consecutive =
+    exposure.consecutiveDays || 0;
+
+  const lastSeen =
+    exposure.lastSeenDaysAgo;
+
+  let penalty =
+    0;
+
+  /*
+   * Repetición acumulada.
+   */
+  penalty +=
+    Math.min(
+      appearances * 1.4,
+      8
+    );
+
+  /*
+   * Repetición consecutiva pesa más.
+   */
+  if (consecutive >= 1) {
+    penalty += 3;
+  }
+
+  if (consecutive >= 2) {
+    penalty += 5;
+  }
+
+  if (consecutive >= 3) {
+    penalty += 6;
+  }
+
+  /*
+   * Si acaba de aparecer,
+   * pequeño descanso adicional.
+   */
+  if (lastSeen === 1) {
+    penalty += 3;
+  } else if (lastSeen === 2) {
+    penalty += 1.5;
+  }
+
+  /*
+   * PROTECCIÓN POR PROXIMIDAD.
+   *
+   * Un lanzamiento inminente no debe desaparecer
+   * simplemente porque apareció ayer.
+   */
+
+  let protection =
+    1;
+
+  if (daysUntilRelease <= 1) {
+    protection =
+      0.2;
+  } else if (
+    daysUntilRelease <= 3
+  ) {
+    protection =
+      0.3;
+  } else if (
+    daysUntilRelease <= 7
+  ) {
+    protection =
+      0.45;
+  } else if (
+    daysUntilRelease <= 14
+  ) {
+    protection =
+      0.65;
+  } else if (
+    daysUntilRelease <= 30
+  ) {
+    protection =
+      0.8;
+  }
+
+  return clamp(
+    penalty *
+      protection,
+    0,
+    MAX_EXPOSURE_PENALTY
+  );
+}
+
+/* =========================================================
+   BONIFICACIÓN POR REGRESO
+
+   Si un juego relevante lleva varios días sin aparecer,
+   recibe una pequeña oportunidad extra.
+
+   Nunca domina hype o proximidad.
+========================================================= */
+
+function getReturnBonus(
+  exposure
+) {
+  if (!exposure) {
+    return 3;
+  }
+
+  const lastSeen =
+    exposure.lastSeenDaysAgo;
+
+  if (
+    lastSeen === null
+  ) {
+    return 3;
+  }
+
+  if (lastSeen >= 10) {
+    return 5;
+  }
+
+  if (lastSeen >= 7) {
+    return 4;
+  }
+
+  if (lastSeen >= 5) {
+    return 3;
+  }
+
+  if (lastSeen >= 3) {
+    return 1.5;
+  }
+
+  return 0;
+}
+
+/* =========================================================
+   NORMALIZACIÓN HYPE
 ========================================================= */
 
 function createHypeNormalizer(
@@ -609,7 +1001,7 @@ function createHypeNormalizer(
 }
 
 /* =========================================================
-   ATENCIÓN / RELEVANCIA
+   ATENCIÓN
 ========================================================= */
 
 function getAttentionScore(
@@ -653,12 +1045,13 @@ function getAttentionScore(
 }
 
 /* =========================================================
-   SCORING GENERAL
+   SCORING V4
 ========================================================= */
 
 function scoreCandidates(
   candidates,
-  dayKey
+  dayKey,
+  exposureMap
 ) {
   const normalizeHype =
     createHypeNormalizer(
@@ -690,13 +1083,45 @@ function scoreCandidates(
             dayKey
           );
 
-        const score =
+        const exposure =
+          exposureMap.get(
+            String(game.id)
+          ) || null;
+
+        const exposurePenalty =
+          getExposurePenalty(
+            exposure,
+            daysUntilRelease
+          );
+
+        const returnBonus =
+          getReturnBonus(
+            exposure
+          );
+
+        /*
+         * BASE V3:
+         *
+         * relevancia + proximidad + rotación
+         *
+         * V4:
+         *
+         * + regreso
+         * - exposición reciente
+         */
+
+        const baseScore =
           attentionScore *
             0.64 +
           proximityScore *
             0.33 +
           rotation *
             3;
+
+        const score =
+          baseScore +
+          returnBonus -
+          exposurePenalty;
 
         return {
           game,
@@ -708,6 +1133,14 @@ function scoreCandidates(
           proximityScore,
 
           rotation,
+
+          exposure,
+
+          exposurePenalty,
+
+          returnBonus,
+
+          baseScore,
 
           score,
         };
@@ -737,7 +1170,13 @@ function scoreCandidates(
 }
 
 /* =========================================================
-   ORDEN POR RELEVANCIA
+   ORDEN POR RELEVANCIA V4
+
+   Importante:
+   ahora usamos SCORE FINAL.
+
+   Eso permite que el historial realmente
+   afecte qué entra y qué descansa.
 ========================================================= */
 
 function sortByRelevance(
@@ -751,6 +1190,16 @@ function sortByRelevance(
       second
     ) => {
       if (
+        second.score !==
+        first.score
+      ) {
+        return (
+          second.score -
+          first.score
+        );
+      }
+
+      if (
         second.attentionScore !==
         first.attentionScore
       ) {
@@ -760,45 +1209,29 @@ function sortByRelevance(
         );
       }
 
-      if (
-        first.daysUntilRelease !==
-        second.daysUntilRelease
-      ) {
-        return (
-          first.daysUntilRelease -
-          second.daysUntilRelease
-        );
-      }
-
       return (
-        second.rotation -
-        first.rotation
+        first.daysUntilRelease -
+        second.daysUntilRelease
       );
     }
   );
 }
 
 /* =========================================================
-   SELECCIÓN V3
+   SELECCIÓN V4
 
    3 · INMEDIATOS
-       0–7 días
-
    3 · CERCANOS
-       8–30 días
-
    3 · IMPORTANTES
-       31–180 días
-
    1 · COMODÍN
-       mejor candidato restante
 ========================================================= */
 
 function selectDailyGames(
   scored,
   limit
 ) {
-  const selected = [];
+  const selected =
+    [];
 
   const selectedIds =
     new Set();
@@ -843,9 +1276,9 @@ function selectDailyGames(
     }
   }
 
-  /* =======================================================
-     1 · INMEDIATOS
-  ======================================================= */
+  /* -------------------------------------------------------
+     INMEDIATOS
+  ------------------------------------------------------- */
 
   const immediate =
     sortByRelevance(
@@ -865,9 +1298,9 @@ function selectDailyGames(
     "immediate"
   );
 
-  /* =======================================================
-     2 · CERCANOS
-  ======================================================= */
+  /* -------------------------------------------------------
+     CERCANOS
+  ------------------------------------------------------- */
 
   const near =
     sortByRelevance(
@@ -887,9 +1320,9 @@ function selectDailyGames(
     "near"
   );
 
-  /* =======================================================
-     3 · IMPORTANTES
-  ======================================================= */
+  /* -------------------------------------------------------
+     IMPORTANTES
+  ------------------------------------------------------- */
 
   const important =
     sortByRelevance(
@@ -909,9 +1342,9 @@ function selectDailyGames(
     "important"
   );
 
-  /* =======================================================
-     4 · COMODÍN
-  ======================================================= */
+  /* -------------------------------------------------------
+     COMODÍN
+  ------------------------------------------------------- */
 
   take(
     scored,
@@ -919,9 +1352,9 @@ function selectDailyGames(
     "wildcard"
   );
 
-  /* =======================================================
-     5 · RELLENO
-  ======================================================= */
+  /* -------------------------------------------------------
+     RELLENO
+  ------------------------------------------------------- */
 
   take(
     scored,
@@ -936,7 +1369,232 @@ function selectDailyGames(
 }
 
 /* =========================================================
-   RESPUESTA DE CADA POSICIÓN
+   GUARDAR SELECCIÓN DIARIA
+========================================================= */
+
+async function saveDailySelection(
+  environment,
+  dayKey,
+  selected
+) {
+  if (
+    selected.length === 0
+  ) {
+    return [];
+  }
+
+  const rows =
+    selected.map(
+      (
+        item,
+        index
+      ) => ({
+        selection_date:
+          dayKey,
+
+        section:
+          "upcoming",
+
+        slot:
+          index + 1,
+
+        game_id:
+          item.game.id,
+
+        reason:
+          item.reason,
+
+        selection_score:
+          Number(
+            item.score.toFixed(
+              4
+            )
+          ),
+
+        metadata: {
+          daysUntilRelease:
+            item.daysUntilRelease,
+
+          hype:
+            numberOrZero(
+              item.game.hypes
+            ),
+
+          attention:
+            Number(
+              item.attentionScore.toFixed(
+                4
+              )
+            ),
+
+          proximity:
+            Number(
+              item.proximityScore.toFixed(
+                4
+              )
+            ),
+
+          dailyRotation:
+            Number(
+              item.rotation.toFixed(
+                4
+              )
+            ),
+
+          exposurePenalty:
+            Number(
+              item.exposurePenalty.toFixed(
+                4
+              )
+            ),
+
+          returnBonus:
+            Number(
+              item.returnBonus.toFixed(
+                4
+              )
+            ),
+
+          previousAppearances:
+            item.exposure?.appearances ||
+            0,
+
+          previousConsecutiveDays:
+            item.exposure?.consecutiveDays ||
+            0,
+
+          algorithm:
+            "tierra-vicio-upcoming-v4",
+        },
+
+        manual_override:
+          false,
+
+        locked:
+          false,
+
+        updated_at:
+          new Date()
+            .toISOString(),
+      })
+    );
+
+  return supabasePost(
+    environment,
+    "actualidad_slots?on_conflict=selection_date,section,slot",
+    rows
+  );
+}
+
+/* =========================================================
+   CARGAR SELECCIÓN DE HOY
+========================================================= */
+
+async function loadTodaySelection(
+  environment,
+  dayKey
+) {
+  return supabaseGet(
+    environment,
+    [
+      "actualidad_slots",
+
+      "?select=",
+      [
+        "selection_date",
+        "section",
+        "slot",
+        "game_id",
+        "reason",
+        "selection_score",
+        "metadata",
+        "manual_override",
+        "locked",
+      ].join(","),
+
+      "&section=eq.upcoming",
+
+      `&selection_date=eq.${dayKey}`,
+
+      "&order=slot.asc",
+    ].join("")
+  );
+}
+
+/* =========================================================
+   CARGAR JUEGOS DE UNA SELECCIÓN GUARDADA
+========================================================= */
+
+async function loadGamesForStoredSelection(
+  environment,
+  rows
+) {
+  if (
+    rows.length === 0
+  ) {
+    return [];
+  }
+
+  const ids =
+    Array.from(
+      new Set(
+        rows.map(
+          (row) =>
+            row.game_id
+        )
+      )
+    );
+
+  const games =
+    await supabaseGet(
+      environment,
+      [
+        "games",
+
+        "?select=",
+        CANDIDATE_FIELDS,
+
+        `&id=in.(${ids.join(
+          ","
+        )})`,
+      ].join("")
+    );
+
+  const gamesById =
+    new Map(
+      games.map(
+        (game) => [
+          String(game.id),
+          game,
+        ]
+      )
+    );
+
+  return rows
+    .map(
+      (row) => {
+        const game =
+          gamesById.get(
+            String(
+              row.game_id
+            )
+          );
+
+        if (!game) {
+          return null;
+        }
+
+        return {
+          row,
+          game,
+        };
+      }
+    )
+    .filter(Boolean);
+}
+
+/* =========================================================
+   RESPUESTA DE JUEGO NUEVO
 ========================================================= */
 
 function createSelectionGame(
@@ -985,7 +1643,108 @@ function createSelectionGame(
             4
           )
         ),
+
+      exposurePenalty:
+        Number(
+          item.exposurePenalty.toFixed(
+            2
+          )
+        ),
+
+      returnBonus:
+        Number(
+          item.returnBonus.toFixed(
+            2
+          )
+        ),
+
+      previousAppearances:
+        item.exposure?.appearances ||
+        0,
+
+      previousConsecutiveDays:
+        item.exposure?.consecutiveDays ||
+        0,
     },
+
+    game:
+      createLightGame(
+        item.game
+      ),
+  };
+}
+
+/* =========================================================
+   RESPUESTA DE JUEGO GUARDADO
+========================================================= */
+
+function createStoredSelectionGame(
+  item
+) {
+  const metadata =
+    item.row.metadata || {};
+
+  return {
+    position:
+      item.row.slot,
+
+    reason:
+      item.row.reason,
+
+    daysUntilRelease:
+      metadata.daysUntilRelease ??
+      getDaysUntilRelease(
+        item.game.first_release_date
+      ),
+
+    selectionScore:
+      numberOrZero(
+        item.row.selection_score
+      ),
+
+    signals: {
+      hype:
+        metadata.hype ??
+        numberOrZero(
+          item.game.hypes
+        ),
+
+      attention:
+        metadata.attention ??
+        0,
+
+      proximity:
+        metadata.proximity ??
+        0,
+
+      dailyRotation:
+        metadata.dailyRotation ??
+        0,
+
+      exposurePenalty:
+        metadata.exposurePenalty ??
+        0,
+
+      returnBonus:
+        metadata.returnBonus ??
+        0,
+
+      previousAppearances:
+        metadata.previousAppearances ??
+        0,
+
+      previousConsecutiveDays:
+        metadata.previousConsecutiveDays ??
+        0,
+    },
+
+    manualOverride:
+      item.row.manual_override ===
+      true,
+
+    locked:
+      item.row.locked ===
+      true,
 
     game:
       createLightGame(
@@ -1030,29 +1789,161 @@ export async function GET(
       getDayKey();
 
     /* =====================================================
-       1 · CANDIDATOS
+       1 · ¿YA EXISTE LA SELECCIÓN DE HOY?
     ===================================================== */
+
+    const todayRows =
+      await loadTodaySelection(
+        environment,
+        dayKey
+      );
+
+    /*
+     * Para el funcionamiento normal usamos 10.
+     *
+     * Si ya tenemos suficientes slots guardados,
+     * no recalculamos nada.
+     */
+
+    if (
+      todayRows.length >=
+      Math.min(
+        limit,
+        DEFAULT_LIMIT
+      )
+    ) {
+      const stored =
+        await loadGamesForStoredSelection(
+          environment,
+          todayRows.slice(
+            0,
+            limit
+          )
+        );
+
+      return NextResponse.json(
+        {
+          ok:
+            true,
+
+          source:
+            "Tierra Vicio Database",
+
+          mode:
+            "actualidad-upcoming",
+
+          date:
+            dayKey,
+
+          generatedAt:
+            new Date()
+              .toISOString(),
+
+          persisted:
+            true,
+
+          generatedNow:
+            false,
+
+          count:
+            stored.length,
+
+          selection: {
+            algorithm:
+              "tierra-vicio-upcoming-v4",
+
+            automatic:
+              true,
+
+            dailyRotation:
+              true,
+
+            exposureMemory:
+              true,
+
+            historyDays:
+              HISTORY_DAYS,
+
+            composition: {
+              immediate:
+                3,
+
+              near:
+                3,
+
+              important:
+                3,
+
+              wildcard:
+                1,
+            },
+          },
+
+          games:
+            stored.map(
+              createStoredSelectionGame
+            ),
+        },
+        {
+          status:
+            200,
+
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=3600, stale-while-revalidate=7200",
+          },
+        }
+      );
+    }
+
+    /* =====================================================
+       2 · CANDIDATOS + HISTORIAL
+    ===================================================== */
+
+    const [
+      candidateResult,
+      history,
+    ] =
+      await Promise.all([
+        loadCandidates(
+          environment
+        ),
+
+        loadExposureHistory(
+          environment,
+          dayKey
+        ),
+      ]);
 
     const {
       candidates,
       poolStats,
     } =
-      await loadCandidates(
-        environment
+      candidateResult;
+
+    /* =====================================================
+       3 · MEMORIA
+    ===================================================== */
+
+    const exposureMap =
+      buildExposureMap(
+        history,
+        dayKey
       );
 
     /* =====================================================
-       2 · SCORING
+       4 · SCORING
     ===================================================== */
 
     const scored =
       scoreCandidates(
         candidates,
-        dayKey
+        dayKey,
+        exposureMap
       );
 
     /* =====================================================
-       3 · SELECCIÓN
+       5 · SELECCIÓN
     ===================================================== */
 
     const selected =
@@ -1062,13 +1953,24 @@ export async function GET(
       );
 
     /* =====================================================
-       4 · ESTADÍSTICAS
+       6 · GUARDAR
+    ===================================================== */
+
+    await saveDailySelection(
+      environment,
+      dayKey,
+      selected
+    );
+
+    /* =====================================================
+       7 · ESTADÍSTICAS
     ===================================================== */
 
     const pools = {
       immediate:
         scored.filter(
           (item) =>
+            item.daysUntilRelease >= 0 &&
             item.daysUntilRelease <= 7
         ).length,
 
@@ -1115,24 +2017,47 @@ export async function GET(
           new Date()
             .toISOString(),
 
+        persisted:
+          true,
+
+        generatedNow:
+          true,
+
         candidateCount:
           candidates.length,
 
         candidateSources:
           poolStats,
 
+        history: {
+          days:
+            HISTORY_DAYS,
+
+          rows:
+            history.length,
+
+          gamesWithHistory:
+            exposureMap.size,
+        },
+
         count:
           selected.length,
 
         selection: {
           algorithm:
-            "tierra-vicio-upcoming-v3",
+            "tierra-vicio-upcoming-v4",
 
           automatic:
             true,
 
           dailyRotation:
             true,
+
+          exposureMemory:
+            true,
+
+          historyDays:
+            HISTORY_DAYS,
 
           composition: {
             immediate:
@@ -1189,7 +2114,7 @@ export async function GET(
     );
   } catch (error) {
     console.error(
-      "[Tierra Vicio / Actualidad / Upcoming V3]",
+      "[Tierra Vicio / Actualidad / Upcoming V4]",
       error
     );
 
