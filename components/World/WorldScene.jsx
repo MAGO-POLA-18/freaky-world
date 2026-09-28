@@ -260,13 +260,6 @@ export default function WorldScene() {
 
   /* =======================================================
      ABRIR FICHA COMPLETA
-
-     Tanto RankingOverlay como el
-     buscador pueden terminar abriendo
-     esta misma ficha.
-
-     Toda Tierra Vicio utiliza así
-     una única ficha completa.
   ======================================================= */
 
   useEffect(() => {
@@ -339,16 +332,6 @@ export default function WorldScene() {
 
       setSearchOpen(false);
     }, []);
-
-  /*
-    El resultado que llega desde
-    GameSearchOverlay es deliberadamente
-    ligero.
-
-    FullGameOverlay se encargará de
-    cargar /api/games?id=... y obtener
-    la ficha maestra completa.
-  */
 
   const selectSearchGame =
     useCallback(
@@ -440,15 +423,6 @@ export default function WorldScene() {
     const handleKey = (
       event
     ) => {
-      /*
-        Mientras escribimos en el buscador
-        no permitimos que WASD/E/P disparen
-        acciones del mundo.
-
-        Escape lo gestiona
-        GameSearchOverlay.
-      */
-
       if (searchOpen) {
         return;
       }
@@ -480,14 +454,6 @@ export default function WorldScene() {
 
         return;
       }
-
-      /*
-        Atajo de escritorio:
-        F abre el buscador global.
-
-        No usamos una letra habitual
-        de movimiento.
-      */
 
       if (
         event.code ===
@@ -787,7 +753,7 @@ export default function WorldScene() {
           FPS
       =================================================== */}
 
-            {!overlayOpen && (
+      {!overlayOpen && (
         <>
           <button
             type="button"
@@ -978,18 +944,6 @@ export default function WorldScene() {
 
       {/* ===================================================
           MUNDO 3D
-
-          El Canvas permanece montado
-          aunque abramos:
-
-          - buscador
-          - ficha rápida
-          - ficha completa
-          - vídeo 2D
-
-          De esta manera cerrar una interfaz
-          devuelve al usuario exactamente
-          al mismo punto del mundo.
       =================================================== */}
 
       <Canvas
@@ -1093,11 +1047,6 @@ export default function WorldScene() {
 
       {/* ===================================================
           CONTROLES MÓVILES
-
-          Se ocultan también mientras
-          el buscador está abierto porque
-          searchOpen forma parte de
-          overlayOpen.
       =================================================== */}
 
       {!overlayOpen && (
@@ -1106,6 +1055,13 @@ export default function WorldScene() {
 
       {/* ===================================================
           JUEGOS NORMALES
+
+          MÓVIL:
+          Botón compacto en el lateral derecho,
+          ligeramente por debajo del centro.
+
+          PC:
+          Conserva la clase y posición originales.
       =================================================== */}
 
       {nearbyGame &&
@@ -1117,31 +1073,167 @@ export default function WorldScene() {
             onClick={
               openGame
             }
+            style={
+              mobile
+                ? {
+                    position:
+                      "fixed",
+
+                    right:
+                      16,
+
+                    top:
+                      "58%",
+
+                    transform:
+                      "translateY(-50%)",
+
+                    zIndex:
+                      90,
+
+                    width:
+                      "auto",
+
+                    maxWidth:
+                      150,
+
+                    minHeight:
+                      42,
+
+                    padding:
+                      "8px 11px",
+
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      "center",
+
+                    gap:
+                      6,
+
+                    border:
+                      "1px solid rgba(255,255,255,.22)",
+
+                    borderRadius:
+                      12,
+
+                    background:
+                      "rgba(5,8,12,.82)",
+
+                    backdropFilter:
+                      "blur(10px)",
+
+                    WebkitBackdropFilter:
+                      "blur(10px)",
+
+                    color:
+                      "#fff",
+
+                    fontSize:
+                      11,
+
+                    fontWeight:
+                      800,
+
+                    lineHeight:
+                      1.15,
+
+                    textAlign:
+                      "left",
+
+                    boxShadow:
+                      "0 6px 20px rgba(0,0,0,.28)",
+
+                    cursor:
+                      "pointer",
+
+                    touchAction:
+                      "manipulation",
+
+                    userSelect:
+                      "none",
+
+                    WebkitUserSelect:
+                      "none",
+                  }
+                : undefined
+            }
           >
-            <span className="world-interaction-icon">
+            <span
+              className="world-interaction-icon"
+              style={
+                mobile
+                  ? {
+                      flex:
+                        "0 0 auto",
+
+                      width:
+                        24,
+
+                      height:
+                        24,
+
+                      display:
+                        "grid",
+
+                      placeItems:
+                        "center",
+
+                      borderRadius:
+                        7,
+
+                      background:
+                        "rgba(255,255,255,.1)",
+
+                      fontSize:
+                        14,
+                    }
+                  : undefined
+              }
+            >
               ↗
             </span>
 
-            <span>
+            <span
+              style={
+                mobile
+                  ? {
+                      display:
+                        "block",
+
+                      maxWidth:
+                        90,
+
+                      overflow:
+                        "hidden",
+
+                      whiteSpace:
+                        "nowrap",
+
+                      textOverflow:
+                        "ellipsis",
+                    }
+                  : undefined
+              }
+            >
               Abrir{" "}
               {nearbyGame.title}
             </span>
 
-            <small>
-              E
-            </small>
+            {!mobile && (
+              <small>
+                E
+              </small>
+            )}
           </button>
         )}
 
       {/* ===================================================
           PANTALLA VIDEO
-
-          PLAY / PAUSA / BARRA / VOLUMEN
-          continúan perteneciendo a la
-          pantalla YouTube del mundo 3D.
-
-          Este botón únicamente abre
-          ese contenido en 2D.
       =================================================== */}
 
       {isVideoWall &&
@@ -1208,16 +1300,6 @@ export default function WorldScene() {
 
       {/* ===================================================
           BUSCADOR GLOBAL
-
-          Está fuera del Canvas.
-          No crea geometría ni texturas 3D.
-
-          Las búsquedas se realizan contra:
-          /api/games?search=...
-
-          Al seleccionar un resultado
-          pasamos directamente a la ficha
-          completa.
       =================================================== */}
 
       <GameSearchOverlay
@@ -1234,19 +1316,9 @@ export default function WorldScene() {
 
       {/* ===================================================
           OVERLAYS 2D
-
-          Prioridad:
-
-          1. Ficha completa
-          2. VideoOverlay
-          3. Ficha rápida
-
-          El buscador se controla de forma
-          independiente mediante su prop
-          "open".
       =================================================== */}
 
-            {fullGame ? (
+      {fullGame ? (
         <FullGameOverlay
           game={fullGame}
           onClose={closeGame}
