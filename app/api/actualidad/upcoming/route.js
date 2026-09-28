@@ -2,28 +2,27 @@ import { NextResponse } from "next/server";
 
 /* =========================================================
    TIERRA VICIO
-   MOTOR DIARIO · PRÓXIMOS LANZAMIENTOS
+   ACTUALIDAD · PRÓXIMOS LANZAMIENTOS · V2
 ========================================================= */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /* =========================================================
-   CONFIG
+   CONFIGURACIÓN
 ========================================================= */
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
 
 /*
- * Ventana de candidatos.
+ * Supabase ya contiene los próximos juegos sincronizados.
  *
- * No necesitamos analizar toda la biblioteca.
- * Tomamos próximos lanzamientos suficientes para construir
- * una selección diaria variada.
+ * Este endpoint NO consulta IGDB.
+ * Sólo selecciona qué juegos debe mostrar Tierra Vicio.
  */
 
-const CANDIDATE_LIMIT = 160;
+const CANDIDATE_LIMIT = 500;
 
 /* =========================================================
    ENTORNO
@@ -71,8 +70,7 @@ async function supabaseGet(
     await fetch(
       `${environment.supabaseUrl}/rest/v1/${path}`,
       {
-        method:
-          "GET",
+        method: "GET",
 
         headers: {
           apikey:
@@ -122,9 +120,7 @@ function parsePositiveInteger(
     Number(value);
 
   if (
-    !Number.isSafeInteger(
-      number
-    ) ||
+    !Number.isSafeInteger(number) ||
     number <= 0
   ) {
     return fallback;
@@ -133,60 +129,50 @@ function parsePositiveInteger(
   return number;
 }
 
-function clamp(
-  value,
-  min,
-  max
-) {
-  return Math.min(
-    Math.max(
-      value,
-      min
-    ),
-    max
-  );
-}
-
-function numberOrZero(
-  value
-) {
+function numberOrZero(value) {
   const number =
     Number(value);
 
-  return Number.isFinite(
-    number
-  )
+  return Number.isFinite(number)
     ? number
     : 0;
 }
 
+function clamp(
+  value,
+  minimum,
+  maximum
+) {
+  return Math.min(
+    Math.max(
+      value,
+      minimum
+    ),
+    maximum
+  );
+}
+
 /* =========================================================
-   DÍA ACTUAL
-
-   La selección cambia una vez por día.
-
-   No usamos Math.random() porque queremos que todos los
-   usuarios vean la misma Tierra Vicio durante ese día.
+   FECHA DIARIA
 ========================================================= */
 
 function getDayKey() {
   return new Date()
     .toISOString()
-    .slice(
-      0,
-      10
-    );
+    .slice(0, 10);
 }
 
 /* =========================================================
-   ROTACIÓN DETERMINISTA
+   ROTACIÓN DIARIA DETERMINISTA
 
-   Mismo juego + mismo día = mismo valor.
+   No usamos Math.random().
 
-   Mañana cambia.
+   Durante todo el día:
+   - todos ven la misma selección
+   - recargar no cambia los juegos
 
-   Esto permite rotación sin que la pared cambie cada vez
-   que alguien recarga la página.
+   Al cambiar de día:
+   - cambia esta pequeña señal
 ========================================================= */
 
 function dailyRotation(
@@ -205,9 +191,7 @@ function dailyRotation(
     index += 1
   ) {
     hash ^=
-      input.charCodeAt(
-        index
-      );
+      input.charCodeAt(index);
 
     hash =
       Math.imul(
@@ -234,9 +218,7 @@ function getDaysUntilRelease(
   }
 
   const release =
-    new Date(
-      releaseDate
-    );
+    new Date(releaseDate);
 
   if (
     Number.isNaN(
@@ -276,12 +258,10 @@ function getDaysUntilRelease(
 }
 
 /* =========================================================
-   PUNTUACIÓN DE CERCANÍA
+   CERCANÍA
 ========================================================= */
 
-function getProximityScore(
-  days
-) {
+function getProximityScore(days) {
   if (days <= 1) {
     return 100;
   }
@@ -295,39 +275,74 @@ function getProximityScore(
   }
 
   if (days <= 14) {
-    return 80;
+    return 82;
   }
 
   if (days <= 30) {
-    return 68;
+    return 72;
   }
 
   if (days <= 60) {
-    return 54;
+    return 58;
   }
 
   if (days <= 90) {
-    return 42;
+    return 46;
   }
 
   if (days <= 180) {
-    return 28;
+    return 32;
   }
 
   if (days <= 365) {
-    return 16;
+    return 18;
   }
 
-  return 6;
+  return 8;
 }
 
 /* =========================================================
-   FORMATO DE JUEGO
+   CAMPOS DE CANDIDATOS
 ========================================================= */
 
-function createLightGame(
-  game
-) {
+const CANDIDATE_FIELDS = [
+  "id",
+  "slug",
+  "name",
+
+  "release_year",
+  "first_release_date",
+
+  "developer",
+  "publisher",
+
+  "cover_small_url",
+  "cover_medium_url",
+  "cover_large_url",
+
+  "rating",
+  "rating_count",
+
+  "total_rating",
+  "total_rating_count",
+
+  "hypes",
+
+  "freaky_official_score",
+  "freaky_official_votes",
+
+  "community_score",
+  "community_votes",
+
+  "featured",
+  "active",
+].join(",");
+
+/* =========================================================
+   JUEGO LIGERO
+========================================================= */
+
+function createLightGame(game) {
   return {
     id:
       game.id,
@@ -397,44 +412,11 @@ function createLightGame(
 }
 
 /* =========================================================
-   CAMPOS NECESARIOS
-
-   No cargamos fichas completas.
-========================================================= */
-
-const CANDIDATE_FIELDS = [
-  "id",
-  "slug",
-  "name",
-  "release_year",
-  "first_release_date",
-  "developer",
-  "publisher",
-
-  "cover_small_url",
-  "cover_medium_url",
-  "cover_large_url",
-
-  "rating",
-  "rating_count",
-
-  "total_rating",
-  "total_rating_count",
-
-  "hypes",
-
-  "freaky_official_score",
-  "freaky_official_votes",
-
-  "community_score",
-  "community_votes",
-
-  "featured",
-  "active",
-].join(",");
-
-/* =========================================================
    CARGAR CANDIDATOS
+
+   Sólo futuros.
+   Sólo activos.
+   Sólo campos ligeros.
 ========================================================= */
 
 async function loadCandidates(
@@ -467,18 +449,12 @@ async function loadCandidates(
 }
 
 /* =========================================================
-   NORMALIZAR HYPE
+   NORMALIZACIÓN DEL HYPE
 
-   log1p evita que un juego gigantesco destruya por completo
-   la clasificación.
+   Escala logarítmica.
 
-   Ejemplo conceptual:
-
-   1 hype      -> pequeño
-   20 hypes    -> relevante
-   500 hypes   -> muy relevante
-
-   pero 500 no vale 500 veces más que 1.
+   Evita que un título con un hype gigantesco convierta
+   todos los demás valores en prácticamente cero.
 ========================================================= */
 
 function createHypeNormalizer(
@@ -518,24 +494,14 @@ function createHypeNormalizer(
     }
 
     return (
-      Math.log1p(
-        hype
-      ) /
+      Math.log1p(hype) /
       maximumLog
     ) * 100;
   };
 }
 
 /* =========================================================
-   SEÑAL DE ATENCIÓN
-
-   Para juegos todavía no lanzados, IGDB puede tener:
-
-   - hypes
-   - rating count / total rating count en algunos casos
-   - featured editorial propio
-
-   Hype sigue siendo la señal principal.
+   ATENCIÓN / RELEVANCIA
 ========================================================= */
 
 function getAttentionScore(
@@ -555,40 +521,44 @@ function getAttentionScore(
       game.rating_count
     );
 
+  /*
+   * Señal secundaria.
+   *
+   * No domina el algoritmo porque muchos juegos futuros
+   * todavía no tienen ratings.
+   */
+
   const ratingSignal =
     clamp(
       Math.log1p(
         ratingCount
-      ) * 7,
+      ) * 6,
       0,
-      35
+      30
     );
+
+  /*
+   * featured queda preparado como intervención editorial.
+   *
+   * Más adelante el administrador podrá usar esta señal.
+   */
 
   const featuredBoost =
     game.featured === true
-      ? 8
+      ? 10
       : 0;
 
   return clamp(
-    hypeScore * 0.88 +
-      ratingSignal * 0.12 +
+    hypeScore * 0.9 +
+      ratingSignal * 0.1 +
       featuredBoost,
     0,
-    108
+    110
   );
 }
 
 /* =========================================================
-   SCORING
-
-   IMPORTANTE:
-
-   La rotación pesa poco.
-
-   No puede sacar un lanzamiento claramente importante.
-
-   Sólo ayuda a desempatar candidatos relativamente
-   equivalentes.
+   SCORING GENERAL
 ========================================================= */
 
 function scoreCandidates(
@@ -608,15 +578,15 @@ function scoreCandidates(
             game.first_release_date
           );
 
-        const proximityScore =
-          getProximityScore(
-            daysUntilRelease
-          );
-
         const attentionScore =
           getAttentionScore(
             game,
             normalizeHype
+          );
+
+        const proximityScore =
+          getProximityScore(
+            daysUntilRelease
           );
 
         const rotation =
@@ -626,44 +596,19 @@ function scoreCandidates(
           );
 
         /*
-         * Base principal:
+         * La clasificación general favorece relevancia.
          *
-         * 58% atención/hype
-         * 39% cercanía
-         * 3% rotación
-         *
-         * Para lanzamientos inminentes damos además
-         * un pequeño impulso.
+         * La cercanía sigue teniendo mucho peso,
+         * pero ya no puede llenar por sí sola toda la pared.
          */
-
-        let launchBoost =
-          0;
-
-        if (
-          daysUntilRelease <= 1
-        ) {
-          launchBoost =
-            12;
-        } else if (
-          daysUntilRelease <= 3
-        ) {
-          launchBoost =
-            8;
-        } else if (
-          daysUntilRelease <= 7
-        ) {
-          launchBoost =
-            4;
-        }
 
         const score =
           attentionScore *
-            0.58 +
+            0.64 +
           proximityScore *
-            0.39 +
+            0.33 +
           rotation *
-            3 +
-          launchBoost;
+            3;
 
         return {
           game,
@@ -695,43 +640,81 @@ function scoreCandidates(
           );
         }
 
-        if (
-          first.daysUntilRelease !==
-          second.daysUntilRelease
-        ) {
-          return (
-            first.daysUntilRelease -
-            second.daysUntilRelease
-          );
-        }
-
         return (
-          numberOrZero(
-            second.game.hypes
-          ) -
-          numberOrZero(
-            first.game.hypes
-          )
+          first.daysUntilRelease -
+          second.daysUntilRelease
         );
       }
     );
 }
 
 /* =========================================================
-   SELECCIÓN
+   ORDEN POR RELEVANCIA
 
-   Para 10 posiciones:
+   Dentro de una franja temporal queremos primero
+   los títulos con más atención.
 
-   1. mínimo 2 lanzamientos de hoy/mañana si existen
-   2. mínimo 2 lanzamientos de los próximos 7 días
-   3. mínimo 2 títulos relevantes de los próximos 30 días
-   4. resto por puntuación global
+   La cercanía funciona como desempate.
+========================================================= */
 
-   No son cuatro grupos completamente separados:
-   deduplicamos automáticamente.
+function sortByRelevance(
+  items
+) {
+  return [
+    ...items,
+  ].sort(
+    (
+      first,
+      second
+    ) => {
+      if (
+        second.attentionScore !==
+        first.attentionScore
+      ) {
+        return (
+          second.attentionScore -
+          first.attentionScore
+        );
+      }
 
-   Si una categoría no tiene suficientes juegos,
-   sus lugares se liberan para el ranking general.
+      if (
+        first.daysUntilRelease !==
+        second.daysUntilRelease
+      ) {
+        return (
+          first.daysUntilRelease -
+          second.daysUntilRelease
+        );
+      }
+
+      return (
+        second.rotation -
+        first.rotation
+      );
+    }
+  );
+}
+
+/* =========================================================
+   SELECCIÓN V2
+
+   Objetivo para 10 puestos:
+
+   3 · INMEDIATOS
+       0–7 días
+
+   3 · CERCANOS
+       8–30 días
+
+   3 · IMPORTANTES
+       31–180 días
+
+   1 · COMODÍN
+       mejor candidato restante
+
+   Si una franja no tiene suficientes juegos:
+   sus posiciones quedan disponibles para los mejores
+   candidatos del ranking general.
 ========================================================= */
 
 function selectDailyGames(
@@ -739,8 +722,13 @@ function selectDailyGames(
   limit
 ) {
   const selected = [];
+
   const selectedIds =
     new Set();
+
+  /* -------------------------------------------------------
+     INSERTAR
+  ------------------------------------------------------- */
 
   function take(
     pool,
@@ -766,78 +754,114 @@ function selectDailyGames(
         );
 
       if (
-        selectedIds.has(
-          id
-        )
+        selectedIds.has(id)
       ) {
         continue;
       }
 
-      selectedIds.add(
-        id
-      );
+      selectedIds.add(id);
 
       selected.push({
         ...item,
         reason,
       });
 
-      remaining -=
-        1;
+      remaining -= 1;
     }
   }
 
-  /* -------------------------------------------------------
-     HOY / MAÑANA
-  ------------------------------------------------------- */
+  /* =======================================================
+     1 · INMEDIATOS
+     0–7 días
+  ======================================================= */
+
+  const immediate =
+    sortByRelevance(
+      scored.filter(
+        (item) =>
+          item.daysUntilRelease >= 0 &&
+          item.daysUntilRelease <= 7
+      )
+    );
 
   take(
-    scored.filter(
-      (item) =>
-        item.daysUntilRelease <= 1
-    ),
+    immediate,
     Math.min(
-      2,
+      3,
       limit
     ),
     "immediate"
   );
 
-  /* -------------------------------------------------------
-     PRÓXIMOS 7 DÍAS
-  ------------------------------------------------------- */
+  /* =======================================================
+     2 · CERCANOS
+     8–30 días
+  ======================================================= */
+
+  const near =
+    sortByRelevance(
+      scored.filter(
+        (item) =>
+          item.daysUntilRelease >= 8 &&
+          item.daysUntilRelease <= 30
+      )
+    );
 
   take(
-    scored.filter(
-      (item) =>
-        item.daysUntilRelease <= 7
-    ),
+    near,
     Math.min(
-      2,
+      3,
       limit
     ),
     "near"
   );
 
-  /* -------------------------------------------------------
-     RELEVANTES · PRÓXIMOS 30 DÍAS
-  ------------------------------------------------------- */
+  /* =======================================================
+     3 · IMPORTANTES
+     31–180 días
+  ======================================================= */
+
+  const important =
+    sortByRelevance(
+      scored.filter(
+        (item) =>
+          item.daysUntilRelease >= 31 &&
+          item.daysUntilRelease <= 180
+      )
+    );
 
   take(
-    scored.filter(
-      (item) =>
-        item.daysUntilRelease <= 30
-    ),
+    important,
     Math.min(
-      2,
+      3,
       limit
     ),
-    "relevant"
+    "important"
   );
 
-  /* -------------------------------------------------------
-     MEJORES DEL CONJUNTO
-  ------------------------------------------------------- */
+  /* =======================================================
+     4 · COMODÍN
+
+     Aquí entra el mejor candidato restante independientemente
+     de su franja.
+
+     La pequeña rotación diaria ya forma parte del score.
+  ======================================================= */
+
+  take(
+    scored,
+    1,
+    "wildcard"
+  );
+
+  /* =======================================================
+     5 · RELLENO
+
+     Si alguna franja no tenía suficientes candidatos,
+     completamos hasta alcanzar el límite.
+
+     Nunca dejamos espacios vacíos si existen candidatos.
+  ======================================================= */
 
   take(
     scored,
@@ -852,7 +876,7 @@ function selectDailyGames(
 }
 
 /* =========================================================
-   RESPUESTA
+   RESPUESTA DE CADA POSICIÓN
 ========================================================= */
 
 function createSelectionGame(
@@ -892,6 +916,13 @@ function createSelectionGame(
         Number(
           item.proximityScore.toFixed(
             2
+          )
+        ),
+
+      dailyRotation:
+        Number(
+          item.rotation.toFixed(
+            4
           )
         ),
     },
@@ -938,18 +969,18 @@ export async function GET(
     const dayKey =
       getDayKey();
 
-    /* -----------------------------------------------------
-       1. Candidatos desde Supabase
-    ----------------------------------------------------- */
+    /* =====================================================
+       1 · CANDIDATOS
+    ===================================================== */
 
     const candidates =
       await loadCandidates(
         environment
       );
 
-    /* -----------------------------------------------------
-       2. Scoring
-    ----------------------------------------------------- */
+    /* =====================================================
+       2 · SCORING
+    ===================================================== */
 
     const scored =
       scoreCandidates(
@@ -957,9 +988,9 @@ export async function GET(
         dayKey
       );
 
-    /* -----------------------------------------------------
-       3. Selección diaria
-    ----------------------------------------------------- */
+    /* =====================================================
+       3 · SELECCIÓN
+    ===================================================== */
 
     const selected =
       selectDailyGames(
@@ -967,9 +998,44 @@ export async function GET(
         limit
       );
 
-    /* -----------------------------------------------------
-       4. Respuesta
-    ----------------------------------------------------- */
+    /* =====================================================
+       4 · ESTADÍSTICAS DE FRANJAS
+
+       Útiles ahora para depuración.
+       Útiles después para Administrador.
+    ===================================================== */
+
+    const pools = {
+      immediate:
+        scored.filter(
+          (item) =>
+            item.daysUntilRelease <= 7
+        ).length,
+
+      near:
+        scored.filter(
+          (item) =>
+            item.daysUntilRelease >= 8 &&
+            item.daysUntilRelease <= 30
+        ).length,
+
+      important:
+        scored.filter(
+          (item) =>
+            item.daysUntilRelease >= 31 &&
+            item.daysUntilRelease <= 180
+        ).length,
+
+      longTerm:
+        scored.filter(
+          (item) =>
+            item.daysUntilRelease > 180
+        ).length,
+    };
+
+    /* =====================================================
+       RESPUESTA
+    ===================================================== */
 
     return NextResponse.json(
       {
@@ -997,7 +1063,7 @@ export async function GET(
 
         selection: {
           algorithm:
-            "tierra-vicio-upcoming-v1",
+            "tierra-vicio-upcoming-v2",
 
           automatic:
             true,
@@ -1005,12 +1071,35 @@ export async function GET(
           dailyRotation:
             true,
 
-          priorities: [
-            "immediate",
-            "near",
-            "relevant",
-            "ranking",
-          ],
+          composition: {
+            immediate:
+              3,
+
+            near:
+              3,
+
+            important:
+              3,
+
+            wildcard:
+              1,
+          },
+
+          windows: {
+            immediate:
+              "0-7 days",
+
+            near:
+              "8-30 days",
+
+            important:
+              "31-180 days",
+
+            wildcard:
+              "best remaining candidate",
+          },
+
+          pools,
         },
 
         games:
@@ -1031,11 +1120,10 @@ export async function GET(
 
         headers: {
           /*
-           * La selección es determinista durante el día.
+           * El resultado es estable durante el día.
            *
-           * Permitimos cachearla una hora.
-           *
-           * No hace falta recalcularla para cada usuario.
+           * Cacheamos una hora para no recalcular
+           * innecesariamente por cada visitante.
            */
 
           "Cache-Control":
@@ -1045,7 +1133,7 @@ export async function GET(
     );
   } catch (error) {
     console.error(
-      "[Tierra Vicio / Actualidad / Upcoming]",
+      "[Tierra Vicio / Actualidad / Upcoming V2]",
       error
     );
 
