@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 /* =========================================================
    TIERRA VICIO
-   ACTUALIDAD · PRÓXIMOS LANZAMIENTOS · V2
+   ACTUALIDAD · PRÓXIMOS LANZAMIENTOS · V3
 ========================================================= */
 
 export const runtime = "nodejs";
@@ -16,13 +16,31 @@ const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
 
 /*
- * Supabase ya contiene los próximos juegos sincronizados.
+ * En V3 dejamos de depender de:
  *
- * Este endpoint NO consulta IGDB.
- * Sólo selecciona qué juegos debe mostrar Tierra Vicio.
+ * "los primeros 500 juegos por fecha".
+ *
+ * Construimos dos pools:
+ *
+ * 1. FUTUROS CERCANOS
+ *    Garantiza representación de lanzamientos próximos.
+ *
+ * 2. FUTUROS RELEVANTES
+ *    Ordenados por hype.
+ *    Permite que juegos importantes de meses posteriores
+ *    entren en el conjunto de candidatos.
+ *
+ * Después:
+ *
+ * - deduplicamos
+ * - puntuamos
+ * - aplicamos el mismo 3 + 3 + 3 + 1
+ *
+ * Seguimos SIN consultar IGDB desde este endpoint.
  */
 
-const CANDIDATE_LIMIT = 500;
+const NEAREST_CANDIDATE_LIMIT = 500;
+const HYPE_CANDIDATE_LIMIT = 500;
 
 /* =========================================================
    ENTORNO
@@ -164,15 +182,6 @@ function getDayKey() {
 
 /* =========================================================
    ROTACIÓN DIARIA DETERMINISTA
-
-   No usamos Math.random().
-
-   Durante todo el día:
-   - todos ven la misma selección
-   - recargar no cambia los juegos
-
-   Al cambiar de día:
-   - cambia esta pequeña señal
 ========================================================= */
 
 function dailyRotation(
@@ -412,20 +421,13 @@ function createLightGame(game) {
 }
 
 /* =========================================================
-   CARGAR CANDIDATOS
-
-   Sólo futuros.
-   Sólo activos.
-   Sólo campos ligeros.
+   CARGAR CANDIDATOS CERCANOS
 ========================================================= */
 
-async function loadCandidates(
-  environment
+async function loadNearestCandidates(
+  environment,
+  nowIso
 ) {
-  const nowIso =
-    new Date()
-      .toISOString();
-
   return supabaseGet(
     environment,
     [
@@ -443,18 +445,124 @@ async function loadCandidates(
 
       "&order=first_release_date.asc,id.asc",
 
-      `&limit=${CANDIDATE_LIMIT}`,
+      `&limit=${NEAREST_CANDIDATE_LIMIT}`,
     ].join("")
   );
 }
 
 /* =========================================================
+   CARGAR CANDIDATOS RELEVANTES
+========================================================= */
+
+async function loadHypeCandidates(
+  environment,
+  nowIso
+) {
+  return supabaseGet(
+    environment,
+    [
+      "games",
+      "?select=",
+      CANDIDATE_FIELDS,
+
+      "&active=eq.true",
+
+      "&first_release_date=not.is.null",
+
+      `&first_release_date=gt.${encodeURIComponent(
+        nowIso
+      )}`,
+
+      "&hypes=not.is.null",
+
+      "&order=hypes.desc.nullslast,first_release_date.asc,id.asc",
+
+      `&limit=${HYPE_CANDIDATE_LIMIT}`,
+    ].join("")
+  );
+}
+
+/* =========================================================
+   CARGAR TODOS LOS CANDIDATOS
+========================================================= */
+
+async function loadCandidates(
+  environment
+) {
+  const nowIso =
+    new Date()
+      .toISOString();
+
+  /*
+   * Las dos consultas son independientes.
+   * Las ejecutamos juntas para reducir latencia.
+   */
+
+  const [
+    nearestCandidates,
+    hypeCandidates,
+  ] =
+    await Promise.all([
+      loadNearestCandidates(
+        environment,
+        nowIso
+      ),
+
+      loadHypeCandidates(
+        environment,
+        nowIso
+      ),
+    ]);
+
+  /*
+   * Deduplicación por ID.
+   *
+   * Si un juego aparece en ambos pools,
+   * sólo ocupa una posición.
+   */
+
+  const gamesById =
+    new Map();
+
+  for (
+    const game of nearestCandidates
+  ) {
+    gamesById.set(
+      String(game.id),
+      game
+    );
+  }
+
+  for (
+    const game of hypeCandidates
+  ) {
+    gamesById.set(
+      String(game.id),
+      game
+    );
+  }
+
+  return {
+    candidates:
+      Array.from(
+        gamesById.values()
+      ),
+
+    poolStats: {
+      nearest:
+        nearestCandidates.length,
+
+      hype:
+        hypeCandidates.length,
+
+      unique:
+        gamesById.size,
+    },
+  };
+}
+
+/* =========================================================
    NORMALIZACIÓN DEL HYPE
-
-   Escala logarítmica.
-
-   Evita que un título con un hype gigantesco convierta
-   todos los demás valores en prácticamente cero.
 ========================================================= */
 
 function createHypeNormalizer(
@@ -521,13 +629,6 @@ function getAttentionScore(
       game.rating_count
     );
 
-  /*
-   * Señal secundaria.
-   *
-   * No domina el algoritmo porque muchos juegos futuros
-   * todavía no tienen ratings.
-   */
-
   const ratingSignal =
     clamp(
       Math.log1p(
@@ -536,12 +637,6 @@ function getAttentionScore(
       0,
       30
     );
-
-  /*
-   * featured queda preparado como intervención editorial.
-   *
-   * Más adelante el administrador podrá usar esta señal.
-   */
 
   const featuredBoost =
     game.featured === true
@@ -595,13 +690,6 @@ function scoreCandidates(
             dayKey
           );
 
-        /*
-         * La clasificación general favorece relevancia.
-         *
-         * La cercanía sigue teniendo mucho peso,
-         * pero ya no puede llenar por sí sola toda la pared.
-         */
-
         const score =
           attentionScore *
             0.64 +
@@ -650,11 +738,6 @@ function scoreCandidates(
 
 /* =========================================================
    ORDEN POR RELEVANCIA
-
-   Dentro de una franja temporal queremos primero
-   los títulos con más atención.
-
-   La cercanía funciona como desempate.
 ========================================================= */
 
 function sortByRelevance(
@@ -696,9 +779,7 @@ function sortByRelevance(
 }
 
 /* =========================================================
-   SELECCIÓN V2
-
-   Objetivo para 10 puestos:
+   SELECCIÓN V3
 
    3 · INMEDIATOS
        0–7 días
@@ -711,10 +792,6 @@ function sortByRelevance(
 
    1 · COMODÍN
        mejor candidato restante
-
-   Si una franja no tiene suficientes juegos:
-   sus posiciones quedan disponibles para los mejores
-   candidatos del ranking general.
 ========================================================= */
 
 function selectDailyGames(
@@ -725,10 +802,6 @@ function selectDailyGames(
 
   const selectedIds =
     new Set();
-
-  /* -------------------------------------------------------
-     INSERTAR
-  ------------------------------------------------------- */
 
   function take(
     pool,
@@ -772,7 +845,6 @@ function selectDailyGames(
 
   /* =======================================================
      1 · INMEDIATOS
-     0–7 días
   ======================================================= */
 
   const immediate =
@@ -795,7 +867,6 @@ function selectDailyGames(
 
   /* =======================================================
      2 · CERCANOS
-     8–30 días
   ======================================================= */
 
   const near =
@@ -818,7 +889,6 @@ function selectDailyGames(
 
   /* =======================================================
      3 · IMPORTANTES
-     31–180 días
   ======================================================= */
 
   const important =
@@ -841,11 +911,6 @@ function selectDailyGames(
 
   /* =======================================================
      4 · COMODÍN
-
-     Aquí entra el mejor candidato restante independientemente
-     de su franja.
-
-     La pequeña rotación diaria ya forma parte del score.
   ======================================================= */
 
   take(
@@ -856,11 +921,6 @@ function selectDailyGames(
 
   /* =======================================================
      5 · RELLENO
-
-     Si alguna franja no tenía suficientes candidatos,
-     completamos hasta alcanzar el límite.
-
-     Nunca dejamos espacios vacíos si existen candidatos.
   ======================================================= */
 
   take(
@@ -973,7 +1033,10 @@ export async function GET(
        1 · CANDIDATOS
     ===================================================== */
 
-    const candidates =
+    const {
+      candidates,
+      poolStats,
+    } =
       await loadCandidates(
         environment
       );
@@ -999,10 +1062,7 @@ export async function GET(
       );
 
     /* =====================================================
-       4 · ESTADÍSTICAS DE FRANJAS
-
-       Útiles ahora para depuración.
-       Útiles después para Administrador.
+       4 · ESTADÍSTICAS
     ===================================================== */
 
     const pools = {
@@ -1058,12 +1118,15 @@ export async function GET(
         candidateCount:
           candidates.length,
 
+        candidateSources:
+          poolStats,
+
         count:
           selected.length,
 
         selection: {
           algorithm:
-            "tierra-vicio-upcoming-v2",
+            "tierra-vicio-upcoming-v3",
 
           automatic:
             true,
@@ -1119,13 +1182,6 @@ export async function GET(
           200,
 
         headers: {
-          /*
-           * El resultado es estable durante el día.
-           *
-           * Cacheamos una hora para no recalcular
-           * innecesariamente por cada visitante.
-           */
-
           "Cache-Control":
             "public, s-maxage=3600, stale-while-revalidate=7200",
         },
@@ -1133,7 +1189,7 @@ export async function GET(
     );
   } catch (error) {
     console.error(
-      "[Tierra Vicio / Actualidad / Upcoming V2]",
+      "[Tierra Vicio / Actualidad / Upcoming V3]",
       error
     );
 
