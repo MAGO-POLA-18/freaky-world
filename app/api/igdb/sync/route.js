@@ -421,6 +421,20 @@ async function getBulkGamesFromIGDB(
 
 /* =========================================================
    PRÓXIMOS LANZAMIENTOS IGDB
+
+   Tierra Vicio no trae simplemente los próximos N juegos
+   por fecha.
+
+   Construimos varios pools temporales para que la base tenga:
+   - lanzamientos inmediatos
+   - lanzamientos cercanos
+   - juegos relevantes de los próximos meses
+   - grandes lanzamientos más lejanos
+
+   Después deduplicamos todo por ID.
+
+   Así el motor de Actualidad puede elegir una selección
+   realmente interesante sin consultar IGDB por visitante.
 ========================================================= */
 
 async function getUpcomingGamesFromIGDB(
@@ -433,27 +447,272 @@ async function getUpcomingGamesFromIGDB(
       Date.now() / 1000
     );
 
-  const query = `
+  const DAY =
+    24 * 60 * 60;
+
+  const day7 =
+    now + 7 * DAY;
+
+  const day30 =
+    now + 30 * DAY;
+
+  const day180 =
+    now + 180 * DAY;
+
+  const day365 =
+    now + 365 * DAY;
+
+  /*
+    Dejamos margen suficiente en cada grupo.
+
+    El límite recibido sigue funcionando como techo
+    del resultado final, pero no dependemos de una única
+    consulta cronológica.
+  */
+
+  const immediateLimit =
+    Math.min(
+      150,
+      Math.max(
+        40,
+        Math.ceil(limit * 0.3)
+      )
+    );
+
+  const nearLimit =
+    Math.min(
+      150,
+      Math.max(
+        40,
+        Math.ceil(limit * 0.3)
+      )
+    );
+
+  const mediumLimit =
+    Math.min(
+      150,
+      Math.max(
+        50,
+        Math.ceil(limit * 0.35)
+      )
+    );
+
+  const longLimit =
+    Math.min(
+      100,
+      Math.max(
+        30,
+        Math.ceil(limit * 0.2)
+      )
+    );
+
+  /*
+    POOL 1
+    Próximos 7 días.
+
+    Aquí manda la fecha porque necesitamos conocer
+    bien todo lo que está a punto de salir.
+  */
+
+  const immediateQuery = `
     fields
       ${IGDB_FIELDS};
 
     where
       cover != null
       & first_release_date != null
-      & first_release_date > ${now};
+      & first_release_date > ${now}
+      & first_release_date <= ${day7};
 
     sort first_release_date asc;
 
-    limit ${limit};
+    limit ${immediateLimit};
   `;
 
-  return requestIGDBGames(
-    accessToken,
-    clientId,
-    query
+  /*
+    POOL 2
+    Entre 8 y 30 días.
+
+    También mantenemos orden cronológico.
+  */
+
+  const nearQuery = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${day7}
+      & first_release_date <= ${day30};
+
+    sort first_release_date asc;
+
+    limit ${nearLimit};
+  `;
+
+  /*
+    POOL 3
+    Entre 31 y 180 días.
+
+    Aquí deja de importar tanto quién sale primero.
+    Queremos principalmente los juegos que ya están
+    generando interés.
+  */
+
+  const mediumQuery = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${day30}
+      & first_release_date <= ${day180};
+
+    sort hypes desc;
+
+    limit ${mediumLimit};
+  `;
+
+  /*
+    POOL 4
+    Entre 181 y 365 días.
+
+    Sólo necesitamos una reserva de títulos relevantes
+    para que grandes lanzamientos futuros puedan aparecer
+    en Actualidad sin esperar a estar a pocas semanas.
+  */
+
+  const longQuery = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${day180}
+      & first_release_date <= ${day365};
+
+    sort hypes desc;
+
+    limit ${longLimit};
+  `;
+
+  /*
+    Las cuatro consultas son independientes.
+    Las ejecutamos en paralelo para no multiplicar
+    innecesariamente el tiempo de ejecución.
+  */
+
+  const [
+    immediateGames,
+    nearGames,
+    mediumGames,
+    longGames,
+  ] =
+    await Promise.all([
+      requestIGDBGames(
+        accessToken,
+        clientId,
+        immediateQuery
+      ),
+
+      requestIGDBGames(
+        accessToken,
+        clientId,
+        nearQuery
+      ),
+
+      requestIGDBGames(
+        accessToken,
+        clientId,
+        mediumQuery
+      ),
+
+      requestIGDBGames(
+        accessToken,
+        clientId,
+        longQuery
+      ),
+    ]);
+
+  /*
+    Un juego podría aparecer en más de un conjunto
+    por cambios de fecha o datos de IGDB.
+
+    El Map garantiza una única copia por ID.
+  */
+
+  const gamesById =
+    new Map();
+
+  for (
+    const game of [
+      ...immediateGames,
+      ...nearGames,
+      ...mediumGames,
+      ...longGames,
+    ]
+  ) {
+    if (
+      game?.id !== null &&
+      game?.id !== undefined
+    ) {
+      gamesById.set(
+        game.id,
+        game
+      );
+    }
+  }
+
+  const games =
+    [
+      ...gamesById.values(),
+    ];
+
+  /*
+    Conservamos un orden estable antes del guardado.
+
+    La selección final de los 10 juegos NO se hace aquí.
+    Eso corresponde al motor de Actualidad.
+  */
+
+  games.sort(
+    (a, b) => {
+      const dateA =
+        Number(
+          a.first_release_date || 0
+        );
+
+      const dateB =
+        Number(
+          b.first_release_date || 0
+        );
+
+      if (dateA !== dateB) {
+        return dateA - dateB;
+      }
+
+      return (
+        Number(a.id || 0) -
+        Number(b.id || 0)
+      );
+    }
+  );
+
+  /*
+    El parámetro limit continúa siendo el máximo global.
+
+    Con limit=500 podremos almacenar una mezcla mucho
+    más útil que los primeros 500 lanzamientos por fecha.
+  */
+
+  return games.slice(
+    0,
+    limit
   );
 }
-
 
 /* =========================================================
    HELPERS
