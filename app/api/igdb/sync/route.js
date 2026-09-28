@@ -420,6 +420,42 @@ async function getBulkGamesFromIGDB(
 }
 
 /* =========================================================
+   PRÓXIMOS LANZAMIENTOS IGDB
+========================================================= */
+
+async function getUpcomingGamesFromIGDB(
+  accessToken,
+  clientId,
+  limit
+) {
+  const now =
+    Math.floor(
+      Date.now() / 1000
+    );
+
+  const query = `
+    fields
+      ${IGDB_FIELDS};
+
+    where
+      cover != null
+      & first_release_date != null
+      & first_release_date > ${now};
+
+    sort first_release_date asc;
+
+    limit ${limit};
+  `;
+
+  return requestIGDBGames(
+    accessToken,
+    clientId,
+    query
+  );
+}
+
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
@@ -3737,6 +3773,134 @@ async function runBulkSync({
       ),
   };
 }
+
+/* =========================================================
+   PRÓXIMOS LANZAMIENTOS
+========================================================= */
+
+async function runUpcomingSync({
+  limit,
+}) {
+  const startedAt =
+    Date.now();
+
+  const environment =
+    getEnvironment();
+
+  const accessToken =
+    await getTwitchAccessToken(
+      environment.igdbClientId,
+      environment.igdbClientSecret
+    );
+
+  const rawGames =
+    await getUpcomingGamesFromIGDB(
+      accessToken,
+      environment.igdbClientId,
+      limit
+    );
+
+  const games =
+    rawGames.map(
+      normalizeGame
+    );
+
+  const gameIds =
+    games.map(
+      (game) => game.id
+    );
+
+  const existingIds =
+    await getExistingGameIds(
+      environment,
+      gameIds
+    );
+
+  const created =
+    games.filter(
+      (game) =>
+        !existingIds.has(
+          game.id
+        )
+    ).length;
+
+  const updated =
+    games.length -
+    created;
+
+  await syncGamesBulk(
+    environment,
+    games
+  );
+
+  const durationMs =
+    Date.now() -
+    startedAt;
+
+  return {
+    ok: true,
+
+    mode:
+      "upcoming",
+
+    message:
+      "Próximos lanzamientos sincronizados correctamente.",
+
+    strategy:
+      "upcoming-bulk-supabase",
+
+    requestedLimit:
+      limit,
+
+    received:
+      rawGames.length,
+
+    processed:
+      games.length,
+
+    created,
+
+    updated,
+
+    failed:
+      0,
+
+    durationMs,
+
+    durationSeconds:
+      Number(
+        (
+          durationMs /
+          1000
+        ).toFixed(2)
+      ),
+
+    games:
+      games.map(
+        (game) => ({
+          id:
+            game.id,
+
+          name:
+            game.name,
+
+          firstReleaseDate:
+            game.firstReleaseDate,
+
+          created:
+            !existingIds.has(
+              game.id
+            ),
+
+          updated:
+            existingIds.has(
+              game.id
+            ),
+        })
+      ),
+  };
+}
+
 /* =========================================================
    VALIDACIONES
 ========================================================= */
@@ -3958,6 +4122,29 @@ export async function GET(
     }
 
     /* =====================================================
+       IMPORTACIÓN DE PRÓXIMOS LANZAMIENTOS
+    ===================================================== */
+
+    if (mode === "upcoming") {
+      const limit =
+        parseBulkLimit(
+          searchParams.get(
+            "limit"
+          )
+        );
+
+      const result =
+        await runUpcomingSync({
+          limit,
+        });
+
+      return jsonResponse(
+        result,
+        200
+      );
+    }
+
+    /* =====================================================
        MODO DESCONOCIDO
     ===================================================== */
 
@@ -3975,6 +4162,7 @@ export async function GET(
           availableModes: [
             "general",
             "bulk",
+            "upcoming",
           ],
         },
         400
