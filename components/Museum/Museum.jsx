@@ -1,12 +1,16 @@
 import DpadWing from "./DpadWing";
 import PopularTodayHall from "./PopularTodayHall";
+import ManufacturerStand from "../ManufacturerHall/ManufacturerStand";
 
 /* =========================================================
    FREAKY WORLD — MUSEUM
 
    Las cuatro alas conservan la misma carcasa.
 
-   Solo desarrollamos el ala NORTE por ahora.
+   NORTE → Populares hoy
+   SUR   → Fabricantes
+   ESTE  → Vacía
+   OESTE → Vacía
 ========================================================= */
 
 export default function Museum() {
@@ -32,7 +36,7 @@ export default function Museum() {
       </DpadWing>
 
       {/* ===================================================
-          SUR — VACÍA
+          SUR — FABRICANTES
       =================================================== */}
 
       <DpadWing
@@ -46,7 +50,9 @@ export default function Museum() {
           Math.PI,
           0,
         ]}
-      />
+      >
+        <ManufacturerStand />
+      </DpadWing>
 
       {/* ===================================================
           ESTE — VACÍA
