@@ -227,6 +227,9 @@ export default function ConsoleMiniCard({
         event.stopPropagation();
       }}
       style={{
+        position:
+          "relative",
+
         width:
           cardWidth,
 
@@ -288,6 +291,56 @@ export default function ConsoleMiniCard({
           "pan-y",
       }}
     >
+      {/* ===================================================
+          CERRAR
+          Ahora pertenece a TODA la ficha.
+      =================================================== */}
+
+      <button
+        type="button"
+        aria-label="Cerrar"
+        onClick={() =>
+          onClose?.()
+        }
+        style={{
+          position:
+            "absolute",
+
+          top: 10,
+          right: 10,
+
+          zIndex: 20,
+
+          width: 38,
+          height: 38,
+
+          border: 0,
+
+          borderRadius:
+            999,
+
+          background:
+            "rgba(0,0,0,0.72)",
+
+          color:
+            "#fff",
+
+          fontSize:
+            21,
+
+          lineHeight:
+            1,
+
+          cursor:
+            "pointer",
+
+          touchAction:
+            "manipulation",
+        }}
+      >
+        ×
+      </button>
+
       {/* ===================================================
           HERO
       =================================================== */}
@@ -433,53 +486,6 @@ export default function ConsoleMiniCard({
             </div>
           </div>
         )}
-
-        {/* CERRAR */}
-
-        <button
-          type="button"
-          aria-label="Cerrar"
-          onClick={() =>
-            onClose?.()
-          }
-          style={{
-            position:
-              "absolute",
-
-            top: 10,
-            right: 10,
-
-            zIndex: 5,
-
-            width: 38,
-            height: 38,
-
-            border: 0,
-
-            borderRadius:
-              999,
-
-            background:
-              "rgba(0,0,0,0.65)",
-
-            color:
-              "#fff",
-
-            fontSize:
-              21,
-
-            lineHeight:
-              1,
-
-            cursor:
-              "pointer",
-
-            touchAction:
-              "manipulation",
-          }}
-        >
-          ×
-        </button>
       </div>
 
       {/* ===================================================
@@ -499,7 +505,7 @@ export default function ConsoleMiniCard({
 
           padding:
             landscape
-              ? "15px 16px 16px"
+              ? "15px 56px 16px 16px"
               : "18px 18px 20px",
 
           boxSizing:
@@ -704,9 +710,6 @@ export default function ConsoleMiniCard({
 
         {/* =================================================
             BOTONES
-
-            Siempre quedan visibles dentro del flujo.
-            En horizontal reducen tamaño pero no desaparecen.
         ================================================= */}
 
         <div
