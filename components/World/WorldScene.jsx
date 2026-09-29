@@ -1554,4 +1554,252 @@ export default function WorldScene() {
                   "manipulation",
 
                 userSelect:
-                  "
+                  "none",
+
+                WebkitUserSelect:
+                  "none",
+
+                boxSizing:
+                  "border-box",
+              }}
+            >
+              ↗
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="world-interaction-button"
+              onClick={
+                openGame
+              }
+            >
+              <span className="world-interaction-icon">
+                ↗
+              </span>
+
+              <span>
+                Abrir{" "}
+                {nearbyGame.title}
+              </span>
+
+              <small>
+                E
+              </small>
+            </button>
+          )
+        )}
+
+      {/* ===================================================
+          VIDEO
+      =================================================== */}
+
+      {isVideoWall &&
+        !nearbyConsole &&
+        !overlayOpen && (
+          <button
+            type="button"
+            onClick={
+              openGame
+            }
+            style={{
+              position:
+                "fixed",
+
+              top:
+                mobile
+                  ? 72
+                  : 64,
+
+              right:
+                mobile
+                  ? 12
+                  : 72,
+
+              zIndex:
+                90,
+
+              minHeight:
+                38,
+
+              padding:
+                "7px 12px",
+
+              border:
+                "1px solid rgba(255,255,255,.22)",
+
+              borderRadius:
+                11,
+
+              background:
+                "rgba(5,8,12,.84)",
+
+              backdropFilter:
+                "blur(10px)",
+
+              color:
+                "#fff",
+
+              fontSize:
+                12,
+
+              fontWeight:
+                850,
+
+              cursor:
+                "pointer",
+
+              touchAction:
+                "manipulation",
+            }}
+          >
+            ↗ Abrir en 2D
+          </button>
+        )}
+
+      {/* ===================================================
+          BUSCADOR GLOBAL
+      =================================================== */}
+
+      <GameSearchOverlay
+        open={
+          searchOpen
+        }
+        onClose={
+          closeSearch
+        }
+        onSelectGame={
+          selectSearchGame
+        }
+      />
+
+      {/* ===================================================
+          MINI FICHA CONSOLA
+      =================================================== */}
+
+      {openedConsole && (
+        <div
+          style={{
+            position:
+              "fixed",
+
+            inset: 0,
+
+            zIndex:
+              9000,
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "center",
+
+            padding:
+              16,
+
+            boxSizing:
+              "border-box",
+
+            background:
+              "rgba(0,0,0,.58)",
+
+            backdropFilter:
+              "blur(5px)",
+
+            WebkitBackdropFilter:
+              "blur(5px)",
+          }}
+          onClick={
+            closeConsole
+          }
+        >
+          <div
+            onClick={(
+              event
+            ) => {
+              event.stopPropagation();
+            }}
+          >
+            <ConsoleMiniCard
+              consoleData={
+                openedConsole
+              }
+              onClose={
+                closeConsole
+              }
+              onOpenGames={
+                openConsoleGames
+              }
+              onOpenFullCard={
+                openFullConsole
+              }
+              onOpenVideo={
+                openConsoleVideo
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ===================================================
+          JUEGOS DE CONSOLA
+      =================================================== */}
+
+      {consoleGames && (
+        <PlatformGamesOverlay
+          platformId={
+            consoleGames.platformId
+          }
+          platformName={
+            consoleGames.name
+          }
+          onClose={
+            closeConsoleGames
+          }
+          onOpenGame={
+            openGameFromConsole
+          }
+        />
+      )}
+
+      {/* ===================================================
+          OVERLAYS JUEGOS
+      =================================================== */}
+
+      {fullGame ? (
+        <FullGameOverlay
+          game={
+            fullGame
+          }
+          onClose={
+            closeGame
+          }
+          onBack={
+            backToQuickGame
+          }
+        />
+      ) : openedGame?.overlayType ===
+        "video" ? (
+        <VideoOverlay
+          video={
+            openedGame
+          }
+          onClose={
+            closeGame
+          }
+        />
+      ) : openedGame ? (
+        <RankingOverlay
+          game={
+            openedGame
+          }
+          onClose={
+            closeGame
+          }
+        />
+      ) : null}
+    </>
+  );
+}
