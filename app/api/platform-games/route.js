@@ -4,8 +4,11 @@ import { NextResponse } from "next/server";
    TIERRA VICIO
    JUEGOS POR PLATAFORMA
 
-   Ejemplo:
+   NORMAL:
    /api/platform-games?platform=7&page=1&limit=24
+
+   BÚSQUEDA GLOBAL DENTRO DE PLATAFORMA:
+   /api/platform-games?platform=7&q=metal%20gear&page=1&limit=24
 
    Usa:
    - platforms
@@ -15,6 +18,19 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const RELATION_BATCH_SIZE = 1000;
+
+/*
+  Mantenemos pequeños los grupos de IDs
+  para no generar URLs gigantes contra PostgREST.
+*/
+
+const GAME_ID_BATCH_SIZE = 100;
 
 /* =========================================================
    ENTORNO
@@ -130,9 +146,48 @@ function parsePositiveInteger(
 }
 
 /* =========================================================
-   CAMPOS DE JUEGO
+   NORMALIZAR BÚSQUEDA
+========================================================= */
 
-   Mantenemos esta respuesta ligera.
+function normalizeSearch(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value)
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 120);
+}
+
+/* =========================================================
+   CHUNKS
+========================================================= */
+
+function chunkArray(
+  array,
+  size
+) {
+  const chunks = [];
+
+  for (
+    let index = 0;
+    index < array.length;
+    index += size
+  ) {
+    chunks.push(
+      array.slice(
+        index,
+        index + size
+      )
+    );
+  }
+
+  return chunks;
+}
+
+/* =========================================================
+   CAMPOS DE JUEGO
 ========================================================= */
 
 const GAME_FIELDS = [
@@ -203,6 +258,20 @@ function formatGame(game) {
         game.cover_large_url,
     },
 
+    /*
+      También dejamos las URLs planas
+      porque FullGameOverlay sabe leerlas.
+    */
+
+    coverSmallUrl:
+      game.cover_small_url,
+
+    coverMediumUrl:
+      game.cover_medium_url,
+
+    coverLargeUrl:
+      game.cover_large_url,
+
     rating:
       game.rating,
 
@@ -227,6 +296,197 @@ function formatGame(game) {
     communityVotes:
       game.community_votes,
   };
+}
+
+/* =========================================================
+   OBTENER TODOS LOS IDS DE UNA PLATAFORMA
+
+   Se usa únicamente cuando hay búsqueda.
+
+   Así:
+   PS1 → todos sus game_id
+========================================================= */
+
+async function getAllPlatformGameIds(
+  environment,
+  platformId
+) {
+  const ids = [];
+
+  let offset = 0;
+
+  while (true) {
+    const rows =
+      await supabaseGet(
+        environment,
+        [
+          "game_platforms",
+          "?select=game_id",
+
+          `&platform_id=eq.${platformId}`,
+
+          "&order=game_id.asc",
+
+          `&offset=${offset}`,
+
+          `&limit=${RELATION_BATCH_SIZE}`,
+        ].join("")
+      );
+
+    if (
+      !Array.isArray(rows) ||
+      rows.length === 0
+    ) {
+      break;
+    }
+
+    for (
+      const row of rows
+    ) {
+      const id =
+        Number(
+          row?.game_id
+        );
+
+      if (
+        Number.isFinite(id)
+      ) {
+        ids.push(id);
+      }
+    }
+
+    if (
+      rows.length <
+      RELATION_BATCH_SIZE
+    ) {
+      break;
+    }
+
+    offset +=
+      RELATION_BATCH_SIZE;
+  }
+
+  return [
+    ...new Set(ids),
+  ];
+}
+
+/* =========================================================
+   BÚSQUEDA GLOBAL DENTRO DE PLATAFORMA
+
+   1. Obtiene todos los IDs de PS1 / PS2 / etc.
+   2. Los divide en grupos pequeños.
+   3. Busca q en games.name.
+   4. Une todos los resultados.
+   5. Pagina al final.
+========================================================= */
+
+async function searchPlatformGames({
+  environment,
+  platformId,
+  query,
+}) {
+  const platformGameIds =
+    await getAllPlatformGameIds(
+      environment,
+      platformId
+    );
+
+  if (
+    platformGameIds.length ===
+    0
+  ) {
+    return [];
+  }
+
+  const batches =
+    chunkArray(
+      platformGameIds,
+      GAME_ID_BATCH_SIZE
+    );
+
+  const encodedPattern =
+    encodeURIComponent(
+      `*${query}*`
+    );
+
+  const results = [];
+
+  /*
+    Hacemos los grupos secuencialmente para no lanzar
+    decenas de peticiones simultáneas contra Supabase.
+  */
+
+  for (
+    const ids of batches
+  ) {
+    const rows =
+      await supabaseGet(
+        environment,
+        [
+          "games",
+          "?select=",
+          GAME_FIELDS,
+
+          `&id=in.(${ids.join(
+            ","
+          )})`,
+
+          "&active=eq.true",
+
+          `&name=ilike.${encodedPattern}`,
+
+          "&order=name.asc",
+        ].join("")
+      );
+
+    if (
+      Array.isArray(rows) &&
+      rows.length > 0
+    ) {
+      results.push(
+        ...rows
+      );
+    }
+  }
+
+  /*
+    Eliminamos posibles duplicados.
+  */
+
+  const uniqueById =
+    new Map();
+
+  for (
+    const game of results
+  ) {
+    uniqueById.set(
+      Number(game.id),
+      game
+    );
+  }
+
+  /*
+    Orden alfabético estable para búsqueda.
+  */
+
+  return [
+    ...uniqueById.values(),
+  ].sort(
+    (a, b) =>
+      String(
+        a?.name || ""
+      ).localeCompare(
+        String(
+          b?.name || ""
+        ),
+        "es",
+        {
+          sensitivity:
+            "base",
+        }
+      )
+  );
 }
 
 /* =========================================================
@@ -272,6 +532,17 @@ export async function GET(
     }
 
     /* =====================================================
+       BÚSQUEDA
+    ===================================================== */
+
+    const query =
+      normalizeSearch(
+        searchParams.get(
+          "q"
+        )
+      );
+
+    /* =====================================================
        PAGINACIÓN
     ===================================================== */
 
@@ -304,14 +575,6 @@ export async function GET(
       (page - 1) *
       limit;
 
-    /*
-      Pedimos uno adicional para saber
-      si existe una siguiente página.
-    */
-
-    const fetchLimit =
-      limit + 1;
-
     /* =====================================================
        PLATAFORMA
     ===================================================== */
@@ -322,14 +585,17 @@ export async function GET(
         [
           "platforms",
           "?select=id,name,abbreviation",
+
           `&id=eq.${platformId}`,
+
           "&limit=1",
         ].join("")
       );
 
     if (
       !platformRows ||
-      platformRows.length === 0
+      platformRows.length ===
+        0
     ) {
       return NextResponse.json(
         {
@@ -350,12 +616,119 @@ export async function GET(
       platformRows[0];
 
     /* =====================================================
-       RELACIONES GAME ↔ PLATFORM
-
-       IMPORTANTE:
-       No descargamos toda la biblioteca.
-       Solo esta página de relaciones.
+       MODO BÚSQUEDA
     ===================================================== */
+
+    if (query) {
+      const matchedGames =
+        await searchPlatformGames({
+          environment,
+          platformId,
+          query,
+        });
+
+      /*
+        IMPORTANTE:
+
+        Primero buscamos en TODO el catálogo
+        de la plataforma.
+
+        Recién ahora aplicamos paginación.
+      */
+
+      const totalResults =
+        matchedGames.length;
+
+      const visibleGames =
+        matchedGames.slice(
+          offset,
+          offset + limit
+        );
+
+      const formattedGames =
+        visibleGames.map(
+          formatGame
+        );
+
+      const hasMore =
+        offset +
+          formattedGames.length <
+        totalResults;
+
+      return NextResponse.json(
+        {
+          ok: true,
+
+          source:
+            "Tierra Vicio Database",
+
+          mode:
+            "platform-games-search",
+
+          query,
+
+          platform: {
+            id:
+              platform.id,
+
+            name:
+              platform.name,
+
+            abbreviation:
+              platform.abbreviation,
+          },
+
+          count:
+            formattedGames.length,
+
+          totalResults,
+
+          games:
+            formattedGames,
+
+          pagination: {
+            page,
+
+            limit,
+
+            returned:
+              formattedGames.length,
+
+            total:
+              totalResults,
+
+            hasMore,
+
+            nextPage:
+              hasMore
+                ? page + 1
+                : null,
+
+            previousPage:
+              page > 1
+                ? page - 1
+                : null,
+          },
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=60, stale-while-revalidate=300",
+          },
+        }
+      );
+    }
+
+    /* =====================================================
+       MODO NORMAL
+       SIN BÚSQUEDA
+
+       Conservamos el comportamiento rápido
+       de la API original.
+    ===================================================== */
+
+    const fetchLimit =
+      limit + 1;
 
     const relations =
       await supabaseGet(
@@ -401,6 +774,9 @@ export async function GET(
           source:
             "Tierra Vicio Database",
 
+          mode:
+            "platform-games",
+
           platform: {
             id:
               platform.id,
@@ -423,9 +799,11 @@ export async function GET(
 
             returned: 0,
 
-            hasMore: false,
+            hasMore:
+              false,
 
-            nextPage: null,
+            nextPage:
+              null,
 
             previousPage:
               page > 1
@@ -482,18 +860,19 @@ export async function GET(
       );
 
     /*
-      Supabase no garantiza que el resultado
-      de id=in.(...) conserve el mismo orden.
+      Supabase no garantiza que id=in.(...)
+      conserve el orden.
 
-      Lo reconstruimos usando el orden
-      de game_platforms.
+      Reconstruimos usando game_platforms.
     */
 
     const gamesById =
       new Map(
         games.map(
           (game) => [
-            Number(game.id),
+            Number(
+              game.id
+            ),
             game,
           ]
         )
@@ -508,7 +887,9 @@ export async function GET(
             )
         )
         .filter(Boolean)
-        .map(formatGame);
+        .map(
+          formatGame
+        );
 
     /* =====================================================
        RESPUESTA
