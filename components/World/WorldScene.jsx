@@ -31,6 +31,9 @@ import VideoOverlay from "./VideoOverlay";
 import PerformanceMonitor from "./PerformanceMonitor";
 import GameSearchOverlay from "./GameSearchOverlay";
 
+import ConsoleMiniCard from "../ManufacturerHall/ConsoleMiniCard";
+import PlatformGamesOverlay from "../ManufacturerHall/PlatformGamesOverlay";
+
 /* =========================================================
    CALIDAD
 ========================================================= */
@@ -56,6 +59,10 @@ const SKY_TEST_HOURS = [
 ========================================================= */
 
 export default function WorldScene() {
+  /* =======================================================
+     JUEGOS
+  ======================================================= */
+
   const [
     nearbyGame,
     setNearbyGame,
@@ -70,6 +77,29 @@ export default function WorldScene() {
     fullGame,
     setFullGame,
   ] = useState(null);
+
+  /* =======================================================
+     CONSOLAS
+  ======================================================= */
+
+  const [
+    nearbyConsole,
+    setNearbyConsole,
+  ] = useState(null);
+
+  const [
+    openedConsole,
+    setOpenedConsole,
+  ] = useState(null);
+
+  const [
+    consoleGames,
+    setConsoleGames,
+  ] = useState(null);
+
+  /* =======================================================
+     OTROS
+  ======================================================= */
 
   const [
     searchOpen,
@@ -111,16 +141,35 @@ export default function WorldScene() {
     setSkyTestHour,
   ] = useState(null);
 
+  /* =======================================================
+     ESTADO OVERLAYS
+  ======================================================= */
+
   const overlayOpen =
     Boolean(
       openedGame ||
       fullGame ||
-      searchOpen
+      searchOpen ||
+      openedConsole ||
+      consoleGames
     );
 
   const isVideoWall =
     nearbyGame?.id ===
     "featured-video-screen";
+
+  /* =======================================================
+     DETENER JUGADOR
+  ======================================================= */
+
+  const stopPlayer =
+    useCallback(() => {
+      playerInput.x = 0;
+      playerInput.y = 0;
+
+      playerInput.dashRequested =
+        false;
+    }, []);
 
   /* =======================================================
      DEVICE
@@ -192,7 +241,7 @@ export default function WorldScene() {
     }, []);
 
   /* =======================================================
-     OBJETO CERCANO
+     JUEGO CERCANO
   ======================================================= */
 
   useEffect(() => {
@@ -227,7 +276,56 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR FICHA COMPLETA
+     CONSOLA CERCANA
+
+     ManufacturerStand enviará:
+
+     window.dispatchEvent(
+       new CustomEvent(
+         "freaky:console-near",
+         {
+           detail: {
+             near: true,
+             console: consoleData
+           }
+         }
+       )
+     );
+  ======================================================= */
+
+  useEffect(() => {
+    const handleConsoleNear = (
+      event
+    ) => {
+      if (
+        event.detail?.near &&
+        event.detail?.console
+      ) {
+        setNearbyConsole(
+          event.detail.console
+        );
+
+        return;
+      }
+
+      setNearbyConsole(null);
+    };
+
+    window.addEventListener(
+      "freaky:console-near",
+      handleConsoleNear
+    );
+
+    return () => {
+      window.removeEventListener(
+        "freaky:console-near",
+        handleConsoleNear
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     ABRIR FICHA COMPLETA JUEGO
   ======================================================= */
 
   useEffect(() => {
@@ -241,13 +339,13 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setSearchOpen(false);
+
+      setOpenedConsole(null);
+      setConsoleGames(null);
+
       setFullGame(game);
     };
 
@@ -262,7 +360,9 @@ export default function WorldScene() {
         handleOpenFullGame
       );
     };
-  }, []);
+  }, [
+    stopPlayer,
+  ]);
 
   /* =======================================================
      BUSCADOR GLOBAL
@@ -272,34 +372,34 @@ export default function WorldScene() {
     useCallback(() => {
       if (
         openedGame ||
-        fullGame
+        fullGame ||
+        openedConsole ||
+        consoleGames
       ) {
         return;
       }
 
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setShowTutorial(false);
+
       setSearchOpen(true);
     }, [
       openedGame,
       fullGame,
+      openedConsole,
+      consoleGames,
+      stopPlayer,
     ]);
 
   const closeSearch =
     useCallback(() => {
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setSearchOpen(false);
-    }, []);
+    }, [
+      stopPlayer,
+    ]);
 
   const selectSearchGame =
     useCallback(
@@ -308,21 +408,23 @@ export default function WorldScene() {
           return;
         }
 
-        playerInput.x = 0;
-        playerInput.y = 0;
-
-        playerInput.dashRequested =
-          false;
+        stopPlayer();
 
         setSearchOpen(false);
         setOpenedGame(null);
+
+        setOpenedConsole(null);
+        setConsoleGames(null);
+
         setFullGame(game);
       },
-      []
+      [
+        stopPlayer,
+      ]
     );
 
   /* =======================================================
-     ABRIR DESDE EL MUNDO
+     ABRIR JUEGO DESDE MUNDO
   ======================================================= */
 
   const openGame =
@@ -334,14 +436,13 @@ export default function WorldScene() {
         return;
       }
 
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setSearchOpen(false);
       setFullGame(null);
+
+      setOpenedConsole(null);
+      setConsoleGames(null);
 
       setOpenedGame(
         nearbyGame
@@ -349,35 +450,199 @@ export default function WorldScene() {
     }, [
       nearbyGame,
       overlayOpen,
+      stopPlayer,
     ]);
 
   /* =======================================================
-     CERRAR
+     ABRIR CONSOLA DESDE MUNDO
+  ======================================================= */
+
+  const openConsole =
+    useCallback(() => {
+      if (
+        !nearbyConsole?.id ||
+        overlayOpen
+      ) {
+        return;
+      }
+
+      stopPlayer();
+
+      setShowTutorial(false);
+
+      setOpenedGame(null);
+      setFullGame(null);
+      setSearchOpen(false);
+
+      setConsoleGames(null);
+
+      setOpenedConsole(
+        nearbyConsole
+      );
+    }, [
+      nearbyConsole,
+      overlayOpen,
+      stopPlayer,
+    ]);
+
+  /* =======================================================
+     JUEGOS DE CONSOLA
+  ======================================================= */
+
+  const openConsoleGames =
+    useCallback(
+      (consoleData) => {
+        if (
+          !consoleData
+        ) {
+          return;
+        }
+
+        stopPlayer();
+
+        setOpenedConsole(null);
+
+        setConsoleGames(
+          consoleData
+        );
+      },
+      [
+        stopPlayer,
+      ]
+    );
+
+  const closeConsoleGames =
+    useCallback(() => {
+      stopPlayer();
+
+      /*
+        Volvemos a la mini ficha
+        de la consola.
+      */
+
+      if (
+        consoleGames
+      ) {
+        setOpenedConsole(
+          consoleGames
+        );
+      }
+
+      setConsoleGames(null);
+    }, [
+      consoleGames,
+      stopPlayer,
+    ]);
+
+  /* =======================================================
+     FICHA COMPLETA DE CONSOLA
+  ======================================================= */
+
+  const openFullConsole =
+    useCallback(
+      (consoleData) => {
+        /*
+          La ficha completa de plataforma
+          la construiremos después.
+
+          Dejamos ya el punto de entrada.
+        */
+
+        console.log(
+          "Abrir ficha completa de consola:",
+          consoleData
+        );
+      },
+      []
+    );
+
+  /* =======================================================
+     VIDEO DE CONSOLA
+  ======================================================= */
+
+  const openConsoleVideo =
+    useCallback(
+      (video) => {
+        /*
+          Más adelante podemos reutilizar
+          VideoOverlay para los videos
+          de hardware.
+        */
+
+        console.log(
+          "Abrir video de consola:",
+          video
+        );
+      },
+      []
+    );
+
+  /* =======================================================
+     JUEGO DESDE CATÁLOGO DE CONSOLA
+  ======================================================= */
+
+  const openGameFromConsole =
+    useCallback(
+      (game) => {
+        if (!game?.id) {
+          return;
+        }
+
+        /*
+          Por ahora lo dejamos preparado.
+
+          En el siguiente paso conectaremos
+          estas tarjetas directamente
+          con la ficha real de Freaky Ranking.
+        */
+
+        console.log(
+          "Abrir juego desde consola:",
+          game
+        );
+      },
+      []
+    );
+
+  /* =======================================================
+     CERRAR JUEGOS
   ======================================================= */
 
   const closeGame =
     useCallback(() => {
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setSearchOpen(false);
+
       setFullGame(null);
+
       setOpenedGame(null);
-    }, []);
+    }, [
+      stopPlayer,
+    ]);
 
   const backToQuickGame =
     useCallback(() => {
-      playerInput.x = 0;
-      playerInput.y = 0;
-
-      playerInput.dashRequested =
-        false;
+      stopPlayer();
 
       setFullGame(null);
-    }, []);
+    }, [
+      stopPlayer,
+    ]);
+
+  /* =======================================================
+     CERRAR CONSOLA
+  ======================================================= */
+
+  const closeConsole =
+    useCallback(() => {
+      stopPlayer();
+
+      setOpenedConsole(null);
+      setConsoleGames(null);
+    }, [
+      stopPlayer,
+    ]);
 
   /* =======================================================
      TECLADO
@@ -391,33 +656,78 @@ export default function WorldScene() {
         return;
       }
 
+      /* ESC */
+
       if (
         event.code ===
-          "Escape" &&
-        (
+        "Escape"
+      ) {
+        if (
+          consoleGames
+        ) {
+          event.preventDefault();
+
+          closeConsoleGames();
+
+          return;
+        }
+
+        if (
+          openedConsole
+        ) {
+          event.preventDefault();
+
+          closeConsole();
+
+          return;
+        }
+
+        if (
           openedGame ||
           fullGame
-        )
-      ) {
-        event.preventDefault();
+        ) {
+          event.preventDefault();
 
-        closeGame();
+          closeGame();
 
-        return;
+          return;
+        }
       }
+
+      /* E */
 
       if (
         event.code ===
           "KeyE" &&
-        nearbyGame &&
         !overlayOpen
       ) {
-        event.preventDefault();
+        /*
+          Si hay una consola cercana,
+          tiene prioridad sobre el juego.
+        */
 
-        openGame();
+        if (
+          nearbyConsole
+        ) {
+          event.preventDefault();
 
-        return;
+          openConsole();
+
+          return;
+        }
+
+        if (
+          nearbyGame
+        ) {
+          event.preventDefault();
+
+          openGame();
+
+          return;
+        }
       }
+
+      /* BUSCADOR */
 
       if (
         event.code ===
@@ -442,6 +752,8 @@ export default function WorldScene() {
           return;
         }
       }
+
+      /* FPS */
 
       if (
         event.code ===
@@ -468,13 +780,25 @@ export default function WorldScene() {
     };
   }, [
     nearbyGame,
+    nearbyConsole,
+
     openedGame,
     fullGame,
+
+    openedConsole,
+    consoleGames,
+
     searchOpen,
     overlayOpen,
+
     openGame,
+    openConsole,
+
     openSearch,
+
     closeGame,
+    closeConsole,
+    closeConsoleGames,
   ]);
 
   /* =======================================================
@@ -556,8 +880,7 @@ export default function WorldScene() {
                 justifyContent:
                   "space-between",
 
-                gap:
-                  16,
+                gap: 16,
               }}
             >
               <div>
@@ -585,7 +908,7 @@ export default function WorldScene() {
                       Desliza para mirar
                       <br />
 
-                      Toca las pantallas para interactuar
+                      Acércate a una pieza y usa ↗
                     </>
                   ) : (
                     <>
@@ -595,7 +918,7 @@ export default function WorldScene() {
                       Arrastra para mirar
                       <br />
 
-                      E para abrir en 2D
+                      E para interactuar
                       <br />
 
                       F para buscar juegos
@@ -928,30 +1251,23 @@ export default function WorldScene() {
             6,
           ],
 
-          fov:
-            60,
+          fov: 60,
 
-          near:
-            0.1,
+          near: 0.1,
 
-          far:
-            420,
+          far: 420,
         }}
         gl={{
-          antialias:
-            true,
+          antialias: true,
 
           powerPreference:
             "high-performance",
 
-          alpha:
-            true,
+          alpha: true,
 
-          stencil:
-            false,
+          stencil: false,
 
-          depth:
-            true,
+          depth: true,
         }}
       >
         <PerformanceMonitor
@@ -1019,20 +1335,135 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          BOTÓN ABRIR JUEGO
+          BOTÓN CONSOLA
 
-          MÓVIL:
-          - pequeño
-          - esquina/lateral derecho
-          - por encima de la zona de cámara
-          - tamaño fijo
-          - sin CSS heredado de la clase original
+          Usa exactamente la misma posición
+          que el botón de juegos.
 
-          ESCRITORIO:
-          - comportamiento original
+          Tiene prioridad si hay una consola cercana.
+      =================================================== */}
+
+      {nearbyConsole &&
+        !overlayOpen &&
+        (
+          mobile ? (
+            <button
+              type="button"
+              aria-label={`Abrir ${nearbyConsole.name}`}
+              onClick={
+                openConsole
+              }
+              style={{
+                position:
+                  "fixed",
+
+                right: 14,
+
+                bottom:
+                  150,
+
+                zIndex:
+                  101,
+
+                width: 52,
+                minWidth: 52,
+                maxWidth: 52,
+
+                height: 52,
+                minHeight: 52,
+                maxHeight: 52,
+
+                margin: 0,
+                padding: 0,
+
+                display:
+                  "grid",
+
+                placeItems:
+                  "center",
+
+                border:
+                  "1px solid rgba(255,255,255,.28)",
+
+                borderRadius:
+                  14,
+
+                background:
+                  "rgba(5,8,12,.82)",
+
+                backdropFilter:
+                  "blur(10px)",
+
+                WebkitBackdropFilter:
+                  "blur(10px)",
+
+                boxShadow:
+                  "0 5px 18px rgba(0,0,0,.30)",
+
+                color:
+                  "#fff",
+
+                fontSize:
+                  22,
+
+                fontWeight:
+                  800,
+
+                lineHeight:
+                  1,
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
+
+                userSelect:
+                  "none",
+
+                WebkitUserSelect:
+                  "none",
+
+                boxSizing:
+                  "border-box",
+              }}
+            >
+              ↗
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="world-interaction-button"
+              onClick={
+                openConsole
+              }
+            >
+              <span className="world-interaction-icon">
+                ↗
+              </span>
+
+              <span>
+                Abrir{" "}
+                {nearbyConsole.name}
+              </span>
+
+              <small>
+                E
+              </small>
+            </button>
+          )
+        )}
+
+      {/* ===================================================
+          BOTÓN JUEGO
+
+          No se muestra si hay una consola
+          cercana para evitar dos botones
+          superpuestos.
       =================================================== */}
 
       {nearbyGame &&
+        !nearbyConsole &&
         !overlayOpen &&
         !isVideoWall &&
         (
@@ -1123,157 +1554,4 @@ export default function WorldScene() {
                   "manipulation",
 
                 userSelect:
-                  "none",
-
-                WebkitUserSelect:
-                  "none",
-
-                boxSizing:
-                  "border-box",
-              }}
-            >
-              ↗
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="world-interaction-button"
-              onClick={
-                openGame
-              }
-            >
-              <span className="world-interaction-icon">
-                ↗
-              </span>
-
-              <span>
-                Abrir{" "}
-                {nearbyGame.title}
-              </span>
-
-              <small>
-                E
-              </small>
-            </button>
-          )
-        )}
-
-      {/* ===================================================
-          VIDEO
-      =================================================== */}
-
-      {isVideoWall &&
-        !overlayOpen && (
-          <button
-            type="button"
-            onClick={
-              openGame
-            }
-            style={{
-              position:
-                "fixed",
-
-              top:
-                mobile
-                  ? 72
-                  : 64,
-
-              right:
-                mobile
-                  ? 12
-                  : 72,
-
-              zIndex:
-                90,
-
-              minHeight:
-                38,
-
-              padding:
-                "7px 12px",
-
-              border:
-                "1px solid rgba(255,255,255,.22)",
-
-              borderRadius:
-                11,
-
-              background:
-                "rgba(5,8,12,.84)",
-
-              backdropFilter:
-                "blur(10px)",
-
-              color:
-                "#fff",
-
-              fontSize:
-                12,
-
-              fontWeight:
-                850,
-
-              cursor:
-                "pointer",
-
-              touchAction:
-                "manipulation",
-            }}
-          >
-            ↗ Abrir en 2D
-          </button>
-        )}
-
-      {/* ===================================================
-          BUSCADOR GLOBAL
-      =================================================== */}
-
-      <GameSearchOverlay
-        open={
-          searchOpen
-        }
-        onClose={
-          closeSearch
-        }
-        onSelectGame={
-          selectSearchGame
-        }
-      />
-
-      {/* ===================================================
-          OVERLAYS
-      =================================================== */}
-
-      {fullGame ? (
-        <FullGameOverlay
-          game={fullGame}
-          onClose={
-            closeGame
-          }
-          onBack={
-            backToQuickGame
-          }
-        />
-      ) : openedGame?.overlayType ===
-        "video" ? (
-        <VideoOverlay
-          video={
-            openedGame
-          }
-          onClose={
-            closeGame
-          }
-        />
-      ) : openedGame ? (
-        <RankingOverlay
-          game={
-            openedGame
-          }
-          onClose={
-            closeGame
-          }
-        />
-      ) : null}
-    </>
-  );
-}
+                  "
