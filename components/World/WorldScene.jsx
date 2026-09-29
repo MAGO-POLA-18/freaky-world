@@ -18,6 +18,7 @@ import WorldEnvironment from "./WorldEnvironment";
 import DynamicSky from "./DynamicSky";
 import WorldLighting from "./WorldLighting";
 import AdaptiveWorldLighting from "./AdaptiveWorldLighting";
+import OrientationStabilizer from "./OrientationStabilizer";
 
 import PlayerController, {
   playerInput,
@@ -142,7 +143,7 @@ export default function WorldScene() {
   ] = useState(null);
 
   /* =======================================================
-     ESTADO OVERLAYS
+     OVERLAYS
   ======================================================= */
 
   const overlayOpen =
@@ -277,20 +278,6 @@ export default function WorldScene() {
 
   /* =======================================================
      CONSOLA CERCANA
-
-     ManufacturerStand enviará:
-
-     window.dispatchEvent(
-       new CustomEvent(
-         "freaky:console-near",
-         {
-           detail: {
-             near: true,
-             console: consoleData
-           }
-         }
-       )
-     );
   ======================================================= */
 
   useEffect(() => {
@@ -424,7 +411,7 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     ABRIR JUEGO DESDE MUNDO
+     ABRIR JUEGO
   ======================================================= */
 
   const openGame =
@@ -454,7 +441,7 @@ export default function WorldScene() {
     ]);
 
   /* =======================================================
-     ABRIR CONSOLA DESDE MUNDO
+     ABRIR CONSOLA
   ======================================================= */
 
   const openConsole =
@@ -492,9 +479,7 @@ export default function WorldScene() {
   const openConsoleGames =
     useCallback(
       (consoleData) => {
-        if (
-          !consoleData
-        ) {
+        if (!consoleData) {
           return;
         }
 
@@ -515,11 +500,6 @@ export default function WorldScene() {
     useCallback(() => {
       stopPlayer();
 
-      /*
-        Volvemos a la mini ficha
-        de la consola.
-      */
-
       if (
         consoleGames
       ) {
@@ -535,19 +515,12 @@ export default function WorldScene() {
     ]);
 
   /* =======================================================
-     FICHA COMPLETA DE CONSOLA
+     FICHA COMPLETA CONSOLA
   ======================================================= */
 
   const openFullConsole =
     useCallback(
       (consoleData) => {
-        /*
-          La ficha completa de plataforma
-          la construiremos después.
-
-          Dejamos ya el punto de entrada.
-        */
-
         console.log(
           "Abrir ficha completa de consola:",
           consoleData
@@ -557,18 +530,12 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     VIDEO DE CONSOLA
+     VIDEO CONSOLA
   ======================================================= */
 
   const openConsoleVideo =
     useCallback(
       (video) => {
-        /*
-          Más adelante podemos reutilizar
-          VideoOverlay para los videos
-          de hardware.
-        */
-
         console.log(
           "Abrir video de consola:",
           video
@@ -578,7 +545,7 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     JUEGO DESDE CATÁLOGO DE CONSOLA
+     JUEGO DESDE CONSOLA
   ======================================================= */
 
   const openGameFromConsole =
@@ -588,24 +555,22 @@ export default function WorldScene() {
           return;
         }
 
-        /*
-          Por ahora lo dejamos preparado.
+        stopPlayer();
 
-          En el siguiente paso conectaremos
-          estas tarjetas directamente
-          con la ficha real de Freaky Ranking.
-        */
+        setConsoleGames(null);
+        setOpenedConsole(null);
 
-        console.log(
-          "Abrir juego desde consola:",
-          game
-        );
+        setOpenedGame(null);
+
+        setFullGame(game);
       },
-      []
+      [
+        stopPlayer,
+      ]
     );
 
   /* =======================================================
-     CERRAR JUEGOS
+     CERRAR JUEGO
   ======================================================= */
 
   const closeGame =
@@ -701,11 +666,6 @@ export default function WorldScene() {
           "KeyE" &&
         !overlayOpen
       ) {
-        /*
-          Si hay una consola cercana,
-          tiene prioridad sobre el juego.
-        */
-
         if (
           nearbyConsole
         ) {
@@ -822,6 +782,8 @@ export default function WorldScene() {
 
   return (
     <>
+      <OrientationStabilizer />
+
       {/* ===================================================
           TUTORIAL
       =================================================== */}
@@ -1336,11 +1298,6 @@ export default function WorldScene() {
 
       {/* ===================================================
           BOTÓN CONSOLA
-
-          Usa exactamente la misma posición
-          que el botón de juegos.
-
-          Tiene prioridad si hay una consola cercana.
       =================================================== */}
 
       {nearbyConsole &&
@@ -1456,10 +1413,6 @@ export default function WorldScene() {
 
       {/* ===================================================
           BOTÓN JUEGO
-
-          No se muestra si hay una consola
-          cercana para evitar dos botones
-          superpuestos.
       =================================================== */}
 
       {nearbyGame &&
@@ -1710,12 +1663,22 @@ export default function WorldScene() {
 
             WebkitBackdropFilter:
               "blur(5px)",
+
+            overflow:
+              "auto",
           }}
           onClick={
             closeConsole
           }
         >
           <div
+            style={{
+              maxWidth:
+                "100%",
+
+              maxHeight:
+                "100%",
+            }}
             onClick={(
               event
             ) => {
