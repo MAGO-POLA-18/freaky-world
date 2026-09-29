@@ -1,21 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 /* =========================================================
    FREAKY WORLD
-   MINI FICHA GENÉRICA DE CONSOLA
+   MINI FICHA RESPONSIVE DE CONSOLA
 
-   Sirve para:
-   - PlayStation
-   - Nintendo
-   - Xbox
-   - Meta
-   - Valve
-   - históricas
+   - vertical: diseño apilado
+   - horizontal: diseño compacto en dos columnas
+   - soporta cambios de orientación en vivo
+   - evita depender de 100vh
+========================================================= */
 
-   Más adelante:
-   imageUrl y videos podrán venir del enriquecedor automático.
+function getViewportSize() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return {
+      width: 390,
+      height: 700,
+    };
+  }
+
+  const viewport =
+    window.visualViewport;
+
+  return {
+    width:
+      viewport?.width ||
+      window.innerWidth ||
+      390,
+
+    height:
+      viewport?.height ||
+      window.innerHeight ||
+      700,
+  };
+}
+
+/* =========================================================
+   COMPONENTE
 ========================================================= */
 
 export default function ConsoleMiniCard({
@@ -25,8 +53,61 @@ export default function ConsoleMiniCard({
   onOpenFullCard,
   onOpenVideo,
 }) {
+  const [
+    viewport,
+    setViewport,
+  ] = useState(
+    getViewportSize
+  );
+
   /* =======================================================
-     CERRAR CON ESC
+     VIEWPORT / ORIENTACIÓN
+  ======================================================= */
+
+  useEffect(() => {
+    function updateViewport() {
+      setViewport(
+        getViewportSize()
+      );
+    }
+
+    updateViewport();
+
+    window.addEventListener(
+      "resize",
+      updateViewport
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      updateViewport
+    );
+
+    window.visualViewport?.addEventListener(
+      "resize",
+      updateViewport
+    );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        updateViewport
+      );
+
+      window.removeEventListener(
+        "orientationchange",
+        updateViewport
+      );
+
+      window.visualViewport?.removeEventListener(
+        "resize",
+        updateViewport
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     ESC
   ======================================================= */
 
   useEffect(() => {
@@ -34,8 +115,13 @@ export default function ConsoleMiniCard({
       return;
     }
 
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
+    function handleKeyDown(
+      event
+    ) {
+      if (
+        event.key ===
+        "Escape"
+      ) {
         onClose?.();
       }
     }
@@ -61,23 +147,68 @@ export default function ConsoleMiniCard({
   }
 
   /* =======================================================
+     ORIENTACIÓN
+  ======================================================= */
+
+  const landscape =
+    viewport.width >
+    viewport.height;
+
+  const veryShort =
+    viewport.height <
+    430;
+
+  /* =======================================================
      DATOS
   ======================================================= */
 
   const {
     name = "Consola",
+
     manufacturer = "",
+
     year = "",
+
     generation = "",
+
     imageUrl = null,
+
     videos = [],
   } = consoleData;
 
   const primaryVideo =
-    videos?.[0] || null;
+    videos?.[0] ||
+    null;
 
   const secondaryVideo =
-    videos?.[1] || null;
+    videos?.[1] ||
+    null;
+
+  /* =======================================================
+     MEDIDAS RESPONSIVE
+  ======================================================= */
+
+  const cardWidth =
+    landscape
+      ? Math.min(
+          680,
+          viewport.width -
+            32
+        )
+      : Math.min(
+          380,
+          viewport.width -
+            24
+        );
+
+  const cardMaxHeight =
+    Math.max(
+      250,
+      viewport.height -
+        (landscape
+          ? 20
+          : 40)
+    );
 
   /* =======================================================
      UI
@@ -85,25 +216,52 @@ export default function ConsoleMiniCard({
 
   return (
     <div
-      onClick={(event) => {
-        /*
-          Evita cerrar la ficha al tocar
-          dentro del propio panel.
-        */
+      onClick={(
+        event
+      ) => {
+        event.stopPropagation();
+      }}
+      onPointerDown={(
+        event
+      ) => {
         event.stopPropagation();
       }}
       style={{
-        width: "min(360px, calc(100vw - 32px))",
+        width:
+          cardWidth,
+
+        maxWidth:
+          "100%",
 
         maxHeight:
-          "min(650px, calc(100vh - 80px))",
+          cardMaxHeight,
 
-        overflowY: "auto",
+        display:
+          landscape
+            ? "grid"
+            : "block",
 
-        borderRadius: 22,
+        gridTemplateColumns:
+          landscape
+            ? "minmax(180px, 42%) minmax(0, 1fr)"
+            : undefined,
+
+        overflowX:
+          "hidden",
+
+        overflowY:
+          "auto",
+
+        WebkitOverflowScrolling:
+          "touch",
+
+        borderRadius:
+          landscape
+            ? 18
+            : 22,
 
         background:
-          "rgba(10, 12, 18, 0.97)",
+          "rgba(10,12,18,0.98)",
 
         border:
           "1px solid rgba(255,255,255,0.16)",
@@ -111,7 +269,8 @@ export default function ConsoleMiniCard({
         boxShadow:
           "0 24px 80px rgba(0,0,0,0.58)",
 
-        color: "#ffffff",
+        color:
+          "#ffffff",
 
         fontFamily:
           "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
@@ -122,49 +281,94 @@ export default function ConsoleMiniCard({
         WebkitBackdropFilter:
           "blur(18px)",
 
-        overflow: "hidden",
+        overscrollBehavior:
+          "contain",
+
+        touchAction:
+          "pan-y",
       }}
     >
       {/* ===================================================
-          FOTO / HERO
+          HERO
       =================================================== */}
 
       <div
         style={{
-          position: "relative",
+          position:
+            "relative",
 
-          height: 190,
+          minHeight:
+            landscape
+              ? veryShort
+                ? 210
+                : 250
+              : 190,
+
+          height:
+            landscape
+              ? "100%"
+              : 190,
 
           background:
             "linear-gradient(145deg, #202632 0%, #0c0e13 100%)",
 
-          overflow: "hidden",
+          overflow:
+            "hidden",
         }}
       >
         {imageUrl ? (
           <img
-            src={imageUrl}
-            alt={name}
+            src={
+              imageUrl
+            }
+            alt={
+              name
+            }
             loading="lazy"
+            draggable={
+              false
+            }
             style={{
-              width: "100%",
-              height: "100%",
+              width:
+                "100%",
 
-              objectFit: "contain",
+              height:
+                "100%",
 
-              padding: 18,
+              objectFit:
+                "contain",
+
+              padding:
+                landscape
+                  ? 14
+                  : 18,
 
               boxSizing:
                 "border-box",
+
+              userSelect:
+                "none",
+
+              WebkitUserSelect:
+                "none",
             }}
           />
         ) : (
           <div
             style={{
-              width: "100%",
-              height: "100%",
+              width:
+                "100%",
 
-              display: "flex",
+              height:
+                "100%",
+
+              minHeight:
+                landscape
+                  ? 210
+                  : 190,
+
+              display:
+                "flex",
 
               alignItems:
                 "center",
@@ -177,14 +381,34 @@ export default function ConsoleMiniCard({
 
               gap: 8,
 
-              opacity: 0.65,
+              padding:
+                18,
+
+              boxSizing:
+                "border-box",
+
+              textAlign:
+                "center",
+
+              opacity:
+                0.65,
             }}
           >
             <div
               style={{
-                fontSize: 42,
-                fontWeight: 900,
-                letterSpacing: -2,
+                fontSize:
+                  landscape
+                    ? 27
+                    : 36,
+
+                fontWeight:
+                  900,
+
+                letterSpacing:
+                  -1.5,
+
+                lineHeight:
+                  1,
               }}
             >
               {name}
@@ -192,14 +416,17 @@ export default function ConsoleMiniCard({
 
             <div
               style={{
-                fontSize: 11,
+                fontSize:
+                  10,
 
                 textTransform:
                   "uppercase",
 
-                letterSpacing: 2,
+                letterSpacing:
+                  2,
 
-                opacity: 0.5,
+                opacity:
+                  0.5,
               }}
             >
               imagen de consola
@@ -219,23 +446,36 @@ export default function ConsoleMiniCard({
             position:
               "absolute",
 
-            top: 12,
-            right: 12,
+            top: 10,
+            right: 10,
 
-            width: 34,
-            height: 34,
+            zIndex: 5,
+
+            width: 38,
+            height: 38,
 
             border: 0,
-            borderRadius: 999,
+
+            borderRadius:
+              999,
 
             background:
-              "rgba(0,0,0,0.55)",
+              "rgba(0,0,0,0.65)",
 
-            color: "white",
+            color:
+              "#fff",
 
-            fontSize: 19,
+            fontSize:
+              21,
 
-            cursor: "pointer",
+            lineHeight:
+              1,
+
+            cursor:
+              "pointer",
+
+            touchAction:
+              "manipulation",
           }}
         >
           ×
@@ -248,8 +488,22 @@ export default function ConsoleMiniCard({
 
       <div
         style={{
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          minWidth:
+            0,
+
           padding:
-            "18px 18px 20px",
+            landscape
+              ? "15px 16px 16px"
+              : "18px 18px 20px",
+
+          boxSizing:
+            "border-box",
         }}
       >
         {/* FABRICANTE */}
@@ -257,18 +511,23 @@ export default function ConsoleMiniCard({
         {manufacturer && (
           <div
             style={{
-              marginBottom: 5,
+              marginBottom:
+                4,
 
-              fontSize: 10,
+              fontSize:
+                10,
 
-              fontWeight: 700,
+              fontWeight:
+                700,
 
               textTransform:
                 "uppercase",
 
-              letterSpacing: 1.6,
+              letterSpacing:
+                1.6,
 
-              opacity: 0.5,
+              opacity:
+                0.5,
             }}
           >
             {manufacturer}
@@ -279,29 +538,38 @@ export default function ConsoleMiniCard({
 
         <div
           style={{
-            fontSize: 25,
+            fontSize:
+              landscape
+                ? 22
+                : 25,
 
-            lineHeight: 1.05,
+            lineHeight:
+              1.05,
 
-            fontWeight: 850,
+            fontWeight:
+              850,
 
-            letterSpacing: -0.6,
+            letterSpacing:
+              -0.6,
           }}
         >
           {name}
         </div>
 
-        {/* DATOS RÁPIDOS */}
+        {/* DATOS */}
 
         <div
           style={{
-            display: "flex",
+            display:
+              "flex",
 
-            flexWrap: "wrap",
+            flexWrap:
+              "wrap",
 
             gap: 7,
 
-            marginTop: 11,
+            marginTop:
+              9,
           }}
         >
           {year && (
@@ -324,21 +592,28 @@ export default function ConsoleMiniCard({
         {primaryVideo && (
           <div
             style={{
-              marginTop: 18,
+              marginTop:
+                landscape
+                  ? 12
+                  : 18,
             }}
           >
             <div
               style={{
-                marginBottom: 8,
+                marginBottom:
+                  7,
 
-                fontSize: 10,
+                fontSize:
+                  9,
 
                 textTransform:
                   "uppercase",
 
-                letterSpacing: 1.3,
+                letterSpacing:
+                  1.3,
 
-                opacity: 0.48,
+                opacity:
+                  0.48,
               }}
             >
               Video destacado
@@ -349,6 +624,9 @@ export default function ConsoleMiniCard({
                 primaryVideo
               }
               primary
+              compact={
+                landscape
+              }
               onOpen={() =>
                 onOpenVideo?.(
                   primaryVideo
@@ -358,41 +636,49 @@ export default function ConsoleMiniCard({
           </div>
         )}
 
-        {/* =================================================
-            SEGUNDO VIDEO
-        ================================================= */}
+        {/* SEGUNDO VIDEO */}
 
-        {secondaryVideo && (
-          <div
-            style={{
-              marginTop: 9,
-            }}
-          >
-            <VideoCard
-              video={
-                secondaryVideo
-              }
-              onOpen={() =>
-                onOpenVideo?.(
+        {secondaryVideo &&
+          !veryShort && (
+            <div
+              style={{
+                marginTop:
+                  7,
+              }}
+            >
+              <VideoCard
+                video={
                   secondaryVideo
-                )
-              }
-            />
-          </div>
-        )}
+                }
+                compact
+                onOpen={() =>
+                  onOpenVideo?.(
+                    secondaryVideo
+                  )
+                }
+              />
+            </div>
+          )}
 
         {/* =================================================
-            SIN VIDEO TODAVÍA
+            SIN VIDEO
         ================================================= */}
 
         {!primaryVideo && (
           <div
             style={{
-              marginTop: 18,
+              marginTop:
+                landscape
+                  ? 12
+                  : 18,
 
-              padding: 13,
+              padding:
+                landscape
+                  ? 9
+                  : 12,
 
-              borderRadius: 12,
+              borderRadius:
+                10,
 
               background:
                 "rgba(255,255,255,0.045)",
@@ -400,32 +686,46 @@ export default function ConsoleMiniCard({
               border:
                 "1px solid rgba(255,255,255,0.06)",
 
-              fontSize: 11,
+              fontSize:
+                landscape
+                  ? 10
+                  : 11,
 
-              lineHeight: 1.4,
+              lineHeight:
+                1.35,
 
-              opacity: 0.48,
+              opacity:
+                0.48,
             }}
           >
-            El video oficial se cargará automáticamente cuando
-            conectemos el contenido de plataformas.
+            Video oficial pendiente de conexión.
           </div>
         )}
 
         {/* =================================================
             BOTONES
+
+            Siempre quedan visibles dentro del flujo.
+            En horizontal reducen tamaño pero no desaparecen.
         ================================================= */}
 
         <div
           style={{
-            display: "grid",
+            display:
+              "grid",
 
             gridTemplateColumns:
               "1fr 1fr",
 
-            gap: 9,
+            gap: 8,
 
-            marginTop: 18,
+            marginTop:
+              "auto",
+
+            paddingTop:
+              landscape
+                ? 12
+                : 18,
           }}
         >
           <button
@@ -436,23 +736,40 @@ export default function ConsoleMiniCard({
               )
             }
             style={{
-              minHeight: 45,
+              minWidth:
+                0,
+
+              minHeight:
+                landscape
+                  ? 42
+                  : 46,
+
+              padding:
+                "8px 10px",
 
               border:
                 "1px solid rgba(255,255,255,0.14)",
 
-              borderRadius: 12,
+              borderRadius:
+                11,
 
               background:
                 "rgba(255,255,255,0.07)",
 
-              color: "#ffffff",
+              color:
+                "#ffffff",
 
-              fontSize: 13,
+              fontSize:
+                13,
 
-              fontWeight: 750,
+              fontWeight:
+                750,
 
-              cursor: "pointer",
+              cursor:
+                "pointer",
+
+              touchAction:
+                "manipulation",
             }}
           >
             Juegos
@@ -466,22 +783,40 @@ export default function ConsoleMiniCard({
               )
             }
             style={{
-              minHeight: 45,
+              minWidth:
+                0,
 
-              border: 0,
+              minHeight:
+                landscape
+                  ? 42
+                  : 46,
 
-              borderRadius: 12,
+              padding:
+                "8px 10px",
+
+              border:
+                0,
+
+              borderRadius:
+                11,
 
               background:
                 "#ffffff",
 
-              color: "#090b10",
+              color:
+                "#090b10",
 
-              fontSize: 13,
+              fontSize:
+                13,
 
-              fontWeight: 800,
+              fontWeight:
+                800,
 
-              cursor: "pointer",
+              cursor:
+                "pointer",
+
+              touchAction:
+                "manipulation",
             }}
           >
             Ver ficha
@@ -503,9 +838,10 @@ function DataPill({
     <div
       style={{
         padding:
-          "6px 9px",
+          "5px 8px",
 
-        borderRadius: 999,
+        borderRadius:
+          999,
 
         background:
           "rgba(255,255,255,0.075)",
@@ -513,9 +849,11 @@ function DataPill({
         border:
           "1px solid rgba(255,255,255,0.07)",
 
-        fontSize: 11,
+        fontSize:
+          10,
 
-        fontWeight: 650,
+        fontWeight:
+          650,
 
         color:
           "rgba(255,255,255,0.82)",
@@ -527,12 +865,13 @@ function DataPill({
 }
 
 /* =========================================================
-   VIDEO CARD
+   VIDEO
 ========================================================= */
 
 function VideoCard({
   video,
   primary = false,
+  compact = false,
   onOpen,
 }) {
   const thumbnail =
@@ -543,72 +882,101 @@ function VideoCard({
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={
+        onOpen
+      }
       style={{
-        width: "100%",
+        width:
+          "100%",
 
-        display: "flex",
+        display:
+          "flex",
 
         alignItems:
           "center",
 
-        gap: 11,
+        gap: 9,
 
-        padding: primary
-          ? 0
-          : 8,
+        padding:
+          compact
+            ? 6
+            : primary
+              ? 0
+              : 8,
 
-        overflow: "hidden",
+        overflow:
+          "hidden",
 
         border:
           "1px solid rgba(255,255,255,0.09)",
 
-        borderRadius: 13,
+        borderRadius:
+          11,
 
         background:
           "rgba(255,255,255,0.045)",
 
-        color: "#ffffff",
+        color:
+          "#ffffff",
 
-        textAlign: "left",
+        textAlign:
+          "left",
 
-        cursor: "pointer",
+        cursor:
+          "pointer",
+
+        touchAction:
+          "manipulation",
       }}
     >
       <div
         style={{
-          position: "relative",
+          position:
+            "relative",
 
           flex:
-            primary
-              ? "0 0 135px"
-              : "0 0 92px",
+            compact
+              ? "0 0 82px"
+              : primary
+                ? "0 0 135px"
+                : "0 0 92px",
 
           height:
-            primary
-              ? 76
-              : 55,
+            compact
+              ? 48
+              : primary
+                ? 76
+                : 55,
 
-          overflow: "hidden",
+          overflow:
+            "hidden",
 
           background:
             "#181b22",
 
           borderRadius:
-            primary
-              ? "12px 0 0 12px"
-              : 9,
+            8,
         }}
       >
         {thumbnail && (
           <img
-            src={thumbnail}
+            src={
+              thumbnail
+            }
             alt=""
             loading="lazy"
+            draggable={
+              false
+            }
             style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
+              width:
+                "100%",
+
+              height:
+                "100%",
+
+              objectFit:
+                "cover",
             }}
           />
         )}
@@ -620,45 +988,56 @@ function VideoCard({
 
             inset: 0,
 
-            display: "flex",
-
-            justifyContent:
-              "center",
+            display:
+              "flex",
 
             alignItems:
               "center",
 
+            justifyContent:
+              "center",
+
             background:
               thumbnail
-                ? "rgba(0,0,0,0.2)"
+                ? "rgba(0,0,0,.2)"
                 : "transparent",
           }}
         >
           <div
             style={{
-              width: 32,
-              height: 32,
+              width:
+                compact
+                  ? 27
+                  : 32,
 
-              display: "flex",
+              height:
+                compact
+                  ? 27
+                  : 32,
 
-              alignItems:
+              display:
+                "grid",
+
+              placeItems:
                 "center",
 
-              justifyContent:
-                "center",
+              paddingLeft:
+                2,
 
-              paddingLeft: 2,
-
-              borderRadius: 999,
+              borderRadius:
+                999,
 
               background:
-                "rgba(255,255,255,0.92)",
+                "rgba(255,255,255,.92)",
 
-              color: "#090a0d",
+              color:
+                "#090a0d",
 
-              fontSize: 14,
+              fontSize:
+                12,
 
-              fontWeight: 900,
+              fontWeight:
+                900,
             }}
           >
             ▶
@@ -670,12 +1049,8 @@ function VideoCard({
         style={{
           flex: 1,
 
-          paddingRight:
-            primary
-              ? 10
-              : 2,
-
-          minWidth: 0,
+          minWidth:
+            0,
         }}
       >
         <div
@@ -683,21 +1058,25 @@ function VideoCard({
             display:
               "-webkit-box",
 
-            WebkitLineClamp: 2,
+            WebkitLineClamp:
+              2,
 
             WebkitBoxOrient:
               "vertical",
 
-            overflow: "hidden",
+            overflow:
+              "hidden",
 
             fontSize:
-              primary
-                ? 12
-                : 11,
+              compact
+                ? 10
+                : 12,
 
-            lineHeight: 1.3,
+            lineHeight:
+              1.3,
 
-            fontWeight: 700,
+            fontWeight:
+              700,
           }}
         >
           {video?.title ||
@@ -707,7 +1086,8 @@ function VideoCard({
         {video?.channel && (
           <div
             style={{
-              marginTop: 4,
+              marginTop:
+                3,
 
               overflow:
                 "hidden",
@@ -718,9 +1098,11 @@ function VideoCard({
               textOverflow:
                 "ellipsis",
 
-              fontSize: 9,
+              fontSize:
+                9,
 
-              opacity: 0.45,
+              opacity:
+                0.45,
             }}
           >
             {video.channel}
