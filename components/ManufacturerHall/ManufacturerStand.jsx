@@ -15,105 +15,104 @@ import {
 
 /* =========================================================
    FREAKY WORLD — MANUFACTURER HALL
-
-   Este componente contiene SOLO el interior del ala.
-
-   La carcasa física del edificio:
-   - suelo
-   - paredes
-   - techo
-   - entrada
-
-   ya la proporciona DpadWing.
 ========================================================= */
 
 /* =========================================================
-   CONFIGURACIÓN GENERAL
+   MEDIDAS
 ========================================================= */
 
-const STAND_WIDTH = 12;
-const STAND_DEPTH = 10;
+const STAND_WIDTH = 13;
+const STAND_DEPTH = 11.5;
+const STAND_HEIGHT = 6.2;
 
 /*
-  Interior útil del ala:
-  aproximadamente 59 x 69.
+  Distribución:
 
-  Dejamos bastante aire alrededor de los stands
-  y un corredor central amplio.
+              PANTALLA
+                 ↑
+
+  SONY                    XBOX
+  NINTENDO                VALVE
+  SEGA                    ATARI
+  META                    SNK
+
+             PASILLO
+
+              ENTRADA
 */
 
 const BRAND_STANDS = [
+  /* IZQUIERDA */
+
   {
     id: "sony",
     name: "PLAYSTATION",
     x: -21,
-    z: -18,
-    side: "back",
-    active: true,
+    z: -21,
+    side: "left",
   },
 
   {
     id: "nintendo",
     name: "NINTENDO",
-    x: -7,
-    z: -18,
-    side: "back",
+    x: -21,
+    z: -7,
+    side: "left",
   },
 
   {
     id: "sega",
     name: "SEGA",
-    x: 7,
-    z: -18,
-    side: "back",
+    x: -21,
+    z: 7,
+    side: "left",
   },
 
   {
     id: "meta",
     name: "META",
-    x: 21,
-    z: -18,
-    side: "back",
+    x: -21,
+    z: 21,
+    side: "left",
   },
+
+  /* DERECHA */
 
   {
     id: "xbox",
     name: "XBOX",
-    x: -21,
-    z: 18,
-    side: "front",
+    x: 21,
+    z: -21,
+    side: "right",
   },
 
   {
     id: "valve",
     name: "VALVE",
-    x: -7,
-    z: 18,
-    side: "front",
+    x: 21,
+    z: -7,
+    side: "right",
   },
 
   {
     id: "atari",
     name: "ATARI",
-    x: 7,
-    z: 18,
-    side: "front",
+    x: 21,
+    z: 7,
+    side: "right",
   },
 
   {
     id: "snk",
     name: "SNK",
     x: 21,
-    z: 18,
-    side: "front",
+    z: 21,
+    side: "right",
   },
 ];
 
 /* =========================================================
-   PLAYSTATION — DATOS PROVISIONALES
-
-   Más adelante esto puede venir de nuestra base
-   de datos de plataformas/consolas.
+   PLAYSTATION
 ========================================================= */
 
 const PLAYSTATION_CONSOLES = [
@@ -122,10 +121,11 @@ const PLAYSTATION_CONSOLES = [
     name: "PlayStation",
     short: "PS1",
     year: "1994",
-    generation:
-      "5ª generación",
+    generation: "5ª generación",
+
     description:
       "La primera consola doméstica de Sony y el inicio de la familia PlayStation.",
+
     pedestalX: -4.4,
   },
 
@@ -134,10 +134,11 @@ const PLAYSTATION_CONSOLES = [
     name: "PlayStation 2",
     short: "PS2",
     year: "2000",
-    generation:
-      "6ª generación",
+    generation: "6ª generación",
+
     description:
       "Segunda consola de sobremesa PlayStation y una de las máquinas más importantes de la historia de los videojuegos.",
+
     pedestalX: -2.2,
   },
 
@@ -146,10 +147,11 @@ const PLAYSTATION_CONSOLES = [
     name: "PlayStation 3",
     short: "PS3",
     year: "2006",
-    generation:
-      "7ª generación",
+    generation: "7ª generación",
+
     description:
       "La generación que introdujo Blu-ray y consolidó PlayStation Network.",
+
     pedestalX: 0,
   },
 
@@ -158,10 +160,11 @@ const PLAYSTATION_CONSOLES = [
     name: "PlayStation 4",
     short: "PS4",
     year: "2013",
-    generation:
-      "8ª generación",
+    generation: "8ª generación",
+
     description:
       "Una generación centrada en arquitectura x86, servicios online y un fuerte catálogo de juegos.",
+
     pedestalX: 2.2,
   },
 
@@ -170,16 +173,17 @@ const PLAYSTATION_CONSOLES = [
     name: "PlayStation 5",
     short: "PS5",
     year: "2020",
-    generation:
-      "9ª generación",
+    generation: "9ª generación",
+
     description:
       "La generación actual de sobremesa de PlayStation.",
+
     pedestalX: 4.4,
   },
 ];
 
 /* =========================================================
-   MINI FICHA
+   INFO
 ========================================================= */
 
 function InfoCell({
@@ -240,7 +244,7 @@ function ConsoleInfoPanel({
       center
       position={[
         0,
-        4.5,
+        5,
         1,
       ]}
       style={{
@@ -317,7 +321,9 @@ function ConsoleInfoPanel({
           </div>
 
           <button
-            onClick={onClose}
+            onClick={
+              onClose
+            }
             style={{
               border: 0,
 
@@ -435,14 +441,14 @@ function Pedestal({
       <RoundedBox
         args={[
           1.55,
-          0.65,
+          0.7,
           1.55,
         ]}
         radius={0.08}
         smoothness={2}
         position={[
           0,
-          0.325,
+          0.35,
           0,
         ]}
       >
@@ -460,7 +466,7 @@ function Pedestal({
       <mesh
         position={[
           0,
-          0.68,
+          0.72,
           0,
         ]}
       >
@@ -474,7 +480,6 @@ function Pedestal({
 
         <meshStandardMaterial
           color="#f4f4f4"
-          roughness={0.35}
         />
       </mesh>
     </group>
@@ -526,27 +531,6 @@ function PS1Model() {
 
         <meshStandardMaterial
           color="#a4a4a0"
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          -0.38,
-          0.15,
-          0.23,
-        ]}
-      >
-        <cylinderGeometry
-          args={[
-            0.045,
-            0.045,
-            0.04,
-            20,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#858582"
         />
       </mesh>
     </group>
@@ -630,26 +614,6 @@ function PS3Model() {
           metalness={0.18}
         />
       </RoundedBox>
-
-      <mesh
-        position={[
-          0,
-          0.145,
-          0.18,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            0.82,
-            0.012,
-            0.025,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#48484b"
-        />
-      </mesh>
     </group>
   );
 }
@@ -689,7 +653,6 @@ function PS4Model() {
 
         <meshStandardMaterial
           color="#161719"
-          roughness={0.48}
         />
       </mesh>
 
@@ -715,7 +678,6 @@ function PS4Model() {
 
         <meshStandardMaterial
           color="#202124"
-          roughness={0.45}
         />
       </mesh>
 
@@ -805,7 +767,6 @@ function PS5Model() {
 
         <meshStandardMaterial
           color="#111218"
-          roughness={0.33}
         />
       </mesh>
 
@@ -834,7 +795,6 @@ function PS5Model() {
 
         <meshStandardMaterial
           color="#f2f2f0"
-          roughness={0.5}
         />
       </mesh>
 
@@ -863,7 +823,6 @@ function PS5Model() {
 
         <meshStandardMaterial
           color="#f2f2f0"
-          roughness={0.5}
         />
       </mesh>
     </group>
@@ -871,7 +830,7 @@ function PS5Model() {
 }
 
 /* =========================================================
-   SELECTOR DE CONSOLA
+   CONSOLE MODEL
 ========================================================= */
 
 function ConsoleModel({
@@ -899,7 +858,7 @@ function ConsoleModel({
 }
 
 /* =========================================================
-   EXPOSITOR DE CONSOLA
+   EXHIBIT
 ========================================================= */
 
 function ConsoleExhibit({
@@ -912,11 +871,6 @@ function ConsoleExhibit({
     setHovered,
   ] = useState(false);
 
-  const scale =
-    hovered || selected
-      ? 1.07
-      : 1;
-
   return (
     <group
       position={[
@@ -924,7 +878,12 @@ function ConsoleExhibit({
         0,
         0,
       ]}
-      scale={scale}
+      scale={
+        hovered ||
+        selected
+          ? 1.07
+          : 1
+      }
       onPointerOver={(
         event
       ) => {
@@ -959,7 +918,7 @@ function ConsoleExhibit({
       <group
         position={[
           0,
-          1,
+          1.05,
           0,
         ]}
       >
@@ -971,7 +930,7 @@ function ConsoleExhibit({
       <Text
         position={[
           0,
-          0.18,
+          0.2,
           0.86,
         ]}
         rotation={[
@@ -981,8 +940,6 @@ function ConsoleExhibit({
         ]}
         fontSize={0.18}
         color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
       >
         {data.short}
       </Text>
@@ -990,7 +947,7 @@ function ConsoleExhibit({
       <Text
         position={[
           0,
-          0.04,
+          0.06,
           0.88,
         ]}
         rotation={[
@@ -1000,8 +957,6 @@ function ConsoleExhibit({
         ]}
         fontSize={0.09}
         color="#888b93"
-        anchorX="center"
-        anchorY="middle"
       >
         {data.year}
       </Text>
@@ -1010,7 +965,184 @@ function ConsoleExhibit({
 }
 
 /* =========================================================
-   ICONOS PLAYSTATION
+   ESTRUCTURA EXTERIOR DEL STAND
+
+   Esto es lo que hace que cada stand se sienta
+   mucho más importante.
+========================================================= */
+
+function StandStructure({
+  accent = "#454a55",
+}) {
+  return (
+    <group>
+      {/* SUELO */}
+
+      <RoundedBox
+        args={[
+          STAND_WIDTH,
+          0.14,
+          STAND_DEPTH,
+        ]}
+        radius={0.15}
+        smoothness={2}
+        position={[
+          0,
+          0.38,
+          0,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#111318"
+          roughness={0.68}
+        />
+      </RoundedBox>
+
+      {/* PARED TRASERA */}
+
+      <mesh
+        position={[
+          0,
+          STAND_HEIGHT / 2,
+          -STAND_DEPTH / 2 +
+            0.1,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            STAND_WIDTH,
+            STAND_HEIGHT,
+            0.2,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#1b1e24"
+          roughness={0.65}
+        />
+      </mesh>
+
+      {/* PILAR IZQUIERDO */}
+
+      <RoundedBox
+        args={[
+          0.55,
+          STAND_HEIGHT,
+          0.55,
+        ]}
+        radius={0.08}
+        smoothness={2}
+        position={[
+          -STAND_WIDTH /
+            2 +
+            0.35,
+
+          STAND_HEIGHT /
+            2,
+
+          STAND_DEPTH /
+            2 -
+            0.35,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#252932"
+          metalness={0.3}
+          roughness={0.38}
+        />
+      </RoundedBox>
+
+      {/* PILAR DERECHO */}
+
+      <RoundedBox
+        args={[
+          0.55,
+          STAND_HEIGHT,
+          0.55,
+        ]}
+        radius={0.08}
+        smoothness={2}
+        position={[
+          STAND_WIDTH /
+            2 -
+            0.35,
+
+          STAND_HEIGHT /
+            2,
+
+          STAND_DEPTH /
+            2 -
+            0.35,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#252932"
+          metalness={0.3}
+          roughness={0.38}
+        />
+      </RoundedBox>
+
+      {/* MARQUESINA SUPERIOR */}
+
+      <RoundedBox
+        args={[
+          STAND_WIDTH,
+          0.55,
+          1,
+        ]}
+        radius={0.12}
+        smoothness={2}
+        position={[
+          0,
+          STAND_HEIGHT -
+            0.1,
+          STAND_DEPTH /
+            2 -
+            0.45,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#20242d"
+          metalness={0.25}
+          roughness={0.38}
+        />
+      </RoundedBox>
+
+      {/* FRANJA DE IDENTIDAD */}
+
+      <mesh
+        position={[
+          0,
+          STAND_HEIGHT -
+            0.08,
+
+          STAND_DEPTH /
+            2 +
+            0.07,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            STAND_WIDTH -
+              1.1,
+
+            0.12,
+            0.08,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={0.35}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
+   PLAYSTATION SYMBOLS
 ========================================================= */
 
 function PlayStationSymbols() {
@@ -1018,8 +1150,8 @@ function PlayStationSymbols() {
     <group
       position={[
         0,
-        4.08,
-        -4.72,
+        4.25,
+        -5.65,
       ]}
     >
       <Text
@@ -1028,7 +1160,7 @@ function PlayStationSymbols() {
           0,
           0,
         ]}
-        fontSize={0.7}
+        fontSize={0.72}
         color="#5b9dff"
       >
         △
@@ -1040,7 +1172,7 @@ function PlayStationSymbols() {
           0,
           0,
         ]}
-        fontSize={0.7}
+        fontSize={0.72}
         color="#ff5e71"
       >
         ○
@@ -1052,7 +1184,7 @@ function PlayStationSymbols() {
           0,
           0,
         ]}
-        fontSize={0.7}
+        fontSize={0.72}
         color="#6bbcff"
       >
         ×
@@ -1064,7 +1196,7 @@ function PlayStationSymbols() {
           0,
           0,
         ]}
-        fontSize={0.7}
+        fontSize={0.72}
         color="#df7bff"
       >
         □
@@ -1074,7 +1206,7 @@ function PlayStationSymbols() {
 }
 
 /* =========================================================
-   SONY STAND
+   SONY
 ========================================================= */
 
 function SonyStand() {
@@ -1085,85 +1217,41 @@ function SonyStand() {
 
   return (
     <group>
-      {/* BASE DEL STAND */}
+      <StandStructure
+        accent="#1768e5"
+      />
 
-      <RoundedBox
-        args={[
-          STAND_WIDTH,
-          0.12,
-          STAND_DEPTH,
-        ]}
-        radius={0.16}
-        smoothness={2}
-        position={[
-          0,
-          0.36,
-          0,
-        ]}
-      >
-        <meshStandardMaterial
-          color="#10131a"
-          roughness={0.62}
-        />
-      </RoundedBox>
-
-      {/* PARED DE IDENTIDAD */}
+      {/* PARED INTERIOR BLANCA */}
 
       <mesh
         position={[
           0,
-          2.65,
-          -4.82,
+          3.2,
+          -5.62,
         ]}
       >
         <boxGeometry
           args={[
-            STAND_WIDTH,
-            4.6,
-            0.18,
+            11.4,
+            5.25,
+            0.08,
           ]}
         />
 
         <meshStandardMaterial
-          color="#f2f3f5"
-          roughness={0.65}
-        />
-      </mesh>
-
-      {/* FRANJA PLAYSTATION */}
-
-      <mesh
-        position={[
-          0,
-          4.62,
-          -4.7,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            10.6,
-            0.14,
-            0.18,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#1768e5"
-          emissive="#0d3f91"
-          emissiveIntensity={0.55}
+          color="#eef0f4"
+          roughness={0.68}
         />
       </mesh>
 
       <Text
         position={[
           0,
-          3.2,
-          -4.7,
+          5,
+          -5.55,
         ]}
-        fontSize={0.72}
-        color="#121722"
-        anchorX="center"
-        anchorY="middle"
+        fontSize={0.76}
+        color="#111722"
       >
         PLAYSTATION
       </Text>
@@ -1171,13 +1259,11 @@ function SonyStand() {
       <Text
         position={[
           0,
-          2.57,
-          -4.69,
+          4.48,
+          -5.54,
         ]}
-        fontSize={0.18}
-        color="#6c7180"
-        anchorX="center"
-        anchorY="middle"
+        fontSize={0.16}
+        color="#666d7a"
       >
         SONY · 1994 — HOY
       </Text>
@@ -1189,8 +1275,8 @@ function SonyStand() {
       <group
         position={[
           0,
-          0.34,
-          -1.15,
+          0.4,
+          -1.3,
         ]}
       >
         {PLAYSTATION_CONSOLES.map(
@@ -1216,27 +1302,27 @@ function SonyStand() {
         )}
       </group>
 
-      {/* LÍNEA DE ENTRADA */}
+      {/* LÍNEA ENTRADA */}
 
       <mesh
         position={[
           0,
-          0.43,
-          3.7,
+          0.48,
+          4.7,
         ]}
       >
         <boxGeometry
           args={[
-            9.4,
+            10.5,
             0.025,
-            0.08,
+            0.1,
           ]}
         />
 
         <meshStandardMaterial
-          color="#1673ff"
-          emissive="#0b4fd5"
-          emissiveIntensity={0.8}
+          color="#1768e5"
+          emissive="#0d4cbd"
+          emissiveIntensity={0.7}
         />
       </mesh>
 
@@ -1245,11 +1331,11 @@ function SonyStand() {
           consoleData={
             selectedConsole
           }
-          onClose={() => {
+          onClose={() =>
             setSelectedConsole(
               null
-            );
-          }}
+            )
+          }
         />
       )}
     </group>
@@ -1265,57 +1351,16 @@ function EmptyStand({
 }) {
   return (
     <group>
-      <RoundedBox
-        args={[
-          STAND_WIDTH,
-          0.1,
-          STAND_DEPTH,
-        ]}
-        radius={0.16}
-        smoothness={2}
-        position={[
-          0,
-          0.35,
-          0,
-        ]}
-      >
-        <meshStandardMaterial
-          color="#17191e"
-          roughness={0.7}
-        />
-      </RoundedBox>
-
-      <mesh
-        position={[
-          0,
-          2.45,
-          -4.83,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            STAND_WIDTH,
-            4,
-            0.16,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#202228"
-          roughness={0.72}
-        />
-      </mesh>
+      <StandStructure />
 
       <Text
         position={[
           0,
-          2.75,
-          -4.72,
+          4.1,
+          -5.62,
         ]}
-        fontSize={0.52}
-        color="#777b84"
-        anchorX="center"
-        anchorY="middle"
+        fontSize={0.55}
+        color="#9499a3"
       >
         {name}
       </Text>
@@ -1323,50 +1368,35 @@ function EmptyStand({
       <Text
         position={[
           0,
-          2.12,
-          -4.71,
+          3.45,
+          -5.61,
         ]}
         fontSize={0.16}
-        color="#4f5259"
-        anchorX="center"
-        anchorY="middle"
+        color="#555a64"
       >
         PRÓXIMAMENTE
       </Text>
-
-      <mesh
-        position={[
-          0,
-          0.42,
-          3.25,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            5,
-            0.025,
-            0.045,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#34363d"
-        />
-      </mesh>
     </group>
   );
 }
 
 /* =========================================================
-   STAND
+   BRAND STAND
+
+   IZQUIERDA:
+   el frente mira hacia +X
+
+   DERECHA:
+   el frente mira hacia -X
 ========================================================= */
 
 function BrandStand({
   stand,
 }) {
-  const facesEntrance =
-    stand.side ===
-    "front";
+  const rotationY =
+    stand.side === "left"
+      ? Math.PI / 2
+      : -Math.PI / 2;
 
   return (
     <group
@@ -1377,11 +1407,7 @@ function BrandStand({
       ]}
       rotation={[
         0,
-
-        facesEntrance
-          ? Math.PI
-          : 0,
-
+        rotationY,
         0,
       ]}
     >
@@ -1398,26 +1424,139 @@ function BrandStand({
 }
 
 /* =========================================================
-   SALA FABRICANTES
+   PANTALLA DEL FONDO
+========================================================= */
+
+function BackVideoWall() {
+  return (
+    <group
+      position={[
+        0,
+        0,
+        -31.8,
+      ]}
+    >
+      {/* ESTRUCTURA */}
+
+      <RoundedBox
+        args={[
+          22,
+          8.4,
+          0.65,
+        ]}
+        radius={0.2}
+        smoothness={3}
+        position={[
+          0,
+          4.6,
+          0,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#181b21"
+          metalness={0.3}
+          roughness={0.4}
+        />
+      </RoundedBox>
+
+      {/* PANTALLA */}
+
+      <mesh
+        position={[
+          0,
+          4.6,
+          0.36,
+        ]}
+      >
+        <planeGeometry
+          args={[
+            20.4,
+            6.9,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#050608"
+          emissive="#050608"
+          emissiveIntensity={0.15}
+        />
+      </mesh>
+
+      {/* PLACEHOLDER */}
+
+      <Text
+        position={[
+          0,
+          5,
+          0.42,
+        ]}
+        fontSize={0.5}
+        color="#636a78"
+      >
+        FREAKY WORLD
+      </Text>
+
+      <Text
+        position={[
+          0,
+          4.25,
+          0.42,
+        ]}
+        fontSize={0.2}
+        color="#3f444e"
+      >
+        PANTALLA DE FABRICANTES
+      </Text>
+
+      {/* BASE */}
+
+      <RoundedBox
+        args={[
+          8,
+          0.5,
+          1.6,
+        ]}
+        radius={0.14}
+        smoothness={2}
+        position={[
+          0,
+          0.55,
+          0,
+        ]}
+      >
+        <meshStandardMaterial
+          color="#181b20"
+          roughness={0.6}
+        />
+      </RoundedBox>
+    </group>
+  );
+}
+
+/* =========================================================
+   MANUFACTURER HALL
 ========================================================= */
 
 export default function ManufacturerStand() {
   return (
     <group>
       {/* ===================================================
-          IDENTIDAD DEL ALA
+          TÍTULO DE ENTRADA
       =================================================== */}
 
       <Text
         position={[
           0,
-          6.1,
-          -33.9,
+          6.2,
+          31.5,
         ]}
-        fontSize={1.15}
+        rotation={[
+          0,
+          Math.PI,
+          0,
+        ]}
+        fontSize={1}
         color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
       >
         FABRICANTES
       </Text>
@@ -1425,67 +1564,68 @@ export default function ManufacturerStand() {
       <Text
         position={[
           0,
-          5.15,
-          -33.85,
+          5.35,
+          31.45,
         ]}
-        fontSize={0.24}
-        color="#818793"
-        anchorX="center"
-        anchorY="middle"
+        rotation={[
+          0,
+          Math.PI,
+          0,
+        ]}
+        fontSize={0.22}
+        color="#808692"
       >
         CONSOLAS · HISTORIA · ECOSISTEMAS
       </Text>
 
       {/* ===================================================
-          CORREDOR CENTRAL
-
-          No crea un suelo nuevo.
-          Es únicamente una capa visual fina encima
-          del suelo existente de DpadWing.
+          PASILLO CENTRAL
       =================================================== */}
 
       <RoundedBox
         args={[
-          54,
-          0.018,
-          9,
+          15,
+          0.02,
+          58,
         ]}
-        radius={0.08}
+        radius={0.1}
         smoothness={2}
         position={[
           0,
-          0.325,
+          0.33,
           0,
         ]}
       >
         <meshStandardMaterial
-          color="#171a1e"
+          color="#15181d"
           roughness={0.84}
         />
       </RoundedBox>
 
+      {/* GUÍA CENTRAL */}
+
       <mesh
         position={[
           0,
-          0.34,
+          0.35,
           0,
         ]}
       >
         <boxGeometry
           args={[
-            48,
+            0.05,
             0.012,
-            0.045,
+            52,
           ]}
         />
 
         <meshStandardMaterial
-          color="#3a3e46"
+          color="#3b4048"
         />
       </mesh>
 
       {/* ===================================================
-          OCHO STANDS
+          STANDS
       =================================================== */}
 
       {BRAND_STANDS.map(
@@ -1496,6 +1636,12 @@ export default function ManufacturerStand() {
           />
         )
       )}
+
+      {/* ===================================================
+          PANTALLA FONDO
+      =================================================== */}
+
+      <BackVideoWall />
     </group>
   );
 }
