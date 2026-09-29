@@ -2,19 +2,23 @@
 
 import {
   useMemo,
-  useState,
+  useRef,
 } from "react";
 
 import * as THREE from "three";
 
 import {
-  Html,
   RoundedBox,
   Text,
 } from "@react-three/drei";
 
-import ConsoleMiniCard from "./ConsoleMiniCard";
-import PlatformGamesOverlay from "./PlatformGamesOverlay";
+import {
+  useFrame,
+} from "@react-three/fiber";
+
+import {
+  playerRuntime,
+} from "../World/PlayerController";
 
 /* =========================================================
    FREAKY WORLD
@@ -33,17 +37,25 @@ const HISTORY_WIDTH = 31;
 const HISTORY_DEPTH = 9;
 const HISTORY_HEIGHT = 7.6;
 
+/*
+  Distancia desde la que aparece
+  el botón lateral ↗.
+*/
+
+const CONSOLE_INTERACTION_DISTANCE = 4.6;
+
+/*
+  Un poco más de distancia para
+  desaparecer.
+
+  Esto evita que el botón parpadee
+  si estamos justo en el límite.
+*/
+
+const CONSOLE_EXIT_DISTANCE = 5.2;
+
 /* =========================================================
    PLAYSTATION DATA
-
-   platformId usa los IDs de plataforma de IGDB
-   que estamos utilizando en Tierra Vicio.
-
-   PS1 = 7
-   PS2 = 8
-   PS3 = 9
-   PS4 = 48
-   PS5 = 167
 ========================================================= */
 
 const PLAYSTATION_CONSOLES = [
@@ -178,9 +190,7 @@ const COLORS = {
    PEDESTAL
 ========================================================= */
 
-function Pedestal({
-  active = false,
-}) {
+function Pedestal() {
   return (
     <group>
       <RoundedBox
@@ -198,11 +208,7 @@ function Pedestal({
         ]}
       >
         <meshStandardMaterial
-          color={
-            active
-              ? "#172a4c"
-              : "#171a20"
-          }
+          color="#171a20"
           roughness={0.42}
           metalness={0.22}
         />
@@ -670,62 +676,34 @@ function ConsoleModel({
 
 /* =========================================================
    CONSOLE EXHIBIT
+
+   Ya NO tiene:
+   - onClick
+   - hover
+   - ficha propia
+
+   Solo registra su posición 3D real.
 ========================================================= */
 
 function ConsoleExhibit({
   data,
-  selected,
-  onSelect,
+  registerRef,
 }) {
-  const [
-    hovered,
-    setHovered,
-  ] = useState(false);
-
-  const highlighted =
-    hovered || selected;
-
   return (
     <group
+      ref={(node) => {
+        registerRef(
+          data.id,
+          node
+        );
+      }}
       position={[
         data.x,
         0,
         -0.7,
       ]}
-      scale={
-        highlighted
-          ? 1.05
-          : 1
-      }
-      onPointerOver={(
-        event
-      ) => {
-        event.stopPropagation();
-
-        setHovered(true);
-
-        document.body.style.cursor =
-          "pointer";
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-
-        document.body.style.cursor =
-          "default";
-      }}
-      onClick={(
-        event
-      ) => {
-        event.stopPropagation();
-
-        onSelect(data);
-      }}
     >
-      <Pedestal
-        active={
-          highlighted
-        }
-      />
+      <Pedestal />
 
       <group
         position={[
@@ -779,7 +757,7 @@ function ConsoleExhibit({
 }
 
 /* =========================================================
-   ESTRUCTURA STAND
+   ESTRUCTURA DE STAND
 ========================================================= */
 
 function LargeStandShell({
@@ -965,8 +943,6 @@ function LargeStandShell({
         />
       </mesh>
 
-      {/* NOMBRE */}
-
       <Text
         position={[
           0,
@@ -1009,81 +985,289 @@ function LargeStandShell({
 ========================================================= */
 
 function PlayStationStand() {
-  const [
-    selectedConsole,
-    setSelectedConsole,
-  ] = useState(null);
+  /*
+    Guardamos referencias reales de Three.js
+    para PS1, PS2, PS3, PS4 y PS5.
+  */
 
-  const [
-    gamesConsole,
-    setGamesConsole,
-  ] = useState(null);
+  const consoleRefs =
+    useRef({});
+
+  /*
+    Consola que actualmente está enviándose
+    a WorldScene.
+  */
+
+  const activeConsoleId =
+    useRef(null);
+
+  /*
+    Reutilizamos Vector3 para evitar generar
+    objetos nuevos 60 veces por segundo.
+  */
+
+  const worldPosition =
+    useMemo(
+      () =>
+        new THREE.Vector3(),
+      []
+    );
 
   /* =======================================================
-     JUEGOS
+     REGISTRAR CONSOLAS
   ======================================================= */
 
-  function handleOpenGames(
-    consoleData
+  function registerConsoleRef(
+    id,
+    node
   ) {
-    /*
-      Cerramos la mini ficha
-      y abrimos el catálogo.
-    */
-
-    setSelectedConsole(
-      null
-    );
-
-    setGamesConsole(
-      consoleData
-    );
+    if (node) {
+      consoleRefs.current[
+        id
+      ] = node;
+    } else {
+      delete consoleRefs
+        .current[id];
+    }
   }
 
   /* =======================================================
-     FICHA COMPLETA
+     PROXIMIDAD
+
+     Se ejecuta dentro del Canvas.
+
+     IMPORTANTE:
+     usamos getWorldPosition(), no las coordenadas locales,
+     porque todo ManufacturerHall está dentro de grupos
+     rotados y trasladados.
   ======================================================= */
 
-  function handleOpenFullCard(
-    consoleData
-  ) {
-    console.log(
-      "Abrir ficha completa:",
-      consoleData
-    );
-  }
+  useFrame(() => {
+    const body =
+      playerRuntime.body;
 
-  /* =======================================================
-     VIDEO
-  ======================================================= */
+    if (!body) {
+      return;
+    }
 
-  function handleOpenVideo(
-    video
-  ) {
-    console.log(
-      "Abrir video:",
-      video
-    );
-  }
+    const player =
+      body.translation();
 
-  /* =======================================================
-     JUEGO
-  ======================================================= */
+    if (!player) {
+      return;
+    }
 
-  function handleOpenGame(
-    game
-  ) {
-    console.log(
-      "Abrir ficha de juego:",
-      game
-    );
+    let nearestConsole =
+      null;
 
-    /*
-      En el siguiente paso
-      conectaremos esto con
-      la ficha real del juego.
-    */
-  }
+    let nearestDistance =
+      Infinity;
+
+    for (
+      const consoleData of
+      PLAYSTATION_CONSOLES
+    ) {
+      const node =
+        consoleRefs.current[
+          consoleData.id
+        ];
+
+      if (!node) {
+        continue;
+      }
+
+      node.getWorldPosition(
+        worldPosition
+      );
+
+      /*
+        Distancia horizontal.
+
+        Ignoramos Y porque el jugador
+        y la consola pueden tener alturas
+        diferentes.
+      */
+
+      const dx =
+        player.x -
+        worldPosition.x;
+
+      const dz =
+        player.z -
+        worldPosition.z;
+
+      const distance =
+        Math.sqrt(
+          dx * dx +
+          dz * dz
+        );
+
+      if (
+        distance <
+        nearestDistance
+      ) {
+        nearestDistance =
+          distance;
+
+        nearestConsole =
+          consoleData;
+      }
+    }
+
+    /* =====================================================
+       YA HAY UNA CONSOLA ACTIVA
+    ===================================================== */
+
+    if (
+      activeConsoleId.current
+    ) {
+      /*
+        Buscamos específicamente la consola
+        que estaba activa.
+
+        Le damos un radio de salida algo mayor
+        para evitar parpadeos.
+      */
+
+      const activeData =
+        PLAYSTATION_CONSOLES.find(
+          (item) =>
+            item.id ===
+            activeConsoleId.current
+        );
+
+      const activeNode =
+        activeData
+          ? consoleRefs.current[
+              activeData.id
+            ]
+          : null;
+
+      if (
+        activeData &&
+        activeNode
+      ) {
+        activeNode.getWorldPosition(
+          worldPosition
+        );
+
+        const activeDx =
+          player.x -
+          worldPosition.x;
+
+        const activeDz =
+          player.z -
+          worldPosition.z;
+
+        const activeDistance =
+          Math.sqrt(
+            activeDx *
+              activeDx +
+            activeDz *
+              activeDz
+          );
+
+        /*
+          Seguimos dentro del radio de esa consola.
+        */
+
+        if (
+          activeDistance <=
+          CONSOLE_EXIT_DISTANCE
+        ) {
+          /*
+            Pero si otra consola está claramente
+            más cerca y ya entró en su radio,
+            cambiamos de consola.
+          */
+
+          if (
+            nearestConsole &&
+            nearestConsole.id !==
+              activeData.id &&
+            nearestDistance <=
+              CONSOLE_INTERACTION_DISTANCE
+          ) {
+            activeConsoleId.current =
+              nearestConsole.id;
+
+            window.dispatchEvent(
+              new CustomEvent(
+                "freaky:console-near",
+                {
+                  detail: {
+                    near: true,
+
+                    console:
+                      nearestConsole,
+                  },
+                }
+              )
+            );
+          }
+
+          return;
+        }
+      }
+    }
+
+    /* =====================================================
+       ENTRAMOS EN UNA CONSOLA
+    ===================================================== */
+
+    if (
+      nearestConsole &&
+      nearestDistance <=
+        CONSOLE_INTERACTION_DISTANCE
+    ) {
+      if (
+        activeConsoleId.current !==
+        nearestConsole.id
+      ) {
+        activeConsoleId.current =
+          nearestConsole.id;
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "freaky:console-near",
+            {
+              detail: {
+                near: true,
+
+                console:
+                  nearestConsole,
+              },
+            }
+          )
+        );
+      }
+
+      return;
+    }
+
+    /* =====================================================
+       SALIMOS DE TODAS
+    ===================================================== */
+
+    if (
+      activeConsoleId.current
+    ) {
+      activeConsoleId.current =
+        null;
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "freaky:console-near",
+          {
+            detail: {
+              near: false,
+              console: null,
+            },
+          }
+        )
+      );
+    }
+  });
 
   return (
     <group>
@@ -1193,21 +1377,9 @@ function PlayStationStand() {
               data={
                 consoleData
               }
-              selected={
-                selectedConsole?.id ===
-                consoleData.id
+              registerRef={
+                registerConsoleRef
               }
-              onSelect={(
-                data
-              ) => {
-                setGamesConsole(
-                  null
-                );
-
-                setSelectedConsole(
-                  data
-                );
-              }}
             />
           )
         )}
@@ -1242,78 +1414,6 @@ function PlayStationStand() {
           emissiveIntensity={0.5}
         />
       </mesh>
-
-      {/* ===================================================
-          MINI FICHA
-      =================================================== */}
-
-      {selectedConsole && (
-        <Html
-          center
-          position={[
-            0,
-            5.15,
-            1.3,
-          ]}
-          style={{
-            pointerEvents:
-              "auto",
-          }}
-        >
-          <ConsoleMiniCard
-            consoleData={
-              selectedConsole
-            }
-            onClose={() => {
-              setSelectedConsole(
-                null
-              );
-            }}
-            onOpenGames={
-              handleOpenGames
-            }
-            onOpenFullCard={
-              handleOpenFullCard
-            }
-            onOpenVideo={
-              handleOpenVideo
-            }
-          />
-        </Html>
-      )}
-
-      {/* ===================================================
-          CATÁLOGO DE JUEGOS
-      =================================================== */}
-
-      {gamesConsole && (
-        <Html
-          fullscreen
-          style={{
-            pointerEvents:
-              "auto",
-
-            zIndex: 10000,
-          }}
-        >
-          <PlatformGamesOverlay
-            platformId={
-              gamesConsole.platformId
-            }
-            platformName={
-              gamesConsole.name
-            }
-            onClose={() => {
-              setGamesConsole(
-                null
-              );
-            }}
-            onOpenGame={
-              handleOpenGame
-            }
-          />
-        </Html>
-      )}
     </group>
   );
 }
@@ -1379,7 +1479,7 @@ function XboxStand() {
 }
 
 /* =========================================================
-   VR
+   VR — META + VALVE
 ========================================================= */
 
 function VRStand() {
@@ -1483,7 +1583,7 @@ function VRStand() {
 }
 
 /* =========================================================
-   HISTORIC PEDESTAL
+   EXPOSICIÓN HISTÓRICA
 ========================================================= */
 
 function HistoricPedestal({
@@ -1621,8 +1721,6 @@ function HistoricPedestal({
 function HistoryStand() {
   return (
     <group>
-      {/* BASE */}
-
       <RoundedBox
         args={[
           HISTORY_WIDTH,
@@ -1641,8 +1739,6 @@ function HistoryStand() {
           color="#111318"
         />
       </RoundedBox>
-
-      {/* PARED */}
 
       <mesh
         position={[
@@ -1670,8 +1766,6 @@ function HistoryStand() {
         />
       </mesh>
 
-      {/* MARCO */}
-
       <RoundedBox
         args={[
           HISTORY_WIDTH,
@@ -1694,8 +1788,6 @@ function HistoryStand() {
           metalness={0.2}
         />
       </RoundedBox>
-
-      {/* COLOR */}
 
       <mesh
         position={[
