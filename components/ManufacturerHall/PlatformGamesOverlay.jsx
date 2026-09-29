@@ -2,16 +2,22 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
 /* =========================================================
    FREAKY WORLD
    PLATFORM GAMES OVERLAY
+
+   - catálogo por plataforma
+   - paginación
+   - búsqueda remota
+   - conserva estado al abrir una ficha
+   - responsive vertical / horizontal
 ========================================================= */
 
 const PAGE_SIZE = 24;
+const SEARCH_DELAY = 320;
 
 /* =========================================================
    VIEWPORT
@@ -137,6 +143,9 @@ function getCover(game) {
     game?.cover?.large ||
     game?.cover?.medium ||
     game?.cover?.small ||
+    game?.coverLargeUrl ||
+    game?.coverMediumUrl ||
+    game?.coverSmallUrl ||
     null
   );
 }
@@ -202,6 +211,8 @@ function GameCard({
           "manipulation",
       }}
     >
+      {/* PORTADA */}
+
       <div
         style={{
           position:
@@ -223,7 +234,8 @@ function GameCard({
               cover
             }
             alt={
-              game.name
+              game?.name ||
+              "Juego"
             }
             loading="lazy"
             draggable={
@@ -282,9 +294,12 @@ function GameCard({
                 0.45,
             }}
           >
-            {game.name}
+            {game?.name ||
+              "Sin portada"}
           </div>
         )}
+
+        {/* PUNTUACIÓN */}
 
         {score && (
           <div
@@ -358,6 +373,8 @@ function GameCard({
         )}
       </div>
 
+      {/* INFO */}
+
       <div
         style={{
           padding:
@@ -397,7 +414,8 @@ function GameCard({
               760,
           }}
         >
-          {game.name}
+          {game?.name ||
+            "Juego"}
         </div>
 
         <div
@@ -425,7 +443,7 @@ function GameCard({
           }}
         >
           <span>
-            {game.year ||
+            {game?.year ||
               "—"}
           </span>
 
@@ -444,8 +462,8 @@ function GameCard({
                 "ellipsis",
             }}
           >
-            {game.developer ||
-              game.publisher ||
+            {game?.developer ||
+              game?.publisher ||
               ""}
           </span>
         </div>
@@ -463,6 +481,14 @@ export default function PlatformGamesOverlay({
   platformName,
   onClose,
   onOpenGame,
+
+  /*
+    Cuando FullGameOverlay está encima,
+    este catálogo sigue montado pero
+    queda suspendido.
+  */
+
+  suspended = false,
 }) {
   const [
     viewport,
@@ -499,6 +525,16 @@ export default function PlatformGamesOverlay({
   const [
     search,
     setSearch,
+  ] = useState("");
+
+  /*
+    Búsqueda que realmente mandamos
+    al servidor después del debounce.
+  */
+
+  const [
+    debouncedSearch,
+    setDebouncedSearch,
   ] = useState("");
 
   /* =======================================================
@@ -558,33 +594,87 @@ export default function PlatformGamesOverlay({
     430;
 
   /* =======================================================
-     RESET
+     RESET AL CAMBIAR CONSOLA
   ======================================================= */
 
   useEffect(() => {
     setGames([]);
+
     setPage(1);
+
     setHasMore(false);
+
     setError(null);
+
     setSearch("");
+
+    setDebouncedSearch("");
   }, [
     platformId,
   ]);
 
   /* =======================================================
-     ESC
+     DEBOUNCE BUSCADOR
+
+     Cada vez que escribimos:
+     - esperamos un instante
+     - volvemos a página 1
+     - mandamos q a la API
   ======================================================= */
 
   useEffect(() => {
+    const timer =
+      window.setTimeout(
+        () => {
+          const normalized =
+            search.trim();
+
+          setPage(1);
+
+          setDebouncedSearch(
+            normalized
+          );
+        },
+        SEARCH_DELAY
+      );
+
+    return () => {
+      window.clearTimeout(
+        timer
+      );
+    };
+  }, [
+    search,
+  ]);
+
+  /* =======================================================
+     ESC
+
+     MUY IMPORTANTE:
+     si hay una ficha de juego encima,
+     este overlay NO debe reaccionar.
+  ======================================================= */
+
+  useEffect(() => {
+    if (
+      suspended
+    ) {
+      return;
+    }
+
     function handleKeyDown(
       event
     ) {
       if (
-        event.key ===
+        event.key !==
         "Escape"
       ) {
-        onClose?.();
+        return;
       }
+
+      event.preventDefault();
+
+      onClose?.();
     }
 
     window.addEventListener(
@@ -600,47 +690,99 @@ export default function PlatformGamesOverlay({
     };
   }, [
     onClose,
+    suspended,
   ]);
 
   /* =======================================================
      FETCH
+
+     AHORA LA BÚSQUEDA VA AL SERVIDOR.
+
+     Ejemplo:
+
+     /api/platform-games
+       ?platform=7
+       &q=metal gear
+       &page=1
+       &limit=24
   ======================================================= */
 
   useEffect(() => {
-    if (!platformId) {
+    if (
+      !platformId
+    ) {
       return;
     }
 
     let cancelled =
       false;
 
+    const controller =
+      new AbortController();
+
     async function loadGames() {
       try {
         setLoading(true);
+
         setError(null);
+
+        const params =
+          new URLSearchParams();
+
+        params.set(
+          "platform",
+          String(platformId)
+        );
+
+        params.set(
+          "page",
+          String(page)
+        );
+
+        params.set(
+          "limit",
+          String(PAGE_SIZE)
+        );
+
+        if (
+          debouncedSearch
+        ) {
+          params.set(
+            "q",
+            debouncedSearch
+          );
+        }
 
         const response =
           await fetch(
-            `/api/platform-games?platform=${encodeURIComponent(
-              platformId
-            )}&page=${page}&limit=${PAGE_SIZE}`,
+            `/api/platform-games?${params.toString()}`,
             {
+              method:
+                "GET",
+
               cache:
                 "no-store",
+
+              signal:
+                controller.signal,
             }
           );
 
         const data =
           await response.json();
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
           throw new Error(
             data?.error ||
               "No se pudieron cargar los juegos."
           );
         }
 
-        if (cancelled) {
+        if (
+          cancelled
+        ) {
           return;
         }
 
@@ -661,7 +803,16 @@ export default function PlatformGamesOverlay({
       } catch (
         loadError
       ) {
-        if (cancelled) {
+        if (
+          loadError?.name ===
+          "AbortError"
+        ) {
+          return;
+        }
+
+        if (
+          cancelled
+        ) {
           return;
         }
 
@@ -672,7 +823,9 @@ export default function PlatformGamesOverlay({
             : "Error cargando juegos."
         );
       } finally {
-        if (!cancelled) {
+        if (
+          !cancelled
+        ) {
           setLoading(false);
         }
       }
@@ -682,48 +835,14 @@ export default function PlatformGamesOverlay({
 
     return () => {
       cancelled = true;
+
+      controller.abort();
     };
   }, [
     platformId,
     page,
+    debouncedSearch,
   ]);
-
-  /* =======================================================
-     BÚSQUEDA
-  ======================================================= */
-
-  const visibleGames =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return games;
-      }
-
-      return games.filter(
-        (game) => {
-          const haystack = [
-            game?.name,
-            game?.developer,
-            game?.publisher,
-            game?.year,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          return haystack.includes(
-            query
-          );
-        }
-      );
-    }, [
-      games,
-      search,
-    ]);
 
   /* =======================================================
      MEDIDAS
@@ -737,15 +856,18 @@ export default function PlatformGamesOverlay({
   const panelHeight =
     Math.max(
       260,
+
       viewport.height -
         outerPadding * 2
     );
 
   /* =======================================================
-     SIN ID
+     SIN PLATFORM ID
   ======================================================= */
 
-  if (!platformId) {
+  if (
+    !platformId
+  ) {
     return (
       <div
         style={{
@@ -827,9 +949,27 @@ export default function PlatformGamesOverlay({
 
         padding:
           outerPadding,
+
+        /*
+          Si hay FullGameOverlay encima:
+          mantenemos este componente vivo
+          pero no recibe interacciones.
+        */
+
+        pointerEvents:
+          suspended
+            ? "none"
+            : "auto",
+
+        visibility:
+          suspended
+            ? "hidden"
+            : "visible",
       }}
       onClick={
-        onClose
+        suspended
+          ? undefined
+          : onClose
       }
     >
       <div
@@ -846,9 +986,9 @@ export default function PlatformGamesOverlay({
         }}
         onClick={(
           event
-        ) =>
-          event.stopPropagation()
-        }
+        ) => {
+          event.stopPropagation();
+        }}
       >
         {/* =================================================
             HEADER
@@ -859,7 +999,8 @@ export default function PlatformGamesOverlay({
             position:
               "sticky",
 
-            top: 0,
+            top:
+              0,
 
             zIndex:
               10,
@@ -941,6 +1082,8 @@ export default function PlatformGamesOverlay({
             </div>
           </div>
 
+          {/* BUSCADOR */}
+
           <div
             style={{
               marginTop:
@@ -955,13 +1098,18 @@ export default function PlatformGamesOverlay({
               }
               onChange={(
                 event
-              ) =>
+              ) => {
                 setSearch(
                   event.target
                     .value
-                )
+                );
+              }}
+              placeholder={`Buscar en todo ${platformName || "el catálogo"}...`}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={
+                false
               }
-              placeholder="Buscar..."
               style={{
                 width:
                   "100%",
@@ -993,8 +1141,8 @@ export default function PlatformGamesOverlay({
                   "#ffffff",
 
                 /*
-                  16px evita el zoom automático
-                  de Safari/iPhone al enfocar.
+                  16px evita zoom automático
+                  de Safari/iPhone.
                 */
 
                 fontSize:
@@ -1002,6 +1150,33 @@ export default function PlatformGamesOverlay({
               }}
             />
           </div>
+
+          {/* ESTADO DE BÚSQUEDA */}
+
+          {debouncedSearch && (
+            <div
+              style={{
+                marginTop:
+                  7,
+
+                fontSize:
+                  9,
+
+                color:
+                  "#7f8a90",
+              }}
+            >
+              Buscando en todo el catálogo:{" "}
+              <strong
+                style={{
+                  color:
+                    "#d5dadd",
+                }}
+              >
+                {debouncedSearch}
+              </strong>
+            </div>
+          )}
         </div>
 
         {/* =================================================
@@ -1016,6 +1191,8 @@ export default function PlatformGamesOverlay({
                 : 18,
           }}
         >
+          {/* LOADING */}
+
           {loading && (
             <div
               style={{
@@ -1032,9 +1209,13 @@ export default function PlatformGamesOverlay({
                   0.55,
               }}
             >
-              Cargando juegos...
+              {debouncedSearch
+                ? "Buscando juegos..."
+                : "Cargando juegos..."}
             </div>
           )}
+
+          {/* ERROR */}
 
           {!loading &&
             error && (
@@ -1066,9 +1247,11 @@ export default function PlatformGamesOverlay({
               </div>
             )}
 
+          {/* SIN RESULTADOS */}
+
           {!loading &&
             !error &&
-            visibleGames.length ===
+            games.length ===
               0 && (
               <div
                 style={{
@@ -1085,13 +1268,17 @@ export default function PlatformGamesOverlay({
                     0.5,
                 }}
               >
-                No hay juegos para mostrar.
+                {debouncedSearch
+                  ? `No encontramos "${debouncedSearch}" en ${platformName || "esta plataforma"}.`
+                  : "No hay juegos para mostrar."}
               </div>
             )}
 
+          {/* GRID */}
+
           {!loading &&
             !error &&
-            visibleGames.length >
+            games.length >
               0 && (
               <div
                 style={{
@@ -1109,7 +1296,7 @@ export default function PlatformGamesOverlay({
                       : 12,
                 }}
               >
-                {visibleGames.map(
+                {games.map(
                   (game) => (
                     <GameCard
                       key={
@@ -1130,7 +1317,9 @@ export default function PlatformGamesOverlay({
               </div>
             )}
 
-          {/* PAGINACIÓN */}
+          {/* =================================================
+              PAGINACIÓN
+          ================================================= */}
 
           {!loading &&
             !error &&
@@ -1181,6 +1370,11 @@ export default function PlatformGamesOverlay({
                       page <= 1
                         ? 0.3
                         : 1,
+
+                    cursor:
+                      page <= 1
+                        ? "default"
+                        : "pointer",
                   }}
                 >
                   ‹
@@ -1225,6 +1419,11 @@ export default function PlatformGamesOverlay({
                       hasMore
                         ? 1
                         : 0.3,
+
+                    cursor:
+                      hasMore
+                        ? "pointer"
+                        : "default",
                   }}
                 >
                   ›
@@ -1382,9 +1581,6 @@ const paginationButtonStyle = {
 
   fontSize:
     22,
-
-  cursor:
-    "pointer",
 
   touchAction:
     "manipulation",
