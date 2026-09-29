@@ -14,6 +14,7 @@ import {
 } from "@react-three/drei";
 
 import ConsoleMiniCard from "./ConsoleMiniCard";
+import PlatformGamesOverlay from "./PlatformGamesOverlay";
 
 /* =========================================================
    FREAKY WORLD
@@ -35,22 +36,21 @@ const HISTORY_HEIGHT = 7.6;
 /* =========================================================
    PLAYSTATION DATA
 
-   platformId:
-   queda preparado para enlazar más adelante
-   con la plataforma real de nuestra base / IGDB.
+   platformId usa los IDs de plataforma de IGDB
+   que estamos utilizando en Tierra Vicio.
 
-   imageUrl:
-   más adelante lo completa el enriquecedor.
-
-   videos:
-   más adelante lo completa el enriquecedor automático.
+   PS1 = 7
+   PS2 = 8
+   PS3 = 9
+   PS4 = 48
+   PS5 = 167
 ========================================================= */
 
 const PLAYSTATION_CONSOLES = [
   {
     id: "ps1",
 
-    platformId: null,
+    platformId: 7,
 
     name: "PlayStation",
     short: "PS1",
@@ -70,7 +70,7 @@ const PLAYSTATION_CONSOLES = [
   {
     id: "ps2",
 
-    platformId: null,
+    platformId: 8,
 
     name: "PlayStation 2",
     short: "PS2",
@@ -90,7 +90,7 @@ const PLAYSTATION_CONSOLES = [
   {
     id: "ps3",
 
-    platformId: null,
+    platformId: 9,
 
     name: "PlayStation 3",
     short: "PS3",
@@ -110,7 +110,7 @@ const PLAYSTATION_CONSOLES = [
   {
     id: "ps4",
 
-    platformId: null,
+    platformId: 48,
 
     name: "PlayStation 4",
     short: "PS4",
@@ -130,7 +130,7 @@ const PLAYSTATION_CONSOLES = [
   {
     id: "ps5",
 
-    platformId: null,
+    platformId: 167,
 
     name: "PlayStation 5",
     short: "PS5",
@@ -779,7 +779,7 @@ function ConsoleExhibit({
 }
 
 /* =========================================================
-   ESTRUCTURA DE STAND LATERAL
+   ESTRUCTURA STAND
 ========================================================= */
 
 function LargeStandShell({
@@ -811,13 +811,15 @@ function LargeStandShell({
         />
       </RoundedBox>
 
-      {/* PARED TRASERA */}
+      {/* PARED */}
 
       <mesh
         position={[
           0,
+
           SIDE_STAND_HEIGHT /
             2,
+
           -SIDE_STAND_DEPTH /
               2 +
             0.12,
@@ -901,7 +903,7 @@ function LargeStandShell({
         />
       </RoundedBox>
 
-      {/* VIGA SUPERIOR */}
+      {/* VIGA */}
 
       <RoundedBox
         args={[
@@ -913,6 +915,7 @@ function LargeStandShell({
         smoothness={3}
         position={[
           0,
+
           SIDE_STAND_HEIGHT -
             0.2,
 
@@ -930,11 +933,12 @@ function LargeStandShell({
         />
       </RoundedBox>
 
-      {/* COLOR DE MARCA */}
+      {/* COLOR */}
 
       <mesh
         position={[
           0,
+
           SIDE_STAND_HEIGHT -
             0.18,
 
@@ -949,6 +953,7 @@ function LargeStandShell({
               1.3,
 
             0.16,
+
             0.09,
           ]}
         />
@@ -965,7 +970,9 @@ function LargeStandShell({
       <Text
         position={[
           0,
+
           5.55,
+
           -SIDE_STAND_DEPTH /
               2 +
             0.28,
@@ -980,7 +987,9 @@ function LargeStandShell({
       <Text
         position={[
           0,
+
           4.85,
+
           -SIDE_STAND_DEPTH /
               2 +
             0.28,
@@ -1005,24 +1014,48 @@ function PlayStationStand() {
     setSelectedConsole,
   ] = useState(null);
 
+  const [
+    gamesConsole,
+    setGamesConsole,
+  ] = useState(null);
+
+  /* =======================================================
+     JUEGOS
+  ======================================================= */
+
   function handleOpenGames(
     consoleData
   ) {
-    console.log(
-      "Abrir juegos de:",
-      consoleData.name,
-      consoleData.platformId
+    /*
+      Cerramos la mini ficha
+      y abrimos el catálogo.
+    */
+
+    setSelectedConsole(
+      null
+    );
+
+    setGamesConsole(
+      consoleData
     );
   }
+
+  /* =======================================================
+     FICHA COMPLETA
+  ======================================================= */
 
   function handleOpenFullCard(
     consoleData
   ) {
     console.log(
       "Abrir ficha completa:",
-      consoleData.name
+      consoleData
     );
   }
+
+  /* =======================================================
+     VIDEO
+  ======================================================= */
 
   function handleOpenVideo(
     video
@@ -1031,6 +1064,25 @@ function PlayStationStand() {
       "Abrir video:",
       video
     );
+  }
+
+  /* =======================================================
+     JUEGO
+  ======================================================= */
+
+  function handleOpenGame(
+    game
+  ) {
+    console.log(
+      "Abrir ficha de juego:",
+      game
+    );
+
+    /*
+      En el siguiente paso
+      conectaremos esto con
+      la ficha real del juego.
+    */
   }
 
   return (
@@ -1043,7 +1095,9 @@ function PlayStationStand() {
         }
       />
 
-      {/* PANEL BLANCO */}
+      {/* ===================================================
+          PANEL BLANCO
+      =================================================== */}
 
       <RoundedBox
         args={[
@@ -1065,7 +1119,9 @@ function PlayStationStand() {
         />
       </RoundedBox>
 
-      {/* SÍMBOLOS */}
+      {/* ===================================================
+          SÍMBOLOS
+      =================================================== */}
 
       <Text
         position={[
@@ -1115,7 +1171,9 @@ function PlayStationStand() {
         □
       </Text>
 
-      {/* CONSOLAS */}
+      {/* ===================================================
+          CONSOLAS
+      =================================================== */}
 
       <group
         position={[
@@ -1139,15 +1197,25 @@ function PlayStationStand() {
                 selectedConsole?.id ===
                 consoleData.id
               }
-              onSelect={
-                setSelectedConsole
-              }
+              onSelect={(
+                data
+              ) => {
+                setGamesConsole(
+                  null
+                );
+
+                setSelectedConsole(
+                  data
+                );
+              }}
             />
           )
         )}
       </group>
 
-      {/* LÍNEA DE ENTRADA */}
+      {/* ===================================================
+          LÍNEA ENTRADA
+      =================================================== */}
 
       <mesh
         position={[
@@ -1176,7 +1244,7 @@ function PlayStationStand() {
       </mesh>
 
       {/* ===================================================
-          MINI FICHA NUEVA
+          MINI FICHA
       =================================================== */}
 
       {selectedConsole && (
@@ -1209,6 +1277,39 @@ function PlayStationStand() {
             }
             onOpenVideo={
               handleOpenVideo
+            }
+          />
+        </Html>
+      )}
+
+      {/* ===================================================
+          CATÁLOGO DE JUEGOS
+      =================================================== */}
+
+      {gamesConsole && (
+        <Html
+          fullscreen
+          style={{
+            pointerEvents:
+              "auto",
+
+            zIndex: 10000,
+          }}
+        >
+          <PlatformGamesOverlay
+            platformId={
+              gamesConsole.platformId
+            }
+            platformName={
+              gamesConsole.name
+            }
+            onClose={() => {
+              setGamesConsole(
+                null
+              );
+            }}
+            onOpenGame={
+              handleOpenGame
             }
           />
         </Html>
@@ -1278,7 +1379,7 @@ function XboxStand() {
 }
 
 /* =========================================================
-   VR — META + VALVE
+   VR
 ========================================================= */
 
 function VRStand() {
@@ -1287,7 +1388,9 @@ function VRStand() {
       <LargeStandShell
         title="REALIDAD VIRTUAL"
         subtitle="META · VALVE · PC VR"
-        accent={COLORS.vr}
+        accent={
+          COLORS.vr
+        }
       />
 
       <RoundedBox
@@ -1380,7 +1483,7 @@ function VRStand() {
 }
 
 /* =========================================================
-   EXPOSICIÓN HISTÓRICA
+   HISTORIC PEDESTAL
 ========================================================= */
 
 function HistoricPedestal({
@@ -1419,7 +1522,7 @@ function HistoricPedestal({
       </RoundedBox>
 
       {type ===
-        "arcade" ? (
+      "arcade" ? (
         <group
           position={[
             0,
@@ -1518,6 +1621,8 @@ function HistoricPedestal({
 function HistoryStand() {
   return (
     <group>
+      {/* BASE */}
+
       <RoundedBox
         args={[
           HISTORY_WIDTH,
@@ -1537,11 +1642,15 @@ function HistoryStand() {
         />
       </RoundedBox>
 
+      {/* PARED */}
+
       <mesh
         position={[
           0,
+
           HISTORY_HEIGHT /
             2,
+
           -HISTORY_DEPTH /
               2 +
             0.1,
@@ -1561,6 +1670,8 @@ function HistoryStand() {
         />
       </mesh>
 
+      {/* MARCO */}
+
       <RoundedBox
         args={[
           HISTORY_WIDTH,
@@ -1571,8 +1682,10 @@ function HistoryStand() {
         smoothness={3}
         position={[
           0,
+
           HISTORY_HEIGHT -
             0.25,
+
           3.95,
         ]}
       >
@@ -1582,11 +1695,15 @@ function HistoryStand() {
         />
       </RoundedBox>
 
+      {/* COLOR */}
+
       <mesh
         position={[
           0,
+
           HISTORY_HEIGHT -
             0.22,
+
           4.54,
         ]}
       >
@@ -1594,14 +1711,20 @@ function HistoryStand() {
           args={[
             HISTORY_WIDTH -
               1.5,
+
             0.16,
+
             0.08,
           ]}
         />
 
         <meshStandardMaterial
-          color={COLORS.history}
-          emissive={COLORS.history}
+          color={
+            COLORS.history
+          }
+          emissive={
+            COLORS.history
+          }
           emissiveIntensity={0.35}
         />
       </mesh>
@@ -1665,7 +1788,9 @@ function HistoryStand() {
 export default function ManufacturerStand() {
   return (
     <group>
-      {/* CARTEL ENTRADA */}
+      {/* ===================================================
+          CARTEL
+      =================================================== */}
 
       <Text
         position={[
@@ -1701,7 +1826,9 @@ export default function ManufacturerStand() {
         CONSOLAS · REALIDAD VIRTUAL · HISTORIA
       </Text>
 
-      {/* PASILLO */}
+      {/* ===================================================
+          PASILLO
+      =================================================== */}
 
       <RoundedBox
         args={[
@@ -1743,7 +1870,9 @@ export default function ManufacturerStand() {
         />
       </mesh>
 
-      {/* PLAYSTATION */}
+      {/* ===================================================
+          PLAYSTATION
+      =================================================== */}
 
       <group
         position={[
@@ -1760,7 +1889,9 @@ export default function ManufacturerStand() {
         <PlayStationStand />
       </group>
 
-      {/* XBOX */}
+      {/* ===================================================
+          XBOX
+      =================================================== */}
 
       <group
         position={[
@@ -1777,7 +1908,9 @@ export default function ManufacturerStand() {
         <XboxStand />
       </group>
 
-      {/* NINTENDO */}
+      {/* ===================================================
+          NINTENDO
+      =================================================== */}
 
       <group
         position={[
@@ -1794,7 +1927,9 @@ export default function ManufacturerStand() {
         <NintendoStand />
       </group>
 
-      {/* VR */}
+      {/* ===================================================
+          VR
+      =================================================== */}
 
       <group
         position={[
@@ -1811,7 +1946,9 @@ export default function ManufacturerStand() {
         <VRStand />
       </group>
 
-      {/* HISTORIA */}
+      {/* ===================================================
+          HISTORIA
+      =================================================== */}
 
       <group
         position={[
