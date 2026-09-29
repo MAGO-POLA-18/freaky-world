@@ -93,6 +93,21 @@ export default function WorldScene() {
     setOpenedConsole,
   ] = useState(null);
 
+  /*
+    IMPORTANTE:
+
+    Cuando abrimos un juego desde el catálogo,
+    consoleGames NO se pone a null.
+
+    El catálogo queda vivo debajo de
+    FullGameOverlay y conserva:
+
+    - página
+    - búsqueda
+    - scroll
+    - juegos cargados
+  */
+
   const [
     consoleGames,
     setConsoleGames,
@@ -158,6 +173,18 @@ export default function WorldScene() {
   const isVideoWall =
     nearbyGame?.id ===
     "featured-video-screen";
+
+  /*
+    Si FullGame está abierto y además sigue existiendo
+    consoleGames, sabemos que esa ficha salió del catálogo
+    de una consola.
+  */
+
+  const fullGameFromConsole =
+    Boolean(
+      fullGame &&
+      consoleGames
+    );
 
   /* =======================================================
      DETENER JUGADOR
@@ -312,7 +339,7 @@ export default function WorldScene() {
   }, []);
 
   /* =======================================================
-     ABRIR FICHA COMPLETA JUEGO
+     ABRIR FICHA COMPLETA DESDE OTROS COMPONENTES
   ======================================================= */
 
   useEffect(() => {
@@ -329,6 +356,12 @@ export default function WorldScene() {
       stopPlayer();
 
       setSearchOpen(false);
+
+      /*
+        Esta señal viene de fuera del catálogo
+        de consola, por lo que cerramos contexto
+        de hardware.
+      */
 
       setOpenedConsole(null);
       setConsoleGames(null);
@@ -398,6 +431,7 @@ export default function WorldScene() {
         stopPlayer();
 
         setSearchOpen(false);
+
         setOpenedGame(null);
 
         setOpenedConsole(null);
@@ -411,7 +445,7 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     ABRIR JUEGO
+     ABRIR JUEGO DESDE EL MUNDO
   ======================================================= */
 
   const openGame =
@@ -473,13 +507,15 @@ export default function WorldScene() {
     ]);
 
   /* =======================================================
-     JUEGOS DE CONSOLA
+     ABRIR CATÁLOGO DE CONSOLA
   ======================================================= */
 
   const openConsoleGames =
     useCallback(
       (consoleData) => {
-        if (!consoleData) {
+        if (
+          !consoleData
+        ) {
           return;
         }
 
@@ -496,19 +532,28 @@ export default function WorldScene() {
       ]
     );
 
+  /* =======================================================
+     CERRAR CATÁLOGO
+     → vuelve a mini ficha
+  ======================================================= */
+
   const closeConsoleGames =
     useCallback(() => {
       stopPlayer();
 
+      const consoleData =
+        consoleGames;
+
+      setFullGame(null);
+      setConsoleGames(null);
+
       if (
-        consoleGames
+        consoleData
       ) {
         setOpenedConsole(
-          consoleGames
+          consoleData
         );
       }
-
-      setConsoleGames(null);
     }, [
       consoleGames,
       stopPlayer,
@@ -545,22 +590,31 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     JUEGO DESDE CONSOLA
+     ABRIR JUEGO DESDE CATÁLOGO
+
+     CLAVE:
+     NO cerramos consoleGames.
+
+     PlatformGamesOverlay queda montado debajo.
   ======================================================= */
 
   const openGameFromConsole =
     useCallback(
       (game) => {
-        if (!game?.id) {
+        if (
+          !game?.id
+        ) {
           return;
         }
 
         stopPlayer();
 
-        setConsoleGames(null);
         setOpenedConsole(null);
-
         setOpenedGame(null);
+
+        /*
+          consoleGames se mantiene.
+        */
 
         setFullGame(game);
       },
@@ -570,7 +624,83 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     CERRAR JUEGO
+     ATRÁS DESDE FICHA COMPLETA
+
+     Si venimos de consola:
+     ficha juego → catálogo conservado.
+
+     Si venimos del mundo:
+     vuelve a ficha rápida.
+  ======================================================= */
+
+  const backFromFullGame =
+    useCallback(() => {
+      stopPlayer();
+
+      if (
+        fullGameFromConsole
+      ) {
+        /*
+          NO tocamos consoleGames.
+          Solo retiramos la ficha de juego.
+        */
+
+        setFullGame(null);
+
+        return;
+      }
+
+      setFullGame(null);
+    }, [
+      fullGameFromConsole,
+      stopPlayer,
+    ]);
+
+  /* =======================================================
+     X DESDE FICHA COMPLETA
+
+     Si venimos de consola:
+     ficha juego → mini ficha consola.
+
+     Si no:
+     → mundo 3D.
+  ======================================================= */
+
+  const closeFullGame =
+    useCallback(() => {
+      stopPlayer();
+
+      if (
+        fullGameFromConsole
+      ) {
+        const consoleData =
+          consoleGames;
+
+        setFullGame(null);
+        setConsoleGames(null);
+
+        if (
+          consoleData
+        ) {
+          setOpenedConsole(
+            consoleData
+          );
+        }
+
+        return;
+      }
+
+      setSearchOpen(false);
+      setFullGame(null);
+      setOpenedGame(null);
+    }, [
+      fullGameFromConsole,
+      consoleGames,
+      stopPlayer,
+    ]);
+
+  /* =======================================================
+     CERRAR JUEGO NORMAL
   ======================================================= */
 
   const closeGame =
@@ -578,19 +708,8 @@ export default function WorldScene() {
       stopPlayer();
 
       setSearchOpen(false);
-
       setFullGame(null);
-
       setOpenedGame(null);
-    }, [
-      stopPlayer,
-    ]);
-
-  const backToQuickGame =
-    useCallback(() => {
-      stopPlayer();
-
-      setFullGame(null);
     }, [
       stopPlayer,
     ]);
@@ -605,6 +724,7 @@ export default function WorldScene() {
 
       setOpenedConsole(null);
       setConsoleGames(null);
+      setFullGame(null);
     }, [
       stopPlayer,
     ]);
@@ -617,16 +737,30 @@ export default function WorldScene() {
     const handleKey = (
       event
     ) => {
-      if (searchOpen) {
+      if (
+        searchOpen
+      ) {
         return;
       }
 
-      /* ESC */
+      /* ===================================================
+         ESC
+      =================================================== */
 
       if (
         event.code ===
         "Escape"
       ) {
+        if (
+          fullGame
+        ) {
+          event.preventDefault();
+
+          closeFullGame();
+
+          return;
+        }
+
         if (
           consoleGames
         ) {
@@ -648,8 +782,7 @@ export default function WorldScene() {
         }
 
         if (
-          openedGame ||
-          fullGame
+          openedGame
         ) {
           event.preventDefault();
 
@@ -659,7 +792,9 @@ export default function WorldScene() {
         }
       }
 
-      /* E */
+      /* ===================================================
+         E
+      =================================================== */
 
       if (
         event.code ===
@@ -687,7 +822,9 @@ export default function WorldScene() {
         }
       }
 
-      /* BUSCADOR */
+      /* ===================================================
+         BUSCADOR
+      =================================================== */
 
       if (
         event.code ===
@@ -704,7 +841,9 @@ export default function WorldScene() {
             HTMLTextAreaElement ||
           target?.isContentEditable;
 
-        if (!editing) {
+        if (
+          !editing
+        ) {
           event.preventDefault();
 
           openSearch();
@@ -713,7 +852,9 @@ export default function WorldScene() {
         }
       }
 
-      /* FPS */
+      /* ===================================================
+         FPS
+      =================================================== */
 
       if (
         event.code ===
@@ -753,12 +894,12 @@ export default function WorldScene() {
 
     openGame,
     openConsole,
-
     openSearch,
 
     closeGame,
     closeConsole,
     closeConsoleGames,
+    closeFullGame,
   ]);
 
   /* =======================================================
@@ -776,7 +917,9 @@ export default function WorldScene() {
           "0"
         )}:00`;
 
-  if (!deviceReady) {
+  if (
+    !deviceReady
+  ) {
     return null;
   }
 
@@ -842,7 +985,8 @@ export default function WorldScene() {
                 justifyContent:
                   "space-between",
 
-                gap: 16,
+                gap:
+                  16,
               }}
             >
               <div>
@@ -1314,7 +1458,8 @@ export default function WorldScene() {
                 position:
                   "fixed",
 
-                right: 14,
+                right:
+                  14,
 
                 bottom:
                   150,
@@ -1322,16 +1467,14 @@ export default function WorldScene() {
                 zIndex:
                   101,
 
-                width: 52,
-                minWidth: 52,
-                maxWidth: 52,
+                width:
+                  52,
 
-                height: 52,
-                minHeight: 52,
-                maxHeight: 52,
+                height:
+                  52,
 
-                margin: 0,
-                padding: 0,
+                padding:
+                  0,
 
                 display:
                   "grid",
@@ -1351,12 +1494,6 @@ export default function WorldScene() {
                 backdropFilter:
                   "blur(10px)",
 
-                WebkitBackdropFilter:
-                  "blur(10px)",
-
-                boxShadow:
-                  "0 5px 18px rgba(0,0,0,.30)",
-
                 color:
                   "#fff",
 
@@ -1366,23 +1503,11 @@ export default function WorldScene() {
                 fontWeight:
                   800,
 
-                lineHeight:
-                  1,
-
                 cursor:
                   "pointer",
 
                 touchAction:
                   "manipulation",
-
-                userSelect:
-                  "none",
-
-                WebkitUserSelect:
-                  "none",
-
-                boxSizing:
-                  "border-box",
               }}
             >
               ↗
@@ -1443,23 +1568,8 @@ export default function WorldScene() {
                 width:
                   52,
 
-                minWidth:
-                  52,
-
-                maxWidth:
-                  52,
-
                 height:
                   52,
-
-                minHeight:
-                  52,
-
-                maxHeight:
-                  52,
-
-                margin:
-                  0,
 
                 padding:
                   0,
@@ -1482,12 +1592,6 @@ export default function WorldScene() {
                 backdropFilter:
                   "blur(10px)",
 
-                WebkitBackdropFilter:
-                  "blur(10px)",
-
-                boxShadow:
-                  "0 5px 18px rgba(0,0,0,.30)",
-
                 color:
                   "#fff",
 
@@ -1497,23 +1601,11 @@ export default function WorldScene() {
                 fontWeight:
                   800,
 
-                lineHeight:
-                  1,
-
                 cursor:
                   "pointer",
 
                 touchAction:
                   "manipulation",
-
-                userSelect:
-                  "none",
-
-                WebkitUserSelect:
-                  "none",
-
-                boxSizing:
-                  "border-box",
               }}
             >
               ↗
@@ -1586,9 +1678,6 @@ export default function WorldScene() {
               background:
                 "rgba(5,8,12,.84)",
 
-              backdropFilter:
-                "blur(10px)",
-
               color:
                 "#fff",
 
@@ -1600,9 +1689,6 @@ export default function WorldScene() {
 
               cursor:
                 "pointer",
-
-              touchAction:
-                "manipulation",
             }}
           >
             ↗ Abrir en 2D
@@ -1610,7 +1696,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          BUSCADOR GLOBAL
+          BUSCADOR
       =================================================== */}
 
       <GameSearchOverlay
@@ -1635,7 +1721,8 @@ export default function WorldScene() {
             position:
               "fixed",
 
-            inset: 0,
+            inset:
+              0,
 
             zIndex:
               9000,
@@ -1661,9 +1748,6 @@ export default function WorldScene() {
             backdropFilter:
               "blur(5px)",
 
-            WebkitBackdropFilter:
-              "blur(5px)",
-
             overflow:
               "auto",
           }}
@@ -1672,13 +1756,6 @@ export default function WorldScene() {
           }
         >
           <div
-            style={{
-              maxWidth:
-                "100%",
-
-              maxHeight:
-                "100%",
-            }}
             onClick={(
               event
             ) => {
@@ -1707,7 +1784,10 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          JUEGOS DE CONSOLA
+          CATÁLOGO CONSOLA
+
+          Permanece montado incluso cuando
+          FullGameOverlay está encima.
       =================================================== */}
 
       {consoleGames && (
@@ -1724,11 +1804,22 @@ export default function WorldScene() {
           onOpenGame={
             openGameFromConsole
           }
+
+          /*
+            En el siguiente archivo usaremos esta
+            propiedad para desactivar Escape mientras
+            una ficha de juego está encima.
+          */
+          suspended={
+            Boolean(
+              fullGame
+            )
+          }
         />
       )}
 
       {/* ===================================================
-          OVERLAYS JUEGOS
+          FICHA COMPLETA JUEGO
       =================================================== */}
 
       {fullGame ? (
@@ -1736,11 +1827,32 @@ export default function WorldScene() {
           game={
             fullGame
           }
-          onClose={
-            closeGame
-          }
+
+          /*
+            ←
+
+            Si venimos del catálogo:
+            vuelve al catálogo conservado.
+
+            Si FullGameOverlay tiene historial
+            de similares, primero gestiona ese
+            historial internamente.
+          */
           onBack={
-            backToQuickGame
+            backFromFullGame
+          }
+
+          /*
+            X
+
+            Desde catálogo:
+            vuelve a mini ficha consola.
+
+            Desde el mundo:
+            vuelve al mundo.
+          */
+          onClose={
+            closeFullGame
           }
         />
       ) : openedGame?.overlayType ===
