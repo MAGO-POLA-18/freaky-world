@@ -13,6 +13,8 @@ import {
   Text,
 } from "@react-three/drei";
 
+import ConsoleMiniCard from "./ConsoleMiniCard";
+
 /* =========================================================
    FREAKY WORLD
    MANUFACTURER HALL
@@ -32,48 +34,117 @@ const HISTORY_HEIGHT = 7.6;
 
 /* =========================================================
    PLAYSTATION DATA
+
+   platformId:
+   queda preparado para enlazar más adelante
+   con la plataforma real de nuestra base / IGDB.
+
+   imageUrl:
+   más adelante lo completa el enriquecedor.
+
+   videos:
+   más adelante lo completa el enriquecedor automático.
 ========================================================= */
 
 const PLAYSTATION_CONSOLES = [
   {
     id: "ps1",
+
+    platformId: null,
+
     name: "PlayStation",
     short: "PS1",
+
+    manufacturer: "Sony",
+
     year: "1994",
     generation: "5ª generación",
+
     x: -7,
+
+    imageUrl: null,
+
+    videos: [],
   },
+
   {
     id: "ps2",
+
+    platformId: null,
+
     name: "PlayStation 2",
     short: "PS2",
+
+    manufacturer: "Sony",
+
     year: "2000",
     generation: "6ª generación",
+
     x: -3.5,
+
+    imageUrl: null,
+
+    videos: [],
   },
+
   {
     id: "ps3",
+
+    platformId: null,
+
     name: "PlayStation 3",
     short: "PS3",
+
+    manufacturer: "Sony",
+
     year: "2006",
     generation: "7ª generación",
+
     x: 0,
+
+    imageUrl: null,
+
+    videos: [],
   },
+
   {
     id: "ps4",
+
+    platformId: null,
+
     name: "PlayStation 4",
     short: "PS4",
+
+    manufacturer: "Sony",
+
     year: "2013",
     generation: "8ª generación",
+
     x: 3.5,
+
+    imageUrl: null,
+
+    videos: [],
   },
+
   {
     id: "ps5",
+
+    platformId: null,
+
     name: "PlayStation 5",
     short: "PS5",
+
+    manufacturer: "Sony",
+
     year: "2020",
     generation: "9ª generación",
+
     x: 7,
+
+    imageUrl: null,
+
+    videos: [],
   },
 ];
 
@@ -83,210 +154,25 @@ const PLAYSTATION_CONSOLES = [
 
 const COLORS = {
   floor: "#111318",
+
   wall: "#1c2027",
+
   structure: "#262b34",
+
   text: "#ffffff",
+
   muted: "#777e8b",
 
   playstation: "#1673ff",
+
   nintendo: "#e60012",
+
   xbox: "#107c10",
+
   vr: "#7b61ff",
+
   history: "#d68a27",
 };
-
-/* =========================================================
-   INFO CELL
-========================================================= */
-
-function InfoCell({
-  label,
-  value,
-}) {
-  return (
-    <div
-      style={{
-        background:
-          "rgba(255,255,255,0.06)",
-        borderRadius: 10,
-        padding: 10,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 9,
-          textTransform: "uppercase",
-          letterSpacing: 1,
-          opacity: 0.45,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginTop: 3,
-          fontSize: 12,
-          fontWeight: 700,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   INFO PANEL
-========================================================= */
-
-function ConsoleInfoPanel({
-  consoleData,
-  onClose,
-}) {
-  if (!consoleData) {
-    return null;
-  }
-
-  return (
-    <Html
-      center
-      position={[
-        0,
-        5.1,
-        1.2,
-      ]}
-      style={{
-        pointerEvents: "auto",
-      }}
-    >
-      <div
-        style={{
-          width: 300,
-          padding: 18,
-
-          background:
-            "rgba(8,10,18,0.96)",
-
-          color: "white",
-
-          border:
-            "1px solid rgba(255,255,255,0.18)",
-
-          borderRadius: 18,
-
-          boxShadow:
-            "0 20px 60px rgba(0,0,0,0.55)",
-
-          backdropFilter:
-            "blur(14px)",
-
-          fontFamily:
-            "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems:
-              "flex-start",
-            gap: 14,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 10,
-                letterSpacing: 1.5,
-                opacity: 0.55,
-                marginBottom: 5,
-              }}
-            >
-              SONY · PLAYSTATION
-            </div>
-
-            <div
-              style={{
-                fontSize: 21,
-                fontWeight: 800,
-              }}
-            >
-              {consoleData.name}
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            style={{
-              width: 30,
-              height: 30,
-              border: 0,
-              borderRadius: 999,
-
-              background:
-                "rgba(255,255,255,0.1)",
-
-              color: "white",
-
-              cursor: "pointer",
-              fontSize: 17,
-            }}
-          >
-            ×
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "1fr 1fr",
-            gap: 8,
-            marginTop: 16,
-          }}
-        >
-          <InfoCell
-            label="Lanzamiento"
-            value={
-              consoleData.year
-            }
-          />
-
-          <InfoCell
-            label="Generación"
-            value={
-              consoleData.generation
-            }
-          />
-        </div>
-
-        <button
-          style={{
-            width: "100%",
-            marginTop: 16,
-            padding: "11px 14px",
-
-            border: 0,
-            borderRadius: 12,
-
-            background:
-              "#ffffff",
-
-            color:
-              "#080a12",
-
-            fontWeight: 800,
-            cursor: "pointer",
-          }}
-        >
-          Abrir ficha completa
-        </button>
-      </div>
-    </Html>
-  );
-}
 
 /* =========================================================
    PEDESTAL
@@ -1119,6 +1005,34 @@ function PlayStationStand() {
     setSelectedConsole,
   ] = useState(null);
 
+  function handleOpenGames(
+    consoleData
+  ) {
+    console.log(
+      "Abrir juegos de:",
+      consoleData.name,
+      consoleData.platformId
+    );
+  }
+
+  function handleOpenFullCard(
+    consoleData
+  ) {
+    console.log(
+      "Abrir ficha completa:",
+      consoleData.name
+    );
+  }
+
+  function handleOpenVideo(
+    video
+  ) {
+    console.log(
+      "Abrir video:",
+      video
+    );
+  }
+
   return (
     <group>
       <LargeStandShell
@@ -1261,17 +1175,43 @@ function PlayStationStand() {
         />
       </mesh>
 
+      {/* ===================================================
+          MINI FICHA NUEVA
+      =================================================== */}
+
       {selectedConsole && (
-        <ConsoleInfoPanel
-          consoleData={
-            selectedConsole
-          }
-          onClose={() =>
-            setSelectedConsole(
-              null
-            )
-          }
-        />
+        <Html
+          center
+          position={[
+            0,
+            5.15,
+            1.3,
+          ]}
+          style={{
+            pointerEvents:
+              "auto",
+          }}
+        >
+          <ConsoleMiniCard
+            consoleData={
+              selectedConsole
+            }
+            onClose={() => {
+              setSelectedConsole(
+                null
+              );
+            }}
+            onOpenGames={
+              handleOpenGames
+            }
+            onOpenFullCard={
+              handleOpenFullCard
+            }
+            onOpenVideo={
+              handleOpenVideo
+            }
+          />
+        </Html>
       )}
     </group>
   );
@@ -1349,8 +1289,6 @@ function VRStand() {
         subtitle="META · VALVE · PC VR"
         accent={COLORS.vr}
       />
-
-      {/* DOS ÁREAS INTERNAS */}
 
       <RoundedBox
         args={[
@@ -1480,8 +1418,6 @@ function HistoricPedestal({
         />
       </RoundedBox>
 
-      {/* PLACEHOLDER DE OBJETO */}
-
       {type ===
         "arcade" ? (
         <group
@@ -1575,11 +1511,13 @@ function HistoricPedestal({
   );
 }
 
+/* =========================================================
+   HISTORY
+========================================================= */
+
 function HistoryStand() {
   return (
     <group>
-      {/* BASE */}
-
       <RoundedBox
         args={[
           HISTORY_WIDTH,
@@ -1598,8 +1536,6 @@ function HistoryStand() {
           color="#111318"
         />
       </RoundedBox>
-
-      {/* PARED */}
 
       <mesh
         position={[
@@ -1624,8 +1560,6 @@ function HistoryStand() {
           roughness={0.62}
         />
       </mesh>
-
-      {/* MARCO SUPERIOR */}
 
       <RoundedBox
         args={[
@@ -1696,8 +1630,6 @@ function HistoryStand() {
         CONSOLAS Y MÁQUINAS QUE DEJARON HUELLA
       </Text>
 
-      {/* PIEZAS HISTÓRICAS PROVISIONALES */}
-
       <HistoricPedestal
         x={-10}
         label="ATARI"
@@ -1733,9 +1665,7 @@ function HistoryStand() {
 export default function ManufacturerStand() {
   return (
     <group>
-      {/* ===================================================
-          CARTEL ENTRADA
-      =================================================== */}
+      {/* CARTEL ENTRADA */}
 
       <Text
         position={[
@@ -1771,9 +1701,7 @@ export default function ManufacturerStand() {
         CONSOLAS · REALIDAD VIRTUAL · HISTORIA
       </Text>
 
-      {/* ===================================================
-          PASILLO
-      =================================================== */}
+      {/* PASILLO */}
 
       <RoundedBox
         args={[
@@ -1815,10 +1743,7 @@ export default function ManufacturerStand() {
         />
       </mesh>
 
-      {/* ===================================================
-          PLAYSTATION
-          IZQUIERDA — CERCA ENTRADA
-      =================================================== */}
+      {/* PLAYSTATION */}
 
       <group
         position={[
@@ -1835,10 +1760,7 @@ export default function ManufacturerStand() {
         <PlayStationStand />
       </group>
 
-      {/* ===================================================
-          XBOX
-          DERECHA — CERCA ENTRADA
-      =================================================== */}
+      {/* XBOX */}
 
       <group
         position={[
@@ -1855,10 +1777,7 @@ export default function ManufacturerStand() {
         <XboxStand />
       </group>
 
-      {/* ===================================================
-          NINTENDO
-          IZQUIERDA — SEGUNDO BLOQUE
-      =================================================== */}
+      {/* NINTENDO */}
 
       <group
         position={[
@@ -1875,10 +1794,7 @@ export default function ManufacturerStand() {
         <NintendoStand />
       </group>
 
-      {/* ===================================================
-          VR
-          DERECHA — SEGUNDO BLOQUE
-      =================================================== */}
+      {/* VR */}
 
       <group
         position={[
@@ -1895,10 +1811,7 @@ export default function ManufacturerStand() {
         <VRStand />
       </group>
 
-      {/* ===================================================
-          HISTORIA
-          PARED DEL FONDO
-      =================================================== */}
+      {/* HISTORIA */}
 
       <group
         position={[
