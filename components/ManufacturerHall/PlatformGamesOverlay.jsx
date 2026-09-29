@@ -9,20 +9,40 @@ import {
 /* =========================================================
    FREAKY WORLD
    PLATFORM GAMES OVERLAY
-
-   Catálogo de juegos de una consola.
-
-   Espera:
-   - platformId
-   - platformName
-   - onClose
-   - onOpenGame
-
-   API:
-   /api/platform-games?platform=ID&page=1&limit=24
 ========================================================= */
 
 const PAGE_SIZE = 24;
+
+/* =========================================================
+   VIEWPORT
+========================================================= */
+
+function getViewport() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return {
+      width: 390,
+      height: 700,
+    };
+  }
+
+  const visual =
+    window.visualViewport;
+
+  return {
+    width:
+      visual?.width ||
+      window.innerWidth ||
+      390,
+
+    height:
+      visual?.height ||
+      window.innerHeight ||
+      700,
+  };
+}
 
 /* =========================================================
    SCORE
@@ -41,7 +61,9 @@ function getGameScore(game) {
     return {
       value:
         official.toFixed(1),
-      label: "OFICIAL",
+
+      label:
+        "OFICIAL",
     };
   }
 
@@ -57,7 +79,9 @@ function getGameScore(game) {
     return {
       value:
         community.toFixed(1),
-      label: "COMUNIDAD",
+
+      label:
+        "COMUNIDAD",
     };
   }
 
@@ -75,7 +99,9 @@ function getGameScore(game) {
         (total / 10).toFixed(
           1
         ),
-      label: "IGDB",
+
+      label:
+        "IGDB",
     };
   }
 
@@ -93,7 +119,9 @@ function getGameScore(game) {
         (rating / 10).toFixed(
           1
         ),
-      label: "IGDB",
+
+      label:
+        "IGDB",
     };
   }
 
@@ -120,6 +148,7 @@ function getCover(game) {
 function GameCard({
   game,
   onOpen,
+  compact,
 }) {
   const cover =
     getCover(game);
@@ -134,39 +163,55 @@ function GameCard({
         onOpen?.(game)
       }
       style={{
-        display: "block",
+        display:
+          "block",
 
-        width: "100%",
+        width:
+          "100%",
 
-        padding: 0,
+        minWidth:
+          0,
 
-        overflow: "hidden",
+        padding:
+          0,
+
+        overflow:
+          "hidden",
 
         border:
           "1px solid rgba(255,255,255,0.09)",
 
-        borderRadius: 14,
+        borderRadius:
+          compact
+            ? 11
+            : 14,
 
         background:
           "rgba(255,255,255,0.045)",
 
-        color: "#ffffff",
+        color:
+          "#ffffff",
 
-        textAlign: "left",
+        textAlign:
+          "left",
 
-        cursor: "pointer",
+        cursor:
+          "pointer",
+
+        touchAction:
+          "manipulation",
       }}
     >
-      {/* PORTADA */}
-
       <div
         style={{
           position:
             "relative",
 
-          aspectRatio: "3 / 4",
+          aspectRatio:
+            "3 / 4",
 
-          overflow: "hidden",
+          overflow:
+            "hidden",
 
           background:
             "#181b21",
@@ -174,12 +219,22 @@ function GameCard({
       >
         {cover ? (
           <img
-            src={cover}
-            alt={game.name}
+            src={
+              cover
+            }
+            alt={
+              game.name
+            }
             loading="lazy"
+            draggable={
+              false
+            }
             style={{
-              width: "100%",
-              height: "100%",
+              width:
+                "100%",
+
+              height:
+                "100%",
 
               display:
                 "block",
@@ -191,10 +246,14 @@ function GameCard({
         ) : (
           <div
             style={{
-              width: "100%",
-              height: "100%",
+              width:
+                "100%",
 
-              display: "flex",
+              height:
+                "100%",
+
+              display:
+                "flex",
 
               alignItems:
                 "center",
@@ -202,7 +261,8 @@ function GameCard({
               justifyContent:
                 "center",
 
-              padding: 12,
+              padding:
+                10,
 
               boxSizing:
                 "border-box",
@@ -210,18 +270,21 @@ function GameCard({
               textAlign:
                 "center",
 
-              fontSize: 12,
+              fontSize:
+                compact
+                  ? 10
+                  : 12,
 
-              fontWeight: 750,
+              fontWeight:
+                750,
 
-              opacity: 0.45,
+              opacity:
+                0.45,
             }}
           >
             {game.name}
           </div>
         )}
-
-        {/* SCORE */}
 
         {score && (
           <div
@@ -229,15 +292,20 @@ function GameCard({
               position:
                 "absolute",
 
-              top: 8,
-              right: 8,
+              top:
+                7,
 
-              minWidth: 37,
+              right:
+                7,
+
+              minWidth:
+                34,
 
               padding:
-                "6px 7px",
+                "5px 6px",
 
-              borderRadius: 9,
+              borderRadius:
+                8,
 
               background:
                 "rgba(6,8,12,0.88)",
@@ -254,11 +322,16 @@ function GameCard({
           >
             <div
               style={{
-                fontSize: 14,
+                fontSize:
+                  compact
+                    ? 12
+                    : 14,
 
-                lineHeight: 1,
+                lineHeight:
+                  1,
 
-                fontWeight: 850,
+                fontWeight:
+                  850,
               }}
             >
               {score.value}
@@ -266,14 +339,17 @@ function GameCard({
 
             <div
               style={{
-                marginTop: 3,
+                marginTop:
+                  3,
 
-                fontSize: 6,
+                fontSize:
+                  6,
 
                 letterSpacing:
                   0.6,
 
-                opacity: 0.5,
+                opacity:
+                  0.5,
               }}
             >
               {score.label}
@@ -282,12 +358,12 @@ function GameCard({
         )}
       </div>
 
-      {/* INFO */}
-
       <div
         style={{
           padding:
-            "10px 10px 11px",
+            compact
+              ? "8px 8px 9px"
+              : "10px 10px 11px",
         }}
       >
         <div
@@ -295,21 +371,30 @@ function GameCard({
             display:
               "-webkit-box",
 
-            minHeight: 34,
+            minHeight:
+              compact
+                ? 30
+                : 34,
 
             overflow:
               "hidden",
 
-            WebkitLineClamp: 2,
+            WebkitLineClamp:
+              2,
 
             WebkitBoxOrient:
               "vertical",
 
-            fontSize: 12,
+            fontSize:
+              compact
+                ? 10
+                : 12,
 
-            lineHeight: 1.35,
+            lineHeight:
+              1.35,
 
-            fontWeight: 760,
+            fontWeight:
+              760,
           }}
         >
           {game.name}
@@ -317,7 +402,8 @@ function GameCard({
 
         <div
           style={{
-            display: "flex",
+            display:
+              "flex",
 
             justifyContent:
               "space-between",
@@ -325,13 +411,17 @@ function GameCard({
             alignItems:
               "center",
 
-            gap: 8,
+            gap:
+              6,
 
-            marginTop: 7,
+            marginTop:
+              6,
 
-            fontSize: 9,
+            fontSize:
+              8,
 
-            opacity: 0.5,
+            opacity:
+              0.5,
           }}
         >
           <span>
@@ -341,6 +431,9 @@ function GameCard({
 
           <span
             style={{
+              minWidth:
+                0,
+
               overflow:
                 "hidden",
 
@@ -372,6 +465,13 @@ export default function PlatformGamesOverlay({
   onOpenGame,
 }) {
   const [
+    viewport,
+    setViewport,
+  ] = useState(
+    getViewport
+  );
+
+  const [
     games,
     setGames,
   ] = useState([]);
@@ -402,7 +502,63 @@ export default function PlatformGamesOverlay({
   ] = useState("");
 
   /* =======================================================
-     RESET CUANDO CAMBIA PLATAFORMA
+     VIEWPORT
+  ======================================================= */
+
+  useEffect(() => {
+    function update() {
+      setViewport(
+        getViewport()
+      );
+    }
+
+    update();
+
+    window.addEventListener(
+      "resize",
+      update
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      update
+    );
+
+    window.visualViewport
+      ?.addEventListener(
+        "resize",
+        update
+      );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        update
+      );
+
+      window.removeEventListener(
+        "orientationchange",
+        update
+      );
+
+      window.visualViewport
+        ?.removeEventListener(
+          "resize",
+          update
+        );
+    };
+  }, []);
+
+  const landscape =
+    viewport.width >
+    viewport.height;
+
+  const veryShort =
+    viewport.height <
+    430;
+
+  /* =======================================================
+     RESET
   ======================================================= */
 
   useEffect(() => {
@@ -411,10 +567,12 @@ export default function PlatformGamesOverlay({
     setHasMore(false);
     setError(null);
     setSearch("");
-  }, [platformId]);
+  }, [
+    platformId,
+  ]);
 
   /* =======================================================
-     CERRAR ESC
+     ESC
   ======================================================= */
 
   useEffect(() => {
@@ -440,7 +598,9 @@ export default function PlatformGamesOverlay({
         handleKeyDown
       );
     };
-  }, [onClose]);
+  }, [
+    onClose,
+  ]);
 
   /* =======================================================
      FETCH
@@ -451,7 +611,8 @@ export default function PlatformGamesOverlay({
       return;
     }
 
-    let cancelled = false;
+    let cancelled =
+      false;
 
     async function loadGames() {
       try {
@@ -497,7 +658,9 @@ export default function PlatformGamesOverlay({
               ?.hasMore
           )
         );
-      } catch (loadError) {
+      } catch (
+        loadError
+      ) {
         if (cancelled) {
           return;
         }
@@ -526,7 +689,7 @@ export default function PlatformGamesOverlay({
   ]);
 
   /* =======================================================
-     BÚSQUEDA LOCAL DE ESTA PÁGINA
+     BÚSQUEDA
   ======================================================= */
 
   const visibleGames =
@@ -563,20 +726,48 @@ export default function PlatformGamesOverlay({
     ]);
 
   /* =======================================================
-     SIN PLATFORM ID
+     MEDIDAS
+  ======================================================= */
+
+  const outerPadding =
+    landscape
+      ? 8
+      : 12;
+
+  const panelHeight =
+    Math.max(
+      260,
+      viewport.height -
+        outerPadding * 2
+    );
+
+  /* =======================================================
+     SIN ID
   ======================================================= */
 
   if (!platformId) {
     return (
       <div
-        style={overlayStyle}
+        style={{
+          ...overlayStyle,
+
+          padding:
+            outerPadding,
+        }}
       >
         <div
-          style={panelStyle}
+          style={{
+            ...panelStyle,
+
+            height:
+              panelHeight,
+          }}
         >
           <button
             type="button"
-            onClick={onClose}
+            onClick={
+              onClose
+            }
             style={
               closeButtonStyle
             }
@@ -586,15 +777,20 @@ export default function PlatformGamesOverlay({
 
           <div
             style={{
-              padding: 30,
+              padding:
+                30,
+
               textAlign:
                 "center",
             }}
           >
             <div
               style={{
-                fontSize: 18,
-                fontWeight: 800,
+                fontSize:
+                  18,
+
+                fontWeight:
+                  800,
               }}
             >
               Plataforma no conectada
@@ -602,16 +798,17 @@ export default function PlatformGamesOverlay({
 
             <div
               style={{
-                marginTop: 8,
+                marginTop:
+                  8,
 
-                fontSize: 12,
+                fontSize:
+                  12,
 
-                opacity: 0.55,
+                opacity:
+                  0.55,
               }}
             >
-              Todavía falta asignar el
-              platformId real de esta
-              consola.
+              Todavía falta asignar el platformId real.
             </div>
           </div>
         </div>
@@ -625,12 +822,31 @@ export default function PlatformGamesOverlay({
 
   return (
     <div
-      style={overlayStyle}
-      onClick={onClose}
+      style={{
+        ...overlayStyle,
+
+        padding:
+          outerPadding,
+      }}
+      onClick={
+        onClose
+      }
     >
       <div
-        style={panelStyle}
-        onClick={(event) =>
+        style={{
+          ...panelStyle,
+
+          height:
+            panelHeight,
+
+          borderRadius:
+            landscape
+              ? 14
+              : 20,
+        }}
+        onClick={(
+          event
+        ) =>
           event.stopPropagation()
         }
       >
@@ -645,10 +861,13 @@ export default function PlatformGamesOverlay({
 
             top: 0,
 
-            zIndex: 10,
+            zIndex:
+              10,
 
             padding:
-              "18px 18px 14px",
+              landscape
+                ? "10px 54px 10px 12px"
+                : "18px 54px 14px 18px",
 
             background:
               "rgba(11,13,18,0.97)",
@@ -666,7 +885,9 @@ export default function PlatformGamesOverlay({
           <button
             type="button"
             aria-label="Cerrar"
-            onClick={onClose}
+            onClick={
+              onClose
+            }
             style={
               closeButtonStyle
             }
@@ -674,34 +895,41 @@ export default function PlatformGamesOverlay({
             ×
           </button>
 
-          <div
-            style={{
-              paddingRight: 45,
-            }}
-          >
+          <div>
+            {!veryShort && (
+              <div
+                style={{
+                  fontSize:
+                    9,
+
+                  letterSpacing:
+                    1.5,
+
+                  textTransform:
+                    "uppercase",
+
+                  opacity:
+                    0.45,
+                }}
+              >
+                Catálogo
+              </div>
+            )}
+
             <div
               style={{
-                fontSize: 10,
+                marginTop:
+                  veryShort
+                    ? 0
+                    : 3,
 
-                letterSpacing:
-                  1.5,
+                fontSize:
+                  landscape
+                    ? 17
+                    : 23,
 
-                textTransform:
-                  "uppercase",
-
-                opacity: 0.45,
-              }}
-            >
-              Catálogo
-            </div>
-
-            <div
-              style={{
-                marginTop: 3,
-
-                fontSize: 23,
-
-                fontWeight: 850,
+                fontWeight:
+                  850,
 
                 letterSpacing:
                   -0.5,
@@ -713,15 +941,18 @@ export default function PlatformGamesOverlay({
             </div>
           </div>
 
-          {/* BUSCADOR */}
-
           <div
             style={{
-              marginTop: 14,
+              marginTop:
+                landscape
+                  ? 8
+                  : 14,
             }}
           >
             <input
-              value={search}
+              value={
+                search
+              }
               onChange={(
                 event
               ) =>
@@ -730,11 +961,15 @@ export default function PlatformGamesOverlay({
                     .value
                 )
               }
-              placeholder="Buscar en esta página..."
+              placeholder="Buscar..."
               style={{
-                width: "100%",
+                width:
+                  "100%",
 
-                height: 42,
+                height:
+                  landscape
+                    ? 38
+                    : 42,
 
                 padding:
                   "0 13px",
@@ -745,9 +980,11 @@ export default function PlatformGamesOverlay({
                 border:
                   "1px solid rgba(255,255,255,0.1)",
 
-                borderRadius: 12,
+                borderRadius:
+                  11,
 
-                outline: "none",
+                outline:
+                  "none",
 
                 background:
                   "rgba(255,255,255,0.055)",
@@ -755,7 +992,13 @@ export default function PlatformGamesOverlay({
                 color:
                   "#ffffff",
 
-                fontSize: 13,
+                /*
+                  16px evita el zoom automático
+                  de Safari/iPhone al enfocar.
+                */
+
+                fontSize:
+                  16,
               }}
             />
           </div>
@@ -767,39 +1010,41 @@ export default function PlatformGamesOverlay({
 
         <div
           style={{
-            padding: 18,
+            padding:
+              landscape
+                ? 10
+                : 18,
           }}
         >
-          {/* LOADING */}
-
           {loading && (
             <div
               style={{
                 padding:
-                  "50px 20px",
+                  "40px 20px",
 
                 textAlign:
                   "center",
 
-                fontSize: 12,
+                fontSize:
+                  12,
 
-                opacity: 0.55,
+                opacity:
+                  0.55,
               }}
             >
               Cargando juegos...
             </div>
           )}
 
-          {/* ERROR */}
-
           {!loading &&
             error && (
               <div
                 style={{
                   padding:
-                    "26px 18px",
+                    "20px 16px",
 
-                  borderRadius: 14,
+                  borderRadius:
+                    14,
 
                   background:
                     "rgba(255,80,80,0.08)",
@@ -807,9 +1052,11 @@ export default function PlatformGamesOverlay({
                   border:
                     "1px solid rgba(255,80,80,0.16)",
 
-                  fontSize: 12,
+                  fontSize:
+                    12,
 
-                  lineHeight: 1.5,
+                  lineHeight:
+                    1.5,
 
                   color:
                     "#ffbcbc",
@@ -819,8 +1066,6 @@ export default function PlatformGamesOverlay({
               </div>
             )}
 
-          {/* VACÍO */}
-
           {!loading &&
             !error &&
             visibleGames.length ===
@@ -828,22 +1073,21 @@ export default function PlatformGamesOverlay({
               <div
                 style={{
                   padding:
-                    "50px 20px",
+                    "40px 20px",
 
                   textAlign:
                     "center",
 
-                  fontSize: 12,
+                  fontSize:
+                    12,
 
-                  opacity: 0.5,
+                  opacity:
+                    0.5,
                 }}
               >
-                No hay juegos para
-                mostrar.
+                No hay juegos para mostrar.
               </div>
             )}
-
-          {/* GRID */}
 
           {!loading &&
             !error &&
@@ -851,12 +1095,18 @@ export default function PlatformGamesOverlay({
               0 && (
               <div
                 style={{
-                  display: "grid",
+                  display:
+                    "grid",
 
                   gridTemplateColumns:
-                    "repeat(auto-fill, minmax(115px, 1fr))",
+                    landscape
+                      ? "repeat(auto-fill, minmax(95px, 1fr))"
+                      : "repeat(auto-fill, minmax(115px, 1fr))",
 
-                  gap: 12,
+                  gap:
+                    landscape
+                      ? 8
+                      : 12,
                 }}
               >
                 {visibleGames.map(
@@ -865,7 +1115,12 @@ export default function PlatformGamesOverlay({
                       key={
                         game.id
                       }
-                      game={game}
+                      game={
+                        game
+                      }
+                      compact={
+                        landscape
+                      }
                       onOpen={
                         onOpenGame
                       }
@@ -875,9 +1130,7 @@ export default function PlatformGamesOverlay({
               </div>
             )}
 
-          {/* =================================================
-              PAGINACIÓN
-          ================================================= */}
+          {/* PAGINACIÓN */}
 
           {!loading &&
             !error &&
@@ -885,7 +1138,8 @@ export default function PlatformGamesOverlay({
               0 && (
               <div
                 style={{
-                  display: "flex",
+                  display:
+                    "flex",
 
                   justifyContent:
                     "center",
@@ -893,11 +1147,14 @@ export default function PlatformGamesOverlay({
                   alignItems:
                     "center",
 
-                  gap: 10,
+                  gap:
+                    10,
 
-                  marginTop: 22,
+                  marginTop:
+                    18,
 
-                  paddingBottom: 8,
+                  paddingBottom:
+                    8,
                 }}
               >
                 <button
@@ -931,14 +1188,17 @@ export default function PlatformGamesOverlay({
 
                 <div
                   style={{
-                    minWidth: 70,
+                    minWidth:
+                      70,
 
                     textAlign:
                       "center",
 
-                    fontSize: 11,
+                    fontSize:
+                      11,
 
-                    opacity: 0.6,
+                    opacity:
+                      0.6,
                   }}
                 >
                   Página {page}
@@ -982,20 +1242,23 @@ export default function PlatformGamesOverlay({
 ========================================================= */
 
 const overlayStyle = {
-  position: "fixed",
+  position:
+    "fixed",
 
-  inset: 0,
+  inset:
+    0,
 
-  zIndex: 10000,
+  zIndex:
+    10000,
 
-  display: "flex",
+  display:
+    "flex",
 
-  alignItems: "center",
+  alignItems:
+    "center",
 
   justifyContent:
     "center",
-
-  padding: 14,
 
   boxSizing:
     "border-box",
@@ -1008,23 +1271,35 @@ const overlayStyle = {
 
   WebkitBackdropFilter:
     "blur(6px)",
+
+  overflow:
+    "hidden",
 };
 
 const panelStyle = {
-  position: "relative",
+  position:
+    "relative",
 
   width:
     "min(920px, 100%)",
 
-  height:
-    "min(760px, calc(100vh - 28px))",
+  maxWidth:
+    "100%",
 
-  overflowY: "auto",
+  overflowY:
+    "auto",
+
+  overflowX:
+    "hidden",
+
+  WebkitOverflowScrolling:
+    "touch",
+
+  overscrollBehavior:
+    "contain",
 
   border:
     "1px solid rgba(255,255,255,0.12)",
-
-  borderRadius: 20,
 
   background:
     "#0b0d12",
@@ -1032,54 +1307,85 @@ const panelStyle = {
   boxShadow:
     "0 30px 100px rgba(0,0,0,0.65)",
 
-  color: "#ffffff",
+  color:
+    "#ffffff",
 
   fontFamily:
     "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
 };
 
 const closeButtonStyle = {
-  position: "absolute",
+  position:
+    "absolute",
 
-  top: 13,
-  right: 13,
+  top:
+    10,
 
-  zIndex: 20,
+  right:
+    10,
 
-  width: 34,
-  height: 34,
+  zIndex:
+    20,
 
-  padding: 0,
+  width:
+    38,
 
-  border: 0,
+  height:
+    38,
 
-  borderRadius: 999,
+  padding:
+    0,
+
+  border:
+    0,
+
+  borderRadius:
+    999,
 
   background:
     "rgba(255,255,255,0.09)",
 
-  color: "#ffffff",
+  color:
+    "#ffffff",
 
-  fontSize: 20,
+  fontSize:
+    21,
 
-  cursor: "pointer",
+  lineHeight:
+    1,
+
+  cursor:
+    "pointer",
+
+  touchAction:
+    "manipulation",
 };
 
 const paginationButtonStyle = {
-  width: 40,
-  height: 40,
+  width:
+    42,
+
+  height:
+    42,
 
   border:
     "1px solid rgba(255,255,255,0.1)",
 
-  borderRadius: 11,
+  borderRadius:
+    11,
 
   background:
     "rgba(255,255,255,0.06)",
 
-  color: "#ffffff",
+  color:
+    "#ffffff",
 
-  fontSize: 22,
+  fontSize:
+    22,
 
-  cursor: "pointer",
+  cursor:
+    "pointer",
+
+  touchAction:
+    "manipulation",
 };
