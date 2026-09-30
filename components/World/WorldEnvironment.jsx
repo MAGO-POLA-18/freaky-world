@@ -12,58 +12,39 @@ import Museum from "../Museum/Museum";
 
    ETAPA ESTRUCTURAL
 
-   AHORA:
-   - rectángulo perfectamente plano
-   - superficie visible
-   - superficie completamente caminable
-   - límites invisibles
-   - cruceta/hall colocada a la izquierda
+   - base rectangular visible
+   - superficie plana
+   - superficie caminable
+   - color tipo joystick / Family Game
+   - cruceta/hall a la izquierda
    - sin botones todavía
-
-   MÁS ADELANTE:
-   - esquinas redondeadas
-   - botones
-   - Select / Start
-   - detalles Family Game
 ========================================================= */
 
 /* =========================================================
-   DIMENSIONES DEL JOYSTICK
-
-   Proporción horizontal aproximada:
-   340 x 150
+   DIMENSIONES
 ========================================================= */
 
 const CONTROLLER_WIDTH = 340;
 const CONTROLLER_DEPTH = 150;
-
-/*
-  Espesor físico del mando.
-
-  La cara superior queda en Y = 0.
-*/
-
 const CONTROLLER_HEIGHT = 2;
 
 /* =========================================================
    SEGURIDAD
-
-   Paredes invisibles alrededor del perímetro.
-
-   Evitan que el jugador pueda caminar fuera
-   de la superficie mientras diseñamos.
 ========================================================= */
 
 const SAFETY_HEIGHT = 12;
 const SAFETY_THICKNESS = 1;
 
 /* =========================================================
-   COLORES TEMPORALES
+   COLORES TIPO JOYSTICK
 ========================================================= */
 
 const COLORS = {
-  top: "#d8d1c3",
-  side: "#a89e90",
+  top: "#d8cfbf",
+  side: "#a79b8b",
+
+  burgundy: "#8c3146",
+  burgundyDark: "#682434",
 };
 
 /* =========================================================
@@ -77,14 +58,7 @@ function ControllerBase() {
       colliders={false}
     >
       {/* ===================================================
-          BLOQUE VISUAL
-
-          IMPORTANTE:
-
-          NO usamos RoundedBox todavía.
-
-          Es un boxGeometry simple para garantizar
-          una superficie absolutamente plana.
+          BASE PRINCIPAL
       =================================================== */}
 
       <mesh
@@ -112,9 +86,37 @@ function ControllerBase() {
       </mesh>
 
       {/* ===================================================
-          COLISIÓN DE TODO EL RECTÁNGULO
+          FRANJA BORDÓ SUPERIOR
 
-          La superficie superior termina en Y = 0.
+          Solo visual.
+          No afecta la física.
+      =================================================== */}
+
+      <mesh
+        position={[
+          0,
+          0.03,
+          0,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            CONTROLLER_WIDTH - 36,
+            0.06,
+            18,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.8}
+          metalness={0.02}
+        />
+      </mesh>
+
+      {/* ===================================================
+          COLISIÓN GENERAL
       =================================================== */}
 
       <CuboidCollider
@@ -131,9 +133,10 @@ function ControllerBase() {
       />
 
       {/* ===================================================
-          BORDE INVISIBLE NORTE
+          BORDES INVISIBLES
       =================================================== */}
 
+      {/* NORTE */}
       <CuboidCollider
         position={[
           0,
@@ -148,10 +151,7 @@ function ControllerBase() {
         ]}
       />
 
-      {/* ===================================================
-          BORDE INVISIBLE SUR
-      =================================================== */}
-
+      {/* SUR */}
       <CuboidCollider
         position={[
           0,
@@ -166,10 +166,7 @@ function ControllerBase() {
         ]}
       />
 
-      {/* ===================================================
-          BORDE INVISIBLE IZQUIERDO
-      =================================================== */}
-
+      {/* IZQUIERDA */}
       <CuboidCollider
         position={[
           -CONTROLLER_WIDTH / 2 +
@@ -184,10 +181,7 @@ function ControllerBase() {
         ]}
       />
 
-      {/* ===================================================
-          BORDE INVISIBLE DERECHO
-      =================================================== */}
-
+      {/* DERECHA */}
       <CuboidCollider
         position={[
           CONTROLLER_WIDTH / 2 -
@@ -207,9 +201,6 @@ function ControllerBase() {
 
 /* =========================================================
    ILUMINACIÓN DE TRABAJO
-
-   Queremos verlo todo claramente mientras definimos
-   la escala y distribución del mando.
 ========================================================= */
 
 function WorkLights() {
@@ -221,7 +212,7 @@ function WorkLights() {
 
       <hemisphereLight
         skyColor="#ffffff"
-        groundColor="#b8b09f"
+        groundColor="#c6bbab"
         intensity={1.8}
       />
 
@@ -255,23 +246,9 @@ function WorkLights() {
 export default function WorldEnvironment() {
   return (
     <group>
-      {/* ILUMINACIÓN */}
-
       <WorkLights />
 
-      {/* ===================================================
-          JOYSTICK
-
-          Una sola superficie plana.
-      =================================================== */}
-
       <ControllerBase />
-
-      {/* ===================================================
-          CRUCETA / MAIN HALL
-
-          Museum.jsx controla su posición.
-      =================================================== */}
 
       <Museum />
     </group>
