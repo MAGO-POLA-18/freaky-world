@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const STATIONS = [
   {
@@ -8,7 +12,7 @@ const STATIONS = [
     name: "RPGN Radio",
     subtitle: "Game Music Radio",
     badge: "GAME",
-    url: "https://listen.rpgamers.net/rpgn",
+    url: "https://stream.rpgamers.net/rpgn",
   },
   {
     id: "radiosega",
@@ -17,53 +21,138 @@ const STATIONS = [
     badge: "SEGA",
     url: "https://icecast.radiosega.net/rs-mpeg.mp3",
   },
-  {
-    id: "chiptune",
-    name: "Chiptune 24/7",
-    subtitle: "8-bit · 16-bit · demoscene",
-    badge: "8BIT",
-    url: "https://radio.zelerk.com/listen/chiptune/stream.mp3",
-  },
-  {
-    id: "vapor",
-    name: "Vapor Funk",
-    subtitle: "Future funk · vaporwave",
-    badge: "VPR",
-    url: "https://radio.zelerk.com/listen/vapor/stream.mp3",
-  },
 ];
 
-const STORAGE_STATION = "tierraVicioRadioStation";
-const STORAGE_VOLUME = "tierraVicioRadioVolume";
-const STORAGE_MUTED = "tierraVicioRadioMuted";
+const STORAGE_STATION =
+  "tierraVicioRadioStation";
+
+const STORAGE_MUTED =
+  "tierraVicioRadioMuted";
+
+const MEDIA_START_EVENT =
+  "tierra-vicio-media-start";
+
+const MEDIA_END_EVENT =
+  "tierra-vicio-media-end";
 
 export default function RadioTierraVicio() {
-  const audioRef = useRef(null);
-  const userPausedRef = useRef(false);
+  const audioRef =
+    useRef(null);
 
-  const [open, setOpen] = useState(false);
-  const [stationId, setStationId] = useState("rpgn");
-  const [volume, setVolume] = useState(0.35);
-  const [muted, setMuted] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [status, setStatus] = useState("Esperando interacción");
+  const rootRef =
+    useRef(null);
+
+  const userPausedRef =
+    useRef(false);
+
+  const hiddenWasPlayingRef =
+    useRef(false);
+
+  const mediaWasPlayingRef =
+    useRef(false);
+
+  const interruptedByExternalMediaRef =
+    useRef(false);
+
+  const stationShouldResumeRef =
+    useRef(false);
+
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+
+  const [
+    stationId,
+    setStationId,
+  ] = useState("rpgn");
+
+  const [
+    muted,
+    setMuted,
+  ] = useState(false);
+
+  const [
+    playing,
+    setPlaying,
+  ] = useState(false);
+
+  const [
+    status,
+    setStatus,
+  ] = useState(
+    "Esperando interacción"
+  );
 
   const station =
-    STATIONS.find((item) => item.id === stationId) ||
+    STATIONS.find(
+      (item) =>
+        item.id ===
+        stationId
+    ) ||
     STATIONS[0];
+
+  function playRadio(
+    nextStatus =
+      "En directo"
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (
+      !audio ||
+      document.hidden
+    ) {
+      return;
+    }
+
+    audio
+      .play()
+      .then(() => {
+        setPlaying(true);
+
+        setStatus(
+          nextStatus
+        );
+      })
+      .catch(() => {
+        setPlaying(false);
+
+        setStatus(
+          "Toca ▶ para escuchar"
+        );
+      });
+  }
+
+  function pauseRadio(
+    nextStatus =
+      "Pausada"
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.pause();
+
+    setPlaying(false);
+
+    setStatus(
+      nextStatus
+    );
+  }
+
+  /* =========================================================
+     CARGAR PREFERENCIAS
+  ========================================================= */
 
   useEffect(() => {
     try {
       const savedStation =
         window.localStorage.getItem(
           STORAGE_STATION
-        );
-
-      const savedVolume =
-        Number(
-          window.localStorage.getItem(
-            STORAGE_VOLUME
-          )
         );
 
       const savedMuted =
@@ -74,7 +163,8 @@ export default function RadioTierraVicio() {
       if (
         STATIONS.some(
           (item) =>
-            item.id === savedStation
+            item.id ===
+            savedStation
         )
       ) {
         setStationId(
@@ -83,19 +173,8 @@ export default function RadioTierraVicio() {
       }
 
       if (
-        Number.isFinite(
-          savedVolume
-        ) &&
-        savedVolume >= 0 &&
-        savedVolume <= 1
-      ) {
-        setVolume(
-          savedVolume
-        );
-      }
-
-      if (
-        savedMuted === "true"
+        savedMuted ===
+        "true"
       ) {
         setMuted(true);
       }
@@ -103,6 +182,10 @@ export default function RadioTierraVicio() {
       // Preferencias opcionales.
     }
   }, []);
+
+  /* =========================================================
+     MUTE
+  ========================================================= */
 
   useEffect(() => {
     const audio =
@@ -112,18 +195,10 @@ export default function RadioTierraVicio() {
       return;
     }
 
-    audio.volume =
-      volume;
-
     audio.muted =
       muted;
 
     try {
-      window.localStorage.setItem(
-        STORAGE_VOLUME,
-        String(volume)
-      );
-
       window.localStorage.setItem(
         STORAGE_MUTED,
         String(muted)
@@ -132,9 +207,12 @@ export default function RadioTierraVicio() {
       // Preferencias opcionales.
     }
   }, [
-    volume,
     muted,
   ]);
+
+  /* =========================================================
+     GUARDAR EMISORA
+  ========================================================= */
 
   useEffect(() => {
     try {
@@ -149,6 +227,10 @@ export default function RadioTierraVicio() {
     stationId,
   ]);
 
+  /* =========================================================
+     CAMBIO DE EMISORA
+  ========================================================= */
+
   useEffect(() => {
     const audio =
       audioRef.current;
@@ -157,42 +239,37 @@ export default function RadioTierraVicio() {
       return;
     }
 
-    const wasPlaying =
-      !audio.paused;
-
     audio.src =
       station.url;
 
     audio.load();
 
-    setStatus(
-      wasPlaying
-        ? "Conectando…"
-        : "Lista"
-    );
-
     if (
-      wasPlaying
+      stationShouldResumeRef.current
     ) {
-      audio
-        .play()
-        .then(() => {
-          setPlaying(true);
-          setStatus(
-            "En directo"
-          );
-        })
-        .catch(() => {
-          setPlaying(false);
-          setStatus(
-            "Toca ▶ para escuchar"
-          );
-        });
+      stationShouldResumeRef.current =
+        false;
+
+      setStatus(
+        "Conectando…"
+      );
+
+      playRadio();
+    } else {
+      setPlaying(false);
+
+      setStatus(
+        "Lista"
+      );
     }
   }, [
     station.id,
     station.url,
   ]);
+
+  /* =========================================================
+     PRIMERA INTERACCIÓN
+  ========================================================= */
 
   useEffect(() => {
     const unlockAndPlay =
@@ -203,27 +280,13 @@ export default function RadioTierraVicio() {
         if (
           !audio ||
           userPausedRef.current ||
-          !audio.paused
+          !audio.paused ||
+          document.hidden
         ) {
           return;
         }
 
-        audio
-          .play()
-          .then(() => {
-            setPlaying(
-              true
-            );
-
-            setStatus(
-              "En directo"
-            );
-          })
-          .catch(() => {
-            setStatus(
-              "Toca ▶ para escuchar"
-            );
-          });
+        playRadio();
       };
 
     window.addEventListener(
@@ -259,6 +322,216 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
+  /* =========================================================
+     CERRAR PANEL AL TOCAR FUERA
+  ========================================================= */
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleOutsidePointer =
+      (event) => {
+        if (
+          rootRef.current &&
+          !rootRef.current.contains(
+            event.target
+          )
+        ) {
+          setOpen(false);
+        }
+      };
+
+    document.addEventListener(
+      "pointerdown",
+      handleOutsidePointer,
+      true
+    );
+
+    return () => {
+      document.removeEventListener(
+        "pointerdown",
+        handleOutsidePointer,
+        true
+      );
+    };
+  }, [
+    open,
+  ]);
+
+  /* =========================================================
+     PAUSAR AL SALIR DE LA APP / PÁGINA
+  ========================================================= */
+
+  useEffect(() => {
+    const handleVisibilityChange =
+      () => {
+        const audio =
+          audioRef.current;
+
+        if (!audio) {
+          return;
+        }
+
+        if (
+          document.hidden
+        ) {
+          hiddenWasPlayingRef.current =
+            !audio.paused &&
+            !userPausedRef.current;
+
+          if (
+            hiddenWasPlayingRef.current
+          ) {
+            pauseRadio(
+              "Pausada al salir"
+            );
+          }
+
+          setOpen(false);
+
+          return;
+        }
+
+        if (
+          hiddenWasPlayingRef.current &&
+          !userPausedRef.current
+        ) {
+          hiddenWasPlayingRef.current =
+            false;
+
+          playRadio();
+        }
+      };
+
+    const handlePageHide =
+      () => {
+        const audio =
+          audioRef.current;
+
+        if (!audio) {
+          return;
+        }
+
+        hiddenWasPlayingRef.current =
+          !audio.paused &&
+          !userPausedRef.current;
+
+        if (
+          !audio.paused
+        ) {
+          pauseRadio(
+            "Pausada al salir"
+          );
+        }
+
+        setOpen(false);
+      };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    window.addEventListener(
+      "pagehide",
+      handlePageHide
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+
+      window.removeEventListener(
+        "pagehide",
+        handlePageHide
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     COORDINACIÓN CON TRAILERS / VÍDEOS
+  ========================================================= */
+
+  useEffect(() => {
+    const handleMediaStart =
+      () => {
+        const audio =
+          audioRef.current;
+
+        if (!audio) {
+          return;
+        }
+
+        mediaWasPlayingRef.current =
+          !audio.paused &&
+          !userPausedRef.current;
+
+        interruptedByExternalMediaRef.current =
+          false;
+
+        if (
+          mediaWasPlayingRef.current
+        ) {
+          pauseRadio(
+            "Pausada por vídeo"
+          );
+        }
+      };
+
+    const handleMediaEnd =
+      () => {
+        const shouldResume =
+          (
+            mediaWasPlayingRef.current ||
+            interruptedByExternalMediaRef.current
+          ) &&
+          !userPausedRef.current &&
+          !document.hidden;
+
+        mediaWasPlayingRef.current =
+          false;
+
+        interruptedByExternalMediaRef.current =
+          false;
+
+        if (
+          shouldResume
+        ) {
+          playRadio();
+        }
+      };
+
+    window.addEventListener(
+      MEDIA_START_EVENT,
+      handleMediaStart
+    );
+
+    window.addEventListener(
+      MEDIA_END_EVENT,
+      handleMediaEnd
+    );
+
+    return () => {
+      window.removeEventListener(
+        MEDIA_START_EVENT,
+        handleMediaStart
+      );
+
+      window.removeEventListener(
+        MEDIA_END_EVENT,
+        handleMediaEnd
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     PLAY / PAUSE
+  ========================================================= */
+
   function togglePlay() {
     const audio =
       audioRef.current;
@@ -273,11 +546,16 @@ export default function RadioTierraVicio() {
       userPausedRef.current =
         true;
 
-      audio.pause();
+      mediaWasPlayingRef.current =
+        false;
 
-      setPlaying(false);
+      interruptedByExternalMediaRef.current =
+        false;
 
-      setStatus(
+      hiddenWasPlayingRef.current =
+        false;
+
+      pauseRadio(
         "Pausada"
       );
 
@@ -291,23 +569,12 @@ export default function RadioTierraVicio() {
       "Conectando…"
     );
 
-    audio
-      .play()
-      .then(() => {
-        setPlaying(true);
-
-        setStatus(
-          "En directo"
-        );
-      })
-      .catch(() => {
-        setPlaying(false);
-
-        setStatus(
-          "No se pudo reproducir"
-        );
-      });
+    playRadio();
   }
+
+  /* =========================================================
+     CAMBIAR EMISORA
+  ========================================================= */
 
   function changeStation(
     nextStationId
@@ -319,25 +586,22 @@ export default function RadioTierraVicio() {
       return;
     }
 
-    userPausedRef.current =
-      false;
+    const audio =
+      audioRef.current;
+
+    stationShouldResumeRef.current =
+      Boolean(audio) &&
+      !audio.paused &&
+      !userPausedRef.current;
 
     setStationId(
       nextStationId
     );
   }
 
-  function handleCanPlay() {
-    if (
-      !audioRef.current?.paused
-    ) {
-      setPlaying(true);
-
-      setStatus(
-        "En directo"
-      );
-    }
-  }
+  /* =========================================================
+     EVENTOS AUDIO
+  ========================================================= */
 
   function handlePlaying() {
     setPlaying(true);
@@ -354,7 +618,25 @@ export default function RadioTierraVicio() {
   }
 
   function handlePause() {
+    const audio =
+      audioRef.current;
+
     setPlaying(false);
+
+    if (
+      audio &&
+      !userPausedRef.current &&
+      !document.hidden &&
+      !hiddenWasPlayingRef.current &&
+      !mediaWasPlayingRef.current
+    ) {
+      interruptedByExternalMediaRef.current =
+        true;
+
+      setStatus(
+        "Pausada por otro audio"
+      );
+    }
   }
 
   function handleError() {
@@ -365,14 +647,22 @@ export default function RadioTierraVicio() {
     );
   }
 
+  /* =========================================================
+     UI
+  ========================================================= */
+
   return (
     <>
       <audio
-        ref={audioRef}
+        ref={
+          audioRef
+        }
         preload="none"
-        src={station.url}
-        onCanPlay={
-          handleCanPlay
+        src={
+          station.url
+        }
+        muted={
+          muted
         }
         onPlaying={
           handlePlaying
@@ -389,6 +679,9 @@ export default function RadioTierraVicio() {
       />
 
       <div
+        ref={
+          rootRef
+        }
         style={{
           position:
             "fixed",
@@ -869,121 +1162,19 @@ export default function RadioTierraVicio() {
             <div
               style={{
                 marginBottom:
-                  13,
-
-                padding:
-                  "0 2px",
-              }}
-            >
-              <div
-                style={{
-                  display:
-                    "flex",
-
-                  justifyContent:
-                    "space-between",
-
-                  marginBottom:
-                    5,
-
-                  color:
-                    "rgba(255,255,255,.56)",
-
-                  fontSize:
-                    9,
-
-                  fontWeight:
-                    850,
-                }}
-              >
-                <span>
-                  VOLUMEN
-                </span>
-
-                <span>
-                  {muted
-                    ? "MUTE"
-                    : `${Math.round(
-                        volume *
-                          100
-                      )}%`}
-                </span>
-              </div>
-
-              <input
-                aria-label="Volumen de Radio Tierra Vicio"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={
-                  volume
-                }
-                onChange={(
-                  event
-                ) => {
-                  const nextVolume =
-                    Number(
-                      event
-                        .target
-                        .value
-                    );
-
-                  setVolume(
-                    nextVolume
-                  );
-
-                  if (
-                    muted &&
-                    nextVolume >
-                      0
-                  ) {
-                    setMuted(
-                      false
-                    );
-                  }
-                }}
-                style={{
-                  width:
-                    "100%",
-
-                  height:
-                    26,
-
-                  margin:
-                    0,
-
-                  accentColor:
-                    "#5fdcff",
-
-                  cursor:
-                    "pointer",
-
-                  touchAction:
-                    "manipulation",
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                marginBottom:
                   6,
 
                 color:
-                  "rgba(255,255,255,.42)",
+                  "rgba(255,255,255,.45)",
 
                 fontSize:
-                  8,
+                  9,
 
                 fontWeight:
-                  900,
-
-                letterSpacing:
-                  ".13em",
+                  850,
               }}
             >
-              CANALES
+              EMISORAS
             </div>
 
             <div
@@ -992,7 +1183,7 @@ export default function RadioTierraVicio() {
                   "grid",
 
                 gap:
-                  5,
+                  6,
               }}
             >
               {STATIONS.map(
@@ -1001,7 +1192,7 @@ export default function RadioTierraVicio() {
                 ) => {
                   const active =
                     item.id ===
-                    stationId;
+                    station.id;
 
                   return (
                     <button
@@ -1015,36 +1206,39 @@ export default function RadioTierraVicio() {
                         )
                       }
                       style={{
-                        minHeight:
-                          40,
-
                         width:
                           "100%",
 
+                        minHeight:
+                          43,
+
                         display:
-                          "flex",
+                          "grid",
+
+                        gridTemplateColumns:
+                          "44px 1fr",
 
                         alignItems:
                           "center",
 
                         gap:
-                          8,
+                          9,
 
                         padding:
-                          "7px 8px",
+                          "7px 9px",
 
                         border:
                           active
                             ? "1px solid rgba(95,220,255,.30)"
-                            : "1px solid rgba(255,255,255,.065)",
+                            : "1px solid rgba(255,255,255,.07)",
 
                         borderRadius:
-                          9,
+                          10,
 
                         background:
                           active
                             ? "rgba(95,220,255,.09)"
-                            : "rgba(255,255,255,.03)",
+                            : "rgba(255,255,255,.035)",
 
                         color:
                           "#fff",
@@ -1061,33 +1255,25 @@ export default function RadioTierraVicio() {
                     >
                       <span
                         style={{
-                          width:
-                            37,
-
-                          height:
-                            26,
-
-                          flex:
-                            "0 0 auto",
-
                           display:
                             "grid",
 
                           placeItems:
                             "center",
 
+                          height:
+                            28,
+
                           borderRadius:
                             7,
 
                           background:
-                            active
-                              ? "rgba(95,220,255,.13)"
-                              : "rgba(255,255,255,.055)",
+                            "rgba(255,255,255,.06)",
 
                           color:
                             active
                               ? "#68e2ff"
-                              : "rgba(255,255,255,.62)",
+                              : "rgba(255,255,255,.6)",
 
                           fontSize:
                             8,
@@ -1103,15 +1289,21 @@ export default function RadioTierraVicio() {
                         style={{
                           minWidth:
                             0,
-
-                          flex:
-                            1,
                         }}
                       >
                         <span
                           style={{
                             display:
                               "block",
+
+                            overflow:
+                              "hidden",
+
+                            textOverflow:
+                              "ellipsis",
+
+                            whiteSpace:
+                              "nowrap",
 
                             fontSize:
                               11,
@@ -1129,7 +1321,7 @@ export default function RadioTierraVicio() {
                               "block",
 
                             marginTop:
-                              1,
+                              2,
 
                             overflow:
                               "hidden",
@@ -1141,29 +1333,15 @@ export default function RadioTierraVicio() {
                               "nowrap",
 
                             color:
-                              "rgba(255,255,255,.42)",
-
-                            fontSize:
-                              8,
-                          }}
-                        >
-                          {item.subtitle}
-                        </span>
-                      </span>
-
-                      {active && (
-                        <span
-                          style={{
-                            color:
-                              "#68e2ff",
+                              "rgba(255,255,255,.43)",
 
                             fontSize:
                               9,
                           }}
                         >
-                          ●
+                          {item.subtitle}
                         </span>
-                      )}
+                      </span>
                     </button>
                   );
                 }
