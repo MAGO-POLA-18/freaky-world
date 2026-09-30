@@ -965,7 +965,7 @@ function TierraVicioAvatar({
             : 0;
 
         visualRef.current.position.y =
-          -1.05 + bounce;
+          -0.96 + bounce;
       }
     }
   );
@@ -975,7 +975,7 @@ function TierraVicioAvatar({
       ref={visualRef}
       position={[
         0,
-        -1.05,
+        -0.96,
         0,
       ]}
     >
@@ -1345,13 +1345,6 @@ export default function PlayerController() {
       sprint: false,
     });
 
-  /* =======================================================
-     VECTORES REUTILIZABLES
-
-     Estos son los nuevos vectores que usaremos para
-     obtener la orientación REAL de la cámara.
-  ======================================================= */
-
   const cameraForward =
     useRef(
       new THREE.Vector3()
@@ -1471,10 +1464,6 @@ export default function PlayerController() {
       playerRuntime.body =
         body.current;
 
-      /* ===================================================
-         UI BLOQUEADA
-      =================================================== */
-
       if (
         playerInput.uiLocked
       ) {
@@ -1499,10 +1488,6 @@ export default function PlayerController() {
 
         return;
       }
-
-      /* ===================================================
-         INPUT
-      =================================================== */
 
       let inputX =
         playerInput.x || 0;
@@ -1633,34 +1618,11 @@ export default function PlayerController() {
 
       /* ===================================================
          DIRECCIÓN REAL DE CÁMARA
-
-         IMPORTANTE:
-
-         Antes usábamos solamente playerRuntime.yaw.
-
-         Eso funciona bien cuando la cámara está exactamente
-         donde "debería estar", pero CameraRig puede moverla
-         hacia delante al encontrar paredes.
-
-         Ahora usamos camera.getWorldDirection().
-
-         De esa manera:
-
-         ARRIBA en joystick
-         = hacia donde realmente estás mirando.
-
-         ABAJO
-         = hacia la cámara.
-
-         IZQUIERDA / DERECHA
-         = respecto a la imagen actual.
       =================================================== */
 
       camera.getWorldDirection(
         cameraForward.current
       );
-
-      /* ignoramos inclinación vertical */
 
       cameraForward.current.y = 0;
 
@@ -1669,14 +1631,6 @@ export default function PlayerController() {
           .lengthSq() <
         0.0001
       ) {
-        /*
-          Fallback extremadamente raro.
-
-          Si por algún motivo la cámara está
-          mirando prácticamente en vertical,
-          usamos el yaw tradicional.
-        */
-
         cameraForward.current.set(
           -Math.sin(
             playerRuntime.yaw
@@ -1691,13 +1645,6 @@ export default function PlayerController() {
       cameraForward.current
         .normalize();
 
-      /*
-        Vector derecha.
-
-        forward x up produce la derecha
-        para nuestro sistema de coordenadas.
-      */
-
       cameraRight.current
         .crossVectors(
           cameraForward.current,
@@ -1705,26 +1652,14 @@ export default function PlayerController() {
         )
         .normalize();
 
-      /* ===================================================
-         COMBINAMOS JOYSTICK + CÁMARA
-      =================================================== */
-
       movementDirection.current
         .set(0, 0, 0);
-
-      /*
-        inputY positivo = adelante
-      */
 
       movementDirection.current
         .addScaledVector(
           cameraForward.current,
           inputY
         );
-
-      /*
-        inputX positivo = derecha
-      */
 
       movementDirection.current
         .addScaledVector(
@@ -1816,13 +1751,6 @@ export default function PlayerController() {
           .lengthSq() >
           0.0001
       ) {
-        /*
-          El modelo mira hacia +Z.
-
-          Calculamos el ángulo usando
-          la dirección REAL de movimiento.
-        */
-
         targetRotation.current =
           Math.atan2(
             directionX,
@@ -1834,13 +1762,6 @@ export default function PlayerController() {
             targetRotation.current -
             visual.current
               .rotation.y;
-
-          /*
-            Elegimos siempre el giro corto.
-
-            Evita vueltas completas de 360°
-            cuando pasamos de PI a -PI.
-          */
 
           difference =
             Math.atan2(
