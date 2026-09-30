@@ -4,16 +4,30 @@ import { NextResponse } from "next/server";
    TIERRA VICIO
    JUEGOS POR PLATAFORMA
 
-   NORMAL:
+   EJEMPLOS:
+
    /api/platform-games?platform=7&page=1&limit=24
 
-   BÚSQUEDA GLOBAL DENTRO DE PLATAFORMA:
-   /api/platform-games?platform=7&q=metal%20gear&page=1&limit=24
+   /api/platform-games
+     ?platform=7
+     &q=metal%20gear
+     &sort=alpha
+     &direction=asc
+     &page=1
+     &limit=24
 
-   Usa:
-   - platforms
-   - game_platforms
-   - games
+   SORT:
+   - alpha
+   - score
+   - year
+
+   DIRECTION:
+   - asc
+   - desc
+
+   IMPORTANTE:
+   búsqueda + orden se aplican sobre TODO el catálogo
+   de la plataforma y recién después se pagina.
 ========================================================= */
 
 export const runtime = "nodejs";
@@ -26,11 +40,18 @@ export const dynamic = "force-dynamic";
 const RELATION_BATCH_SIZE = 1000;
 
 /*
-  Mantenemos pequeños los grupos de IDs
-  para no generar URLs gigantes contra PostgREST.
+  Grupos pequeños para evitar URLs gigantes
+  en PostgREST.
 */
 
 const GAME_ID_BATCH_SIZE = 100;
+
+/*
+  Evitamos lanzar demasiadas consultas
+  simultáneas a Supabase.
+*/
+
+const GAME_BATCH_CONCURRENCY = 5;
 
 /* =========================================================
    ENTORNO
@@ -91,7 +112,8 @@ async function supabaseGet(
             "application/json",
         },
 
-        cache: "no-store",
+        cache:
+          "no-store",
       }
     );
 
@@ -146,10 +168,12 @@ function parsePositiveInteger(
 }
 
 /* =========================================================
-   NORMALIZAR BÚSQUEDA
+   BÚSQUEDA
 ========================================================= */
 
-function normalizeSearch(value) {
+function normalizeSearch(
+  value
+) {
   if (!value) {
     return "";
   }
@@ -158,6 +182,41 @@ function normalizeSearch(value) {
     .trim()
     .replace(/\s+/g, " ")
     .slice(0, 120);
+}
+
+/* =========================================================
+   SORT
+========================================================= */
+
+function normalizeSort(
+  value
+) {
+  const normalized =
+    String(
+      value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (
+    normalized === "score" ||
+    normalized === "year"
+  ) {
+    return normalized;
+  }
+
+  return "alpha";
+}
+
+function normalizeDirection(
+  value
+) {
+  return String(
+    value || ""
+  ).toLowerCase() ===
+    "desc"
+    ? "desc"
+    : "asc";
 }
 
 /* =========================================================
@@ -187,7 +246,7 @@ function chunkArray(
 }
 
 /* =========================================================
-   CAMPOS DE JUEGO
+   CAMPOS
 ========================================================= */
 
 const GAME_FIELDS = [
@@ -224,7 +283,9 @@ const GAME_FIELDS = [
    FORMATO
 ========================================================= */
 
-function formatGame(game) {
+function formatGame(
+  game
+) {
   return {
     id:
       game.id,
@@ -260,7 +321,7 @@ function formatGame(game) {
 
     /*
       También dejamos las URLs planas
-      porque FullGameOverlay sabe leerlas.
+      porque FullGameOverlay puede leerlas.
     */
 
     coverSmallUrl:
@@ -299,12 +360,280 @@ function formatGame(game) {
 }
 
 /* =========================================================
-   OBTENER TODOS LOS IDS DE UNA PLATAFORMA
+   PUNTAJE USADO PARA ORDENAR
 
-   Se usa únicamente cuando hay búsqueda.
+   Mismo criterio visual del catálogo:
 
-   Así:
-   PS1 → todos sus game_id
+   1. Freaky oficial
+   2. Comunidad
+   3. Total IGDB
+   4. Rating IGDB
+========================================================= */
+
+function getSortableScore(
+  game
+) {
+  const official =
+    Number(
+      game?.freaky_official_score
+    );
+
+  if (
+    Number.isFinite(official) &&
+    official > 0
+  ) {
+    return official;
+  }
+
+  const community =
+    Number(
+      game?.community_score
+    );
+
+  if (
+    Number.isFinite(community) &&
+    community > 0
+  ) {
+    return community;
+  }
+
+  const totalRating =
+    Number(
+      game?.total_rating
+    );
+
+  if (
+    Number.isFinite(
+      totalRating
+    ) &&
+    totalRating > 0
+  ) {
+    return totalRating / 10;
+  }
+
+  const rating =
+    Number(
+      game?.rating
+    );
+
+  if (
+    Number.isFinite(rating) &&
+    rating > 0
+  ) {
+    return rating / 10;
+  }
+
+  return null;
+}
+
+/* =========================================================
+   AÑO USADO PARA ORDENAR
+========================================================= */
+
+function getSortableYear(
+  game
+) {
+  const year =
+    Number(
+      game?.release_year
+    );
+
+  if (
+    Number.isFinite(year) &&
+    year > 0
+  ) {
+    return year;
+  }
+
+  if (
+    game?.first_release_date
+  ) {
+    const date =
+      new Date(
+        game.first_release_date
+      );
+
+    const parsedYear =
+      date.getFullYear();
+
+    if (
+      Number.isFinite(
+        parsedYear
+      )
+    ) {
+      return parsedYear;
+    }
+  }
+
+  return null;
+}
+
+/* =========================================================
+   ORDEN GLOBAL
+========================================================= */
+
+function sortGames(
+  games,
+  sort,
+  direction
+) {
+  const multiplier =
+    direction === "desc"
+      ? -1
+      : 1;
+
+  return [
+    ...games,
+  ].sort(
+    (a, b) => {
+      /* ===================================================
+         PUNTAJE
+      =================================================== */
+
+      if (
+        sort === "score"
+      ) {
+        const scoreA =
+          getSortableScore(a);
+
+        const scoreB =
+          getSortableScore(b);
+
+        /*
+          Los juegos sin puntuación
+          siempre quedan al final,
+          tanto ascendente como descendente.
+        */
+
+        if (
+          scoreA === null &&
+          scoreB === null
+        ) {
+          return compareNames(
+            a,
+            b
+          );
+        }
+
+        if (
+          scoreA === null
+        ) {
+          return 1;
+        }
+
+        if (
+          scoreB === null
+        ) {
+          return -1;
+        }
+
+        if (
+          scoreA !== scoreB
+        ) {
+          return (
+            (scoreA - scoreB) *
+            multiplier
+          );
+        }
+
+        return compareNames(
+          a,
+          b
+        );
+      }
+
+      /* ===================================================
+         AÑO
+      =================================================== */
+
+      if (
+        sort === "year"
+      ) {
+        const yearA =
+          getSortableYear(a);
+
+        const yearB =
+          getSortableYear(b);
+
+        /*
+          Sin fecha siempre al final.
+        */
+
+        if (
+          yearA === null &&
+          yearB === null
+        ) {
+          return compareNames(
+            a,
+            b
+          );
+        }
+
+        if (
+          yearA === null
+        ) {
+          return 1;
+        }
+
+        if (
+          yearB === null
+        ) {
+          return -1;
+        }
+
+        if (
+          yearA !== yearB
+        ) {
+          return (
+            (yearA - yearB) *
+            multiplier
+          );
+        }
+
+        return compareNames(
+          a,
+          b
+        );
+      }
+
+      /* ===================================================
+         ALFABÉTICO
+      =================================================== */
+
+      return (
+        compareNames(
+          a,
+          b
+        ) *
+        multiplier
+      );
+    }
+  );
+}
+
+function compareNames(
+  a,
+  b
+) {
+  return String(
+    a?.name || ""
+  ).localeCompare(
+    String(
+      b?.name || ""
+    ),
+    "es",
+    {
+      sensitivity:
+        "base",
+
+      numeric:
+        true,
+    }
+  );
+}
+
+/* =========================================================
+   TODOS LOS IDS DE UNA PLATAFORMA
 ========================================================= */
 
 async function getAllPlatformGameIds(
@@ -372,16 +701,62 @@ async function getAllPlatformGameIds(
 }
 
 /* =========================================================
-   BÚSQUEDA GLOBAL DENTRO DE PLATAFORMA
-
-   1. Obtiene todos los IDs de PS1 / PS2 / etc.
-   2. Los divide en grupos pequeños.
-   3. Busca q en games.name.
-   4. Une todos los resultados.
-   5. Pagina al final.
+   CARGAR UN GRUPO DE JUEGOS
 ========================================================= */
 
-async function searchPlatformGames({
+async function loadGameBatch({
+  environment,
+  ids,
+  query,
+}) {
+  if (
+    !ids.length
+  ) {
+    return [];
+  }
+
+  const parts = [
+    "games",
+    "?select=",
+    GAME_FIELDS,
+
+    `&id=in.(${ids.join(
+      ","
+    )})`,
+
+    "&active=eq.true",
+  ];
+
+  /*
+    Si hay buscador, Supabase filtra por nombre
+    antes de devolver el grupo.
+  */
+
+  if (query) {
+    const encodedPattern =
+      encodeURIComponent(
+        `*${query}*`
+      );
+
+    parts.push(
+      `&name=ilike.${encodedPattern}`
+    );
+  }
+
+  return supabaseGet(
+    environment,
+    parts.join("")
+  );
+}
+
+/* =========================================================
+   CARGAR TODO EL CATÁLOGO DE LA PLATAFORMA
+
+   Se descargan únicamente los juegos asociados
+   a esa consola, no toda Tierra Vicio.
+========================================================= */
+
+async function loadPlatformGames({
   environment,
   platformId,
   query,
@@ -405,54 +780,57 @@ async function searchPlatformGames({
       GAME_ID_BATCH_SIZE
     );
 
-  const encodedPattern =
-    encodeURIComponent(
-      `*${query}*`
-    );
-
   const results = [];
 
   /*
-    Hacemos los grupos secuencialmente para no lanzar
-    decenas de peticiones simultáneas contra Supabase.
+    Procesamos grupos de hasta 5 consultas paralelas.
+
+    Esto es bastante más rápido que hacerlas
+    estrictamente una por una y evita lanzar
+    todas simultáneamente.
   */
 
   for (
-    const ids of batches
+    let index = 0;
+    index < batches.length;
+    index += GAME_BATCH_CONCURRENCY
   ) {
-    const rows =
-      await supabaseGet(
-        environment,
-        [
-          "games",
-          "?select=",
-          GAME_FIELDS,
-
-          `&id=in.(${ids.join(
-            ","
-          )})`,
-
-          "&active=eq.true",
-
-          `&name=ilike.${encodedPattern}`,
-
-          "&order=name.asc",
-        ].join("")
+    const group =
+      batches.slice(
+        index,
+        index +
+          GAME_BATCH_CONCURRENCY
       );
 
-    if (
-      Array.isArray(rows) &&
-      rows.length > 0
+    const responses =
+      await Promise.all(
+        group.map(
+          (ids) =>
+            loadGameBatch({
+              environment,
+              ids,
+              query,
+            })
+        )
+      );
+
+    for (
+      const rows of responses
     ) {
-      results.push(
-        ...rows
-      );
+      if (
+        Array.isArray(rows) &&
+        rows.length > 0
+      ) {
+        results.push(
+          ...rows
+        );
+      }
     }
   }
 
-  /*
-    Eliminamos posibles duplicados.
-  */
+  /* =======================================================
+     DUPLICADOS
+  ======================================================= */
 
   const uniqueById =
     new Map();
@@ -460,33 +838,24 @@ async function searchPlatformGames({
   for (
     const game of results
   ) {
-    uniqueById.set(
-      Number(game.id),
-      game
-    );
-  }
+    const id =
+      Number(
+        game?.id
+      );
 
-  /*
-    Orden alfabético estable para búsqueda.
-  */
+    if (
+      Number.isFinite(id)
+    ) {
+      uniqueById.set(
+        id,
+        game
+      );
+    }
+  }
 
   return [
     ...uniqueById.values(),
-  ].sort(
-    (a, b) =>
-      String(
-        a?.name || ""
-      ).localeCompare(
-        String(
-          b?.name || ""
-        ),
-        "es",
-        {
-          sensitivity:
-            "base",
-        }
-      )
-  );
+  ];
 }
 
 /* =========================================================
@@ -517,7 +886,9 @@ export async function GET(
         null
       );
 
-    if (!platformId) {
+    if (
+      !platformId
+    ) {
       return NextResponse.json(
         {
           ok: false,
@@ -539,6 +910,24 @@ export async function GET(
       normalizeSearch(
         searchParams.get(
           "q"
+        )
+      );
+
+    /* =====================================================
+       ORDEN
+    ===================================================== */
+
+    const sort =
+      normalizeSort(
+        searchParams.get(
+          "sort"
+        )
+      );
+
+    const direction =
+      normalizeDirection(
+        searchParams.get(
+          "direction"
         )
       );
 
@@ -616,280 +1005,50 @@ export async function GET(
       platformRows[0];
 
     /* =====================================================
-       MODO BÚSQUEDA
+       CATÁLOGO COMPLETO
+
+       1. Todos los IDs de la consola
+       2. Filtrado de búsqueda si existe
+       3. Orden global
+       4. Paginación
     ===================================================== */
 
-    if (query) {
-      const matchedGames =
-        await searchPlatformGames({
-          environment,
-          platformId,
-          query,
-        });
-
-      /*
-        IMPORTANTE:
-
-        Primero buscamos en TODO el catálogo
-        de la plataforma.
-
-        Recién ahora aplicamos paginación.
-      */
-
-      const totalResults =
-        matchedGames.length;
-
-      const visibleGames =
-        matchedGames.slice(
-          offset,
-          offset + limit
-        );
-
-      const formattedGames =
-        visibleGames.map(
-          formatGame
-        );
-
-      const hasMore =
-        offset +
-          formattedGames.length <
-        totalResults;
-
-      return NextResponse.json(
-        {
-          ok: true,
-
-          source:
-            "Tierra Vicio Database",
-
-          mode:
-            "platform-games-search",
-
-          query,
-
-          platform: {
-            id:
-              platform.id,
-
-            name:
-              platform.name,
-
-            abbreviation:
-              platform.abbreviation,
-          },
-
-          count:
-            formattedGames.length,
-
-          totalResults,
-
-          games:
-            formattedGames,
-
-          pagination: {
-            page,
-
-            limit,
-
-            returned:
-              formattedGames.length,
-
-            total:
-              totalResults,
-
-            hasMore,
-
-            nextPage:
-              hasMore
-                ? page + 1
-                : null,
-
-            previousPage:
-              page > 1
-                ? page - 1
-                : null,
-          },
-        },
-        {
-          headers: {
-            "Cache-Control":
-              "public, s-maxage=60, stale-while-revalidate=300",
-          },
-        }
-      );
-    }
-
-    /* =====================================================
-       MODO NORMAL
-       SIN BÚSQUEDA
-
-       Conservamos el comportamiento rápido
-       de la API original.
-    ===================================================== */
-
-    const fetchLimit =
-      limit + 1;
-
-    const relations =
-      await supabaseGet(
+    const platformGames =
+      await loadPlatformGames({
         environment,
-        [
-          "game_platforms",
-          "?select=game_id",
+        platformId,
+        query,
+      });
 
-          `&platform_id=eq.${platformId}`,
+    const orderedGames =
+      sortGames(
+        platformGames,
+        sort,
+        direction
+      );
 
-          "&order=game_id.asc",
+    const totalResults =
+      orderedGames.length;
 
-          `&offset=${offset}`,
+    /*
+      Recién acá paginamos.
+    */
 
-          `&limit=${fetchLimit}`,
-        ].join("")
+    const visibleGames =
+      orderedGames.slice(
+        offset,
+        offset + limit
+      );
+
+    const formattedGames =
+      visibleGames.map(
+        formatGame
       );
 
     const hasMore =
-      relations.length >
-      limit;
-
-    const visibleRelations =
-      hasMore
-        ? relations.slice(
-            0,
-            limit
-          )
-        : relations;
-
-    /* =====================================================
-       SIN JUEGOS
-    ===================================================== */
-
-    if (
-      visibleRelations.length ===
-      0
-    ) {
-      return NextResponse.json(
-        {
-          ok: true,
-
-          source:
-            "Tierra Vicio Database",
-
-          mode:
-            "platform-games",
-
-          platform: {
-            id:
-              platform.id,
-
-            name:
-              platform.name,
-
-            abbreviation:
-              platform.abbreviation,
-          },
-
-          count: 0,
-
-          games: [],
-
-          pagination: {
-            page,
-
-            limit,
-
-            returned: 0,
-
-            hasMore:
-              false,
-
-            nextPage:
-              null,
-
-            previousPage:
-              page > 1
-                ? page - 1
-                : null,
-          },
-        },
-        {
-          headers: {
-            "Cache-Control":
-              "public, s-maxage=300, stale-while-revalidate=1800",
-          },
-        }
-      );
-    }
-
-    /* =====================================================
-       IDS
-    ===================================================== */
-
-    const gameIds =
-      visibleRelations
-        .map(
-          (relation) =>
-            Number(
-              relation.game_id
-            )
-        )
-        .filter(
-          (id) =>
-            Number.isFinite(
-              id
-            )
-        );
-
-    /* =====================================================
-       JUEGOS
-    ===================================================== */
-
-    const games =
-      await supabaseGet(
-        environment,
-        [
-          "games",
-          "?select=",
-          GAME_FIELDS,
-
-          `&id=in.(${gameIds.join(
-            ","
-          )})`,
-
-          "&active=eq.true",
-        ].join("")
-      );
-
-    /*
-      Supabase no garantiza que id=in.(...)
-      conserve el orden.
-
-      Reconstruimos usando game_platforms.
-    */
-
-    const gamesById =
-      new Map(
-        games.map(
-          (game) => [
-            Number(
-              game.id
-            ),
-            game,
-          ]
-        )
-      );
-
-    const orderedGames =
-      gameIds
-        .map(
-          (id) =>
-            gamesById.get(
-              id
-            )
-        )
-        .filter(Boolean)
-        .map(
-          formatGame
-        );
+      offset +
+        formattedGames.length <
+      totalResults;
 
     /* =====================================================
        RESPUESTA
@@ -903,7 +1062,16 @@ export async function GET(
           "Tierra Vicio Database",
 
         mode:
-          "platform-games",
+          query
+            ? "platform-games-search"
+            : "platform-games",
+
+        query:
+          query || null,
+
+        sort,
+
+        direction,
 
         platform: {
           id:
@@ -916,11 +1084,22 @@ export async function GET(
             platform.abbreviation,
         },
 
+        /*
+          Cantidad de esta página.
+        */
+
         count:
-          orderedGames.length,
+          formattedGames.length,
+
+        /*
+          Cantidad total después del buscador,
+          antes de paginar.
+        */
+
+        totalResults,
 
         games:
-          orderedGames,
+          formattedGames,
 
         pagination: {
           page,
@@ -928,7 +1107,10 @@ export async function GET(
           limit,
 
           returned:
-            orderedGames.length,
+            formattedGames.length,
+
+          total:
+            totalResults,
 
           hasMore,
 
@@ -946,7 +1128,9 @@ export async function GET(
       {
         headers: {
           "Cache-Control":
-            "public, s-maxage=300, stale-while-revalidate=1800",
+            query
+              ? "public, s-maxage=60, stale-while-revalidate=300"
+              : "public, s-maxage=300, stale-while-revalidate=1800",
         },
       }
     );
