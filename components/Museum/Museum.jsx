@@ -1,21 +1,29 @@
 import MainHall from "./MainHall";
 
 /* =========================================================
-   FREAKY WORLD — D-PAD / MAIN HALL
+   FREAKY WORLD — CRUCETA / MAIN HALL
 
-   El hall representa físicamente la cruceta del mando.
+   El mando mide:
+   340 x 150
 
-   Posición:
-   - lado izquierdo
-   - centrado verticalmente
-   - separado de los bordes
+   La cruceta/hall mide aproximadamente:
+   102 x 102
+
+   Por lo tanto conserva una proporción lógica
+   respecto a un mando real.
+
+   Está:
+   - a la izquierda
+   - centrada verticalmente
+   - ligeramente metida desde el borde
+   - con la entrada mirando hacia el centro del mando
 ========================================================= */
 
 export default function Museum() {
   return (
     <group
       position={[
-        -90,
+        -105,
         0,
         0,
       ]}
