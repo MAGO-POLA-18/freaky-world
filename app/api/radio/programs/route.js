@@ -28,15 +28,63 @@ const SHOWS = [
 export const revalidate = 21600;
 
 /* =========================================================
-   HELPERS
+   ENCODING
 ========================================================= */
 
-function fixMojibake(value = "") {
+function windows1252ByteFromChar(char) {
+  const code =
+    char.charCodeAt(0);
+
+  if (code <= 255) {
+    return code;
+  }
+
+  const map = {
+    8364: 0x80,
+    8218: 0x82,
+    402: 0x83,
+    8222: 0x84,
+    8230: 0x85,
+    8224: 0x86,
+    8225: 0x87,
+    710: 0x88,
+    8240: 0x89,
+    352: 0x8a,
+    8249: 0x8b,
+    338: 0x8c,
+    381: 0x8e,
+    8216: 0x91,
+    8217: 0x92,
+    8220: 0x93,
+    8221: 0x94,
+    8226: 0x95,
+    8211: 0x96,
+    8212: 0x97,
+    732: 0x98,
+    8482: 0x99,
+    353: 0x9a,
+    8250: 0x9b,
+    339: 0x9c,
+    382: 0x9e,
+    376: 0x9f,
+  };
+
+  return (
+    map[code] ??
+    0x3f
+  );
+}
+
+function fixMojibake(
+  value = ""
+) {
   const text =
     String(value);
 
   if (
-    !/[ÃÂâ]/.test(text)
+    !/[ÃÂâ]/.test(
+      text
+    )
   ) {
     return text;
   }
@@ -44,18 +92,68 @@ function fixMojibake(value = "") {
   try {
     const bytes =
       Uint8Array.from(
-        text,
-        (char) =>
-          char.charCodeAt(0)
+        [...text].map(
+          windows1252ByteFromChar
+        )
       );
 
-    return new TextDecoder(
-      "utf-8"
-    ).decode(bytes);
+    const decoded =
+      new TextDecoder(
+        "utf-8",
+        {
+          fatal: true,
+        }
+      ).decode(
+        bytes
+      );
+
+    return decoded;
   } catch {
     return text;
   }
 }
+
+function decodeXmlBuffer(
+  arrayBuffer
+) {
+  const bytes =
+    new Uint8Array(
+      arrayBuffer
+    );
+
+  const head =
+    new TextDecoder(
+      "ascii"
+    )
+      .decode(
+        bytes.slice(
+          0,
+          300
+        )
+      )
+      .toLowerCase();
+
+  if (
+    head.includes(
+      "iso-8859-1"
+    ) ||
+    head.includes(
+      "windows-1252"
+    )
+  ) {
+    return new TextDecoder(
+      "windows-1252"
+    ).decode(bytes);
+  }
+
+  return new TextDecoder(
+    "utf-8"
+  ).decode(bytes);
+}
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function decodeEntities(
   value = ""
@@ -110,26 +208,28 @@ function decodeEntities(
 function stripHtml(
   value = ""
 ) {
-  return decodeEntities(
-    String(value)
-      .replace(
-        /<br\s*\/?>/gi,
-        " "
-      )
-      .replace(
-        /<\/p>/gi,
-        " "
-      )
-      .replace(
-        /<[^>]*>/g,
-        ""
-      )
-  )
-    .replace(
-      /\s+/g,
-      " "
+  return fixMojibake(
+    decodeEntities(
+      String(value)
+        .replace(
+          /<br\s*\/?>/gi,
+          " "
+        )
+        .replace(
+          /<\/p>/gi,
+          " "
+        )
+        .replace(
+          /<[^>]*>/g,
+          ""
+        )
     )
-    .trim();
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim()
+  );
 }
 
 function getTag(
@@ -289,39 +389,28 @@ function normalizeAudioUrl(
   }
 
   let url =
-    String(value).trim();
-
-  url =
     fixMojibake(
-      url
+      String(value).trim()
     );
 
-  if (
-    url.startsWith(
-      "http://www.portalgameover.com/"
-    )
-  ) {
-    url =
-      url.replace(
-        "http://www.portalgameover.com/",
-        "https://www.portalgameover.com/"
-      );
-  }
+  url =
+    url.replace(
+      /^http:\/\/www\.portalgameover\.com\//i,
+      "https://www.portalgameover.com/"
+    );
 
-  if (
-    url.startsWith(
-      "http://portalgameover.com/"
-    )
-  ) {
-    url =
-      url.replace(
-        "http://portalgameover.com/",
-        "https://www.portalgameover.com/"
-      );
-  }
+  url =
+    url.replace(
+      /^http:\/\/portalgameover\.com\//i,
+      "https://www.portalgameover.com/"
+    );
 
   return url;
 }
+
+/* =========================================================
+   EPISODIOS
+========================================================= */
 
 function parseItems(
   xml,
@@ -420,9 +509,15 @@ function parseItems(
           badge:
             show.badge,
 
-          title,
+          title:
+            fixMojibake(
+              title
+            ),
 
-          description,
+          description:
+            fixMojibake(
+              description
+            ),
 
           audioUrl,
 
@@ -536,21 +631,10 @@ async function loadShow(
     const arrayBuffer =
       await response.arrayBuffer();
 
-    let xml;
-
-    try {
-      xml =
-        new TextDecoder(
-          "utf-8"
-        ).decode(
-          arrayBuffer
-        );
-    } catch {
-      xml =
-        new TextDecoder().decode(
-          arrayBuffer
-        );
-    }
+    const xml =
+      decodeXmlBuffer(
+        arrayBuffer
+      );
 
     const episodes =
       parseItems(
@@ -604,7 +688,7 @@ async function loadShow(
 }
 
 /* =========================================================
-   GET
+   API
 ========================================================= */
 
 export async function GET() {
