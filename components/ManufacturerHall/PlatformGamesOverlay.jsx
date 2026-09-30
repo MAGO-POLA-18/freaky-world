@@ -12,6 +12,7 @@ import {
    - catálogo por plataforma
    - paginación
    - búsqueda remota
+   - orden remoto sobre TODO el catálogo
    - conserva estado al abrir una ficha
    - responsive vertical / horizontal
 ========================================================= */
@@ -148,6 +149,38 @@ function getCover(game) {
     game?.coverSmallUrl ||
     null
   );
+}
+
+/* =========================================================
+   NOMBRE DEL ORDEN ACTIVO
+========================================================= */
+
+function getSortLabel(
+  sort,
+  direction
+) {
+  if (
+    sort === "score"
+  ) {
+    return direction ===
+      "desc"
+      ? "Puntaje ↓"
+      : "Puntaje ↑";
+  }
+
+  if (
+    sort === "year"
+  ) {
+    return direction ===
+      "desc"
+      ? "Año ↓"
+      : "Año ↑";
+  }
+
+  return direction ===
+    "desc"
+    ? "Z–A"
+    : "A–Z";
 }
 
 /* =========================================================
@@ -473,6 +506,100 @@ function GameCard({
 }
 
 /* =========================================================
+   OPCIÓN FILTRO
+========================================================= */
+
+function SortOption({
+  label,
+  active,
+  leftLabel,
+  rightLabel,
+  direction,
+  onSelect,
+}) {
+  return (
+    <div
+      style={{
+        padding:
+          "10px 0",
+
+        borderBottom:
+          "1px solid rgba(255,255,255,0.065)",
+      }}
+    >
+      <div
+        style={{
+          marginBottom:
+            7,
+
+          color:
+            active
+              ? "#ffffff"
+              : "#9aa3aa",
+
+          fontSize:
+            11,
+
+          fontWeight:
+            800,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "1fr 1fr",
+
+          gap:
+            6,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() =>
+            onSelect(
+              "asc"
+            )
+          }
+          style={
+            sortDirectionButtonStyle(
+              active &&
+                direction ===
+                  "asc"
+            )
+          }
+        >
+          {leftLabel}
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            onSelect(
+              "desc"
+            )
+          }
+          style={
+            sortDirectionButtonStyle(
+              active &&
+                direction ===
+                  "desc"
+            )
+          }
+        >
+          {rightLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
    OVERLAY
 ========================================================= */
 
@@ -481,13 +608,6 @@ export default function PlatformGamesOverlay({
   platformName,
   onClose,
   onOpenGame,
-
-  /*
-    Cuando FullGameOverlay está encima,
-    este catálogo sigue montado pero
-    queda suspendido.
-  */
-
   suspended = false,
 }) {
   const [
@@ -527,15 +647,33 @@ export default function PlatformGamesOverlay({
     setSearch,
   ] = useState("");
 
-  /*
-    Búsqueda que realmente mandamos
-    al servidor después del debounce.
-  */
-
   const [
     debouncedSearch,
     setDebouncedSearch,
   ] = useState("");
+
+  /* =======================================================
+     ORDEN
+  ======================================================= */
+
+  const [
+    sort,
+    setSort,
+  ] = useState(
+    "alpha"
+  );
+
+  const [
+    direction,
+    setDirection,
+  ] = useState(
+    "asc"
+  );
+
+  const [
+    sortOpen,
+    setSortOpen,
+  ] = useState(false);
 
   /* =======================================================
      VIEWPORT
@@ -609,17 +747,24 @@ export default function PlatformGamesOverlay({
     setSearch("");
 
     setDebouncedSearch("");
+
+    setSort(
+      "alpha"
+    );
+
+    setDirection(
+      "asc"
+    );
+
+    setSortOpen(
+      false
+    );
   }, [
     platformId,
   ]);
 
   /* =======================================================
      DEBOUNCE BUSCADOR
-
-     Cada vez que escribimos:
-     - esperamos un instante
-     - volvemos a página 1
-     - mandamos q a la API
   ======================================================= */
 
   useEffect(() => {
@@ -648,11 +793,28 @@ export default function PlatformGamesOverlay({
   ]);
 
   /* =======================================================
-     ESC
+     CAMBIAR ORDEN
+  ======================================================= */
 
-     MUY IMPORTANTE:
-     si hay una ficha de juego encima,
-     este overlay NO debe reaccionar.
+  function selectSort(
+    nextSort,
+    nextDirection
+  ) {
+    setSort(
+      nextSort
+    );
+
+    setDirection(
+      nextDirection
+    );
+
+    setPage(1);
+
+    setSortOpen(false);
+  }
+
+  /* =======================================================
+     ESC
   ======================================================= */
 
   useEffect(() => {
@@ -669,6 +831,21 @@ export default function PlatformGamesOverlay({
         event.key !==
         "Escape"
       ) {
+        return;
+      }
+
+      /*
+        Si el panel de orden está abierto,
+        primero cerramos eso.
+      */
+
+      if (
+        sortOpen
+      ) {
+        event.preventDefault();
+
+        setSortOpen(false);
+
         return;
       }
 
@@ -691,20 +868,11 @@ export default function PlatformGamesOverlay({
   }, [
     onClose,
     suspended,
+    sortOpen,
   ]);
 
   /* =======================================================
      FETCH
-
-     AHORA LA BÚSQUEDA VA AL SERVIDOR.
-
-     Ejemplo:
-
-     /api/platform-games
-       ?platform=7
-       &q=metal gear
-       &page=1
-       &limit=24
   ======================================================= */
 
   useEffect(() => {
@@ -742,6 +910,29 @@ export default function PlatformGamesOverlay({
         params.set(
           "limit",
           String(PAGE_SIZE)
+        );
+
+        /*
+          NUEVO:
+
+          sort:
+          - alpha
+          - score
+          - year
+
+          direction:
+          - asc
+          - desc
+        */
+
+        params.set(
+          "sort",
+          sort
+        );
+
+        params.set(
+          "direction",
+          direction
         );
 
         if (
@@ -842,6 +1033,8 @@ export default function PlatformGamesOverlay({
     platformId,
     page,
     debouncedSearch,
+    sort,
+    direction,
   ]);
 
   /* =======================================================
@@ -859,6 +1052,12 @@ export default function PlatformGamesOverlay({
 
       viewport.height -
         outerPadding * 2
+    );
+
+  const sortLabel =
+    getSortLabel(
+      sort,
+      direction
     );
 
   /* =======================================================
@@ -917,21 +1116,6 @@ export default function PlatformGamesOverlay({
             >
               Plataforma no conectada
             </div>
-
-            <div
-              style={{
-                marginTop:
-                  8,
-
-                fontSize:
-                  12,
-
-                opacity:
-                  0.55,
-              }}
-            >
-              Todavía falta asignar el platformId real.
-            </div>
           </div>
         </div>
       </div>
@@ -949,12 +1133,6 @@ export default function PlatformGamesOverlay({
 
         padding:
           outerPadding,
-
-        /*
-          Si hay FullGameOverlay encima:
-          mantenemos este componente vivo
-          pero no recibe interacciones.
-        */
 
         pointerEvents:
           suspended
@@ -1082,10 +1260,27 @@ export default function PlatformGamesOverlay({
             </div>
           </div>
 
-          {/* BUSCADOR */}
+          {/* ===============================================
+              BUSCADOR + FILTRO
+          =============================================== */}
 
           <div
             style={{
+              position:
+                "relative",
+
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "minmax(0,1fr) auto",
+
+              gap:
+                8,
+
+              alignItems:
+                "center",
+
               marginTop:
                 landscape
                   ? 8
@@ -1114,6 +1309,9 @@ export default function PlatformGamesOverlay({
                 width:
                   "100%",
 
+                minWidth:
+                  0,
+
                 height:
                   landscape
                     ? 38
@@ -1140,43 +1338,300 @@ export default function PlatformGamesOverlay({
                 color:
                   "#ffffff",
 
-                /*
-                  16px evita zoom automático
-                  de Safari/iPhone.
-                */
-
                 fontSize:
                   16,
               }}
             />
-          </div>
 
-          {/* ESTADO DE BÚSQUEDA */}
+            {/* BOTÓN FILTROS */}
 
-          {debouncedSearch && (
-            <div
+            <button
+              type="button"
+              aria-label="Ordenar catálogo"
+              onClick={() =>
+                setSortOpen(
+                  (current) =>
+                    !current
+                )
+              }
               style={{
-                marginTop:
-                  7,
+                height:
+                  landscape
+                    ? 38
+                    : 42,
 
-                fontSize:
-                  9,
+                minWidth:
+                  landscape
+                    ? 42
+                    : 46,
+
+                padding:
+                  landscape
+                    ? "0 10px"
+                    : "0 12px",
+
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "center",
+
+                gap:
+                  6,
+
+                border:
+                  sortOpen
+                    ? "1px solid rgba(255,255,255,.30)"
+                    : "1px solid rgba(255,255,255,.11)",
+
+                borderRadius:
+                  11,
+
+                background:
+                  sortOpen
+                    ? "rgba(255,255,255,.13)"
+                    : "rgba(255,255,255,.055)",
 
                 color:
-                  "#7f8a90",
+                  "#ffffff",
+
+                fontSize:
+                  14,
+
+                fontWeight:
+                  800,
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
               }}
             >
-              Buscando en todo el catálogo:{" "}
+              <span
+                style={{
+                  fontSize:
+                    17,
+                }}
+              >
+                ⇅
+              </span>
+
+              {!landscape && (
+                <span
+                  style={{
+                    fontSize:
+                      10,
+
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  {sortLabel}
+                </span>
+              )}
+            </button>
+
+            {/* =============================================
+                PANEL DE ORDEN
+            ============================================= */}
+
+            {sortOpen && (
+              <div
+                style={{
+                  position:
+                    "absolute",
+
+                  top:
+                    "calc(100% + 7px)",
+
+                  right:
+                    0,
+
+                  zIndex:
+                    50,
+
+                  width:
+                    Math.min(
+                      250,
+                      viewport.width -
+                        40
+                    ),
+
+                  padding:
+                    "4px 12px 8px",
+
+                  border:
+                    "1px solid rgba(255,255,255,.12)",
+
+                  borderRadius:
+                    14,
+
+                  background:
+                    "rgba(15,18,23,.985)",
+
+                  boxShadow:
+                    "0 18px 45px rgba(0,0,0,.55)",
+
+                  backdropFilter:
+                    "blur(18px)",
+
+                  WebkitBackdropFilter:
+                    "blur(18px)",
+                }}
+              >
+                <div
+                  style={{
+                    padding:
+                      "10px 0 4px",
+
+                    color:
+                      "#ffffff",
+
+                    fontSize:
+                      12,
+
+                    fontWeight:
+                      850,
+                  }}
+                >
+                  Ordenar catálogo
+                </div>
+
+                {/* ALFABÉTICO */}
+
+                <SortOption
+                  label="Alfabético"
+                  active={
+                    sort ===
+                    "alpha"
+                  }
+                  direction={
+                    direction
+                  }
+                  leftLabel="A → Z"
+                  rightLabel="Z → A"
+                  onSelect={(
+                    nextDirection
+                  ) =>
+                    selectSort(
+                      "alpha",
+                      nextDirection
+                    )
+                  }
+                />
+
+                {/* PUNTAJE */}
+
+                <SortOption
+                  label="Puntaje"
+                  active={
+                    sort ===
+                    "score"
+                  }
+                  direction={
+                    direction
+                  }
+                  leftLabel="Menor"
+                  rightLabel="Mayor"
+                  onSelect={(
+                    nextDirection
+                  ) =>
+                    selectSort(
+                      "score",
+                      nextDirection
+                    )
+                  }
+                />
+
+                {/* AÑO */}
+
+                <SortOption
+                  label="Año"
+                  active={
+                    sort ===
+                    "year"
+                  }
+                  direction={
+                    direction
+                  }
+                  leftLabel="Antiguos"
+                  rightLabel="Nuevos"
+                  onSelect={(
+                    nextDirection
+                  ) =>
+                    selectSort(
+                      "year",
+                      nextDirection
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ESTADO */}
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              flexWrap:
+                "wrap",
+
+              alignItems:
+                "center",
+
+              gap:
+                6,
+
+              marginTop:
+                7,
+
+              fontSize:
+                9,
+
+              color:
+                "#7f8a90",
+            }}
+          >
+            {debouncedSearch && (
+              <>
+                <span>
+                  Buscando:
+                </span>
+
+                <strong
+                  style={{
+                    color:
+                      "#d5dadd",
+                  }}
+                >
+                  {debouncedSearch}
+                </strong>
+
+                <span>
+                  ·
+                </span>
+              </>
+            )}
+
+            <span>
+              Orden:{" "}
               <strong
                 style={{
                   color:
                     "#d5dadd",
                 }}
               >
-                {debouncedSearch}
+                {sortLabel}
               </strong>
-            </div>
-          )}
+            </span>
+          </div>
         </div>
 
         {/* =================================================
@@ -1439,6 +1894,48 @@ export default function PlatformGamesOverlay({
 /* =========================================================
    STYLES
 ========================================================= */
+
+function sortDirectionButtonStyle(
+  active
+) {
+  return {
+    minHeight:
+      34,
+
+    padding:
+      "6px 8px",
+
+    border:
+      active
+        ? "1px solid rgba(255,255,255,.42)"
+        : "1px solid rgba(255,255,255,.08)",
+
+    borderRadius:
+      9,
+
+    background:
+      active
+        ? "#ffffff"
+        : "rgba(255,255,255,.045)",
+
+    color:
+      active
+        ? "#090b10"
+        : "#d5dade",
+
+    fontSize:
+      10,
+
+    fontWeight:
+      800,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
 
 const overlayStyle = {
   position:
