@@ -1,111 +1,557 @@
 "use client";
 
-import {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { RoundedBox } from "@react-three/drei";
 
 import {
   RigidBody,
+  CuboidCollider,
 } from "@react-three/rapier";
 
-import * as THREE from "three";
-
 import Museum from "../Museum/Museum";
-import CentralMonument from "./CentralMonument";
-import CentralGarden from "./CentralGarden";
 
 /* =========================================================
-   CAJAS INSTANCIADAS
+   FREAKY WORLD — WORLD ENVIRONMENT
+   VERSIÓN MANDO FAMILY GAME / NES-LIKE
+
+   Objetivo:
+   - el mundo entero es el joystick
+   - proporción coherente entre:
+     - cruceta / hall
+     - botones A / B
+     - select / start
+   - cambio visual / estructural
+   - sin tocar la lógica existente
 ========================================================= */
 
-function InstancedBoxes({
-  items,
-  color,
-  roughness = 1,
-  metalness = 0,
-}) {
-  const meshRef =
-    useRef(null);
+/* =========================================================
+   MEDIDAS GENERALES DEL MANDO
+========================================================= */
 
-  const dummy =
-    useMemo(
-      () =>
-        new THREE.Object3D(),
-      []
-    );
+const PAD_WIDTH = 300;
+const PAD_DEPTH = 170;
+const PAD_HEIGHT = 1.8;
 
-  useLayoutEffect(() => {
-    if (
-      !meshRef.current
-    ) {
-      return;
-    }
+/*
+  La superficie superior jugable del mando
+  queda exactamente en Y = 0.
+*/
+const PAD_TOP_Y = 0;
 
-    items.forEach(
-      (
-        item,
-        index
-      ) => {
-        dummy.position.set(
-          ...item.position
-        );
+/* =========================================================
+   COLORES
+========================================================= */
 
-        dummy.scale.set(
-          ...item.scale
-        );
+const COLORS = {
+  underFloor: "#2a2523",
 
-        dummy.updateMatrix();
+  shell: "#d6cdbd",
+  shellShadow: "#beb3a1",
 
-        meshRef.current
-          .setMatrixAt(
-            index,
-            dummy.matrix
-          );
-      }
-    );
+  inset: "#c7bca9",
+  insetDark: "#b3a693",
 
-    meshRef.current
-      .instanceMatrix
-      .needsUpdate =
-      true;
+  burgundy: "#7a2e3c",
+  burgundyDark: "#57202b",
 
-    meshRef.current
-      .computeBoundingSphere?.();
-  }, [
-    items,
-    dummy,
-  ]);
+  darkGray: "#48484c",
+  darkGray2: "#59595e",
 
+  black: "#121215",
+  blackSoft: "#202024",
+
+  textGray: "#8d867e",
+};
+
+/* =========================================================
+   POSICIONES MAESTRAS
+
+   D-pad / Hall:
+   - lo coloca Museum.jsx
+
+   Botones:
+   - suficientemente grandes para futuro uso
+   - proporcionales al hall
+========================================================= */
+
+const BUTTON_A_POS = [96, 0, -18];
+const BUTTON_B_POS = [58, 0, 18];
+
+const BUTTON_RADIUS = 27;
+
+const SELECT_POS = [-2, 0, 34];
+const START_POS = [30, 0, 34];
+
+/* =========================================================
+   SUELO INFERIOR GENERAL
+
+   Solo para no dejar vacío alrededor del mando.
+========================================================= */
+
+function UnderFloor() {
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[
-        null,
-        null,
-        items.length,
+    <RigidBody
+      type="fixed"
+      colliders="cuboid"
+    >
+      <mesh
+        position={[
+          0,
+          -2.15,
+          0,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            520,
+            2,
+            320,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.underFloor}
+          roughness={1}
+        />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+/* =========================================================
+   CUERPO PRINCIPAL DEL MANDO
+========================================================= */
+
+function ControllerShell() {
+  return (
+    <group>
+      {/* ===================================================
+          CUERPO EXTERIOR CREMA
+      =================================================== */}
+
+      <RigidBody
+        type="fixed"
+        colliders={false}
+      >
+        <RoundedBox
+          position={[
+            0,
+            -PAD_HEIGHT / 2,
+            0,
+          ]}
+          args={[
+            PAD_WIDTH,
+            PAD_HEIGHT,
+            PAD_DEPTH,
+          ]}
+          radius={9}
+          smoothness={4}
+          castShadow
+          receiveShadow
+        >
+          <meshStandardMaterial
+            color={COLORS.shell}
+            roughness={0.86}
+            metalness={0.03}
+          />
+        </RoundedBox>
+
+        <CuboidCollider
+          position={[
+            0,
+            -PAD_HEIGHT / 2,
+            0,
+          ]}
+          args={[
+            PAD_WIDTH / 2,
+            PAD_HEIGHT / 2,
+            PAD_DEPTH / 2,
+          ]}
+        />
+      </RigidBody>
+
+      {/* ===================================================
+          PLACA INTERIOR SUAVE
+
+          Unifica el "play area".
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          0,
+          -0.045,
+          0,
+        ]}
+        args={[
+          280,
+          0.09,
+          148,
+        ]}
+        radius={7}
+        smoothness={4}
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.inset}
+          roughness={0.9}
+          metalness={0.02}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          PLACA BORDÓ DERECHA
+
+          Zona visual de botones / acciones.
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          70,
+          -0.03,
+          8,
+        ]}
+        args={[
+          150,
+          0.06,
+          78,
+        ]}
+        radius={6}
+        smoothness={4}
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.82}
+          metalness={0.02}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          PLACA CENTRAL PARA SELECT / START
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          14,
+          -0.028,
+          34,
+        ]}
+        args={[
+          92,
+          0.055,
+          26,
+        ]}
+        radius={4}
+        smoothness={4}
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.insetDark}
+          roughness={0.88}
+          metalness={0.02}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          SOMBRA IZQUIERDA BAJO LA CRUCETA-HALL
+
+          Ayuda a integrarla como parte real del mando.
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          -89,
+          -0.025,
+          0,
+        ]}
+        args={[
+          118,
+          0.05,
+          118,
+        ]}
+        radius={8}
+        smoothness={4}
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.blackSoft}
+          roughness={0.95}
+          metalness={0.01}
+        />
+      </RoundedBox>
+    </group>
+  );
+}
+
+/* =========================================================
+   BOTÓN CIRCULAR
+
+   Por ahora:
+   - gran volumen visual
+   - proporcional
+   - preparado para futuro uso como sala
+
+   Se mantiene al ras del mando para no romper
+   la caminata ni exigir salto.
+========================================================= */
+
+function ActionButton({
+  position,
+  label,
+}) {
+  return (
+    <group position={position}>
+      {/* anillo exterior */}
+
+      <mesh
+        position={[
+          0,
+          -0.05,
+          0,
+        ]}
+        receiveShadow
+        castShadow
+      >
+        <cylinderGeometry
+          args={[
+            BUTTON_RADIUS,
+            BUTTON_RADIUS,
+            0.1,
+            48,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundyDark}
+          roughness={0.8}
+          metalness={0.02}
+        />
+      </mesh>
+
+      {/* cara superior */}
+
+      <mesh
+        position={[
+          0,
+          -0.03,
+          0,
+        ]}
+        receiveShadow
+        castShadow
+      >
+        <cylinderGeometry
+          args={[
+            BUTTON_RADIUS - 4,
+            BUTTON_RADIUS - 4,
+            0.06,
+            48,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.72}
+          metalness={0.04}
+        />
+      </mesh>
+
+      {/* núcleo oscuro */}
+
+      <mesh
+        position={[
+          0,
+          -0.01,
+          0,
+        ]}
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            BUTTON_RADIUS - 9,
+            BUTTON_RADIUS - 9,
+            0.02,
+            40,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.blackSoft}
+          roughness={0.94}
+          metalness={0.01}
+        />
+      </mesh>
+
+      {/* letra */}
+
+      <mesh
+        position={[
+          0,
+          0.004,
+          0,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
+      >
+        <ringGeometry
+          args={[
+            0.001,
+            0.0015,
+            8,
+          ]}
+        />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+        />
+      </mesh>
+
+      <group
+        position={[
+          0,
+          0.008,
+          0,
+        ]}
+      >
+        <mesh>
+          <boxGeometry
+            args={[
+              0.001,
+              0.001,
+              0.001,
+            ]}
+          />
+          <meshBasicMaterial
+            transparent
+            opacity={0}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+/* =========================================================
+   BOTONES SELECT / START
+========================================================= */
+
+function CenterButton({
+  position,
+  width = 24,
+  depth = 9,
+  color = COLORS.darkGray,
+}) {
+  return (
+    <RoundedBox
+      position={[
+        position[0],
+        -0.035,
+        position[2],
       ]}
+      args={[
+        width,
+        0.07,
+        depth,
+      ]}
+      radius={2.3}
+      smoothness={4}
+      castShadow
       receiveShadow
     >
-      <boxGeometry
-        args={[
-          1,
-          1,
-          1,
-        ]}
-      />
-
       <meshStandardMaterial
         color={color}
-        roughness={
-          roughness
-        }
-        metalness={
-          metalness
-        }
+        roughness={0.78}
+        metalness={0.05}
       />
-    </instancedMesh>
+    </RoundedBox>
+  );
+}
+
+/* =========================================================
+   DETALLES VISUALES
+========================================================= */
+
+function ControllerDetails() {
+  return (
+    <group>
+      {/* línea bordó inferior */}
+
+      <RoundedBox
+        position={[
+          0,
+          -0.02,
+          -54,
+        ]}
+        args={[
+          214,
+          0.04,
+          10,
+        ]}
+        radius={2}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.82}
+        />
+      </RoundedBox>
+
+      {/* línea bordó superior */}
+
+      <RoundedBox
+        position={[
+          0,
+          -0.02,
+          58,
+        ]}
+        args={[
+          214,
+          0.04,
+          8,
+        ]}
+        radius={2}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.82}
+        />
+      </RoundedBox>
+
+      {/* select */}
+
+      <CenterButton
+        position={SELECT_POS}
+        width={24}
+        depth={9}
+        color={COLORS.darkGray2}
+      />
+
+      {/* start */}
+
+      <CenterButton
+        position={START_POS}
+        width={24}
+        depth={9}
+        color={COLORS.darkGray}
+      />
+
+      {/* A */}
+
+      <ActionButton
+        position={BUTTON_A_POS}
+        label="A"
+      />
+
+      {/* B */}
+
+      <ActionButton
+        position={BUTTON_B_POS}
+        label="B"
+      />
+    </group>
   );
 }
 
@@ -114,498 +560,18 @@ function InstancedBoxes({
 ========================================================= */
 
 export default function WorldEnvironment() {
-  /* =======================================================
-     AGUA
-  ======================================================= */
-
-  const waterItems =
-    useMemo(
-      () => [
-        {
-          position: [
-            -88,
-            -0.01,
-            -88,
-          ],
-          scale: [
-            72,
-            0.08,
-            72,
-          ],
-        },
-
-        {
-          position: [
-            88,
-            -0.01,
-            -88,
-          ],
-          scale: [
-            72,
-            0.08,
-            72,
-          ],
-        },
-
-        {
-          position: [
-            -88,
-            -0.01,
-            88,
-          ],
-          scale: [
-            72,
-            0.08,
-            72,
-          ],
-        },
-
-        {
-          position: [
-            88,
-            -0.01,
-            88,
-          ],
-          scale: [
-            72,
-            0.08,
-            72,
-          ],
-        },
-      ],
-      []
-    );
-
-  /* =======================================================
-     BASE VERDE DEL PARQUE
-
-     Estas zonas quedan debajo del césped 3D.
-
-     IMPORTANTE:
-     ahora están limitadas al centro.
-
-     Ya NO llegan debajo de los edificios.
-  ======================================================= */
-
-  const gardenItems =
-    useMemo(
-      () => [
-        {
-          position: [
-            -30,
-            0.3,
-            -30,
-          ],
-          scale: [
-            29,
-            0.12,
-            29,
-          ],
-        },
-
-        {
-          position: [
-            30,
-            0.3,
-            -30,
-          ],
-          scale: [
-            29,
-            0.12,
-            29,
-          ],
-        },
-
-        {
-          position: [
-            -30,
-            0.3,
-            30,
-          ],
-          scale: [
-            29,
-            0.12,
-            29,
-          ],
-        },
-
-        {
-          position: [
-            30,
-            0.3,
-            30,
-          ],
-          scale: [
-            29,
-            0.12,
-            29,
-          ],
-        },
-      ],
-      []
-    );
-
-  /* =======================================================
-     CAMINOS PRINCIPALES
-  ======================================================= */
-
-  const pathItems =
-    useMemo(
-      () => [
-        {
-          position: [
-            0,
-            0.36,
-            -52,
-          ],
-          scale: [
-            12,
-            0.09,
-            78,
-          ],
-        },
-
-        {
-          position: [
-            0,
-            0.36,
-            52,
-          ],
-          scale: [
-            12,
-            0.09,
-            78,
-          ],
-        },
-
-        {
-          position: [
-            52,
-            0.36,
-            0,
-          ],
-          scale: [
-            78,
-            0.09,
-            12,
-          ],
-        },
-
-        {
-          position: [
-            -52,
-            0.36,
-            0,
-          ],
-          scale: [
-            78,
-            0.09,
-            12,
-          ],
-        },
-      ],
-      []
-    );
-
   return (
     <group>
-      {/* ===================================================
-          TERRENO GENERAL
-      =================================================== */}
+      <UnderFloor />
 
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <mesh
-          position={[
-            0,
-            -0.3,
-            0,
-          ]}
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              280,
-              0.5,
-              280,
-            ]}
-          />
+      <ControllerShell />
 
-          <meshStandardMaterial
-            color="#3f493e"
-            roughness={1}
-          />
-        </mesh>
-      </RigidBody>
+      <ControllerDetails />
 
       {/* ===================================================
-          AGUA
-      =================================================== */}
+          MUSEUM = CRUCETA / HALL
 
-      <InstancedBoxes
-        items={
-          waterItems
-        }
-        color="#315d65"
-        roughness={0.28}
-        metalness={0.05}
-      />
-
-      {/* ===================================================
-          BASE OSCURA DE LA GRAN CRUZ
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <group>
-          <mesh
-            position={[
-              0,
-              0.01,
-              0,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                94,
-                0.32,
-                244,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#596253"
-              roughness={1}
-            />
-          </mesh>
-
-          <mesh
-            position={[
-              0,
-              0.01,
-              0,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                244,
-                0.32,
-                94,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#596253"
-              roughness={1}
-            />
-          </mesh>
-        </group>
-      </RigidBody>
-
-      {/* ===================================================
-          GRAN CRUZ VERDE
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders="cuboid"
-      >
-        <group>
-          <mesh
-            position={[
-              0,
-              0.18,
-              0,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                88,
-                0.18,
-                238,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#63745b"
-              roughness={1}
-            />
-          </mesh>
-
-          <mesh
-            position={[
-              0,
-              0.18,
-              0,
-            ]}
-            receiveShadow
-          >
-            <boxGeometry
-              args={[
-                238,
-                0.18,
-                88,
-              ]}
-            />
-
-            <meshStandardMaterial
-              color="#63745b"
-              roughness={1}
-            />
-          </mesh>
-        </group>
-      </RigidBody>
-
-      {/* ===================================================
-          BASE VERDE DEL JARDÍN
-
-          Solo en la plaza central.
-      =================================================== */}
-
-      <InstancedBoxes
-        items={
-          gardenItems
-        }
-        color="#43583e"
-        roughness={1}
-      />
-
-      {/* ===================================================
-          CAMINOS
-      =================================================== */}
-
-      <InstancedBoxes
-        items={
-          pathItems
-        }
-        color="#b9b09d"
-        roughness={0.95}
-      />
-
-      {/* ===================================================
-          PLAZA CENTRAL
-      =================================================== */}
-
-      <group
-        position={[
-          0,
-          0.4,
-          0,
-        ]}
-      >
-        <mesh
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              18,
-              0.12,
-              46,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#c7bfad"
-            roughness={0.9}
-          />
-        </mesh>
-
-        <mesh
-          receiveShadow
-        >
-          <boxGeometry
-            args={[
-              46,
-              0.12,
-              18,
-            ]}
-          />
-
-          <meshStandardMaterial
-            color="#c7bfad"
-            roughness={0.9}
-          />
-        </mesh>
-      </group>
-
-      {/* ===================================================
-          NUEVO JARDÍN
-
-          - modelos glTF reales
-          - árboles
-          - arbustos
-          - pasto
-          - sin vegetación dentro de edificios
-      =================================================== */}
-
-      <CentralGarden />
-
-      {/* ===================================================
-          PLATAFORMA DEL MONUMENTO
-      =================================================== */}
-
-      <mesh
-        position={[
-          0,
-          0.53,
-          0,
-        ]}
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            7.3,
-            7.8,
-            0.16,
-            32,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#3c453d"
-          roughness={0.82}
-        />
-      </mesh>
-
-      <mesh
-        position={[
-          0,
-          0.63,
-          0,
-        ]}
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            4.8,
-            5.2,
-            0.16,
-            32,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color="#24292d"
-          roughness={0.6}
-          metalness={0.12}
-        />
-      </mesh>
-
-      {/* ===================================================
-          MONUMENTO
-      =================================================== */}
-
-      <CentralMonument />
-
-      {/* ===================================================
-          EDIFICIOS
+          Se posiciona aparte en Museum.jsx
       =================================================== */}
 
       <Museum />
