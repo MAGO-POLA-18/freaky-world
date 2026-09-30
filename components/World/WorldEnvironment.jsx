@@ -10,208 +10,87 @@ import {
 import Museum from "../Museum/Museum";
 
 /* =========================================================
-   FREAKY WORLD — CONTROLLER BASE
+   FREAKY WORLD — BASE DEL MANDO
 
-   PRUEBA DE ESCALA LIMPIA
+   PRUEBA ESTRUCTURAL LIMPIA
 
    OBJETIVO:
-
-   - una única superficie plana
-   - completamente caminable
-   - mando claramente legible
+   - una sola superficie rectangular
+   - completamente plana
+   - totalmente caminable
+   - imposible caerse por los bordes
+   - proporciones similares a un mando Family/NES
    - cruceta/hall a la izquierda
-   - botones a la derecha
-   - Select / Start en el centro
-   - iluminación fuerte temporal
+   - SIN botones todavía
+   - SIN decoraciones todavía
 ========================================================= */
 
 /* =========================================================
-   MANDO
+   PROPORCIÓN DEL MANDO
+
+   Aproximadamente 2.25 : 1
+
+   340 x 150
 ========================================================= */
 
-const CONTROLLER_WIDTH = 320;
-const CONTROLLER_DEPTH = 180;
+const CONTROLLER_WIDTH = 340;
+const CONTROLLER_DEPTH = 150;
 
 const CONTROLLER_HEIGHT = 2;
 
-const CONTROLLER_TOP_Y = 0;
+/*
+  La superficie caminable queda exactamente en Y = 0.
+*/
+
+const TOP_Y = 0;
 
 /* =========================================================
-   COLORES FAMILY / FAMICOM INSPIRADOS
+   BORDE DE SEGURIDAD
+
+   Es invisible.
+
+   Evita que el jugador pueda abandonar el mando
+   mientras diseñamos la estructura.
+========================================================= */
+
+const SAFETY_WALL_HEIGHT = 10;
+const SAFETY_WALL_THICKNESS = 1;
+
+/* =========================================================
+   COLORES TEMPORALES
+
+   Queremos máxima lectura visual.
 ========================================================= */
 
 const COLORS = {
-  body: "#d8d0c2",
-  bodySide: "#bcb2a2",
-
-  burgundy: "#7a2639",
-  burgundyDark: "#541b29",
-
-  buttonDark: "#28272a",
-  buttonMid: "#464449",
-
-  line: "#9d9180",
+  body: "#d8d1c3",
+  side: "#b9afa0",
 };
 
 /* =========================================================
-   BOTONES GRANDES
-
-   El tamaño está relacionado con la cruceta/hall.
-
-   No son pequeños botones decorativos:
-   en el futuro podrán convertirse en espacios utilizables.
+   CUERPO DEL MANDO
 ========================================================= */
 
-const ACTION_BUTTON_RADIUS = 25;
-
-const BUTTON_A = [
-  102,
-  0,
-  -22,
-];
-
-const BUTTON_B = [
-  62,
-  0,
-  20,
-];
-
-/* =========================================================
-   BOTÓN A / B
-========================================================= */
-
-function ActionButton({
-  position,
-}) {
-  return (
-    <group
-      position={[
-        position[0],
-        0,
-        position[2],
-      ]}
-    >
-      {/* BASE */}
-
-      <mesh
-        position={[
-          0,
-          0.55,
-          0,
-        ]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            ACTION_BUTTON_RADIUS +
-              2,
-            ACTION_BUTTON_RADIUS +
-              2,
-            1.1,
-            48,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={
-            COLORS.burgundyDark
-          }
-          roughness={0.78}
-          metalness={0.02}
-        />
-      </mesh>
-
-      {/* BOTÓN */}
-
-      <mesh
-        position={[
-          0,
-          1.25,
-          0,
-        ]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            ACTION_BUTTON_RADIUS,
-            ACTION_BUTTON_RADIUS,
-            1.5,
-            48,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={
-            COLORS.burgundy
-          }
-          roughness={0.66}
-          metalness={0.04}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/* =========================================================
-   SELECT / START
-
-   También proporcionados al mando gigante.
-========================================================= */
-
-function CenterButton({
-  x,
-}) {
-  return (
-    <RoundedBox
-      position={[
-        x,
-        0.55,
-        35,
-      ]}
-      args={[
-        29,
-        1.1,
-        11,
-      ]}
-      radius={3}
-      smoothness={4}
-      castShadow
-      receiveShadow
-    >
-      <meshStandardMaterial
-        color={
-          COLORS.buttonDark
-        }
-        roughness={0.72}
-        metalness={0.04}
-      />
-    </RoundedBox>
-  );
-}
-
-/* =========================================================
-   SUPERFICIE COMPLETA DEL MANDO
-========================================================= */
-
-function ControllerBody() {
+function ControllerBase() {
   return (
     <RigidBody
       type="fixed"
       colliders={false}
     >
       {/* ===================================================
-          CARCASA
+          SUPERFICIE VISUAL
 
-          La cara superior queda exactamente en Y = 0.
+          Un único bloque.
+          Sin placas.
+          Sin niveles.
+          Sin agujeros.
       =================================================== */}
 
       <RoundedBox
         position={[
           0,
-          -CONTROLLER_HEIGHT /
-            2,
+          TOP_Y -
+            CONTROLLER_HEIGHT / 2,
           0,
         ]}
         args={[
@@ -219,29 +98,29 @@ function ControllerBody() {
           CONTROLLER_HEIGHT,
           CONTROLLER_DEPTH,
         ]}
-        radius={10}
+        radius={7}
         smoothness={4}
         castShadow
         receiveShadow
       >
         <meshStandardMaterial
           color={COLORS.body}
-          roughness={0.86}
-          metalness={0.01}
+          roughness={0.88}
+          metalness={0}
         />
       </RoundedBox>
 
       {/* ===================================================
-          COLISIÓN ÚNICA
+          SUELO FÍSICO
 
-          TODO EL RECTÁNGULO ES CAMINABLE.
+          Todo el rectángulo tiene física.
       =================================================== */}
 
       <CuboidCollider
         position={[
           0,
-          -CONTROLLER_HEIGHT /
-            2,
+          TOP_Y -
+            CONTROLLER_HEIGHT / 2,
           0,
         ]}
         args={[
@@ -250,142 +129,140 @@ function ControllerBody() {
           CONTROLLER_DEPTH / 2,
         ]}
       />
+
+      {/* ===================================================
+          LÍMITES INVISIBLES
+
+          NORTE
+      =================================================== */}
+
+      <CuboidCollider
+        position={[
+          0,
+          SAFETY_WALL_HEIGHT / 2,
+          -CONTROLLER_DEPTH / 2 +
+            SAFETY_WALL_THICKNESS / 2,
+        ]}
+        args={[
+          CONTROLLER_WIDTH / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_WALL_THICKNESS / 2,
+        ]}
+      />
+
+      {/* SUR */}
+
+      <CuboidCollider
+        position={[
+          0,
+          SAFETY_WALL_HEIGHT / 2,
+          CONTROLLER_DEPTH / 2 -
+            SAFETY_WALL_THICKNESS / 2,
+        ]}
+        args={[
+          CONTROLLER_WIDTH / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_WALL_THICKNESS / 2,
+        ]}
+      />
+
+      {/* IZQUIERDA */}
+
+      <CuboidCollider
+        position={[
+          -CONTROLLER_WIDTH / 2 +
+            SAFETY_WALL_THICKNESS / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          0,
+        ]}
+        args={[
+          SAFETY_WALL_THICKNESS / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          CONTROLLER_DEPTH / 2,
+        ]}
+      />
+
+      {/* DERECHA */}
+
+      <CuboidCollider
+        position={[
+          CONTROLLER_WIDTH / 2 -
+            SAFETY_WALL_THICKNESS / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          0,
+        ]}
+        args={[
+          SAFETY_WALL_THICKNESS / 2,
+          SAFETY_WALL_HEIGHT / 2,
+          CONTROLLER_DEPTH / 2,
+        ]}
+      />
     </RigidBody>
   );
 }
 
 /* =========================================================
-   DETALLES MUY SIMPLES
+   ILUMINACIÓN TEMPORAL DE TRABAJO
 
-   Nada de paneles gigantes ni superficies oscuras.
+   No buscamos todavía ambiente bonito.
 
-   Solo unas líneas para ayudar a leer el objeto.
+   Buscamos VER:
+   - superficie
+   - avatar
+   - edificio
+   - proporciones
 ========================================================= */
 
-function ControllerDetails() {
+function WorkLights() {
   return (
-    <group>
-      {/* línea superior */}
-
-      <RoundedBox
-        position={[
-          0,
-          0.025,
-          -66,
-        ]}
-        args={[
-          250,
-          0.05,
-          3,
-        ]}
-        radius={1.2}
-        smoothness={3}
-      >
-        <meshStandardMaterial
-          color={
-            COLORS.burgundy
-          }
-          roughness={0.82}
-        />
-      </RoundedBox>
-
-      {/* línea inferior */}
-
-      <RoundedBox
-        position={[
-          0,
-          0.025,
-          66,
-        ]}
-        args={[
-          250,
-          0.05,
-          3,
-        ]}
-        radius={1.2}
-        smoothness={3}
-      >
-        <meshStandardMaterial
-          color={
-            COLORS.burgundy
-          }
-          roughness={0.82}
-        />
-      </RoundedBox>
-
-      {/* botones centrales */}
-
-      <CenterButton
-        x={5}
-      />
-
-      <CenterButton
-        x={40}
-      />
-
-      {/* A / B */}
-
-      <ActionButton
-        position={BUTTON_A}
-      />
-
-      <ActionButton
-        position={BUTTON_B}
-      />
-    </group>
-  );
-}
-
-/* =========================================================
-   WORLD
-========================================================= */
-
-export default function WorldEnvironment() {
-  return (
-    <group>
-      {/* ===================================================
-          ILUMINACIÓN TEMPORAL DE TRABAJO
-
-          NO reemplaza el cielo.
-
-          Simplemente evita que el mando quede oscuro
-          mientras definimos arquitectura y escala.
-      =================================================== */}
-
+    <>
       <ambientLight
-        intensity={2.2}
+        intensity={3}
       />
 
       <hemisphereLight
-        intensity={1.7}
-        groundColor="#8d8476"
+        skyColor="#ffffff"
+        groundColor="#d8d1c3"
+        intensity={2.5}
       />
 
       <directionalLight
         position={[
           80,
           120,
-          70,
+          60,
         ]}
-        intensity={2.3}
+        intensity={2.8}
         castShadow={false}
       />
 
-      {/* ===================================================
-          SUPERFICIE ÚNICA
-      =================================================== */}
+      <directionalLight
+        position={[
+          -90,
+          70,
+          -50,
+        ]}
+        intensity={1.3}
+        castShadow={false}
+      />
+    </>
+  );
+}
 
-      <ControllerBody />
+/* =========================================================
+   WORLD ENVIRONMENT
+========================================================= */
 
-      {/* ===================================================
-          DETALLES
-      =================================================== */}
+export default function WorldEnvironment() {
+  return (
+    <group>
+      <WorkLights />
 
-      <ControllerDetails />
+      {/* SUPERFICIE ÚNICA */}
 
-      {/* ===================================================
-          CRUCETA / HALL
-      =================================================== */}
+      <ControllerBase />
+
+      {/* CRUCETA / HALL */}
 
       <Museum />
     </group>
