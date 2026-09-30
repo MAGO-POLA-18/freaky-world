@@ -117,8 +117,7 @@ function formatTime(
 
   const minutes =
     Math.floor(
-      (total % 3600) /
-        60
+      (total % 3600) / 60
     );
 
   const secs =
@@ -179,6 +178,74 @@ function formatDate(
   );
 }
 
+function getViewport() {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
+    return {
+      width: 390,
+      height: 844,
+    };
+  }
+
+  const visual =
+    window.visualViewport;
+
+  return {
+    width:
+      visual?.width ||
+      window.innerWidth ||
+      390,
+
+    height:
+      visual?.height ||
+      window.innerHeight ||
+      844,
+  };
+}
+
+/* =========================================================
+   BOTÓN BASE
+========================================================= */
+
+function simpleButtonStyle({
+  active = false,
+  height = 34,
+} = {}) {
+  return {
+    height,
+
+    border:
+      active
+        ? "1px solid rgba(95,220,255,.40)"
+        : "1px solid rgba(255,255,255,.09)",
+
+    borderRadius:
+      9,
+
+    background:
+      active
+        ? "rgba(95,220,255,.12)"
+        : "rgba(255,255,255,.04)",
+
+    color:
+      "#fff",
+
+    fontSize:
+      9,
+
+    fontWeight:
+      900,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
+
 /* =========================================================
    COMPONENTE
 ========================================================= */
@@ -215,6 +282,13 @@ export default function RadioTierraVicio() {
 
   const lastSavedPositionRef =
     useRef(0);
+
+  const [
+    viewport,
+    setViewport,
+  ] = useState(
+    getViewport
+  );
 
   const [
     open,
@@ -278,9 +352,70 @@ export default function RadioTierraVicio() {
     setDuration,
   ] = useState(0);
 
-  /* =========================================================
+  /* =======================================================
+     VIEWPORT / ORIENTACIÓN
+
+     Regla del proyecto:
+     toda UI móvil debe funcionar tanto
+     en portrait como en landscape.
+  ======================================================= */
+
+  useEffect(() => {
+    function updateViewport() {
+      setViewport(
+        getViewport()
+      );
+    }
+
+    updateViewport();
+
+    window.addEventListener(
+      "resize",
+      updateViewport
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      updateViewport
+    );
+
+    window.visualViewport
+      ?.addEventListener(
+        "resize",
+        updateViewport
+      );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        updateViewport
+      );
+
+      window.removeEventListener(
+        "orientationchange",
+        updateViewport
+      );
+
+      window.visualViewport
+        ?.removeEventListener(
+          "resize",
+          updateViewport
+        );
+    };
+  }, []);
+
+  const landscape =
+    viewport.width >
+      viewport.height &&
+    viewport.height <= 650;
+
+  const compactLandscape =
+    landscape &&
+    viewport.height <= 430;
+
+  /* =======================================================
      FUENTES DE PROGRAMAS
-  ========================================================= */
+  ======================================================= */
 
   const programSources =
     useMemo(
@@ -326,9 +461,9 @@ export default function RadioTierraVicio() {
   sourceRef.current =
     source;
 
-  /* =========================================================
-     POSICIÓN DEL PODCAST
-  ========================================================= */
+  /* =======================================================
+     STORAGE POSICIÓN PODCAST
+  ======================================================= */
 
   function positionStorageKey(
     selectedSource =
@@ -376,17 +511,18 @@ export default function RadioTierraVicio() {
     }
 
     try {
-      window.localStorage.setItem(
-        key,
-        String(
-          audio.currentTime
-        )
-      );
+      window.localStorage
+        .setItem(
+          key,
+          String(
+            audio.currentTime
+          )
+        );
 
       lastSavedPositionRef.current =
         audio.currentTime;
     } catch {
-      // Opcional.
+      // Storage opcional.
     }
   }
 
@@ -404,17 +540,18 @@ export default function RadioTierraVicio() {
     }
 
     try {
-      window.localStorage.removeItem(
-        key
-      );
+      window.localStorage
+        .removeItem(
+          key
+        );
     } catch {
-      // Opcional.
+      // Storage opcional.
     }
   }
 
-  /* =========================================================
+  /* =======================================================
      PLAY / PAUSE
-  ========================================================= */
+  ======================================================= */
 
   function playRadio() {
     const audio =
@@ -473,9 +610,9 @@ export default function RadioTierraVicio() {
     );
   }
 
-  /* =========================================================
+  /* =======================================================
      CARGAR PROGRAMAS
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     let cancelled =
@@ -554,11 +691,6 @@ export default function RadioTierraVicio() {
 
     loadPrograms();
 
-    /*
-      Si la página queda abierta muchas
-      horas, vuelve a consultar.
-    */
-
     const interval =
       window.setInterval(
         loadPrograms,
@@ -575,9 +707,9 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      RESTAURAR EPISODIO GUARDADO
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     const pending =
@@ -614,9 +746,8 @@ export default function RadioTierraVicio() {
     }
 
     /*
-      Compatibilidad con la versión
-      anterior que guardaba go855,
-      go854, etc.
+      Compatibilidad con versión antigua:
+      go855, go854...
     */
 
     if (
@@ -661,21 +792,23 @@ export default function RadioTierraVicio() {
     programSources,
   ]);
 
-  /* =========================================================
+  /* =======================================================
      CARGAR PREFERENCIAS
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     try {
       const savedSource =
-        window.localStorage.getItem(
-          STORAGE_STATION
-        );
+        window.localStorage
+          .getItem(
+            STORAGE_STATION
+          );
 
       const savedMuted =
-        window.localStorage.getItem(
-          STORAGE_MUTED
-        );
+        window.localStorage
+          .getItem(
+            STORAGE_MUTED
+          );
 
       if (
         LIVE_STATIONS.some(
@@ -698,18 +831,16 @@ export default function RadioTierraVicio() {
         savedMuted ===
         "true"
       ) {
-        setMuted(
-          true
-        );
+        setMuted(true);
       }
     } catch {
       // Preferencias opcionales.
     }
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      MUTE
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     const audio =
@@ -723,37 +854,39 @@ export default function RadioTierraVicio() {
       muted;
 
     try {
-      window.localStorage.setItem(
-        STORAGE_MUTED,
-        String(muted)
-      );
+      window.localStorage
+        .setItem(
+          STORAGE_MUTED,
+          String(muted)
+        );
     } catch {
-      // Opcional.
+      // Storage opcional.
     }
   }, [
     muted,
   ]);
 
-  /* =========================================================
+  /* =======================================================
      GUARDAR FUENTE
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(
-        STORAGE_STATION,
-        sourceId
-      );
+      window.localStorage
+        .setItem(
+          STORAGE_STATION,
+          sourceId
+        );
     } catch {
-      // Opcional.
+      // Storage opcional.
     }
   }, [
     sourceId,
   ]);
 
-  /* =========================================================
+  /* =======================================================
      CAMBIO DE FUENTE
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     const audio =
@@ -769,9 +902,7 @@ export default function RadioTierraVicio() {
     lastSavedPositionRef.current =
       0;
 
-    setCurrentTime(
-      0
-    );
+    setCurrentTime(0);
 
     setDuration(
       Number.isFinite(
@@ -798,9 +929,7 @@ export default function RadioTierraVicio() {
 
       playRadio();
     } else {
-      setPlaying(
-        false
-      );
+      setPlaying(false);
 
       setStatus(
         isProgram
@@ -813,9 +942,9 @@ export default function RadioTierraVicio() {
     source.url,
   ]);
 
-  /* =========================================================
+  /* =======================================================
      RESTAURAR POSICIÓN
-  ========================================================= */
+  ======================================================= */
 
   function restoreProgramPosition() {
     const audio =
@@ -854,9 +983,10 @@ export default function RadioTierraVicio() {
     try {
       const saved =
         Number(
-          window.localStorage.getItem(
-            key
-          )
+          window.localStorage
+            .getItem(
+              key
+            )
         );
 
       if (
@@ -871,11 +1001,6 @@ export default function RadioTierraVicio() {
           )
             ? audio.duration
             : 0;
-
-        /*
-          Si estaba prácticamente
-          terminado, no restauramos.
-        */
 
         if (
           realDuration > 0 &&
@@ -900,13 +1025,13 @@ export default function RadioTierraVicio() {
           saved;
       }
     } catch {
-      // Opcional.
+      // Storage opcional.
     }
   }
 
-  /* =========================================================
+  /* =======================================================
      PRIMERA INTERACCIÓN
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     const unlockAndPlay =
@@ -930,11 +1055,8 @@ export default function RadioTierraVicio() {
       "pointerdown",
       unlockAndPlay,
       {
-        once:
-          true,
-
-        capture:
-          true,
+        once: true,
+        capture: true,
       }
     );
 
@@ -947,9 +1069,9 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      CERRAR AL TOCAR FUERA
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     if (!open) {
@@ -964,9 +1086,7 @@ export default function RadioTierraVicio() {
             event.target
           )
         ) {
-          setOpen(
-            false
-          );
+          setOpen(false);
         }
       };
 
@@ -987,9 +1107,9 @@ export default function RadioTierraVicio() {
     open,
   ]);
 
-  /* =========================================================
+  /* =======================================================
      SALIR DE LA APP
-  ========================================================= */
+  ======================================================= */
 
   useEffect(() => {
     const handleVisibilityChange =
@@ -1018,9 +1138,7 @@ export default function RadioTierraVicio() {
             );
           }
 
-          setOpen(
-            false
-          );
+          setOpen(false);
 
           return;
         }
@@ -1049,9 +1167,9 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
-  /* =========================================================
-     GUARDAR ANTES DE CERRAR
-  ========================================================= */
+  /* =======================================================
+     GUARDAR AL CERRAR
+  ======================================================= */
 
   useEffect(() => {
     const handlePageHide =
@@ -1072,9 +1190,9 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
-  /* =========================================================
-     TRAILERS / VÍDEOS
-  ========================================================= */
+  /* =======================================================
+     VÍDEOS / TRAILERS
+  ======================================================= */
 
   useEffect(() => {
     const handleMediaStart =
@@ -1139,9 +1257,9 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
-  /* =========================================================
+  /* =======================================================
      CONTROLES
-  ========================================================= */
+  ======================================================= */
 
   function togglePlay() {
     const audio =
@@ -1310,14 +1428,12 @@ export default function RadioTierraVicio() {
     saveCurrentPosition();
   }
 
-  /* =========================================================
+  /* =======================================================
      AUDIO EVENTS
-  ========================================================= */
+  ======================================================= */
 
   function handlePlaying() {
-    setPlaying(
-      true
-    );
+    setPlaying(true);
 
     setStatus(
       sourceRef.current.kind ===
@@ -1334,9 +1450,7 @@ export default function RadioTierraVicio() {
   }
 
   function handlePause() {
-    setPlaying(
-      false
-    );
+    setPlaying(false);
 
     saveCurrentPosition();
   }
@@ -1407,11 +1521,6 @@ export default function RadioTierraVicio() {
       return;
     }
 
-    /*
-      Guardamos aproximadamente
-      cada 5 segundos.
-    */
-
     if (
       Math.abs(
         next -
@@ -1423,9 +1532,7 @@ export default function RadioTierraVicio() {
   }
 
   function handleEnded() {
-    setPlaying(
-      false
-    );
+    setPlaying(false);
 
     userPausedRef.current =
       true;
@@ -1447,18 +1554,16 @@ export default function RadioTierraVicio() {
   }
 
   function handleError() {
-    setPlaying(
-      false
-    );
+    setPlaying(false);
 
     setStatus(
       "Audio no disponible"
     );
   }
 
-  /* =========================================================
+  /* =======================================================
      DATOS VISUALES
-  ========================================================= */
+  ======================================================= */
 
   const sourceDate =
     isProgram
@@ -1480,24 +1585,151 @@ export default function RadioTierraVicio() {
         )
       : 0;
 
-  /* =========================================================
+  /* =======================================================
+     ESTILOS RESPONSIVE
+  ======================================================= */
+
+  const panelStyle =
+    landscape
+      ? {
+          position:
+            "fixed",
+
+          top:
+            compactLandscape
+              ? 6
+              : 8,
+
+          left:
+            64,
+
+          width:
+            "min(650px, calc(100vw - 128px))",
+
+          height:
+            compactLandscape
+              ? "calc(100dvh - 12px)"
+              : "calc(100dvh - 16px)",
+
+          maxHeight:
+            compactLandscape
+              ? "calc(100dvh - 12px)"
+              : "calc(100dvh - 16px)",
+
+          overflow:
+            "hidden",
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "minmax(170px,.72fr) minmax(280px,1.28fr)",
+
+          gridTemplateRows:
+            "auto auto minmax(0,1fr)",
+
+          gridTemplateAreas:
+            `"header now"
+             "tabs controls"
+             "list progress"`,
+
+          columnGap:
+            compactLandscape
+              ? 7
+              : 10,
+
+          rowGap:
+            compactLandscape
+              ? 5
+              : 8,
+
+          boxSizing:
+            "border-box",
+
+          padding:
+            compactLandscape
+              ? 8
+              : 10,
+
+          border:
+            "1px solid rgba(255,255,255,.15)",
+
+          borderRadius:
+            14,
+
+          background:
+            "rgba(5,8,12,.97)",
+
+          backdropFilter:
+            "blur(18px)",
+
+          WebkitBackdropFilter:
+            "blur(18px)",
+
+          boxShadow:
+            "0 18px 55px rgba(0,0,0,.42)",
+        }
+      : {
+          position:
+            "absolute",
+
+          top: 45,
+
+          left: 0,
+
+          width:
+            "min(350px, calc(100vw - 28px))",
+
+          maxHeight:
+            "calc(100dvh - 78px)",
+
+          overflow:
+            "hidden",
+
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          boxSizing:
+            "border-box",
+
+          padding: 14,
+
+          border:
+            "1px solid rgba(255,255,255,.15)",
+
+          borderRadius:
+            16,
+
+          background:
+            "rgba(5,8,12,.96)",
+
+          backdropFilter:
+            "blur(18px)",
+
+          WebkitBackdropFilter:
+            "blur(18px)",
+
+          boxShadow:
+            "0 18px 55px rgba(0,0,0,.42)",
+        };
+
+  /* =======================================================
      RENDER
-  ========================================================= */
+  ======================================================= */
 
   return (
     <>
       <audio
-        ref={
-          audioRef
-        }
+        ref={audioRef}
         preload={
           isProgram
             ? "metadata"
             : "none"
         }
-        muted={
-          muted
-        }
+        muted={muted}
         onPlaying={
           handlePlaying
         }
@@ -1525,21 +1757,26 @@ export default function RadioTierraVicio() {
       />
 
       <div
-        ref={
-          rootRef
-        }
+        ref={rootRef}
         style={{
           position:
             "fixed",
 
-          top:
-            14,
+          top: 14,
 
-          left:
-            14,
+          left: 14,
 
-          zIndex:
-            100000,
+          /*
+            IMPORTANTE:
+
+            Buscador: 140
+            FullGameOverlay: 300000
+
+            Radio: 120
+
+            Así jamás tapa navegación.
+          */
+          zIndex: 120,
 
           fontFamily:
             "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
@@ -1556,25 +1793,29 @@ export default function RadioTierraVicio() {
           event.stopPropagation()
         }
       >
-        {/* BOTÓN RADIO */}
+        {/* =================================================
+            BOTÓN RADIO
+        ================================================= */}
 
         <button
           type="button"
           aria-label="Abrir Radio Tierra Vicio"
           onClick={() =>
             setOpen(
-              (
-                current
-              ) =>
+              (current) =>
                 !current
             )
           }
           style={{
             width:
-              42,
+              landscape
+                ? 40
+                : 42,
 
             height:
-              36,
+              landscape
+                ? 34
+                : 36,
 
             display:
               "grid",
@@ -1582,16 +1823,14 @@ export default function RadioTierraVicio() {
             placeItems:
               "center",
 
-            padding:
-              0,
+            padding: 0,
 
             border:
               playing
                 ? "1px solid rgba(95,220,255,.58)"
                 : "1px solid rgba(255,255,255,.16)",
 
-            borderRadius:
-              10,
+            borderRadius: 10,
 
             background:
               playing
@@ -1601,74 +1840,41 @@ export default function RadioTierraVicio() {
             color:
               "#fff",
 
-            fontSize:
-              19,
+            fontSize: 19,
 
-            fontWeight:
-              900,
+            fontWeight: 900,
 
             cursor:
               "pointer",
+
+            touchAction:
+              "manipulation",
           }}
         >
           ♪
         </button>
 
-        {/* PANEL */}
+        {/* =================================================
+            PANEL
+        ================================================= */}
 
         {open && (
           <div
-            style={{
-              position:
-                "absolute",
-
-              top:
-                45,
-
-              left:
-                0,
-
-              width:
-                "min(350px, calc(100vw - 28px))",
-
-              maxHeight:
-                "calc(100vh - 78px)",
-
-              overflow:
-                "hidden",
-
-              display:
-                "flex",
-
-              flexDirection:
-                "column",
-
-              boxSizing:
-                "border-box",
-
-              padding:
-                14,
-
-              border:
-                "1px solid rgba(255,255,255,.15)",
-
-              borderRadius:
-                16,
-
-              background:
-                "rgba(5,8,12,.96)",
-
-              backdropFilter:
-                "blur(18px)",
-
-              boxShadow:
-                "0 18px 55px rgba(0,0,0,.42)",
-            }}
+            style={
+              panelStyle
+            }
           >
-            {/* CABECERA */}
+            {/* =============================================
+                CABECERA
+            ============================================= */}
 
             <div
               style={{
+                gridArea:
+                  landscape
+                    ? "header"
+                    : undefined,
+
                 display:
                   "flex",
 
@@ -1678,24 +1884,32 @@ export default function RadioTierraVicio() {
                 alignItems:
                   "center",
 
-                flexShrink:
-                  0,
+                minWidth: 0,
+
+                flexShrink: 0,
 
                 marginBottom:
-                  12,
+                  landscape
+                    ? 0
+                    : 12,
               }}
             >
-              <div>
+              <div
+                style={{
+                  minWidth: 0,
+                }}
+              >
                 <div
                   style={{
                     color:
                       "#5fdcff",
 
                     fontSize:
-                      9,
+                      compactLandscape
+                        ? 7
+                        : 9,
 
-                    fontWeight:
-                      950,
+                    fontWeight: 950,
 
                     letterSpacing:
                       ".16em",
@@ -1706,11 +1920,21 @@ export default function RadioTierraVicio() {
 
                 <div
                   style={{
-                    fontSize:
-                      17,
+                    overflow:
+                      "hidden",
 
-                    fontWeight:
-                      900,
+                    textOverflow:
+                      "ellipsis",
+
+                    whiteSpace:
+                      "nowrap",
+
+                    fontSize:
+                      landscape
+                        ? 14
+                        : 17,
+
+                    fontWeight: 900,
                   }}
                 >
                   TIERRA VICIO
@@ -1719,16 +1943,20 @@ export default function RadioTierraVicio() {
 
               <div
                 style={{
+                  marginLeft: 8,
+
                   color:
                     playing
                       ? "#68e2ff"
                       : "#777",
 
                   fontSize:
-                    9,
+                    8,
 
-                  fontWeight:
-                    900,
+                  fontWeight: 900,
+
+                  whiteSpace:
+                    "nowrap",
                 }}
               >
                 {playing
@@ -1737,61 +1965,54 @@ export default function RadioTierraVicio() {
               </div>
             </div>
 
-            {/* TABS */}
+            {/* =============================================
+                TABS
+            ============================================= */}
 
             <div
               style={{
+                gridArea:
+                  landscape
+                    ? "tabs"
+                    : undefined,
+
                 display:
                   "grid",
 
                 gridTemplateColumns:
                   "1fr 1fr",
 
-                gap:
-                  5,
+                gap: 5,
 
-                flexShrink:
-                  0,
+                minWidth: 0,
+
+                flexShrink: 0,
 
                 marginBottom:
-                  12,
+                  landscape
+                    ? 0
+                    : 12,
               }}
             >
               <button
                 type="button"
                 onClick={() =>
-                  setTab(
-                    "live"
-                  )
+                  setTab("live")
                 }
-                style={{
-                  height:
-                    34,
+                style={
+                  simpleButtonStyle({
+                    active:
+                      tab ===
+                      "live",
 
-                  border:
-                    tab ===
-                    "live"
-                      ? "1px solid rgba(95,220,255,.4)"
-                      : "1px solid rgba(255,255,255,.08)",
-
-                  borderRadius:
-                    9,
-
-                  background:
-                    tab ===
-                    "live"
-                      ? "rgba(95,220,255,.12)"
-                      : "rgba(255,255,255,.04)",
-
-                  color:
-                    "#fff",
-
-                  fontSize:
-                    9,
-
-                  fontWeight:
-                    900,
-                }}
+                    height:
+                      landscape
+                        ? compactLandscape
+                          ? 27
+                          : 30
+                        : 34,
+                  })
+                }
               >
                 EN DIRECTO
               </button>
@@ -1803,54 +2024,53 @@ export default function RadioTierraVicio() {
                     "programs"
                   )
                 }
-                style={{
-                  height:
-                    34,
+                style={
+                  simpleButtonStyle({
+                    active:
+                      tab ===
+                      "programs",
 
-                  border:
-                    tab ===
-                    "programs"
-                      ? "1px solid rgba(95,220,255,.4)"
-                      : "1px solid rgba(255,255,255,.08)",
-
-                  borderRadius:
-                    9,
-
-                  background:
-                    tab ===
-                    "programs"
-                      ? "rgba(95,220,255,.12)"
-                      : "rgba(255,255,255,.04)",
-
-                  color:
-                    "#fff",
-
-                  fontSize:
-                    9,
-
-                  fontWeight:
-                    900,
-                }}
+                    height:
+                      landscape
+                        ? compactLandscape
+                          ? 27
+                          : 30
+                        : 34,
+                  })
+                }
               >
                 PROGRAMAS
               </button>
             </div>
 
-            {/* AHORA SUENA */}
+            {/* =============================================
+                AHORA SUENA
+            ============================================= */}
 
             <div
               style={{
-                padding:
-                  "10px",
+                gridArea:
+                  landscape
+                    ? "now"
+                    : undefined,
 
-                flexShrink:
-                  0,
+                minWidth: 0,
+
+                flexShrink: 0,
+
+                padding:
+                  landscape
+                    ? compactLandscape
+                      ? "6px 8px"
+                      : "8px 10px"
+                    : "10px",
 
                 marginBottom:
-                  10,
+                  landscape
+                    ? 0
+                    : 10,
 
-                borderRadius:
-                  11,
+                borderRadius: 11,
 
                 background:
                   "rgba(255,255,255,.05)",
@@ -1858,14 +2078,25 @@ export default function RadioTierraVicio() {
             >
               <div
                 style={{
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    landscape
+                      ? "nowrap"
+                      : "normal",
+
                   fontSize:
-                    12,
+                    landscape
+                      ? 11
+                      : 12,
 
-                  lineHeight:
-                    1.3,
+                  lineHeight: 1.3,
 
-                  fontWeight:
-                    900,
+                  fontWeight: 900,
                 }}
               >
                 {source.name}
@@ -1873,14 +2104,24 @@ export default function RadioTierraVicio() {
 
               <div
                 style={{
-                  marginTop:
-                    4,
+                  marginTop: 3,
+
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
 
                   color:
                     "rgba(255,255,255,.5)",
 
                   fontSize:
-                    9,
+                    landscape
+                      ? 8
+                      : 9,
                 }}
               >
                 {source.subtitle}
@@ -1892,39 +2133,65 @@ export default function RadioTierraVicio() {
 
               <div
                 style={{
-                  marginTop:
-                    6,
+                  marginTop: 4,
 
                   color:
                     "#68e2ff",
 
                   fontSize:
-                    9,
+                    landscape
+                      ? 8
+                      : 9,
                 }}
               >
                 {status}
               </div>
             </div>
 
-            {/* PROGRESO DEL PROGRAMA */}
+            {/* =============================================
+                PROGRESO PROGRAMA
+            ============================================= */}
 
             {isProgram && (
               <div
                 style={{
+                  gridArea:
+                    landscape
+                      ? "progress"
+                      : undefined,
+
+                  minWidth: 0,
+                  minHeight: 0,
+
                   flexShrink:
-                    0,
+                    landscape
+                      ? 1
+                      : 0,
+
+                  overflowY:
+                    landscape
+                      ? "auto"
+                      : "visible",
+
+                  WebkitOverflowScrolling:
+                    "touch",
 
                   padding:
-                    "9px 10px 10px",
+                    landscape
+                      ? compactLandscape
+                        ? "6px 8px"
+                        : "8px 10px"
+                      : "9px 10px 10px",
 
                   marginBottom:
-                    10,
+                    landscape
+                      ? 0
+                      : 10,
 
                   border:
                     "1px solid rgba(255,255,255,.07)",
 
-                  borderRadius:
-                    11,
+                  borderRadius: 11,
 
                   background:
                     "rgba(255,255,255,.025)",
@@ -1955,8 +2222,7 @@ export default function RadioTierraVicio() {
                     width:
                       "100%",
 
-                    margin:
-                      0,
+                    margin: 0,
 
                     accentColor:
                       "#68e2ff",
@@ -1979,14 +2245,12 @@ export default function RadioTierraVicio() {
                     justifyContent:
                       "space-between",
 
-                    marginTop:
-                      3,
+                    marginTop: 3,
 
                     color:
                       "rgba(255,255,255,.48)",
 
-                    fontSize:
-                      9,
+                    fontSize: 9,
 
                     fontVariantNumeric:
                       "tabular-nums",
@@ -2015,41 +2279,29 @@ export default function RadioTierraVicio() {
                     gridTemplateColumns:
                       "1fr 1fr",
 
-                    gap:
-                      6,
+                    gap: 6,
 
                     marginTop:
-                      7,
+                      compactLandscape
+                        ? 5
+                        : 7,
                   }}
                 >
                   <button
                     type="button"
                     onClick={() =>
-                      skipBy(
-                        -15
-                      )
+                      skipBy(-15)
                     }
                     style={{
-                      height:
-                        29,
-
-                      border:
-                        "1px solid rgba(255,255,255,.09)",
-
-                      borderRadius:
-                        8,
-
-                      background:
-                        "rgba(255,255,255,.04)",
+                      ...simpleButtonStyle({
+                        height:
+                          landscape
+                            ? 27
+                            : 29,
+                      }),
 
                       color:
                         "#ddd",
-
-                      fontSize:
-                        10,
-
-                      fontWeight:
-                        800,
                     }}
                   >
                     ↶ 15 s
@@ -2058,57 +2310,71 @@ export default function RadioTierraVicio() {
                   <button
                     type="button"
                     onClick={() =>
-                      skipBy(
-                        30
-                      )
+                      skipBy(30)
                     }
                     style={{
-                      height:
-                        29,
-
-                      border:
-                        "1px solid rgba(255,255,255,.09)",
-
-                      borderRadius:
-                        8,
-
-                      background:
-                        "rgba(255,255,255,.04)",
+                      ...simpleButtonStyle({
+                        height:
+                          landscape
+                            ? 27
+                            : 29,
+                      }),
 
                       color:
                         "#ddd",
-
-                      fontSize:
-                        10,
-
-                      fontWeight:
-                        800,
                     }}
                   >
                     30 s ↷
                   </button>
                 </div>
+
+                {source.description &&
+                  landscape && (
+                    <div
+                      style={{
+                        marginTop: 8,
+
+                        color:
+                          "rgba(255,255,255,.44)",
+
+                        fontSize: 8,
+
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {source.description}
+                    </div>
+                  )}
               </div>
             )}
 
-            {/* PLAY / MUTE */}
+            {/* =============================================
+                PLAY / MUTE
+            ============================================= */}
 
             <div
               style={{
+                gridArea:
+                  landscape
+                    ? "controls"
+                    : undefined,
+
                 display:
                   "grid",
 
                 gridTemplateColumns:
                   "1fr 48px",
 
-                gap:
-                  7,
+                gap: 7,
 
-                flexShrink:
-                  0,
+                minWidth: 0,
+
+                flexShrink: 0,
 
                 marginBottom:
-                  12,
+                  landscape
+                    ? 0
+                    : 12,
               }}
             >
               <button
@@ -2118,13 +2384,16 @@ export default function RadioTierraVicio() {
                 }
                 style={{
                   height:
-                    40,
+                    landscape
+                      ? compactLandscape
+                        ? 30
+                        : 34
+                      : 40,
 
                   border:
                     "1px solid rgba(95,220,255,.28)",
 
-                  borderRadius:
-                    10,
+                  borderRadius: 10,
 
                   background:
                     "rgba(95,220,255,.10)",
@@ -2132,8 +2401,18 @@ export default function RadioTierraVicio() {
                   color:
                     "#fff",
 
-                  fontWeight:
-                    850,
+                  fontSize:
+                    landscape
+                      ? 9
+                      : 11,
+
+                  fontWeight: 850,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
                 }}
               >
                 {playing
@@ -2143,23 +2422,29 @@ export default function RadioTierraVicio() {
 
               <button
                 type="button"
+                aria-label={
+                  muted
+                    ? "Activar sonido"
+                    : "Silenciar"
+                }
                 onClick={() =>
                   setMuted(
-                    (
-                      current
-                    ) =>
+                    (current) =>
                       !current
                   )
                 }
                 style={{
                   height:
-                    40,
+                    landscape
+                      ? compactLandscape
+                        ? 30
+                        : 34
+                      : 40,
 
                   border:
                     "1px solid rgba(255,255,255,.11)",
 
-                  borderRadius:
-                    10,
+                  borderRadius: 10,
 
                   background:
                     "rgba(255,255,255,.05)",
@@ -2167,8 +2452,13 @@ export default function RadioTierraVicio() {
                   color:
                     "#fff",
 
-                  fontSize:
-                    16,
+                  fontSize: 16,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
                 }}
               >
                 {muted
@@ -2177,21 +2467,38 @@ export default function RadioTierraVicio() {
               </button>
             </div>
 
-            {/* LISTA */}
+            {/* =============================================
+                LISTA
+            ============================================= */}
 
             <div
               style={{
-                minHeight:
-                  0,
+                gridArea:
+                  landscape
+                    ? "list"
+                    : undefined,
+
+                minWidth: 0,
+                minHeight: 0,
+
+                flex:
+                  landscape
+                    ? undefined
+                    : 1,
 
                 overflowY:
                   "auto",
+
+                overscrollBehavior:
+                  "contain",
 
                 WebkitOverflowScrolling:
                   "touch",
               }}
             >
-              {/* EN DIRECTO */}
+              {/* ===========================================
+                  EN DIRECTO
+              =========================================== */}
 
               {tab ===
                 "live" && (
@@ -2200,14 +2507,11 @@ export default function RadioTierraVicio() {
                     display:
                       "grid",
 
-                    gap:
-                      6,
+                    gap: 6,
                   }}
                 >
                   {LIVE_STATIONS.map(
-                    (
-                      item
-                    ) => {
+                    (item) => {
                       const active =
                         item.id ===
                         source.id;
@@ -2228,30 +2532,37 @@ export default function RadioTierraVicio() {
                               "100%",
 
                             minHeight:
-                              48,
+                              landscape
+                                ? 40
+                                : 48,
 
                             display:
                               "grid",
 
                             gridTemplateColumns:
-                              "42px 1fr",
+                              landscape
+                                ? "34px 1fr"
+                                : "42px 1fr",
 
                             alignItems:
                               "center",
 
                             gap:
-                              8,
+                              landscape
+                                ? 6
+                                : 8,
 
                             padding:
-                              "7px 9px",
+                              landscape
+                                ? "6px 7px"
+                                : "7px 9px",
 
                             border:
                               active
                                 ? "1px solid rgba(95,220,255,.30)"
                                 : "1px solid rgba(255,255,255,.07)",
 
-                            borderRadius:
-                              10,
+                            borderRadius: 10,
 
                             background:
                               active
@@ -2263,6 +2574,9 @@ export default function RadioTierraVicio() {
 
                             textAlign:
                               "left",
+
+                            cursor:
+                              "pointer",
                           }}
                         >
                           <span
@@ -2274,10 +2588,11 @@ export default function RadioTierraVicio() {
                                 "center",
 
                               height:
-                                28,
+                                landscape
+                                  ? 26
+                                  : 28,
 
-                              borderRadius:
-                                7,
+                              borderRadius: 7,
 
                               background:
                                 "rgba(255,255,255,.06)",
@@ -2287,27 +2602,39 @@ export default function RadioTierraVicio() {
                                   ? "#68e2ff"
                                   : "#999",
 
-                              fontSize:
-                                8,
+                              fontSize: 8,
 
-                              fontWeight:
-                                950,
+                              fontWeight: 950,
                             }}
                           >
                             {item.badge}
                           </span>
 
-                          <span>
+                          <span
+                            style={{
+                              minWidth: 0,
+                            }}
+                          >
                             <span
                               style={{
                                 display:
                                   "block",
 
-                                fontSize:
-                                  11,
+                                overflow:
+                                  "hidden",
 
-                                fontWeight:
-                                  850,
+                                textOverflow:
+                                  "ellipsis",
+
+                                whiteSpace:
+                                  "nowrap",
+
+                                fontSize:
+                                  landscape
+                                    ? 10
+                                    : 11,
+
+                                fontWeight: 850,
                               }}
                             >
                               {item.name}
@@ -2318,17 +2645,29 @@ export default function RadioTierraVicio() {
                                 display:
                                   "block",
 
-                                marginTop:
-                                  2,
+                                overflow:
+                                  "hidden",
+
+                                textOverflow:
+                                  "ellipsis",
+
+                                whiteSpace:
+                                  "nowrap",
+
+                                marginTop: 2,
 
                                 color:
                                   "rgba(255,255,255,.43)",
 
                                 fontSize:
-                                  9,
+                                  landscape
+                                    ? 8
+                                    : 9,
                               }}
                             >
-                              {item.subtitle}
+                              {
+                                item.subtitle
+                              }
                             </span>
                           </span>
                         </button>
@@ -2338,7 +2677,9 @@ export default function RadioTierraVicio() {
                 </div>
               )}
 
-              {/* PROGRAMAS */}
+              {/* ===========================================
+                  PROGRAMAS
+              =========================================== */}
 
               {tab ===
                 "programs" && (
@@ -2346,8 +2687,7 @@ export default function RadioTierraVicio() {
                   {programsLoading && (
                     <div
                       style={{
-                        padding:
-                          16,
+                        padding: 16,
 
                         textAlign:
                           "center",
@@ -2355,8 +2695,7 @@ export default function RadioTierraVicio() {
                         color:
                           "rgba(255,255,255,.48)",
 
-                        fontSize:
-                          10,
+                        fontSize: 10,
                       }}
                     >
                       Cargando programas…
@@ -2366,8 +2705,7 @@ export default function RadioTierraVicio() {
                   {programsError && (
                     <div
                       style={{
-                        padding:
-                          16,
+                        padding: 16,
 
                         textAlign:
                           "center",
@@ -2375,8 +2713,7 @@ export default function RadioTierraVicio() {
                         color:
                           "#ff9b9b",
 
-                        fontSize:
-                          10,
+                        fontSize: 10,
                       }}
                     >
                       No se pudieron cargar los programas.
@@ -2386,9 +2723,7 @@ export default function RadioTierraVicio() {
                   {!programsLoading &&
                     !programsError &&
                     shows.map(
-                      (
-                        show
-                      ) => {
+                      (show) => {
                         const expanded =
                           expandedShowId ===
                           show.id;
@@ -2399,8 +2734,7 @@ export default function RadioTierraVicio() {
                               show.id
                             }
                             style={{
-                              marginBottom:
-                                7,
+                              marginBottom: 7,
 
                               overflow:
                                 "hidden",
@@ -2408,14 +2742,15 @@ export default function RadioTierraVicio() {
                               border:
                                 "1px solid rgba(255,255,255,.07)",
 
-                              borderRadius:
-                                11,
+                              borderRadius: 11,
 
                               background:
                                 "rgba(255,255,255,.025)",
                             }}
                           >
-                            {/* CABECERA PROGRAMA */}
+                            {/* =============================
+                                CABECERA PROGRAMA
+                            ============================= */}
 
                             <button
                               type="button"
@@ -2431,25 +2766,32 @@ export default function RadioTierraVicio() {
                                   "100%",
 
                                 minHeight:
-                                  52,
+                                  landscape
+                                    ? 42
+                                    : 52,
 
                                 display:
                                   "grid",
 
                                 gridTemplateColumns:
-                                  "42px 1fr auto",
+                                  landscape
+                                    ? "34px 1fr auto"
+                                    : "42px 1fr auto",
 
                                 alignItems:
                                   "center",
 
                                 gap:
-                                  8,
+                                  landscape
+                                    ? 6
+                                    : 8,
 
                                 padding:
-                                  "8px 10px",
+                                  landscape
+                                    ? "6px 7px"
+                                    : "8px 10px",
 
-                                border:
-                                  0,
+                                border: 0,
 
                                 background:
                                   expanded
@@ -2461,6 +2803,9 @@ export default function RadioTierraVicio() {
 
                                 textAlign:
                                   "left",
+
+                                cursor:
+                                  "pointer",
                               }}
                             >
                               <span
@@ -2472,10 +2817,11 @@ export default function RadioTierraVicio() {
                                     "center",
 
                                   height:
-                                    30,
+                                    landscape
+                                      ? 26
+                                      : 30,
 
-                                  borderRadius:
-                                    7,
+                                  borderRadius: 7,
 
                                   background:
                                     "rgba(255,255,255,.06)",
@@ -2483,27 +2829,39 @@ export default function RadioTierraVicio() {
                                   color:
                                     "#68e2ff",
 
-                                  fontSize:
-                                    8,
+                                  fontSize: 8,
 
-                                  fontWeight:
-                                    950,
+                                  fontWeight: 950,
                                 }}
                               >
                                 {show.badge}
                               </span>
 
-                              <span>
+                              <span
+                                style={{
+                                  minWidth: 0,
+                                }}
+                              >
                                 <span
                                   style={{
                                     display:
                                       "block",
 
-                                    fontSize:
-                                      11,
+                                    overflow:
+                                      "hidden",
 
-                                    fontWeight:
-                                      900,
+                                    textOverflow:
+                                      "ellipsis",
+
+                                    whiteSpace:
+                                      "nowrap",
+
+                                    fontSize:
+                                      landscape
+                                        ? 10
+                                        : 11,
+
+                                    fontWeight: 900,
                                   }}
                                 >
                                   {show.name}
@@ -2514,14 +2872,15 @@ export default function RadioTierraVicio() {
                                     display:
                                       "block",
 
-                                    marginTop:
-                                      2,
+                                    marginTop: 2,
 
                                     color:
                                       "rgba(255,255,255,.43)",
 
                                     fontSize:
-                                      9,
+                                      landscape
+                                        ? 8
+                                        : 9,
                                   }}
                                 >
                                   {show.episodeCount} episodios
@@ -2533,8 +2892,7 @@ export default function RadioTierraVicio() {
                                   color:
                                     "rgba(255,255,255,.48)",
 
-                                  fontSize:
-                                    14,
+                                  fontSize: 14,
 
                                   transform:
                                     expanded
@@ -2549,7 +2907,9 @@ export default function RadioTierraVicio() {
                               </span>
                             </button>
 
-                            {/* EPISODIOS */}
+                            {/* =============================
+                                EPISODIOS
+                            ============================= */}
 
                             {expanded && (
                               <div
@@ -2557,11 +2917,12 @@ export default function RadioTierraVicio() {
                                   display:
                                     "grid",
 
-                                  gap:
-                                    5,
+                                  gap: 5,
 
                                   padding:
-                                    "0 7px 7px",
+                                    landscape
+                                      ? "0 6px 6px"
+                                      : "0 7px 7px",
                                 }}
                               >
                                 {show.episodes.map(
@@ -2584,10 +2945,11 @@ export default function RadioTierraVicio() {
                                     try {
                                       savedPosition =
                                         Number(
-                                          window.localStorage.getItem(
-                                            STORAGE_POSITION_PREFIX +
-                                              episodeSource.id
-                                          )
+                                          window.localStorage
+                                            .getItem(
+                                              STORAGE_POSITION_PREFIX +
+                                                episodeSource.id
+                                            )
                                         ) || 0;
                                     } catch {
                                       savedPosition =
@@ -2618,19 +2980,19 @@ export default function RadioTierraVicio() {
                                           alignItems:
                                             "center",
 
-                                          gap:
-                                            8,
+                                          gap: 8,
 
                                           padding:
-                                            "8px 9px",
+                                            landscape
+                                              ? "6px 7px"
+                                              : "8px 9px",
 
                                           border:
                                             active
                                               ? "1px solid rgba(95,220,255,.28)"
                                               : "1px solid rgba(255,255,255,.055)",
 
-                                          borderRadius:
-                                            8,
+                                          borderRadius: 8,
 
                                           background:
                                             active
@@ -2642,12 +3004,14 @@ export default function RadioTierraVicio() {
 
                                           textAlign:
                                             "left",
+
+                                          cursor:
+                                            "pointer",
                                         }}
                                       >
                                         <span
                                           style={{
-                                            minWidth:
-                                              0,
+                                            minWidth: 0,
                                           }}
                                         >
                                           <span
@@ -2661,11 +3025,17 @@ export default function RadioTierraVicio() {
                                               textOverflow:
                                                 "ellipsis",
 
-                                              fontSize:
-                                                10,
+                                              whiteSpace:
+                                                landscape
+                                                  ? "nowrap"
+                                                  : "normal",
 
-                                              lineHeight:
-                                                1.3,
+                                              fontSize:
+                                                landscape
+                                                  ? 9
+                                                  : 10,
+
+                                              lineHeight: 1.3,
 
                                               fontWeight:
                                                 active
@@ -2673,7 +3043,9 @@ export default function RadioTierraVicio() {
                                                   : 750,
                                             }}
                                           >
-                                            {episode.title}
+                                            {
+                                              episode.title
+                                            }
                                           </span>
 
                                           <span
@@ -2681,14 +3053,12 @@ export default function RadioTierraVicio() {
                                               display:
                                                 "block",
 
-                                              marginTop:
-                                                3,
+                                              marginTop: 3,
 
                                               color:
                                                 "rgba(255,255,255,.4)",
 
-                                              fontSize:
-                                                8,
+                                              fontSize: 8,
                                             }}
                                           >
                                             {formatDate(
@@ -2711,8 +3081,7 @@ export default function RadioTierraVicio() {
                                                 ? "#68e2ff"
                                                 : "rgba(255,255,255,.38)",
 
-                                            fontSize:
-                                              12,
+                                            fontSize: 12,
                                           }}
                                         >
                                           {active &&
@@ -2733,6 +3102,50 @@ export default function RadioTierraVicio() {
                 </div>
               )}
             </div>
+
+            {/* =============================================
+                LIVE SIN PROGRESO:
+                aprovechamos la zona derecha inferior.
+            ============================================= */}
+
+            {landscape &&
+              !isProgram && (
+                <div
+                  style={{
+                    gridArea:
+                      "progress",
+
+                    minWidth: 0,
+                    minHeight: 0,
+
+                    display:
+                      "grid",
+
+                    placeItems:
+                      "center",
+
+                    padding: 12,
+
+                    border:
+                      "1px solid rgba(255,255,255,.06)",
+
+                    borderRadius: 11,
+
+                    background:
+                      "rgba(255,255,255,.02)",
+
+                    color:
+                      "rgba(255,255,255,.28)",
+
+                    textAlign:
+                      "center",
+
+                    fontSize: 9,
+                  }}
+                >
+                  Música y programas de videojuegos mientras recorrés Freaky World.
+                </div>
+              )}
           </div>
         )}
       </div>
