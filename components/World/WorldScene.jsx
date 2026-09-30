@@ -629,8 +629,15 @@ export default function WorldScene() {
      Si venimos de consola:
      ficha juego → catálogo conservado.
 
-     Si venimos del mundo:
-     vuelve a ficha rápida.
+     Si FullGameOverlay tiene historial de similares,
+     ese historial se resuelve primero dentro
+     del propio FullGameOverlay.
+
+     Ejemplo:
+     A → B → C → D
+
+     Atrás:
+     D → C → B → A → catálogo.
   ======================================================= */
 
   const backFromFullGame =
@@ -642,7 +649,10 @@ export default function WorldScene() {
       ) {
         /*
           NO tocamos consoleGames.
-          Solo retiramos la ficha de juego.
+
+          Solo retiramos la ficha.
+          El catálogo sigue exactamente
+          en el estado anterior.
         */
 
         setFullGame(null);
@@ -659,10 +669,30 @@ export default function WorldScene() {
   /* =======================================================
      X DESDE FICHA COMPLETA
 
-     Si venimos de consola:
-     ficha juego → mini ficha consola.
+     Si venimos del catálogo:
+     vuelve DIRECTAMENTE al catálogo,
+     ignorando la cadena de similares.
 
-     Si no:
+     Ejemplo:
+     catálogo → A → B → C → D
+
+     X desde D:
+     → catálogo.
+
+     IMPORTANTE:
+     NO cerramos consoleGames.
+
+     Así se conservan:
+     - página
+     - búsqueda
+     - scroll
+     - juegos cargados
+
+     Después:
+     X desde catálogo
+     → mini ficha de consola.
+
+     Si no venimos del catálogo:
      → mundo 3D.
   ======================================================= */
 
@@ -673,19 +703,14 @@ export default function WorldScene() {
       if (
         fullGameFromConsole
       ) {
-        const consoleData =
-          consoleGames;
+        /*
+          Solo quitamos FullGameOverlay.
+
+          PlatformGamesOverlay sigue montado
+          exactamente como estaba debajo.
+        */
 
         setFullGame(null);
-        setConsoleGames(null);
-
-        if (
-          consoleData
-        ) {
-          setOpenedConsole(
-            consoleData
-          );
-        }
 
         return;
       }
@@ -695,7 +720,6 @@ export default function WorldScene() {
       setOpenedGame(null);
     }, [
       fullGameFromConsole,
-      consoleGames,
       stopPlayer,
     ]);
 
@@ -1806,9 +1830,9 @@ export default function WorldScene() {
           }
 
           /*
-            En el siguiente archivo usaremos esta
-            propiedad para desactivar Escape mientras
-            una ficha de juego está encima.
+            Mientras una ficha completa
+            está encima, el catálogo
+            queda suspendido pero montado.
           */
           suspended={
             Boolean(
@@ -1829,27 +1853,28 @@ export default function WorldScene() {
           }
 
           /*
-            ←
+            ← ATRÁS
 
-            Si venimos del catálogo:
-            vuelve al catálogo conservado.
+            Si hay historial de similares:
+            D → C → B → A
 
-            Si FullGameOverlay tiene historial
-            de similares, primero gestiona ese
-            historial internamente.
+            Cuando se llega al juego original:
+            A → catálogo conservado.
           */
           onBack={
             backFromFullGame
           }
 
           /*
-            X
+            X CERRAR
 
-            Desde catálogo:
-            vuelve a mini ficha consola.
+            Desde cualquier juego de la cadena:
+            A / B / C / D
+            → catálogo conservado directamente.
 
-            Desde el mundo:
-            vuelve al mundo.
+            Después:
+            X del catálogo
+            → mini ficha de consola.
           */
           onClose={
             closeFullGame
