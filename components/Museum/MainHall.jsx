@@ -1,73 +1,48 @@
 "use client";
 
-import { useMemo } from "react";
-
-import {
-  RoundedBox,
-  Edges,
-} from "@react-three/drei";
+import { RoundedBox } from "@react-three/drei";
 
 import {
   RigidBody,
   CuboidCollider,
 } from "@react-three/rapier";
 
-import * as THREE from "three";
-
 /* =========================================================
    TIERRA VICIO — MAIN HALL
 
-   Primera versión estructural.
+   NUEVA VERSIÓN
 
-   - Un único edificio
-   - Planta completa en forma de cruceta
-   - Interior continuo
-   - Un solo nivel de suelo
-   - Preparado para repartir contenidos después
-   - Materiales estilizados / semi-realistas
+   - una sola planta
+   - cruceta compacta
+   - entrada orientada hacia +Z
+   - suelo físico en Y = 0
+   - espacio central continuo
 ========================================================= */
 
 /* =========================================================
    MEDIDAS
-
-             NORTE
-              │
-              │
-       ┌──────┴──────┐
-       │             │
- OESTE ├──── CENTRO ─┤ ESTE
-       │             │
-       └──────┬──────┘
-              │
-              │
-              SUR
 ========================================================= */
 
-const ARM_WIDTH = 42;
-const ARM_LENGTH = 58;
+const ARM_WIDTH = 28;
+const ARM_LENGTH = 34;
 
-const CENTER_SIZE = 48;
+const CENTER_SIZE = 34;
 
-const WALL_HEIGHT = 14;
-const WALL_THICKNESS = 0.55;
+const WALL_HEIGHT = 8.5;
+const WALL_THICKNESS = 0.5;
 
-const ROOF_THICKNESS = 0.35;
-
-/*
-  IMPORTANTE:
-
-  La superficie física transitable será Y = 0.
-
-  El suelo visual queda apenas por debajo.
-
-  Esto nos da una referencia universal para:
-  - exterior
-  - interior
-  - avatar
-  - futuras salas
-*/
-const FLOOR_TOP_Y = 0;
 const FLOOR_THICKNESS = 0.22;
+const ROOF_THICKNESS = 0.3;
+
+/* =========================================================
+   ENTRADA SUR
+
+   Cuando el edificio esté colocado al norte del patio,
+   +Z apunta hacia la plaza.
+========================================================= */
+
+const DOOR_WIDTH = 10;
+const DOOR_HEIGHT = 5.3;
 
 /* =========================================================
    COLORES
@@ -76,28 +51,22 @@ const FLOOR_THICKNESS = 0.22;
 const COLORS = {
   floor: "#25292d",
   floorCenter: "#2d3237",
-  floorLine: "#7656d6",
 
   wall: "#202428",
-  wallSide: "#282d32",
+  wallAlt: "#292e33",
   wallBase: "#15181b",
 
   roof: "#131619",
-  roofTrim: "#353b41",
-
-  glass: "#729db8",
-  glassEdge: "#18262e",
+  metal: "#3c4248",
 
   purple: "#7656d6",
-  purpleDark: "#493685",
+  purpleDark: "#46327e",
 
-  entrance: "#42484f",
-
-  black: "#0e1013",
+  entrance: "#111418",
 };
 
 /* =========================================================
-   POSICIONES GENERALES
+   DIMENSIONES DERIVADAS
 ========================================================= */
 
 const HALF_CENTER =
@@ -108,10 +77,6 @@ const HALF_ARM_WIDTH =
 
 const HALF_ARM_LENGTH =
   ARM_LENGTH / 2;
-
-/*
-  El brazo empieza donde termina el centro.
-*/
 
 const NORTH_Z =
   -HALF_CENTER -
@@ -129,46 +94,43 @@ const WEST_X =
   -HALF_CENTER -
   HALF_ARM_LENGTH;
 
-/* =========================================================
-   MATERIAL SIMPLE
-========================================================= */
+const NORTH_END_Z =
+  -HALF_CENTER -
+  ARM_LENGTH;
 
-function StandardMaterial({
-  color,
-  roughness = 0.8,
-  metalness = 0.04,
-}) {
-  return (
-    <meshStandardMaterial
-      color={color}
-      roughness={roughness}
-      metalness={metalness}
-    />
-  );
-}
+const SOUTH_END_Z =
+  HALF_CENTER +
+  ARM_LENGTH;
+
+const EAST_END_X =
+  HALF_CENTER +
+  ARM_LENGTH;
+
+const WEST_END_X =
+  -HALF_CENTER -
+  ARM_LENGTH;
 
 /* =========================================================
-   PANEL DE PARED
+   PARED
 ========================================================= */
 
 function Wall({
   position,
   size,
   color = COLORS.wall,
-  radius = 0.18,
 }) {
   return (
     <RoundedBox
       position={position}
       args={size}
-      radius={radius}
+      radius={0.16}
       smoothness={3}
       castShadow
       receiveShadow
     >
-      <StandardMaterial
+      <meshStandardMaterial
         color={color}
-        roughness={0.76}
+        roughness={0.75}
         metalness={0.05}
       />
     </RoundedBox>
@@ -177,8 +139,6 @@ function Wall({
 
 /* =========================================================
    SUELO
-
-   Todos los colliders terminan exactamente en Y = 0.
 ========================================================= */
 
 function FloorBlock({
@@ -191,8 +151,7 @@ function FloorBlock({
       <mesh
         position={[
           position[0],
-          FLOOR_TOP_Y -
-            FLOOR_THICKNESS / 2,
+          -FLOOR_THICKNESS / 2,
           position[2],
         ]}
         receiveShadow
@@ -213,16 +172,15 @@ function FloorBlock({
       </mesh>
 
       <CuboidCollider
+        position={[
+          position[0],
+          -FLOOR_THICKNESS / 2,
+          position[2],
+        ]}
         args={[
           size[0] / 2,
           FLOOR_THICKNESS / 2,
           size[2] / 2,
-        ]}
-        position={[
-          position[0],
-          FLOOR_TOP_Y -
-            FLOOR_THICKNESS / 2,
-          position[2],
         ]}
       />
     </>
@@ -230,84 +188,7 @@ function FloorBlock({
 }
 
 /* =========================================================
-   MARCAS DE SUELO
-
-   Muy discretas.
-
-   Ayudan a que el espacio grande no parezca vacío.
-========================================================= */
-
-function FloorGuides() {
-  return (
-    <group>
-      {/* NORTE / SUR */}
-
-      <mesh
-        position={[
-          0,
-          0.012,
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            0.12,
-            0.018,
-            CENTER_SIZE +
-              ARM_LENGTH * 2 -
-              6,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={COLORS.purple}
-          emissive={
-            COLORS.purpleDark
-          }
-          emissiveIntensity={0.22}
-          roughness={0.55}
-        />
-      </mesh>
-
-      {/* ESTE / OESTE */}
-
-      <mesh
-        position={[
-          0,
-          0.013,
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            CENTER_SIZE +
-              ARM_LENGTH * 2 -
-              6,
-            0.018,
-            0.12,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={COLORS.purple}
-          emissive={
-            COLORS.purpleDark
-          }
-          emissiveIntensity={0.22}
-          roughness={0.55}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/* =========================================================
    TECHO
-
-   Construido también en cinco piezas.
-
-   Esto es mucho más ligero y fácil de controlar
-   que una geometría booleana compleja.
 ========================================================= */
 
 function RoofBlock({
@@ -335,7 +216,7 @@ function RoofBlock({
 
       <meshStandardMaterial
         color={COLORS.roof}
-        roughness={0.65}
+        roughness={0.64}
         metalness={0.12}
       />
     </mesh>
@@ -343,707 +224,761 @@ function RoofBlock({
 }
 
 /* =========================================================
-   LUCERNARIO CENTRAL
+   GUÍAS DEL SUELO
 
-   Referencia visual a la cruceta.
-
-   No usamos luces.
+   Solo visuales.
 ========================================================= */
 
-function CentralSkylight() {
-  const geometry =
-    useMemo(() => {
-      const shape =
-        new THREE.Shape();
-
-      const width = 5;
-      const length = 17;
-
-      /*
-        Cruz simple.
-      */
-
-      shape.moveTo(
-        -width / 2,
-        -length / 2
-      );
-
-      shape.lineTo(
-        width / 2,
-        -length / 2
-      );
-
-      shape.lineTo(
-        width / 2,
-        -width / 2
-      );
-
-      shape.lineTo(
-        length / 2,
-        -width / 2
-      );
-
-      shape.lineTo(
-        length / 2,
-        width / 2
-      );
-
-      shape.lineTo(
-        width / 2,
-        width / 2
-      );
-
-      shape.lineTo(
-        width / 2,
-        length / 2
-      );
-
-      shape.lineTo(
-        -width / 2,
-        length / 2
-      );
-
-      shape.lineTo(
-        -width / 2,
-        width / 2
-      );
-
-      shape.lineTo(
-        -length / 2,
-        width / 2
-      );
-
-      shape.lineTo(
-        -length / 2,
-        -width / 2
-      );
-
-      shape.lineTo(
-        -width / 2,
-        -width / 2
-      );
-
-      shape.closePath();
-
-      return new THREE.ShapeGeometry(
-        shape
-      );
-    }, []);
+function FloorGuides() {
+  const fullLength =
+    CENTER_SIZE +
+    ARM_LENGTH * 2 -
+    3;
 
   return (
-    <mesh
-      geometry={geometry}
-      position={[
-        0,
-        WALL_HEIGHT +
-          ROOF_THICKNESS +
-          0.025,
-        0,
-      ]}
-      rotation={[
-        -Math.PI / 2,
-        0,
-        0,
-      ]}
-    >
-      <meshPhysicalMaterial
-        color={COLORS.glass}
-        transparent
-        opacity={0.5}
-        transmission={0.32}
-        roughness={0.16}
-        clearcoat={0.2}
-        side={THREE.DoubleSide}
+    <group>
+      <mesh
+        position={[
+          0,
+          0.012,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            0.1,
+            0.018,
+            fullLength,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.purple}
+          emissive={COLORS.purpleDark}
+          emissiveIntensity={0.24}
+          roughness={0.6}
+        />
+      </mesh>
+
+      <mesh
+        position={[
+          0,
+          0.013,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            fullLength,
+            0.018,
+            0.1,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.purple}
+          emissive={COLORS.purpleDark}
+          emissiveIntensity={0.24}
+          roughness={0.6}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
+   ENTRADA
+
+   Apertura real en el extremo SUR.
+========================================================= */
+
+function SouthEntrance() {
+  const remainingWidth =
+    (
+      ARM_WIDTH -
+      DOOR_WIDTH
+    ) / 2;
+
+  const sideX =
+    DOOR_WIDTH / 2 +
+    remainingWidth / 2;
+
+  const lintelHeight =
+    WALL_HEIGHT -
+    DOOR_HEIGHT;
+
+  const lintelY =
+    DOOR_HEIGHT +
+    lintelHeight / 2;
+
+  return (
+    <group>
+      {/* pared izquierda */}
+
+      <Wall
+        position={[
+          -sideX,
+          WALL_HEIGHT / 2,
+          SOUTH_END_Z,
+        ]}
+        size={[
+          remainingWidth,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
       />
 
-      <Edges
-        threshold={15}
-        color={COLORS.glassEdge}
+      {/* pared derecha */}
+
+      <Wall
+        position={[
+          sideX,
+          WALL_HEIGHT / 2,
+          SOUTH_END_Z,
+        ]}
+        size={[
+          remainingWidth,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
       />
-    </mesh>
+
+      {/* dintel */}
+
+      <Wall
+        position={[
+          0,
+          lintelY,
+          SOUTH_END_Z,
+        ]}
+        size={[
+          DOOR_WIDTH,
+          lintelHeight,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wall}
+      />
+
+      {/* pilares metálicos */}
+
+      <RoundedBox
+        position={[
+          -DOOR_WIDTH / 2 -
+            0.18,
+          DOOR_HEIGHT / 2,
+          SOUTH_END_Z +
+            0.2,
+        ]}
+        args={[
+          0.38,
+          DOOR_HEIGHT,
+          0.4,
+        ]}
+        radius={0.1}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.metal}
+          roughness={0.5}
+          metalness={0.25}
+        />
+      </RoundedBox>
+
+      <RoundedBox
+        position={[
+          DOOR_WIDTH / 2 +
+            0.18,
+          DOOR_HEIGHT / 2,
+          SOUTH_END_Z +
+            0.2,
+        ]}
+        args={[
+          0.38,
+          DOOR_HEIGHT,
+          0.4,
+        ]}
+        radius={0.1}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.metal}
+          roughness={0.5}
+          metalness={0.25}
+        />
+      </RoundedBox>
+
+      {/* marco superior */}
+
+      <RoundedBox
+        position={[
+          0,
+          DOOR_HEIGHT +
+            0.2,
+          SOUTH_END_Z +
+            0.2,
+        ]}
+        args={[
+          DOOR_WIDTH +
+            0.75,
+          0.38,
+          0.4,
+        ]}
+        radius={0.1}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.metal}
+          roughness={0.5}
+          metalness={0.25}
+        />
+      </RoundedBox>
+
+      {/* línea Tierra Vicio */}
+
+      <mesh
+        position={[
+          0,
+          DOOR_HEIGHT +
+            0.43,
+          SOUTH_END_Z +
+            0.42,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            DOOR_WIDTH +
+              0.15,
+            0.07,
+            0.03,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.purple}
+          emissive={COLORS.purpleDark}
+          emissiveIntensity={0.5}
+        />
+      </mesh>
+    </group>
   );
 }
 
 /* =========================================================
    PAREDES EXTERIORES
-
-   La cruceta queda abierta internamente.
-
-   Solo construimos el perímetro.
 ========================================================= */
 
 function OuterWalls() {
   const y =
     WALL_HEIGHT / 2;
 
-  /*
-    Para no crear 20 cálculos dentro del JSX,
-    definimos las paredes como datos.
-  */
-
-  const walls = [
-    /* =====================================================
-       NORTE — FONDO
-    ===================================================== */
-
-    {
-      p: [
-        0,
-        y,
-        -HALF_CENTER -
-          ARM_LENGTH,
-      ],
-
-      s: [
-        ARM_WIDTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    /* NORTE — LATERALES */
-
-    {
-      p: [
-        -HALF_ARM_WIDTH,
-        y,
-        NORTH_Z,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_LENGTH,
-      ],
-    },
-
-    {
-      p: [
-        HALF_ARM_WIDTH,
-        y,
-        NORTH_Z,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_LENGTH,
-      ],
-    },
-
-    /* =====================================================
-       SUR — FONDO
-    ===================================================== */
-
-    {
-      p: [
-        0,
-        y,
-        HALF_CENTER +
-          ARM_LENGTH,
-      ],
-
-      s: [
-        ARM_WIDTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    /* SUR — LATERALES */
-
-    {
-      p: [
-        -HALF_ARM_WIDTH,
-        y,
-        SOUTH_Z,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_LENGTH,
-      ],
-    },
-
-    {
-      p: [
-        HALF_ARM_WIDTH,
-        y,
-        SOUTH_Z,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_LENGTH,
-      ],
-    },
-
-    /* =====================================================
-       ESTE — FONDO
-    ===================================================== */
-
-    {
-      p: [
-        HALF_CENTER +
-          ARM_LENGTH,
-        y,
-        0,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_WIDTH,
-      ],
-    },
-
-    /* ESTE — LATERALES */
-
-    {
-      p: [
-        EAST_X,
-        y,
-        -HALF_ARM_WIDTH,
-      ],
-
-      s: [
-        ARM_LENGTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        EAST_X,
-        y,
-        HALF_ARM_WIDTH,
-      ],
-
-      s: [
-        ARM_LENGTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    /* =====================================================
-       OESTE — FONDO
-    ===================================================== */
-
-    {
-      p: [
-        -HALF_CENTER -
-          ARM_LENGTH,
-        y,
-        0,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-        WALL_HEIGHT,
-        ARM_WIDTH,
-      ],
-    },
-
-    /* OESTE — LATERALES */
-
-    {
-      p: [
-        WEST_X,
-        y,
-        -HALF_ARM_WIDTH,
-      ],
-
-      s: [
-        ARM_LENGTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        WEST_X,
-        y,
-        HALF_ARM_WIDTH,
-      ],
-
-      s: [
-        ARM_LENGTH,
-        WALL_HEIGHT,
-        WALL_THICKNESS,
-      ],
-    },
-
-    /* =====================================================
-       HOMBROS CENTRALES
-
-       Estas piezas cierran las esquinas que quedan entre
-       el cuadrado central y cada brazo.
-    ===================================================== */
-
-    {
-      p: [
-        -(
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-
-        y,
-
-        -HALF_CENTER,
-      ],
-
-      s: [
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-
-        WALL_HEIGHT,
-
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        (
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-
-        y,
-
-        -HALF_CENTER,
-      ],
-
-      s: [
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-
-        WALL_HEIGHT,
-
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        -(
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-
-        y,
-
-        HALF_CENTER,
-      ],
-
-      s: [
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-
-        WALL_HEIGHT,
-
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        (
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-
-        y,
-
-        HALF_CENTER,
-      ],
-
-      s: [
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-
-        WALL_HEIGHT,
-
-        WALL_THICKNESS,
-      ],
-    },
-
-    {
-      p: [
-        -HALF_CENTER,
-        y,
-
-        -(
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-
-        WALL_HEIGHT,
-
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-      ],
-    },
-
-    {
-      p: [
-        -HALF_CENTER,
-        y,
-
-        (
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-
-        WALL_HEIGHT,
-
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-      ],
-    },
-
-    {
-      p: [
-        HALF_CENTER,
-        y,
-
-        -(
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-
-        WALL_HEIGHT,
-
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-      ],
-    },
-
-    {
-      p: [
-        HALF_CENTER,
-        y,
-
-        (
-          HALF_CENTER +
-          HALF_ARM_WIDTH
-        ) /
-          2,
-      ],
-
-      s: [
-        WALL_THICKNESS,
-
-        WALL_HEIGHT,
-
-        HALF_CENTER -
-          HALF_ARM_WIDTH,
-      ],
-    },
-  ];
-
   return (
-    <>
-      {walls.map(
-        (
-          wall,
-          index
-        ) => (
-          <Wall
-            key={
-              `main-wall-${index}`
-            }
-            position={wall.p}
-            size={wall.s}
-            color={
-              index % 3 === 0
-                ? COLORS.wallSide
-                : COLORS.wall
-            }
-          />
-        )
-      )}
-    </>
+    <group>
+      {/* ===================================================
+          NORTE
+      =================================================== */}
+
+      <Wall
+        position={[
+          0,
+          y,
+          NORTH_END_Z,
+        ]}
+        size={[
+          ARM_WIDTH,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+      />
+
+      <Wall
+        position={[
+          -HALF_ARM_WIDTH,
+          y,
+          NORTH_Z,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_LENGTH,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      <Wall
+        position={[
+          HALF_ARM_WIDTH,
+          y,
+          NORTH_Z,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_LENGTH,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      {/* ===================================================
+          SUR
+
+          El extremo completo lo maneja SouthEntrance.
+      =================================================== */}
+
+      <Wall
+        position={[
+          -HALF_ARM_WIDTH,
+          y,
+          SOUTH_Z,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_LENGTH,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      <Wall
+        position={[
+          HALF_ARM_WIDTH,
+          y,
+          SOUTH_Z,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_LENGTH,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      <SouthEntrance />
+
+      {/* ===================================================
+          ESTE
+      =================================================== */}
+
+      <Wall
+        position={[
+          EAST_END_X,
+          y,
+          0,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_WIDTH,
+        ]}
+      />
+
+      <Wall
+        position={[
+          EAST_X,
+          y,
+          -HALF_ARM_WIDTH,
+        ]}
+        size={[
+          ARM_LENGTH,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      <Wall
+        position={[
+          EAST_X,
+          y,
+          HALF_ARM_WIDTH,
+        ]}
+        size={[
+          ARM_LENGTH,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      {/* ===================================================
+          OESTE
+      =================================================== */}
+
+      <Wall
+        position={[
+          WEST_END_X,
+          y,
+          0,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          ARM_WIDTH,
+        ]}
+      />
+
+      <Wall
+        position={[
+          WEST_X,
+          y,
+          -HALF_ARM_WIDTH,
+        ]}
+        size={[
+          ARM_LENGTH,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      <Wall
+        position={[
+          WEST_X,
+          y,
+          HALF_ARM_WIDTH,
+        ]}
+        size={[
+          ARM_LENGTH,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+        color={COLORS.wallAlt}
+      />
+
+      {/* ===================================================
+          HOMBROS DEL CENTRO
+      =================================================== */}
+
+      <Wall
+        position={[
+          -15.5,
+          y,
+          -HALF_CENTER,
+        ]}
+        size={[
+          3,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+      />
+
+      <Wall
+        position={[
+          15.5,
+          y,
+          -HALF_CENTER,
+        ]}
+        size={[
+          3,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+      />
+
+      <Wall
+        position={[
+          -15.5,
+          y,
+          HALF_CENTER,
+        ]}
+        size={[
+          3,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+      />
+
+      <Wall
+        position={[
+          15.5,
+          y,
+          HALF_CENTER,
+        ]}
+        size={[
+          3,
+          WALL_HEIGHT,
+          WALL_THICKNESS,
+        ]}
+      />
+
+      <Wall
+        position={[
+          -HALF_CENTER,
+          y,
+          -15.5,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          3,
+        ]}
+      />
+
+      <Wall
+        position={[
+          -HALF_CENTER,
+          y,
+          15.5,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          3,
+        ]}
+      />
+
+      <Wall
+        position={[
+          HALF_CENTER,
+          y,
+          -15.5,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          3,
+        ]}
+      />
+
+      <Wall
+        position={[
+          HALF_CENTER,
+          y,
+          15.5,
+        ]}
+        size={[
+          WALL_THICKNESS,
+          WALL_HEIGHT,
+          3,
+        ]}
+      />
+    </group>
   );
 }
 
 /* =========================================================
-   COLISIONES DE PARED
+   COLISIONES
 ========================================================= */
 
 function WallColliders() {
   const y =
     WALL_HEIGHT / 2;
 
-  const colliders = [
-    [
-      0,
-      y,
-      -HALF_CENTER -
-        ARM_LENGTH,
-      ARM_WIDTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
+  const remainingWidth =
+    (
+      ARM_WIDTH -
+      DOOR_WIDTH
+    ) / 2;
 
-    [
-      -HALF_ARM_WIDTH,
-      y,
-      NORTH_Z,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_LENGTH,
-    ],
+  const sideX =
+    DOOR_WIDTH / 2 +
+    remainingWidth / 2;
 
-    [
-      HALF_ARM_WIDTH,
-      y,
-      NORTH_Z,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_LENGTH,
-    ],
+  const lintelHeight =
+    WALL_HEIGHT -
+    DOOR_HEIGHT;
 
-    [
-      0,
-      y,
-      HALF_CENTER +
-        ARM_LENGTH,
-      ARM_WIDTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
-
-    [
-      -HALF_ARM_WIDTH,
-      y,
-      SOUTH_Z,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_LENGTH,
-    ],
-
-    [
-      HALF_ARM_WIDTH,
-      y,
-      SOUTH_Z,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_LENGTH,
-    ],
-
-    [
-      HALF_CENTER +
-        ARM_LENGTH,
-      y,
-      0,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_WIDTH,
-    ],
-
-    [
-      EAST_X,
-      y,
-      -HALF_ARM_WIDTH,
-      ARM_LENGTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
-
-    [
-      EAST_X,
-      y,
-      HALF_ARM_WIDTH,
-      ARM_LENGTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
-
-    [
-      -HALF_CENTER -
-        ARM_LENGTH,
-      y,
-      0,
-      WALL_THICKNESS,
-      WALL_HEIGHT,
-      ARM_WIDTH,
-    ],
-
-    [
-      WEST_X,
-      y,
-      -HALF_ARM_WIDTH,
-      ARM_LENGTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
-
-    [
-      WEST_X,
-      y,
-      HALF_ARM_WIDTH,
-      ARM_LENGTH,
-      WALL_HEIGHT,
-      WALL_THICKNESS,
-    ],
-  ];
+  const lintelY =
+    DOOR_HEIGHT +
+    lintelHeight / 2;
 
   return (
     <>
-      {colliders.map(
-        (
-          [
-            x,
-            yPos,
-            z,
-            w,
-            h,
-            d,
-          ],
-          index
-        ) => (
-          <CuboidCollider
-            key={
-              `wall-collider-${index}`
-            }
-            position={[
-              x,
-              yPos,
-              z,
-            ]}
-            args={[
-              w / 2,
-              h / 2,
-              d / 2,
-            ]}
-          />
-        )
-      )}
+      {/* NORTE */}
+
+      <CuboidCollider
+        position={[
+          0,
+          y,
+          NORTH_END_Z,
+        ]}
+        args={[
+          ARM_WIDTH / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          -HALF_ARM_WIDTH,
+          y,
+          NORTH_Z,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_LENGTH / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          HALF_ARM_WIDTH,
+          y,
+          NORTH_Z,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_LENGTH / 2,
+        ]}
+      />
+
+      {/* SUR LATERALES */}
+
+      <CuboidCollider
+        position={[
+          -HALF_ARM_WIDTH,
+          y,
+          SOUTH_Z,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_LENGTH / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          HALF_ARM_WIDTH,
+          y,
+          SOUTH_Z,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_LENGTH / 2,
+        ]}
+      />
+
+      {/* ENTRADA SUR */}
+
+      <CuboidCollider
+        position={[
+          -sideX,
+          y,
+          SOUTH_END_Z,
+        ]}
+        args={[
+          remainingWidth / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          sideX,
+          y,
+          SOUTH_END_Z,
+        ]}
+        args={[
+          remainingWidth / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          0,
+          lintelY,
+          SOUTH_END_Z,
+        ]}
+        args={[
+          DOOR_WIDTH / 2,
+          lintelHeight / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      {/* ESTE */}
+
+      <CuboidCollider
+        position={[
+          EAST_END_X,
+          y,
+          0,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_WIDTH / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          EAST_X,
+          y,
+          -HALF_ARM_WIDTH,
+        ]}
+        args={[
+          ARM_LENGTH / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          EAST_X,
+          y,
+          HALF_ARM_WIDTH,
+        ]}
+        args={[
+          ARM_LENGTH / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      {/* OESTE */}
+
+      <CuboidCollider
+        position={[
+          WEST_END_X,
+          y,
+          0,
+        ]}
+        args={[
+          WALL_THICKNESS / 2,
+          WALL_HEIGHT / 2,
+          ARM_WIDTH / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          WEST_X,
+          y,
+          -HALF_ARM_WIDTH,
+        ]}
+        args={[
+          ARM_LENGTH / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
+
+      <CuboidCollider
+        position={[
+          WEST_X,
+          y,
+          HALF_ARM_WIDTH,
+        ]}
+        args={[
+          ARM_LENGTH / 2,
+          WALL_HEIGHT / 2,
+          WALL_THICKNESS / 2,
+        ]}
+      />
     </>
   );
 }
@@ -1065,7 +1000,7 @@ export default function MainHall({
       position={position}
     >
       {/* ===================================================
-          FÍSICA PRINCIPAL
+          FÍSICA
       =================================================== */}
 
       <RigidBody
@@ -1085,9 +1020,7 @@ export default function MainHall({
             FLOOR_THICKNESS,
             CENTER_SIZE,
           ]}
-          color={
-            COLORS.floorCenter
-          }
+          color={COLORS.floorCenter}
         />
 
         {/* NORTE */}
@@ -1154,14 +1087,10 @@ export default function MainHall({
       </RigidBody>
 
       {/* ===================================================
-          SUELO VISUAL
+          ELEMENTOS VISUALES
       =================================================== */}
 
       <FloorGuides />
-
-      {/* ===================================================
-          PAREDES
-      =================================================== */}
 
       <OuterWalls />
 
@@ -1233,16 +1162,6 @@ export default function MainHall({
           ARM_WIDTH,
         ]}
       />
-
-      {/* ===================================================
-          LUCERNARIO CENTRAL
-      =================================================== */}
-
-      <CentralSkylight />
-
-      {/* ===================================================
-          CONTENIDO FUTURO
-      =================================================== */}
 
       {children}
     </group>
