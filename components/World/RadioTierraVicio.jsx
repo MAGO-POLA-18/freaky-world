@@ -2,13 +2,19 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 
+/* =========================================================
+   RADIO EN DIRECTO
+========================================================= */
+
 const LIVE_STATIONS = [
   {
     id: "rpgn",
+    kind: "live",
     name: "RPGN Radio",
     subtitle: "Game Music Radio",
     badge: "GAME",
@@ -16,6 +22,7 @@ const LIVE_STATIONS = [
   },
   {
     id: "radiosega",
+    kind: "live",
     name: "RadioSEGA",
     subtitle: "SEGA music 24/7",
     badge: "SEGA",
@@ -23,32 +30,9 @@ const LIVE_STATIONS = [
   },
 ];
 
-const PROGRAMS = [
-  {
-    id: "go855",
-    name: "Game Over 855",
-    subtitle:
-      "Trilogía Voice of Cards · 19 sep 2026",
-    badge: "GO",
-    url: "https://www.portalgameover.com/programas/go855.mp3",
-  },
-  {
-    id: "go854",
-    name: "Game Over 854",
-    subtitle:
-      "007 First Light · 5 sep 2026",
-    badge: "GO",
-    url: "https://www.portalgameover.com/programas/go854.mp3",
-  },
-  {
-    id: "go853",
-    name: "Game Over 853",
-    subtitle:
-      "Arzette · 18 jul 2026",
-    badge: "GO",
-    url: "https://www.portalgameover.com/programas/go853.mp3",
-  },
-];
+/* =========================================================
+   STORAGE
+========================================================= */
 
 const STORAGE_STATION =
   "tierraVicioRadioStation";
@@ -56,11 +40,148 @@ const STORAGE_STATION =
 const STORAGE_MUTED =
   "tierraVicioRadioMuted";
 
+const STORAGE_POSITION_PREFIX =
+  "tierraVicioProgramPosition:";
+
+/* =========================================================
+   EVENTOS
+========================================================= */
+
 const MEDIA_START_EVENT =
   "tierra-vicio-media-start";
 
 const MEDIA_END_EVENT =
   "tierra-vicio-media-end";
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function makeEpisodeSource(
+  show,
+  episode
+) {
+  return {
+    id:
+      `episode:${show.id}:${episode.id}`,
+
+    kind:
+      "program",
+
+    showId:
+      show.id,
+
+    episodeId:
+      episode.id,
+
+    name:
+      episode.title,
+
+    subtitle:
+      show.name,
+
+    badge:
+      show.badge,
+
+    url:
+      episode.audioUrl,
+
+    date:
+      episode.date,
+
+    apiDuration:
+      episode.duration,
+
+    description:
+      episode.description,
+  };
+}
+
+function formatTime(
+  seconds
+) {
+  if (
+    !Number.isFinite(seconds) ||
+    seconds < 0
+  ) {
+    return "0:00";
+  }
+
+  const total =
+    Math.floor(seconds);
+
+  const hours =
+    Math.floor(
+      total / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (total % 3600) /
+        60
+    );
+
+  const secs =
+    total % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(
+      minutes
+    ).padStart(
+      2,
+      "0"
+    )}:${String(
+      secs
+    ).padStart(
+      2,
+      "0"
+    )}`;
+  }
+
+  return `${minutes}:${String(
+    secs
+  ).padStart(
+    2,
+    "0"
+  )}`;
+}
+
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  return date.toLocaleDateString(
+    "es-ES",
+    {
+      day:
+        "numeric",
+
+      month:
+        "short",
+
+      year:
+        "numeric",
+    }
+  );
+}
+
+/* =========================================================
+   COMPONENTE
+========================================================= */
 
 export default function RadioTierraVicio() {
   const audioRef =
@@ -68,6 +189,11 @@ export default function RadioTierraVicio() {
 
   const rootRef =
     useRef(null);
+
+  const sourceRef =
+    useRef(
+      LIVE_STATIONS[0]
+    );
 
   const userPausedRef =
     useRef(false);
@@ -80,6 +206,15 @@ export default function RadioTierraVicio() {
 
   const stationShouldResumeRef =
     useRef(false);
+
+  const pendingSavedSourceRef =
+    useRef(null);
+
+  const restoredPositionRef =
+    useRef(null);
+
+  const lastSavedPositionRef =
+    useRef(0);
 
   const [
     open,
@@ -113,10 +248,68 @@ export default function RadioTierraVicio() {
     "Esperando interacción"
   );
 
-  const allSources = [
-    ...LIVE_STATIONS,
-    ...PROGRAMS,
-  ];
+  const [
+    shows,
+    setShows,
+  ] = useState([]);
+
+  const [
+    programsLoading,
+    setProgramsLoading,
+  ] = useState(true);
+
+  const [
+    programsError,
+    setProgramsError,
+  ] = useState(false);
+
+  const [
+    expandedShowId,
+    setExpandedShowId,
+  ] = useState(null);
+
+  const [
+    currentTime,
+    setCurrentTime,
+  ] = useState(0);
+
+  const [
+    duration,
+    setDuration,
+  ] = useState(0);
+
+  /* =========================================================
+     FUENTES DE PROGRAMAS
+  ========================================================= */
+
+  const programSources =
+    useMemo(
+      () =>
+        shows.flatMap(
+          (show) =>
+            show.episodes.map(
+              (episode) =>
+                makeEpisodeSource(
+                  show,
+                  episode
+                )
+            )
+        ),
+      [
+        shows,
+      ]
+    );
+
+  const allSources =
+    useMemo(
+      () => [
+        ...LIVE_STATIONS,
+        ...programSources,
+      ],
+      [
+        programSources,
+      ]
+    );
 
   const source =
     allSources.find(
@@ -127,15 +320,108 @@ export default function RadioTierraVicio() {
     LIVE_STATIONS[0];
 
   const isProgram =
-    PROGRAMS.some(
-      (item) =>
-        item.id ===
-        source.id
+    source.kind ===
+    "program";
+
+  sourceRef.current =
+    source;
+
+  /* =========================================================
+     POSICIÓN DEL PODCAST
+  ========================================================= */
+
+  function positionStorageKey(
+    selectedSource =
+      sourceRef.current
+  ) {
+    if (
+      !selectedSource ||
+      selectedSource.kind !==
+        "program"
+    ) {
+      return null;
+    }
+
+    return (
+      STORAGE_POSITION_PREFIX +
+      selectedSource.id
     );
+  }
+
+  function saveCurrentPosition() {
+    const audio =
+      audioRef.current;
+
+    const selectedSource =
+      sourceRef.current;
+
+    if (
+      !audio ||
+      selectedSource.kind !==
+        "program" ||
+      !Number.isFinite(
+        audio.currentTime
+      )
+    ) {
+      return;
+    }
+
+    const key =
+      positionStorageKey(
+        selectedSource
+      );
+
+    if (!key) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        key,
+        String(
+          audio.currentTime
+        )
+      );
+
+      lastSavedPositionRef.current =
+        audio.currentTime;
+    } catch {
+      // Opcional.
+    }
+  }
+
+  function clearSavedPosition(
+    selectedSource =
+      sourceRef.current
+  ) {
+    const key =
+      positionStorageKey(
+        selectedSource
+      );
+
+    if (!key) {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(
+        key
+      );
+    } catch {
+      // Opcional.
+    }
+  }
+
+  /* =========================================================
+     PLAY / PAUSE
+  ========================================================= */
 
   function playRadio() {
     const audio =
       audioRef.current;
+
+    const selectedSource =
+      sourceRef.current;
 
     if (
       !audio ||
@@ -150,7 +436,8 @@ export default function RadioTierraVicio() {
         setPlaying(true);
 
         setStatus(
-          isProgram
+          selectedSource.kind ===
+            "program"
             ? "Reproduciendo"
             : "En directo"
         );
@@ -175,6 +462,8 @@ export default function RadioTierraVicio() {
       return;
     }
 
+    saveCurrentPosition();
+
     audio.pause();
 
     setPlaying(false);
@@ -183,6 +472,194 @@ export default function RadioTierraVicio() {
       nextStatus
     );
   }
+
+  /* =========================================================
+     CARGAR PROGRAMAS
+  ========================================================= */
+
+  useEffect(() => {
+    let cancelled =
+      false;
+
+    async function loadPrograms() {
+      try {
+        setProgramsLoading(
+          true
+        );
+
+        setProgramsError(
+          false
+        );
+
+        const response =
+          await fetch(
+            "/api/radio/programs",
+            {
+              cache:
+                "no-store",
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            "Programas no disponibles"
+          );
+        }
+
+        const data =
+          await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextShows =
+          Array.isArray(
+            data?.shows
+          )
+            ? data.shows
+            : [];
+
+        setShows(
+          nextShows
+        );
+
+        if (
+          nextShows.length >
+            0 &&
+          !expandedShowId
+        ) {
+          setExpandedShowId(
+            nextShows[0].id
+          );
+        }
+
+        setProgramsLoading(
+          false
+        );
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setProgramsLoading(
+          false
+        );
+
+        setProgramsError(
+          true
+        );
+      }
+    }
+
+    loadPrograms();
+
+    /*
+      Si la página queda abierta muchas
+      horas, vuelve a consultar.
+    */
+
+    const interval =
+      window.setInterval(
+        loadPrograms,
+        6 * 60 * 60 * 1000
+      );
+
+    return () => {
+      cancelled =
+        true;
+
+      window.clearInterval(
+        interval
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     RESTAURAR EPISODIO GUARDADO
+  ========================================================= */
+
+  useEffect(() => {
+    const pending =
+      pendingSavedSourceRef.current;
+
+    if (!pending) {
+      return;
+    }
+
+    const exact =
+      programSources.find(
+        (item) =>
+          item.id ===
+          pending
+      );
+
+    if (exact) {
+      pendingSavedSourceRef.current =
+        null;
+
+      setSourceId(
+        exact.id
+      );
+
+      setTab(
+        "programs"
+      );
+
+      setExpandedShowId(
+        exact.showId
+      );
+
+      return;
+    }
+
+    /*
+      Compatibilidad con la versión
+      anterior que guardaba go855,
+      go854, etc.
+    */
+
+    if (
+      /^go\d+$/i.test(
+        pending
+      )
+    ) {
+      const legacyNumber =
+        pending.replace(
+          /^go/i,
+          ""
+        );
+
+      const legacy =
+        programSources.find(
+          (item) =>
+            item.showId ===
+              "game-over" &&
+            item.name.includes(
+              `Game Over ${legacyNumber}`
+            )
+        );
+
+      if (legacy) {
+        pendingSavedSourceRef.current =
+          null;
+
+        setSourceId(
+          legacy.id
+        );
+
+        setTab(
+          "programs"
+        );
+
+        setExpandedShowId(
+          legacy.showId
+        );
+      }
+    }
+  }, [
+    programSources,
+  ]);
 
   /* =========================================================
      CARGAR PREFERENCIAS
@@ -201,7 +678,7 @@ export default function RadioTierraVicio() {
         );
 
       if (
-        allSources.some(
+        LIVE_STATIONS.some(
           (item) =>
             item.id ===
             savedSource
@@ -210,25 +687,20 @@ export default function RadioTierraVicio() {
         setSourceId(
           savedSource
         );
-
-        if (
-          PROGRAMS.some(
-            (item) =>
-              item.id ===
-              savedSource
-          )
-        ) {
-          setTab(
-            "programs"
-          );
-        }
+      } else if (
+        savedSource
+      ) {
+        pendingSavedSourceRef.current =
+          savedSource;
       }
 
       if (
         savedMuted ===
         "true"
       ) {
-        setMuted(true);
+        setMuted(
+          true
+        );
       }
     } catch {
       // Preferencias opcionales.
@@ -256,7 +728,7 @@ export default function RadioTierraVicio() {
         String(muted)
       );
     } catch {
-      // Preferencias opcionales.
+      // Opcional.
     }
   }, [
     muted,
@@ -273,7 +745,7 @@ export default function RadioTierraVicio() {
         sourceId
       );
     } catch {
-      // Preferencias opcionales.
+      // Opcional.
     }
   }, [
     sourceId,
@@ -290,6 +762,24 @@ export default function RadioTierraVicio() {
     if (!audio) {
       return;
     }
+
+    restoredPositionRef.current =
+      null;
+
+    lastSavedPositionRef.current =
+      0;
+
+    setCurrentTime(
+      0
+    );
+
+    setDuration(
+      Number.isFinite(
+        source.apiDuration
+      )
+        ? source.apiDuration
+        : 0
+    );
 
     audio.src =
       source.url;
@@ -308,7 +798,9 @@ export default function RadioTierraVicio() {
 
       playRadio();
     } else {
-      setPlaying(false);
+      setPlaying(
+        false
+      );
 
       setStatus(
         isProgram
@@ -320,6 +812,97 @@ export default function RadioTierraVicio() {
     source.id,
     source.url,
   ]);
+
+  /* =========================================================
+     RESTAURAR POSICIÓN
+  ========================================================= */
+
+  function restoreProgramPosition() {
+    const audio =
+      audioRef.current;
+
+    const selectedSource =
+      sourceRef.current;
+
+    if (
+      !audio ||
+      selectedSource.kind !==
+        "program"
+    ) {
+      return;
+    }
+
+    if (
+      restoredPositionRef.current ===
+      selectedSource.id
+    ) {
+      return;
+    }
+
+    restoredPositionRef.current =
+      selectedSource.id;
+
+    const key =
+      positionStorageKey(
+        selectedSource
+      );
+
+    if (!key) {
+      return;
+    }
+
+    try {
+      const saved =
+        Number(
+          window.localStorage.getItem(
+            key
+          )
+        );
+
+      if (
+        Number.isFinite(
+          saved
+        ) &&
+        saved > 0
+      ) {
+        const realDuration =
+          Number.isFinite(
+            audio.duration
+          )
+            ? audio.duration
+            : 0;
+
+        /*
+          Si estaba prácticamente
+          terminado, no restauramos.
+        */
+
+        if (
+          realDuration > 0 &&
+          saved >=
+            realDuration - 5
+        ) {
+          clearSavedPosition(
+            selectedSource
+          );
+
+          return;
+        }
+
+        audio.currentTime =
+          saved;
+
+        setCurrentTime(
+          saved
+        );
+
+        lastSavedPositionRef.current =
+          saved;
+      }
+    } catch {
+      // Opcional.
+    }
+  }
 
   /* =========================================================
      PRIMERA INTERACCIÓN
@@ -347,8 +930,11 @@ export default function RadioTierraVicio() {
       "pointerdown",
       unlockAndPlay,
       {
-        once: true,
-        capture: true,
+        once:
+          true,
+
+        capture:
+          true,
       }
     );
 
@@ -362,7 +948,7 @@ export default function RadioTierraVicio() {
   }, []);
 
   /* =========================================================
-     CERRAR PANEL AL TOCAR FUERA
+     CERRAR AL TOCAR FUERA
   ========================================================= */
 
   useEffect(() => {
@@ -378,7 +964,9 @@ export default function RadioTierraVicio() {
             event.target
           )
         ) {
-          setOpen(false);
+          setOpen(
+            false
+          );
         }
       };
 
@@ -400,7 +988,7 @@ export default function RadioTierraVicio() {
   ]);
 
   /* =========================================================
-     PAUSAR AL SALIR DE LA APP
+     SALIR DE LA APP
   ========================================================= */
 
   useEffect(() => {
@@ -416,6 +1004,8 @@ export default function RadioTierraVicio() {
         if (
           document.hidden
         ) {
+          saveCurrentPosition();
+
           hiddenWasPlayingRef.current =
             !audio.paused &&
             !userPausedRef.current;
@@ -428,7 +1018,9 @@ export default function RadioTierraVicio() {
             );
           }
 
-          setOpen(false);
+          setOpen(
+            false
+          );
 
           return;
         }
@@ -453,6 +1045,29 @@ export default function RadioTierraVicio() {
       document.removeEventListener(
         "visibilitychange",
         handleVisibilityChange
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     GUARDAR ANTES DE CERRAR
+  ========================================================= */
+
+  useEffect(() => {
+    const handlePageHide =
+      () => {
+        saveCurrentPosition();
+      };
+
+    window.addEventListener(
+      "pagehide",
+      handlePageHide
+    );
+
+    return () => {
+      window.removeEventListener(
+        "pagehide",
+        handlePageHide
       );
     };
   }, []);
@@ -524,6 +1139,10 @@ export default function RadioTierraVicio() {
     };
   }, []);
 
+  /* =========================================================
+     CONTROLES
+  ========================================================= */
+
   function togglePlay() {
     const audio =
       audioRef.current;
@@ -532,9 +1151,7 @@ export default function RadioTierraVicio() {
       return;
     }
 
-    if (
-      !audio.paused
-    ) {
+    if (!audio.paused) {
       userPausedRef.current =
         true;
 
@@ -571,6 +1188,8 @@ export default function RadioTierraVicio() {
       return;
     }
 
+    saveCurrentPosition();
+
     const audio =
       audioRef.current;
 
@@ -584,11 +1203,125 @@ export default function RadioTierraVicio() {
     );
   }
 
+  function seekTo(
+    value
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (
+      !audio ||
+      !isProgram
+    ) {
+      return;
+    }
+
+    const next =
+      Number(value);
+
+    if (
+      !Number.isFinite(
+        next
+      )
+    ) {
+      return;
+    }
+
+    const max =
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+        ? audio.duration
+        : duration;
+
+    const clamped =
+      max > 0
+        ? Math.max(
+            0,
+            Math.min(
+              next,
+              max
+            )
+          )
+        : Math.max(
+            0,
+            next
+          );
+
+    audio.currentTime =
+      clamped;
+
+    setCurrentTime(
+      clamped
+    );
+
+    saveCurrentPosition();
+  }
+
+  function skipBy(
+    seconds
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (
+      !audio ||
+      !isProgram
+    ) {
+      return;
+    }
+
+    const max =
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+        ? audio.duration
+        : duration;
+
+    let next =
+      audio.currentTime +
+      seconds;
+
+    next =
+      Math.max(
+        0,
+        next
+      );
+
+    if (
+      max > 0
+    ) {
+      next =
+        Math.min(
+          next,
+          max
+        );
+    }
+
+    audio.currentTime =
+      next;
+
+    setCurrentTime(
+      next
+    );
+
+    saveCurrentPosition();
+  }
+
+  /* =========================================================
+     AUDIO EVENTS
+  ========================================================= */
+
   function handlePlaying() {
-    setPlaying(true);
+    setPlaying(
+      true
+    );
 
     setStatus(
-      isProgram
+      sourceRef.current.kind ===
+        "program"
         ? "Reproduciendo"
         : "En directo"
     );
@@ -601,14 +1334,112 @@ export default function RadioTierraVicio() {
   }
 
   function handlePause() {
-    setPlaying(false);
+    setPlaying(
+      false
+    );
+
+    saveCurrentPosition();
+  }
+
+  function handleLoadedMetadata() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+    ) {
+      setDuration(
+        audio.duration
+      );
+    }
+
+    restoreProgramPosition();
+  }
+
+  function handleDurationChange() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+    ) {
+      setDuration(
+        audio.duration
+      );
+    }
+
+    restoreProgramPosition();
+  }
+
+  function handleTimeUpdate() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    const next =
+      audio.currentTime;
+
+    setCurrentTime(
+      next
+    );
+
+    if (
+      sourceRef.current.kind !==
+        "program"
+    ) {
+      return;
+    }
+
+    /*
+      Guardamos aproximadamente
+      cada 5 segundos.
+    */
+
+    if (
+      Math.abs(
+        next -
+          lastSavedPositionRef.current
+      ) >= 5
+    ) {
+      saveCurrentPosition();
+    }
   }
 
   function handleEnded() {
-    setPlaying(false);
+    setPlaying(
+      false
+    );
 
     userPausedRef.current =
       true;
+
+    if (
+      sourceRef.current.kind ===
+      "program"
+    ) {
+      clearSavedPosition();
+
+      setCurrentTime(
+        duration
+      );
+    }
 
     setStatus(
       "Programa terminado"
@@ -616,17 +1447,42 @@ export default function RadioTierraVicio() {
   }
 
   function handleError() {
-    setPlaying(false);
+    setPlaying(
+      false
+    );
 
     setStatus(
       "Audio no disponible"
     );
   }
 
-  const currentList =
-    tab === "live"
-      ? LIVE_STATIONS
-      : PROGRAMS;
+  /* =========================================================
+     DATOS VISUALES
+  ========================================================= */
+
+  const sourceDate =
+    isProgram
+      ? formatDate(
+          source.date
+        )
+      : "";
+
+  const progressMax =
+    duration > 0
+      ? duration
+      : 1;
+
+  const progressValue =
+    duration > 0
+      ? Math.min(
+          currentTime,
+          duration
+        )
+      : 0;
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <>
@@ -634,9 +1490,10 @@ export default function RadioTierraVicio() {
         ref={
           audioRef
         }
-        preload="none"
-        src={
-          source.url
+        preload={
+          isProgram
+            ? "metadata"
+            : "none"
         }
         muted={
           muted
@@ -655,6 +1512,15 @@ export default function RadioTierraVicio() {
         }
         onError={
           handleError
+        }
+        onLoadedMetadata={
+          handleLoadedMetadata
+        }
+        onDurationChange={
+          handleDurationChange
+        }
+        onTimeUpdate={
+          handleTimeUpdate
         }
       />
 
@@ -690,6 +1556,8 @@ export default function RadioTierraVicio() {
           event.stopPropagation()
         }
       >
+        {/* BOTÓN RADIO */}
+
         <button
           type="button"
           aria-label="Abrir Radio Tierra Vicio"
@@ -746,6 +1614,8 @@ export default function RadioTierraVicio() {
           ♪
         </button>
 
+        {/* PANEL */}
+
         {open && (
           <div
             style={{
@@ -759,7 +1629,19 @@ export default function RadioTierraVicio() {
                 0,
 
               width:
-                "min(320px, calc(100vw - 28px))",
+                "min(350px, calc(100vw - 28px))",
+
+              maxHeight:
+                "calc(100vh - 78px)",
+
+              overflow:
+                "hidden",
+
+              display:
+                "flex",
+
+              flexDirection:
+                "column",
 
               boxSizing:
                 "border-box",
@@ -783,6 +1665,8 @@ export default function RadioTierraVicio() {
                 "0 18px 55px rgba(0,0,0,.42)",
             }}
           >
+            {/* CABECERA */}
+
             <div
               style={{
                 display:
@@ -793,6 +1677,9 @@ export default function RadioTierraVicio() {
 
                 alignItems:
                   "center",
+
+                flexShrink:
+                  0,
 
                 marginBottom:
                   12,
@@ -850,6 +1737,8 @@ export default function RadioTierraVicio() {
               </div>
             </div>
 
+            {/* TABS */}
+
             <div
               style={{
                 display:
@@ -860,6 +1749,9 @@ export default function RadioTierraVicio() {
 
                 gap:
                   5,
+
+                flexShrink:
+                  0,
 
                 marginBottom:
                   12,
@@ -944,10 +1836,15 @@ export default function RadioTierraVicio() {
               </button>
             </div>
 
+            {/* AHORA SUENA */}
+
             <div
               style={{
                 padding:
                   "10px",
+
+                flexShrink:
+                  0,
 
                 marginBottom:
                   10,
@@ -964,6 +1861,9 @@ export default function RadioTierraVicio() {
                   fontSize:
                     12,
 
+                  lineHeight:
+                    1.3,
+
                   fontWeight:
                     900,
                 }}
@@ -974,7 +1874,7 @@ export default function RadioTierraVicio() {
               <div
                 style={{
                   marginTop:
-                    3,
+                    4,
 
                   color:
                     "rgba(255,255,255,.5)",
@@ -984,6 +1884,10 @@ export default function RadioTierraVicio() {
                 }}
               >
                 {source.subtitle}
+
+                {sourceDate
+                  ? ` · ${sourceDate}`
+                  : ""}
               </div>
 
               <div
@@ -1002,6 +1906,193 @@ export default function RadioTierraVicio() {
               </div>
             </div>
 
+            {/* PROGRESO DEL PROGRAMA */}
+
+            {isProgram && (
+              <div
+                style={{
+                  flexShrink:
+                    0,
+
+                  padding:
+                    "9px 10px 10px",
+
+                  marginBottom:
+                    10,
+
+                  border:
+                    "1px solid rgba(255,255,255,.07)",
+
+                  borderRadius:
+                    11,
+
+                  background:
+                    "rgba(255,255,255,.025)",
+                }}
+              >
+                <input
+                  type="range"
+                  min="0"
+                  max={
+                    progressMax
+                  }
+                  step="1"
+                  value={
+                    progressValue
+                  }
+                  disabled={
+                    duration <= 0
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    seekTo(
+                      event.target
+                        .value
+                    )
+                  }
+                  style={{
+                    width:
+                      "100%",
+
+                    margin:
+                      0,
+
+                    accentColor:
+                      "#68e2ff",
+
+                    touchAction:
+                      "manipulation",
+
+                    opacity:
+                      duration > 0
+                        ? 1
+                        : 0.45,
+                  }}
+                />
+
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    justifyContent:
+                      "space-between",
+
+                    marginTop:
+                      3,
+
+                    color:
+                      "rgba(255,255,255,.48)",
+
+                    fontSize:
+                      9,
+
+                    fontVariantNumeric:
+                      "tabular-nums",
+                  }}
+                >
+                  <span>
+                    {formatTime(
+                      currentTime
+                    )}
+                  </span>
+
+                  <span>
+                    {duration > 0
+                      ? formatTime(
+                          duration
+                        )
+                      : "--:--"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display:
+                      "grid",
+
+                    gridTemplateColumns:
+                      "1fr 1fr",
+
+                    gap:
+                      6,
+
+                    marginTop:
+                      7,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      skipBy(
+                        -15
+                      )
+                    }
+                    style={{
+                      height:
+                        29,
+
+                      border:
+                        "1px solid rgba(255,255,255,.09)",
+
+                      borderRadius:
+                        8,
+
+                      background:
+                        "rgba(255,255,255,.04)",
+
+                      color:
+                        "#ddd",
+
+                      fontSize:
+                        10,
+
+                      fontWeight:
+                        800,
+                    }}
+                  >
+                    ↶ 15 s
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      skipBy(
+                        30
+                      )
+                    }
+                    style={{
+                      height:
+                        29,
+
+                      border:
+                        "1px solid rgba(255,255,255,.09)",
+
+                      borderRadius:
+                        8,
+
+                      background:
+                        "rgba(255,255,255,.04)",
+
+                      color:
+                        "#ddd",
+
+                      fontSize:
+                        10,
+
+                      fontWeight:
+                        800,
+                    }}
+                  >
+                    30 s ↷
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PLAY / MUTE */}
+
             <div
               style={{
                 display:
@@ -1012,6 +2103,9 @@ export default function RadioTierraVicio() {
 
                 gap:
                   7,
+
+                flexShrink:
+                  0,
 
                 marginBottom:
                   12,
@@ -1083,151 +2177,560 @@ export default function RadioTierraVicio() {
               </button>
             </div>
 
+            {/* LISTA */}
+
             <div
               style={{
-                display:
-                  "grid",
-
-                gap:
-                  6,
-
-                maxHeight:
-                  250,
+                minHeight:
+                  0,
 
                 overflowY:
                   "auto",
+
+                WebkitOverflowScrolling:
+                  "touch",
               }}
             >
-              {currentList.map(
-                (
-                  item
-                ) => {
-                  const active =
-                    item.id ===
-                    source.id;
+              {/* EN DIRECTO */}
 
-                  return (
-                    <button
-                      key={
-                        item.id
-                      }
-                      type="button"
-                      onClick={() =>
-                        changeSource(
-                          item.id
-                        )
-                      }
-                      style={{
-                        width:
-                          "100%",
+              {tab ===
+                "live" && (
+                <div
+                  style={{
+                    display:
+                      "grid",
 
-                        minHeight:
-                          46,
+                    gap:
+                      6,
+                  }}
+                >
+                  {LIVE_STATIONS.map(
+                    (
+                      item
+                    ) => {
+                      const active =
+                        item.id ===
+                        source.id;
 
-                        display:
-                          "grid",
-
-                        gridTemplateColumns:
-                          "42px 1fr",
-
-                        alignItems:
-                          "center",
-
-                        gap:
-                          8,
-
-                        padding:
-                          "7px 9px",
-
-                        border:
-                          active
-                            ? "1px solid rgba(95,220,255,.30)"
-                            : "1px solid rgba(255,255,255,.07)",
-
-                        borderRadius:
-                          10,
-
-                        background:
-                          active
-                            ? "rgba(95,220,255,.09)"
-                            : "rgba(255,255,255,.035)",
-
-                        color:
-                          "#fff",
-
-                        textAlign:
-                          "left",
-                      }}
-                    >
-                      <span
-                        style={{
-                          display:
-                            "grid",
-
-                          placeItems:
-                            "center",
-
-                          height:
-                            28,
-
-                          borderRadius:
-                            7,
-
-                          background:
-                            "rgba(255,255,255,.06)",
-
-                          color:
-                            active
-                              ? "#68e2ff"
-                              : "#999",
-
-                          fontSize:
-                            8,
-
-                          fontWeight:
-                            950,
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-
-                      <span>
-                        <span
+                      return (
+                        <button
+                          key={
+                            item.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            changeSource(
+                              item.id
+                            )
+                          }
                           style={{
+                            width:
+                              "100%",
+
+                            minHeight:
+                              48,
+
                             display:
-                              "block",
+                              "grid",
 
-                            fontSize:
-                              11,
+                            gridTemplateColumns:
+                              "42px 1fr",
 
-                            fontWeight:
-                              850,
-                          }}
-                        >
-                          {item.name}
-                        </span>
+                            alignItems:
+                              "center",
 
-                        <span
-                          style={{
-                            display:
-                              "block",
+                            gap:
+                              8,
 
-                            marginTop:
-                              2,
+                            padding:
+                              "7px 9px",
+
+                            border:
+                              active
+                                ? "1px solid rgba(95,220,255,.30)"
+                                : "1px solid rgba(255,255,255,.07)",
+
+                            borderRadius:
+                              10,
+
+                            background:
+                              active
+                                ? "rgba(95,220,255,.09)"
+                                : "rgba(255,255,255,.035)",
 
                             color:
-                              "rgba(255,255,255,.43)",
+                              "#fff",
 
-                            fontSize:
-                              9,
+                            textAlign:
+                              "left",
                           }}
                         >
-                          {item.subtitle}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                }
+                          <span
+                            style={{
+                              display:
+                                "grid",
+
+                              placeItems:
+                                "center",
+
+                              height:
+                                28,
+
+                              borderRadius:
+                                7,
+
+                              background:
+                                "rgba(255,255,255,.06)",
+
+                              color:
+                                active
+                                  ? "#68e2ff"
+                                  : "#999",
+
+                              fontSize:
+                                8,
+
+                              fontWeight:
+                                950,
+                            }}
+                          >
+                            {item.badge}
+                          </span>
+
+                          <span>
+                            <span
+                              style={{
+                                display:
+                                  "block",
+
+                                fontSize:
+                                  11,
+
+                                fontWeight:
+                                  850,
+                              }}
+                            >
+                              {item.name}
+                            </span>
+
+                            <span
+                              style={{
+                                display:
+                                  "block",
+
+                                marginTop:
+                                  2,
+
+                                color:
+                                  "rgba(255,255,255,.43)",
+
+                                fontSize:
+                                  9,
+                              }}
+                            >
+                              {item.subtitle}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+
+              {/* PROGRAMAS */}
+
+              {tab ===
+                "programs" && (
+                <div>
+                  {programsLoading && (
+                    <div
+                      style={{
+                        padding:
+                          16,
+
+                        textAlign:
+                          "center",
+
+                        color:
+                          "rgba(255,255,255,.48)",
+
+                        fontSize:
+                          10,
+                      }}
+                    >
+                      Cargando programas…
+                    </div>
+                  )}
+
+                  {programsError && (
+                    <div
+                      style={{
+                        padding:
+                          16,
+
+                        textAlign:
+                          "center",
+
+                        color:
+                          "#ff9b9b",
+
+                        fontSize:
+                          10,
+                      }}
+                    >
+                      No se pudieron cargar los programas.
+                    </div>
+                  )}
+
+                  {!programsLoading &&
+                    !programsError &&
+                    shows.map(
+                      (
+                        show
+                      ) => {
+                        const expanded =
+                          expandedShowId ===
+                          show.id;
+
+                        return (
+                          <div
+                            key={
+                              show.id
+                            }
+                            style={{
+                              marginBottom:
+                                7,
+
+                              overflow:
+                                "hidden",
+
+                              border:
+                                "1px solid rgba(255,255,255,.07)",
+
+                              borderRadius:
+                                11,
+
+                              background:
+                                "rgba(255,255,255,.025)",
+                            }}
+                          >
+                            {/* CABECERA PROGRAMA */}
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedShowId(
+                                  expanded
+                                    ? null
+                                    : show.id
+                                )
+                              }
+                              style={{
+                                width:
+                                  "100%",
+
+                                minHeight:
+                                  52,
+
+                                display:
+                                  "grid",
+
+                                gridTemplateColumns:
+                                  "42px 1fr auto",
+
+                                alignItems:
+                                  "center",
+
+                                gap:
+                                  8,
+
+                                padding:
+                                  "8px 10px",
+
+                                border:
+                                  0,
+
+                                background:
+                                  expanded
+                                    ? "rgba(95,220,255,.06)"
+                                    : "transparent",
+
+                                color:
+                                  "#fff",
+
+                                textAlign:
+                                  "left",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display:
+                                    "grid",
+
+                                  placeItems:
+                                    "center",
+
+                                  height:
+                                    30,
+
+                                  borderRadius:
+                                    7,
+
+                                  background:
+                                    "rgba(255,255,255,.06)",
+
+                                  color:
+                                    "#68e2ff",
+
+                                  fontSize:
+                                    8,
+
+                                  fontWeight:
+                                    950,
+                                }}
+                              >
+                                {show.badge}
+                              </span>
+
+                              <span>
+                                <span
+                                  style={{
+                                    display:
+                                      "block",
+
+                                    fontSize:
+                                      11,
+
+                                    fontWeight:
+                                      900,
+                                  }}
+                                >
+                                  {show.name}
+                                </span>
+
+                                <span
+                                  style={{
+                                    display:
+                                      "block",
+
+                                    marginTop:
+                                      2,
+
+                                    color:
+                                      "rgba(255,255,255,.43)",
+
+                                    fontSize:
+                                      9,
+                                  }}
+                                >
+                                  {show.episodeCount} episodios
+                                </span>
+                              </span>
+
+                              <span
+                                style={{
+                                  color:
+                                    "rgba(255,255,255,.48)",
+
+                                  fontSize:
+                                    14,
+
+                                  transform:
+                                    expanded
+                                      ? "rotate(180deg)"
+                                      : "rotate(0deg)",
+
+                                  transition:
+                                    "transform .15s ease",
+                                }}
+                              >
+                                ▾
+                              </span>
+                            </button>
+
+                            {/* EPISODIOS */}
+
+                            {expanded && (
+                              <div
+                                style={{
+                                  display:
+                                    "grid",
+
+                                  gap:
+                                    5,
+
+                                  padding:
+                                    "0 7px 7px",
+                                }}
+                              >
+                                {show.episodes.map(
+                                  (
+                                    episode
+                                  ) => {
+                                    const episodeSource =
+                                      makeEpisodeSource(
+                                        show,
+                                        episode
+                                      );
+
+                                    const active =
+                                      source.id ===
+                                      episodeSource.id;
+
+                                    let savedPosition =
+                                      0;
+
+                                    try {
+                                      savedPosition =
+                                        Number(
+                                          window.localStorage.getItem(
+                                            STORAGE_POSITION_PREFIX +
+                                              episodeSource.id
+                                          )
+                                        ) || 0;
+                                    } catch {
+                                      savedPosition =
+                                        0;
+                                    }
+
+                                    return (
+                                      <button
+                                        key={
+                                          episodeSource.id
+                                        }
+                                        type="button"
+                                        onClick={() =>
+                                          changeSource(
+                                            episodeSource.id
+                                          )
+                                        }
+                                        style={{
+                                          width:
+                                            "100%",
+
+                                          display:
+                                            "grid",
+
+                                          gridTemplateColumns:
+                                            "1fr auto",
+
+                                          alignItems:
+                                            "center",
+
+                                          gap:
+                                            8,
+
+                                          padding:
+                                            "8px 9px",
+
+                                          border:
+                                            active
+                                              ? "1px solid rgba(95,220,255,.28)"
+                                              : "1px solid rgba(255,255,255,.055)",
+
+                                          borderRadius:
+                                            8,
+
+                                          background:
+                                            active
+                                              ? "rgba(95,220,255,.08)"
+                                              : "rgba(0,0,0,.15)",
+
+                                          color:
+                                            "#fff",
+
+                                          textAlign:
+                                            "left",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            minWidth:
+                                              0,
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              display:
+                                                "block",
+
+                                              overflow:
+                                                "hidden",
+
+                                              textOverflow:
+                                                "ellipsis",
+
+                                              fontSize:
+                                                10,
+
+                                              lineHeight:
+                                                1.3,
+
+                                              fontWeight:
+                                                active
+                                                  ? 900
+                                                  : 750,
+                                            }}
+                                          >
+                                            {episode.title}
+                                          </span>
+
+                                          <span
+                                            style={{
+                                              display:
+                                                "block",
+
+                                              marginTop:
+                                                3,
+
+                                              color:
+                                                "rgba(255,255,255,.4)",
+
+                                              fontSize:
+                                                8,
+                                            }}
+                                          >
+                                            {formatDate(
+                                              episode.date
+                                            )}
+
+                                            {savedPosition >
+                                            5
+                                              ? ` · seguir en ${formatTime(
+                                                  savedPosition
+                                                )}`
+                                              : ""}
+                                          </span>
+                                        </span>
+
+                                        <span
+                                          style={{
+                                            color:
+                                              active
+                                                ? "#68e2ff"
+                                                : "rgba(255,255,255,.38)",
+
+                                            fontSize:
+                                              12,
+                                          }}
+                                        >
+                                          {active &&
+                                          playing
+                                            ? "Ⅱ"
+                                            : "▶"}
+                                        </span>
+                                      </button>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                </div>
               )}
             </div>
           </div>
