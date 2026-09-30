@@ -1,0 +1,1578 @@
+"use client";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+/* =========================================================
+   RADIO TIERRA VICIO — PRUEBA 1
+
+   Esta primera versión NO utiliza música externa.
+
+   Objetivo:
+   - probar audio en iPhone / Android / PC
+   - play / pausa
+   - mute
+   - volumen
+   - cambio de estación
+   - recordar preferencias
+
+   Después sustituiremos el generador por pistas reales
+   sin cambiar la interfaz.
+========================================================= */
+
+const STATIONS = [
+  {
+    id: "tierra-vicio",
+    name: "Tierra Vicio",
+    subtitle: "Radio principal",
+    icon: "TV",
+    frequencies: [
+      110,
+      164.81,
+      220,
+    ],
+    pulse: 0.75,
+    filter: 1250,
+  },
+
+  {
+    id: "retro",
+    name: "Retro",
+    subtitle: "8/16 bits",
+    icon: "8B",
+    frequencies: [
+      130.81,
+      196,
+      261.63,
+    ],
+    pulse: 0.32,
+    filter: 2100,
+  },
+
+  {
+    id: "ambient",
+    name: "Ambient",
+    subtitle: "Exploración",
+    icon: "AM",
+    frequencies: [
+      82.41,
+      123.47,
+      164.81,
+    ],
+    pulse: 1.8,
+    filter: 780,
+  },
+];
+
+const STORAGE_VOLUME =
+  "freakyRadioVolume";
+
+const STORAGE_STATION =
+  "freakyRadioStation";
+
+const STORAGE_MUTED =
+  "freakyRadioMuted";
+
+/* =========================================================
+   COMPONENTE
+========================================================= */
+
+export default function RadioTierraVicio({
+  mobile = false,
+}) {
+  const [
+    open,
+    setOpen,
+  ] = useState(false);
+
+  const [
+    playing,
+    setPlaying,
+  ] = useState(false);
+
+  const [
+    muted,
+    setMuted,
+  ] = useState(false);
+
+  const [
+    volume,
+    setVolume,
+  ] = useState(0.35);
+
+  const [
+    stationId,
+    setStationId,
+  ] = useState(
+    "tierra-vicio"
+  );
+
+  const audioContextRef =
+    useRef(null);
+
+  const masterGainRef =
+    useRef(null);
+
+  const stationNodesRef =
+    useRef([]);
+
+  const intervalRef =
+    useRef(null);
+
+  /* =======================================================
+     ESTACIÓN ACTUAL
+  ======================================================= */
+
+  const station =
+    STATIONS.find(
+      (item) =>
+        item.id ===
+        stationId
+    ) ||
+    STATIONS[0];
+
+  /* =======================================================
+     CARGAR PREFERENCIAS
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      const savedVolume =
+        window.localStorage
+          .getItem(
+            STORAGE_VOLUME
+          );
+
+      const savedStation =
+        window.localStorage
+          .getItem(
+            STORAGE_STATION
+          );
+
+      const savedMuted =
+        window.localStorage
+          .getItem(
+            STORAGE_MUTED
+          );
+
+      if (
+        savedVolume !==
+        null
+      ) {
+        const parsed =
+          Number(
+            savedVolume
+          );
+
+        if (
+          Number.isFinite(
+            parsed
+          )
+        ) {
+          setVolume(
+            Math.min(
+              1,
+              Math.max(
+                0,
+                parsed
+              )
+            )
+          );
+        }
+      }
+
+      if (
+        STATIONS.some(
+          (item) =>
+            item.id ===
+            savedStation
+        )
+      ) {
+        setStationId(
+          savedStation
+        );
+      }
+
+      if (
+        savedMuted ===
+        "true"
+      ) {
+        setMuted(true);
+      }
+    } catch {
+      // localStorage puede no estar disponible
+    }
+  }, []);
+
+  /* =======================================================
+     GUARDAR VOLUMEN
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      window.localStorage
+        .setItem(
+          STORAGE_VOLUME,
+          String(volume)
+        );
+    } catch {
+      // ignorar
+    }
+  }, [
+    volume,
+  ]);
+
+  /* =======================================================
+     GUARDAR ESTACIÓN
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      window.localStorage
+        .setItem(
+          STORAGE_STATION,
+          stationId
+        );
+    } catch {
+      // ignorar
+    }
+  }, [
+    stationId,
+  ]);
+
+  /* =======================================================
+     GUARDAR MUTE
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      window.localStorage
+        .setItem(
+          STORAGE_MUTED,
+          String(muted)
+        );
+    } catch {
+      // ignorar
+    }
+  }, [
+    muted,
+  ]);
+
+  /* =======================================================
+     CREAR AUDIO CONTEXT
+
+     Se crea SOLO después de interacción humana.
+     Esto es importante para iOS / Safari.
+  ======================================================= */
+
+  function ensureAudioContext() {
+    if (
+      audioContextRef.current
+    ) {
+      const context =
+        audioContextRef.current;
+
+      if (
+        context.state ===
+        "suspended"
+      ) {
+        context.resume();
+      }
+
+      return context;
+    }
+
+    const AudioContextClass =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if (
+      !AudioContextClass
+    ) {
+      return null;
+    }
+
+    const context =
+      new AudioContextClass();
+
+    const masterGain =
+      context.createGain();
+
+    masterGain.gain.value =
+      muted
+        ? 0
+        : volume;
+
+    masterGain.connect(
+      context.destination
+    );
+
+    audioContextRef.current =
+      context;
+
+    masterGainRef.current =
+      masterGain;
+
+    return context;
+  }
+
+  /* =======================================================
+     ELIMINAR SONIDOS DE ESTACIÓN
+  ======================================================= */
+
+  function stopStationNodes() {
+    if (
+      intervalRef.current
+    ) {
+      window.clearInterval(
+        intervalRef.current
+      );
+
+      intervalRef.current =
+        null;
+    }
+
+    stationNodesRef.current
+      .forEach(
+        (
+          node
+        ) => {
+          try {
+            node.stop();
+          } catch {
+            // ya detenido
+          }
+
+          try {
+            node.disconnect();
+          } catch {
+            // ignorar
+          }
+        }
+      );
+
+    stationNodesRef.current =
+      [];
+  }
+
+  /* =======================================================
+     NOTA CORTA RETRO
+  ======================================================= */
+
+  function playRetroNote(
+    context,
+    frequency
+  ) {
+    if (
+      !masterGainRef.current
+    ) {
+      return;
+    }
+
+    const oscillator =
+      context.createOscillator();
+
+    const gain =
+      context.createGain();
+
+    oscillator.type =
+      "square";
+
+    oscillator.frequency
+      .setValueAtTime(
+        frequency,
+        context.currentTime
+      );
+
+    gain.gain
+      .setValueAtTime(
+        0.0001,
+        context.currentTime
+      );
+
+    gain.gain
+      .exponentialRampToValueAtTime(
+        0.055,
+        context.currentTime +
+          0.015
+      );
+
+    gain.gain
+      .exponentialRampToValueAtTime(
+        0.0001,
+        context.currentTime +
+          0.22
+      );
+
+    oscillator.connect(
+      gain
+    );
+
+    gain.connect(
+      masterGainRef.current
+    );
+
+    oscillator.start();
+
+    oscillator.stop(
+      context.currentTime +
+        0.24
+    );
+  }
+
+  /* =======================================================
+     INICIAR ESTACIÓN
+  ======================================================= */
+
+  function startStation(
+    selectedStation =
+      station
+  ) {
+    const context =
+      ensureAudioContext();
+
+    if (!context) {
+      return;
+    }
+
+    stopStationNodes();
+
+    /* -----------------------------------------------------
+       RETRO
+    ----------------------------------------------------- */
+
+    if (
+      selectedStation.id ===
+      "retro"
+    ) {
+      let step =
+        0;
+
+      const melody = [
+        0,
+        1,
+        2,
+        1,
+        0,
+        2,
+        1,
+        2,
+      ];
+
+      const playStep =
+        () => {
+          const index =
+            melody[
+              step %
+              melody.length
+            ];
+
+          const frequency =
+            selectedStation
+              .frequencies[
+                index
+              ];
+
+          playRetroNote(
+            context,
+            frequency
+          );
+
+          if (
+            step % 4 ===
+            0
+          ) {
+            playRetroNote(
+              context,
+              selectedStation
+                .frequencies[0] /
+                2
+            );
+          }
+
+          step +=
+            1;
+        };
+
+      playStep();
+
+      intervalRef.current =
+        window.setInterval(
+          playStep,
+          260
+        );
+
+      return;
+    }
+
+    /* -----------------------------------------------------
+       TIERRA VICIO / AMBIENT
+    ----------------------------------------------------- */
+
+    const filter =
+      context.createBiquadFilter();
+
+    filter.type =
+      "lowpass";
+
+    filter.frequency.value =
+      selectedStation.filter;
+
+    filter.Q.value =
+      selectedStation.id ===
+      "ambient"
+        ? 0.4
+        : 0.8;
+
+    filter.connect(
+      masterGainRef.current
+    );
+
+    const stationGain =
+      context.createGain();
+
+    stationGain.gain.value =
+      selectedStation.id ===
+      "ambient"
+        ? 0.075
+        : 0.065;
+
+    stationGain.connect(
+      filter
+    );
+
+    selectedStation
+      .frequencies
+      .forEach(
+        (
+          frequency,
+          index
+        ) => {
+          const oscillator =
+            context.createOscillator();
+
+          const oscillatorGain =
+            context.createGain();
+
+          oscillator.type =
+            selectedStation.id ===
+            "ambient"
+              ? "sine"
+              : index === 0
+                ? "triangle"
+                : "sine";
+
+          oscillator.frequency.value =
+            frequency;
+
+          oscillatorGain.gain.value =
+            index === 0
+              ? 0.52
+              : 0.25;
+
+          oscillator.connect(
+            oscillatorGain
+          );
+
+          oscillatorGain.connect(
+            stationGain
+          );
+
+          oscillator.start();
+
+          stationNodesRef.current
+            .push(
+              oscillator
+            );
+        }
+      );
+
+    /* -----------------------------------------------------
+       MOVIMIENTO SUAVE
+
+       Hace que no sea un tono completamente estático.
+    ----------------------------------------------------- */
+
+    const lfo =
+      context.createOscillator();
+
+    const lfoGain =
+      context.createGain();
+
+    lfo.type =
+      "sine";
+
+    lfo.frequency.value =
+      selectedStation.id ===
+      "ambient"
+        ? 0.08
+        : 0.18;
+
+    lfoGain.gain.value =
+      selectedStation.id ===
+      "ambient"
+        ? 110
+        : 180;
+
+    lfo.connect(
+      lfoGain
+    );
+
+    lfoGain.connect(
+      filter.frequency
+    );
+
+    lfo.start();
+
+    stationNodesRef.current
+      .push(
+        lfo
+      );
+  }
+
+  /* =======================================================
+     PLAY / PAUSA
+  ======================================================= */
+
+  function togglePlaying() {
+    if (
+      playing
+    ) {
+      stopStationNodes();
+
+      setPlaying(false);
+
+      return;
+    }
+
+    startStation(
+      station
+    );
+
+    setPlaying(true);
+  }
+
+  /* =======================================================
+     CAMBIO DE ESTACIÓN
+  ======================================================= */
+
+  function changeStation(
+    nextStationId
+  ) {
+    const nextStation =
+      STATIONS.find(
+        (item) =>
+          item.id ===
+          nextStationId
+      );
+
+    if (!nextStation) {
+      return;
+    }
+
+    setStationId(
+      nextStationId
+    );
+
+    if (
+      playing
+    ) {
+      startStation(
+        nextStation
+      );
+    }
+  }
+
+  /* =======================================================
+     MUTE
+  ======================================================= */
+
+  function toggleMute() {
+    setMuted(
+      (
+        current
+      ) =>
+        !current
+    );
+  }
+
+  /* =======================================================
+     APLICAR VOLUMEN
+  ======================================================= */
+
+  useEffect(() => {
+    const masterGain =
+      masterGainRef.current;
+
+    const context =
+      audioContextRef.current;
+
+    if (
+      !masterGain ||
+      !context
+    ) {
+      return;
+    }
+
+    const target =
+      muted
+        ? 0
+        : volume;
+
+    masterGain.gain
+      .cancelScheduledValues(
+        context.currentTime
+      );
+
+    masterGain.gain
+      .linearRampToValueAtTime(
+        target,
+        context.currentTime +
+          0.08
+      );
+  }, [
+    volume,
+    muted,
+  ]);
+
+  /* =======================================================
+     LIMPIEZA
+  ======================================================= */
+
+  useEffect(() => {
+    return () => {
+      stopStationNodes();
+
+      if (
+        audioContextRef.current
+      ) {
+        try {
+          audioContextRef
+            .current
+            .close();
+        } catch {
+          // ignorar
+        }
+      }
+    };
+  }, []);
+
+  /* =======================================================
+     VOLUMEN VISUAL
+  ======================================================= */
+
+  const volumePercent =
+    Math.round(
+      volume *
+        100
+    );
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <div
+      onPointerDown={(
+        event
+      ) => {
+        event.stopPropagation();
+      }}
+      onPointerMove={(
+        event
+      ) => {
+        event.stopPropagation();
+      }}
+      onPointerUp={(
+        event
+      ) => {
+        event.stopPropagation();
+      }}
+      style={{
+        position:
+          "fixed",
+
+        top:
+          14,
+
+        right:
+          mobile
+            ? 110
+            : 118,
+
+        zIndex:
+          120,
+
+        fontFamily:
+          "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+
+        color:
+          "#ffffff",
+      }}
+    >
+      {/* ===================================================
+          BOTÓN RADIO
+      =================================================== */}
+
+      <button
+        type="button"
+        aria-label="Radio Tierra Vicio"
+        onClick={() =>
+          setOpen(
+            (
+              current
+            ) =>
+              !current
+          )
+        }
+        style={{
+          width:
+            38,
+
+          height:
+            34,
+
+          display:
+            "grid",
+
+          placeItems:
+            "center",
+
+          padding:
+            0,
+
+          border:
+            playing
+              ? "1px solid rgba(95,220,255,.6)"
+              : "1px solid rgba(255,255,255,.14)",
+
+          borderRadius:
+            9,
+
+          background:
+            playing
+              ? "rgba(18,68,82,.78)"
+              : "rgba(0,0,0,.48)",
+
+          backdropFilter:
+            "blur(8px)",
+
+          WebkitBackdropFilter:
+            "blur(8px)",
+
+          color:
+            "#ffffff",
+
+          fontSize:
+            18,
+
+          fontWeight:
+            900,
+
+          cursor:
+            "pointer",
+
+          touchAction:
+            "manipulation",
+
+          boxShadow:
+            playing
+              ? "0 0 16px rgba(95,220,255,.16)"
+              : "none",
+        }}
+      >
+        ♪
+      </button>
+
+      {/* ===================================================
+          PANEL
+      =================================================== */}
+
+      {open && (
+        <div
+          style={{
+            position:
+              "absolute",
+
+            top:
+              44,
+
+            right:
+              0,
+
+            width:
+              mobile
+                ? 270
+                : 290,
+
+            boxSizing:
+              "border-box",
+
+            padding:
+              14,
+
+            border:
+              "1px solid rgba(255,255,255,.16)",
+
+            borderRadius:
+              16,
+
+            background:
+              "rgba(5,8,12,.92)",
+
+            backdropFilter:
+              "blur(18px)",
+
+            WebkitBackdropFilter:
+              "blur(18px)",
+
+            boxShadow:
+              "0 18px 50px rgba(0,0,0,.38)",
+          }}
+        >
+          {/* CABECERA */}
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "space-between",
+
+              gap:
+                10,
+
+              marginBottom:
+                14,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize:
+                    10,
+
+                  fontWeight:
+                    900,
+
+                  letterSpacing:
+                    ".14em",
+
+                  color:
+                    "#5fdcff",
+                }}
+              >
+                RADIO
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    2,
+
+                  fontSize:
+                    17,
+
+                  fontWeight:
+                    900,
+                }}
+              >
+                TIERRA VICIO
+              </div>
+            </div>
+
+            <div
+              style={{
+                minWidth:
+                  48,
+
+                padding:
+                  "5px 7px",
+
+                borderRadius:
+                  8,
+
+                background:
+                  playing
+                    ? "rgba(95,220,255,.12)"
+                    : "rgba(255,255,255,.07)",
+
+                color:
+                  playing
+                    ? "#71e5ff"
+                    : "rgba(255,255,255,.55)",
+
+                fontSize:
+                  9,
+
+                fontWeight:
+                  900,
+
+                textAlign:
+                  "center",
+
+                letterSpacing:
+                  ".08em",
+              }}
+            >
+              {playing
+                ? "ON AIR"
+                : "OFF"}
+            </div>
+          </div>
+
+          {/* ESTACIÓN ACTUAL */}
+
+          <div
+            style={{
+              padding:
+                "10px 11px",
+
+              marginBottom:
+                12,
+
+              borderRadius:
+                11,
+
+              background:
+                "rgba(255,255,255,.055)",
+
+              border:
+                "1px solid rgba(255,255,255,.08)",
+            }}
+          >
+            <div
+              style={{
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                gap:
+                  10,
+              }}
+            >
+              <div
+                style={{
+                  width:
+                    38,
+
+                  height:
+                    38,
+
+                  flex:
+                    "0 0 auto",
+
+                  display:
+                    "grid",
+
+                  placeItems:
+                    "center",
+
+                  borderRadius:
+                    10,
+
+                  background:
+                    "rgba(95,220,255,.13)",
+
+                  color:
+                    "#68e2ff",
+
+                  fontSize:
+                    11,
+
+                  fontWeight:
+                    950,
+
+                  letterSpacing:
+                    ".04em",
+                }}
+              >
+                {station.icon}
+              </div>
+
+              <div
+                style={{
+                  minWidth:
+                    0,
+                }}
+              >
+                <div
+                  style={{
+                    overflow:
+                      "hidden",
+
+                    textOverflow:
+                      "ellipsis",
+
+                    whiteSpace:
+                      "nowrap",
+
+                    fontSize:
+                      14,
+
+                    fontWeight:
+                      850,
+                  }}
+                >
+                  {station.name}
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      2,
+
+                    color:
+                      "rgba(255,255,255,.55)",
+
+                    fontSize:
+                      11,
+                  }}
+                >
+                  {station.subtitle}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* PLAY + MUTE */}
+
+          <div
+            style={{
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "1fr 52px",
+
+              gap:
+                8,
+
+              marginBottom:
+                12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={
+                togglePlaying
+              }
+              style={{
+                height:
+                  42,
+
+                border:
+                  "1px solid rgba(95,220,255,.32)",
+
+                borderRadius:
+                  10,
+
+                background:
+                  "rgba(95,220,255,.11)",
+
+                color:
+                  "#ffffff",
+
+                fontSize:
+                  13,
+
+                fontWeight:
+                  850,
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
+              }}
+            >
+              {playing
+                ? "Ⅱ  Pausar"
+                : "▶  Escuchar"}
+            </button>
+
+            <button
+              type="button"
+              aria-label={
+                muted
+                  ? "Activar sonido"
+                  : "Silenciar"
+              }
+              onClick={
+                toggleMute
+              }
+              style={{
+                height:
+                  42,
+
+                border:
+                  "1px solid rgba(255,255,255,.12)",
+
+                borderRadius:
+                  10,
+
+                background:
+                  "rgba(255,255,255,.055)",
+
+                color:
+                  "#ffffff",
+
+                fontSize:
+                  16,
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
+              }}
+            >
+              {muted
+                ? "×♪"
+                : "♪"}
+            </button>
+          </div>
+
+          {/* VOLUMEN */}
+
+          <div
+            style={{
+              marginBottom:
+                14,
+
+              padding:
+                "0 2px",
+            }}
+          >
+            <div
+              style={{
+                display:
+                  "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "center",
+
+                marginBottom:
+                  7,
+
+                color:
+                  "rgba(255,255,255,.68)",
+
+                fontSize:
+                  10,
+
+                fontWeight:
+                  800,
+              }}
+            >
+              <span>
+                VOLUMEN
+              </span>
+
+              <span>
+                {muted
+                  ? "MUTE"
+                  : `${volumePercent}%`}
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={
+                volume
+              }
+              onChange={(
+                event
+              ) => {
+                const next =
+                  Number(
+                    event
+                      .target
+                      .value
+                  );
+
+                setVolume(
+                  next
+                );
+
+                if (
+                  muted &&
+                  next >
+                    0
+                ) {
+                  setMuted(
+                    false
+                  );
+                }
+              }}
+              style={{
+                width:
+                  "100%",
+
+                height:
+                  28,
+
+                margin:
+                  0,
+
+                accentColor:
+                  "#5fdcff",
+
+                cursor:
+                  "pointer",
+
+                touchAction:
+                  "manipulation",
+              }}
+            />
+          </div>
+
+          {/* ESTACIONES */}
+
+          <div
+            style={{
+              marginBottom:
+                7,
+
+              color:
+                "rgba(255,255,255,.55)",
+
+              fontSize:
+                9,
+
+              fontWeight:
+                900,
+
+              letterSpacing:
+                ".12em",
+            }}
+          >
+            ESTACIONES
+          </div>
+
+          <div
+            style={{
+              display:
+                "grid",
+
+              gap:
+                6,
+            }}
+          >
+            {STATIONS.map(
+              (
+                item
+              ) => {
+                const active =
+                  item.id ===
+                  stationId;
+
+                return (
+                  <button
+                    key={
+                      item.id
+                    }
+                    type="button"
+                    onClick={() =>
+                      changeStation(
+                        item.id
+                      )
+                    }
+                    style={{
+                      width:
+                        "100%",
+
+                      minHeight:
+                        42,
+
+                      display:
+                        "flex",
+
+                      alignItems:
+                        "center",
+
+                      gap:
+                        9,
+
+                      padding:
+                        "7px 9px",
+
+                      border:
+                        active
+                          ? "1px solid rgba(95,220,255,.34)"
+                          : "1px solid rgba(255,255,255,.07)",
+
+                      borderRadius:
+                        9,
+
+                      background:
+                        active
+                          ? "rgba(95,220,255,.095)"
+                          : "rgba(255,255,255,.035)",
+
+                      color:
+                        "#ffffff",
+
+                      textAlign:
+                        "left",
+
+                      cursor:
+                        "pointer",
+
+                      touchAction:
+                        "manipulation",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width:
+                          31,
+
+                        height:
+                          27,
+
+                        flex:
+                          "0 0 auto",
+
+                        display:
+                          "grid",
+
+                        placeItems:
+                          "center",
+
+                        borderRadius:
+                          7,
+
+                        background:
+                          active
+                            ? "rgba(95,220,255,.14)"
+                            : "rgba(255,255,255,.06)",
+
+                        color:
+                          active
+                            ? "#68e2ff"
+                            : "rgba(255,255,255,.7)",
+
+                        fontSize:
+                          9,
+
+                        fontWeight:
+                          950,
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+
+                    <span
+                      style={{
+                        minWidth:
+                          0,
+
+                        flex:
+                          1,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display:
+                            "block",
+
+                          fontSize:
+                            12,
+
+                          fontWeight:
+                            850,
+                        }}
+                      >
+                        {item.name}
+                      </span>
+
+                      <span
+                        style={{
+                          display:
+                            "block",
+
+                          marginTop:
+                            1,
+
+                          color:
+                            "rgba(255,255,255,.48)",
+
+                          fontSize:
+                            9,
+                        }}
+                      >
+                        {item.subtitle}
+                      </span>
+                    </span>
+
+                    {active && (
+                      <span
+                        style={{
+                          color:
+                            "#68e2ff",
+
+                          fontSize:
+                            11,
+
+                          fontWeight:
+                            900,
+                        }}
+                      >
+                        ●
+                      </span>
+                    )}
+                  </button>
+                );
+              }
+            )}
+          </div>
+
+          {/* NOTA PRUEBA */}
+
+          <div
+            style={{
+              marginTop:
+                11,
+
+              paddingTop:
+                9,
+
+              borderTop:
+                "1px solid rgba(255,255,255,.07)",
+
+              color:
+                "rgba(255,255,255,.35)",
+
+              fontSize:
+                9,
+
+              lineHeight:
+                1.4,
+            }}
+          >
+            Audio de prueba.
+            Después se sustituye por
+            música de Radio Tierra
+            Vicio.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
