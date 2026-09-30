@@ -1,33 +1,30 @@
 import MainHall from "./MainHall";
 
 /* =========================================================
-   FREAKY WORLD — MUSEUM
+   FREAKY WORLD — D-PAD / MAIN HALL
 
-   NUEVA ESTRUCTURA
+   El hall representa físicamente la cruceta del mando.
 
-   Antes:
-   - 4 edificios separados
-   - norte / sur / este / oeste
-
-   Ahora:
-   - 1 único edificio
-   - planta completa en forma de cruceta
-   - interior continuo
-   - preparada para distribuir contenidos después
-
-   IMPORTANTE:
-   por ahora dejamos el interior vacío a propósito.
-   Primero validamos:
-   - escala
-   - circulación
-   - cámara
-   - suelo
-   - rendimiento
+   Posición:
+   - lado izquierdo
+   - centrado verticalmente
+   - separado de los bordes
 ========================================================= */
 
 export default function Museum() {
   return (
-    <group>
+    <group
+      position={[
+        -90,
+        0,
+        0,
+      ]}
+      rotation={[
+        0,
+        Math.PI / 2,
+        0,
+      ]}
+    >
       <MainHall />
     </group>
   );
