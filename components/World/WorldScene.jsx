@@ -99,13 +99,31 @@ export default function WorldScene() {
   ] = useState(null);
 
   /* =======================================================
-     OTROS
+     BUSCADOR
   ======================================================= */
 
   const [
     searchOpen,
     setSearchOpen,
   ] = useState(false);
+
+  /*
+    IMPORTANTE:
+
+    searchOpen puede continuar siendo TRUE
+    mientras FullGameOverlay está abierto.
+
+    Así GameSearchOverlay permanece montado
+    debajo de la ficha y conserva:
+
+    - texto buscado
+    - resultados
+    - posición de scroll
+  */
+
+  /* =======================================================
+     OTROS
+  ======================================================= */
 
   const [
     quality,
@@ -140,8 +158,8 @@ export default function WorldScene() {
   /* =======================================================
      CIELO
 
-     TEMPORAL:
-     fijamos 13:00 para trabajar con máxima visibilidad.
+     Temporalmente fijo a las 13:00
+     mientras construimos el mundo.
   ======================================================= */
 
   const [
@@ -150,8 +168,21 @@ export default function WorldScene() {
   ] = useState(13);
 
   /* =======================================================
-     OVERLAYS
+     CONTEXTOS
   ======================================================= */
+
+  const fullGameFromConsole =
+    Boolean(
+      fullGame &&
+      consoleGames
+    );
+
+  const fullGameFromSearch =
+    Boolean(
+      fullGame &&
+      searchOpen &&
+      !consoleGames
+    );
 
   const overlayOpen =
     Boolean(
@@ -165,12 +196,6 @@ export default function WorldScene() {
   const isVideoWall =
     nearbyGame?.id ===
     "featured-video-screen";
-
-  const fullGameFromConsole =
-    Boolean(
-      fullGame &&
-      consoleGames
-    );
 
   /* =======================================================
      DETENER JUGADOR
@@ -235,7 +260,9 @@ export default function WorldScene() {
       );
 
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(
+        timer
+      );
     };
   }, []);
 
@@ -341,10 +368,16 @@ export default function WorldScene() {
 
       stopPlayer();
 
+      /*
+        Esta apertura viene desde el mundo,
+        no desde buscador ni consola.
+      */
+
       setSearchOpen(false);
 
       setOpenedConsole(null);
       setConsoleGames(null);
+      setOpenedGame(null);
 
       setFullGame(game);
     };
@@ -401,6 +434,18 @@ export default function WorldScene() {
       stopPlayer,
     ]);
 
+  /* =======================================================
+     ABRIR JUEGO DESDE BUSCADOR
+
+     CLAVE:
+
+     NO cerramos searchOpen.
+
+     El buscador permanece montado
+     exactamente como estaba debajo
+     de FullGameOverlay.
+  ======================================================= */
+
   const selectSearchGame =
     useCallback(
       (game) => {
@@ -410,12 +455,16 @@ export default function WorldScene() {
 
         stopPlayer();
 
-        setSearchOpen(false);
-
         setOpenedGame(null);
-
         setOpenedConsole(null);
         setConsoleGames(null);
+
+        /*
+          NO:
+          setSearchOpen(false)
+
+          El buscador sigue vivo debajo.
+        */
 
         setFullGame(game);
       },
@@ -569,7 +618,7 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     ABRIR JUEGO DESDE CATÁLOGO
+     ABRIR JUEGO DESDE CATÁLOGO CONSOLA
   ======================================================= */
 
   const openGameFromConsole =
@@ -586,6 +635,10 @@ export default function WorldScene() {
         setOpenedConsole(null);
         setOpenedGame(null);
 
+        /*
+          consoleGames permanece montado.
+        */
+
         setFullGame(game);
       },
       [
@@ -594,35 +647,92 @@ export default function WorldScene() {
     );
 
   /* =======================================================
-     ATRÁS DESDE FICHA COMPLETA
+     ATRÁS DESDE FULL GAME
+
+     FullGameOverlay resuelve primero
+     su propio historial:
+
+     A → B → C
+     C ← B ← A
+
+     Cuando llega al juego original,
+     llama esta función.
   ======================================================= */
 
   const backFromFullGame =
     useCallback(() => {
       stopPlayer();
 
+      /* ===================================================
+         VENIMOS DE CONSOLA
+      =================================================== */
+
       if (
         fullGameFromConsole
       ) {
         setFullGame(null);
 
+        /*
+          consoleGames continúa vivo.
+        */
+
         return;
       }
+
+      /* ===================================================
+         VENIMOS DEL BUSCADOR
+      =================================================== */
+
+      if (
+        fullGameFromSearch
+      ) {
+        setFullGame(null);
+
+        /*
+          searchOpen continúa TRUE.
+
+          Volvemos al mismo:
+          - texto
+          - resultados
+          - scroll
+        */
+
+        return;
+      }
+
+      /* ===================================================
+         VENIMOS DEL MUNDO
+      =================================================== */
 
       setFullGame(null);
     }, [
       fullGameFromConsole,
+      fullGameFromSearch,
       stopPlayer,
     ]);
 
   /* =======================================================
-     X DESDE FICHA COMPLETA
+     X DESDE FULL GAME
+
+     CONSOLA:
+     → catálogo inmediatamente
+
+     BUSCADOR:
+     → buscador inmediatamente
+
+     MUNDO:
+     → mundo 3D
+
+     La X ignora el historial interno
+     de juegos similares.
   ======================================================= */
 
   const closeFullGame =
     useCallback(() => {
       stopPlayer();
 
+      /* CONSOLA */
+
       if (
         fullGameFromConsole
       ) {
@@ -631,11 +741,27 @@ export default function WorldScene() {
         return;
       }
 
-      setSearchOpen(false);
+      /* BUSCADOR */
+
+      if (
+        fullGameFromSearch
+      ) {
+        setFullGame(null);
+
+        /*
+          NO cerramos searchOpen.
+        */
+
+        return;
+      }
+
+      /* MUNDO */
+
       setFullGame(null);
       setOpenedGame(null);
     }, [
       fullGameFromConsole,
+      fullGameFromSearch,
       stopPlayer,
     ]);
 
@@ -677,11 +803,22 @@ export default function WorldScene() {
     const handleKey = (
       event
     ) => {
+      /*
+        Si el buscador está visible
+        y NO hay ficha encima,
+        GameSearchOverlay controla Escape.
+      */
+
       if (
-        searchOpen
+        searchOpen &&
+        !fullGame
       ) {
         return;
       }
+
+      /* ===================================================
+         ESC
+      =================================================== */
 
       if (
         event.code ===
@@ -692,7 +829,11 @@ export default function WorldScene() {
         ) {
           event.preventDefault();
 
-          closeFullGame();
+          /*
+            ESC se comporta como atrás.
+            FullGameOverlay controla primero
+            su historial interno.
+          */
 
           return;
         }
@@ -728,6 +869,10 @@ export default function WorldScene() {
         }
       }
 
+      /* ===================================================
+         E
+      =================================================== */
+
       if (
         event.code ===
           "KeyE" &&
@@ -754,6 +899,10 @@ export default function WorldScene() {
         }
       }
 
+      /* ===================================================
+         BUSCADOR
+      =================================================== */
+
       if (
         event.code ===
           "KeyF" &&
@@ -779,6 +928,10 @@ export default function WorldScene() {
           return;
         }
       }
+
+      /* ===================================================
+         FPS
+      =================================================== */
 
       if (
         event.code ===
@@ -823,7 +976,6 @@ export default function WorldScene() {
     closeGame,
     closeConsole,
     closeConsoleGames,
-    closeFullGame,
   ]);
 
   /* =======================================================
@@ -995,7 +1147,7 @@ export default function WorldScene() {
         )}
 
       {/* ===================================================
-          BUSCADOR
+          BUSCADOR GLOBAL
       =================================================== */}
 
       {!overlayOpen && (
@@ -1261,7 +1413,7 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          MUNDO
+          MUNDO 3D
       =================================================== */}
 
       <Canvas
@@ -1621,6 +1773,10 @@ export default function WorldScene() {
 
       {/* ===================================================
           BUSCADOR
+
+          IMPORTANTE:
+
+          permanece montado debajo de FullGameOverlay.
       =================================================== */}
 
       <GameSearchOverlay
@@ -1734,7 +1890,15 @@ export default function WorldScene() {
       )}
 
       {/* ===================================================
-          FICHA COMPLETA JUEGO
+          FICHA COMPLETA
+
+          FullGameOverlay queda encima de:
+          - buscador
+          - catálogo
+          - radio
+
+          La navegación interna de similares
+          la gestiona FullGameOverlay.
       =================================================== */}
 
       {fullGame ? (
