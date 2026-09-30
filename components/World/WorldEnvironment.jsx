@@ -1,7 +1,5 @@
 "use client";
 
-import { RoundedBox } from "@react-three/drei";
-
 import {
   RigidBody,
   CuboidCollider,
@@ -10,65 +8,66 @@ import {
 import Museum from "../Museum/Museum";
 
 /* =========================================================
-   FREAKY WORLD — BASE DEL MANDO
+   FREAKY WORLD — BASE DEL JOYSTICK
 
-   PRUEBA ESTRUCTURAL LIMPIA
+   ETAPA ESTRUCTURAL
 
-   OBJETIVO:
-   - una sola superficie rectangular
-   - completamente plana
-   - totalmente caminable
-   - imposible caerse por los bordes
-   - proporciones similares a un mando Family/NES
-   - cruceta/hall a la izquierda
-   - SIN botones todavía
-   - SIN decoraciones todavía
+   AHORA:
+   - rectángulo perfectamente plano
+   - superficie visible
+   - superficie completamente caminable
+   - límites invisibles
+   - cruceta/hall colocada a la izquierda
+   - sin botones todavía
+
+   MÁS ADELANTE:
+   - esquinas redondeadas
+   - botones
+   - Select / Start
+   - detalles Family Game
 ========================================================= */
 
 /* =========================================================
-   PROPORCIÓN DEL MANDO
+   DIMENSIONES DEL JOYSTICK
 
-   Aproximadamente 2.25 : 1
-
+   Proporción horizontal aproximada:
    340 x 150
 ========================================================= */
 
 const CONTROLLER_WIDTH = 340;
 const CONTROLLER_DEPTH = 150;
 
-const CONTROLLER_HEIGHT = 2;
-
 /*
-  La superficie caminable queda exactamente en Y = 0.
+  Espesor físico del mando.
+
+  La cara superior queda en Y = 0.
 */
 
-const TOP_Y = 0;
+const CONTROLLER_HEIGHT = 2;
 
 /* =========================================================
-   BORDE DE SEGURIDAD
+   SEGURIDAD
 
-   Es invisible.
+   Paredes invisibles alrededor del perímetro.
 
-   Evita que el jugador pueda abandonar el mando
-   mientras diseñamos la estructura.
+   Evitan que el jugador pueda caminar fuera
+   de la superficie mientras diseñamos.
 ========================================================= */
 
-const SAFETY_WALL_HEIGHT = 10;
-const SAFETY_WALL_THICKNESS = 1;
+const SAFETY_HEIGHT = 12;
+const SAFETY_THICKNESS = 1;
 
 /* =========================================================
    COLORES TEMPORALES
-
-   Queremos máxima lectura visual.
 ========================================================= */
 
 const COLORS = {
-  body: "#d8d1c3",
-  side: "#b9afa0",
+  top: "#d8d1c3",
+  side: "#a89e90",
 };
 
 /* =========================================================
-   CUERPO DEL MANDO
+   CUERPO DEL JOYSTICK
 ========================================================= */
 
 function ControllerBase() {
@@ -78,49 +77,50 @@ function ControllerBase() {
       colliders={false}
     >
       {/* ===================================================
-          SUPERFICIE VISUAL
+          BLOQUE VISUAL
 
-          Un único bloque.
-          Sin placas.
-          Sin niveles.
-          Sin agujeros.
+          IMPORTANTE:
+
+          NO usamos RoundedBox todavía.
+
+          Es un boxGeometry simple para garantizar
+          una superficie absolutamente plana.
       =================================================== */}
 
-      <RoundedBox
+      <mesh
         position={[
           0,
-          TOP_Y -
-            CONTROLLER_HEIGHT / 2,
+          -CONTROLLER_HEIGHT / 2,
           0,
         ]}
-        args={[
-          CONTROLLER_WIDTH,
-          CONTROLLER_HEIGHT,
-          CONTROLLER_DEPTH,
-        ]}
-        radius={7}
-        smoothness={4}
         castShadow
         receiveShadow
       >
+        <boxGeometry
+          args={[
+            CONTROLLER_WIDTH,
+            CONTROLLER_HEIGHT,
+            CONTROLLER_DEPTH,
+          ]}
+        />
+
         <meshStandardMaterial
-          color={COLORS.body}
+          color={COLORS.top}
           roughness={0.88}
           metalness={0}
         />
-      </RoundedBox>
+      </mesh>
 
       {/* ===================================================
-          SUELO FÍSICO
+          COLISIÓN DE TODO EL RECTÁNGULO
 
-          Todo el rectángulo tiene física.
+          La superficie superior termina en Y = 0.
       =================================================== */}
 
       <CuboidCollider
         position={[
           0,
-          TOP_Y -
-            CONTROLLER_HEIGHT / 2,
+          -CONTROLLER_HEIGHT / 2,
           0,
         ]}
         args={[
@@ -131,69 +131,73 @@ function ControllerBase() {
       />
 
       {/* ===================================================
-          LÍMITES INVISIBLES
-
-          NORTE
+          BORDE INVISIBLE NORTE
       =================================================== */}
 
       <CuboidCollider
         position={[
           0,
-          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_HEIGHT / 2,
           -CONTROLLER_DEPTH / 2 +
-            SAFETY_WALL_THICKNESS / 2,
+            SAFETY_THICKNESS / 2,
         ]}
         args={[
           CONTROLLER_WIDTH / 2,
-          SAFETY_WALL_HEIGHT / 2,
-          SAFETY_WALL_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
+          SAFETY_THICKNESS / 2,
         ]}
       />
 
-      {/* SUR */}
+      {/* ===================================================
+          BORDE INVISIBLE SUR
+      =================================================== */}
 
       <CuboidCollider
         position={[
           0,
-          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_HEIGHT / 2,
           CONTROLLER_DEPTH / 2 -
-            SAFETY_WALL_THICKNESS / 2,
+            SAFETY_THICKNESS / 2,
         ]}
         args={[
           CONTROLLER_WIDTH / 2,
-          SAFETY_WALL_HEIGHT / 2,
-          SAFETY_WALL_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
+          SAFETY_THICKNESS / 2,
         ]}
       />
 
-      {/* IZQUIERDA */}
+      {/* ===================================================
+          BORDE INVISIBLE IZQUIERDO
+      =================================================== */}
 
       <CuboidCollider
         position={[
           -CONTROLLER_WIDTH / 2 +
-            SAFETY_WALL_THICKNESS / 2,
-          SAFETY_WALL_HEIGHT / 2,
+            SAFETY_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
           0,
         ]}
         args={[
-          SAFETY_WALL_THICKNESS / 2,
-          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
           CONTROLLER_DEPTH / 2,
         ]}
       />
 
-      {/* DERECHA */}
+      {/* ===================================================
+          BORDE INVISIBLE DERECHO
+      =================================================== */}
 
       <CuboidCollider
         position={[
           CONTROLLER_WIDTH / 2 -
-            SAFETY_WALL_THICKNESS / 2,
-          SAFETY_WALL_HEIGHT / 2,
+            SAFETY_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
           0,
         ]}
         args={[
-          SAFETY_WALL_THICKNESS / 2,
-          SAFETY_WALL_HEIGHT / 2,
+          SAFETY_THICKNESS / 2,
+          SAFETY_HEIGHT / 2,
           CONTROLLER_DEPTH / 2,
         ]}
       />
@@ -202,47 +206,42 @@ function ControllerBase() {
 }
 
 /* =========================================================
-   ILUMINACIÓN TEMPORAL DE TRABAJO
+   ILUMINACIÓN DE TRABAJO
 
-   No buscamos todavía ambiente bonito.
-
-   Buscamos VER:
-   - superficie
-   - avatar
-   - edificio
-   - proporciones
+   Queremos verlo todo claramente mientras definimos
+   la escala y distribución del mando.
 ========================================================= */
 
 function WorkLights() {
   return (
     <>
       <ambientLight
-        intensity={3}
+        intensity={2.5}
       />
 
       <hemisphereLight
         skyColor="#ffffff"
-        groundColor="#d8d1c3"
-        intensity={2.5}
+        groundColor="#b8b09f"
+        intensity={1.8}
       />
 
       <directionalLight
         position={[
-          80,
+          90,
           120,
-          60,
+          70,
         ]}
-        intensity={2.8}
+        intensity={2.2}
         castShadow={false}
       />
 
       <directionalLight
         position={[
-          -90,
-          70,
-          -50,
+          -80,
+          60,
+          -70,
         ]}
-        intensity={1.3}
+        intensity={0.8}
         castShadow={false}
       />
     </>
@@ -256,13 +255,23 @@ function WorkLights() {
 export default function WorldEnvironment() {
   return (
     <group>
+      {/* ILUMINACIÓN */}
+
       <WorkLights />
 
-      {/* SUPERFICIE ÚNICA */}
+      {/* ===================================================
+          JOYSTICK
+
+          Una sola superficie plana.
+      =================================================== */}
 
       <ControllerBase />
 
-      {/* CRUCETA / HALL */}
+      {/* ===================================================
+          CRUCETA / MAIN HALL
+
+          Museum.jsx controla su posición.
+      =================================================== */}
 
       <Museum />
     </group>
