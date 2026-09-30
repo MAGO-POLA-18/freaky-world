@@ -3063,6 +3063,20 @@ export default function FullGameOverlay({
     setGameHistory,
   ] = useState([]);
 
+    /* =======================================================
+     RADIO — REANUDAR AL CERRAR LA FICHA
+  ======================================================= */
+
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent(
+          "tierra-vicio-media-end"
+        )
+      );
+    };
+  }, []);
+  
   /* =======================================================
      VIEWPORT
   ======================================================= */
