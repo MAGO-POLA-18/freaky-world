@@ -8,16 +8,18 @@ import {
 import Museum from "../Museum/Museum";
 
 /* =========================================================
-   FREAKY WORLD — BASE DEL JOYSTICK
+   FREAKY WORLD — FAMILY CONTROLLER BASE
 
-   ETAPA ESTRUCTURAL
+   OBJETIVO DE ESTA VERSIÓN
 
-   - base rectangular visible
-   - superficie plana
-   - superficie caminable
-   - color tipo joystick / Family Game
-   - cruceta/hall a la izquierda
-   - sin botones todavía
+   - mando claramente reconocible
+   - carcasa gris cálida
+   - panel oscuro central
+   - zona D-pad a la izquierda
+   - zona botones a la derecha
+   - SELECT / START marcados
+   - TODO sigue siendo una única superficie caminable
+   - todavía no agregamos botones elevados
 ========================================================= */
 
 /* =========================================================
@@ -36,19 +38,26 @@ const SAFETY_HEIGHT = 12;
 const SAFETY_THICKNESS = 1;
 
 /* =========================================================
-   COLORES TIPO JOYSTICK
+   PALETA FAMILY
 ========================================================= */
 
 const COLORS = {
-  top: "#d8cfbf",
-  side: "#a79b8b",
+  body: "#aaa397",
 
-  burgundy: "#8c3146",
-  burgundyDark: "#682434",
+  panel: "#474749",
+  panelSecondary: "#5a5754",
+
+  burgundy: "#84293d",
+  burgundyDark: "#5d1c2c",
+
+  dark: "#242427",
+  black: "#171719",
 };
 
 /* =========================================================
-   CUERPO DEL JOYSTICK
+   CUERPO FÍSICO
+
+   Una sola superficie.
 ========================================================= */
 
 function ControllerBase() {
@@ -58,7 +67,9 @@ function ControllerBase() {
       colliders={false}
     >
       {/* ===================================================
-          BASE PRINCIPAL
+          CARCASA PRINCIPAL
+
+          Parte superior exactamente en Y = 0.
       =================================================== */}
 
       <mesh
@@ -79,44 +90,14 @@ function ControllerBase() {
         />
 
         <meshStandardMaterial
-          color={COLORS.top}
-          roughness={0.88}
-          metalness={0}
+          color={COLORS.body}
+          roughness={0.84}
+          metalness={0.01}
         />
       </mesh>
 
       {/* ===================================================
-          FRANJA BORDÓ SUPERIOR
-
-          Solo visual.
-          No afecta la física.
-      =================================================== */}
-
-      <mesh
-        position={[
-          0,
-          0.03,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            CONTROLLER_WIDTH - 36,
-            0.06,
-            18,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={COLORS.burgundy}
-          roughness={0.8}
-          metalness={0.02}
-        />
-      </mesh>
-
-      {/* ===================================================
-          COLISIÓN GENERAL
+          COLISIÓN TOTAL DEL MANDO
       =================================================== */}
 
       <CuboidCollider
@@ -133,10 +114,9 @@ function ControllerBase() {
       />
 
       {/* ===================================================
-          BORDES INVISIBLES
+          LÍMITES INVISIBLES
       =================================================== */}
 
-      {/* NORTE */}
       <CuboidCollider
         position={[
           0,
@@ -151,7 +131,6 @@ function ControllerBase() {
         ]}
       />
 
-      {/* SUR */}
       <CuboidCollider
         position={[
           0,
@@ -166,7 +145,6 @@ function ControllerBase() {
         ]}
       />
 
-      {/* IZQUIERDA */}
       <CuboidCollider
         position={[
           -CONTROLLER_WIDTH / 2 +
@@ -181,7 +159,6 @@ function ControllerBase() {
         ]}
       />
 
-      {/* DERECHA */}
       <CuboidCollider
         position={[
           CONTROLLER_WIDTH / 2 -
@@ -200,55 +177,392 @@ function ControllerBase() {
 }
 
 /* =========================================================
-   ILUMINACIÓN DE TRABAJO
+   PANEL OSCURO PRINCIPAL
+
+   Es prácticamente plano.
+   NO tiene collider.
+
+   Por eso se puede caminar por encima sin escalón.
 ========================================================= */
 
-function WorkLights() {
+function MainFacePanel() {
+  return (
+    <mesh
+      position={[
+        18,
+        0.012,
+        0,
+      ]}
+      receiveShadow
+    >
+      <boxGeometry
+        args={[
+          230,
+          0.018,
+          112,
+        ]}
+      />
+
+      <meshStandardMaterial
+        color={COLORS.panel}
+        roughness={0.82}
+        metalness={0.02}
+      />
+    </mesh>
+  );
+}
+
+/* =========================================================
+   ZONA IZQUIERDA
+
+   Marco visual donde vive la cruceta/hall.
+========================================================= */
+
+function DpadZone() {
   return (
     <>
-      <ambientLight
-        intensity={2.5}
-      />
-
-      <hemisphereLight
-        skyColor="#ffffff"
-        groundColor="#c6bbab"
-        intensity={1.8}
-      />
-
-      <directionalLight
+      <mesh
         position={[
-          90,
-          120,
-          70,
+          -105,
+          0.025,
+          0,
         ]}
-        intensity={2.2}
-        castShadow={false}
-      />
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            112,
+            0.025,
+            122,
+          ]}
+        />
 
-      <directionalLight
+        <meshStandardMaterial
+          color={COLORS.panelSecondary}
+          roughness={0.86}
+          metalness={0.01}
+        />
+      </mesh>
+
+      {/* línea bordó superior */}
+
+      <mesh
         position={[
-          -80,
-          60,
-          -70,
+          -105,
+          0.042,
+          -57,
         ]}
-        intensity={0.8}
-        castShadow={false}
-      />
+      >
+        <boxGeometry
+          args={[
+            100,
+            0.018,
+            3,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.72}
+        />
+      </mesh>
+
+      {/* línea bordó inferior */}
+
+      <mesh
+        position={[
+          -105,
+          0.043,
+          57,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            100,
+            0.018,
+            3,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.72}
+        />
+      </mesh>
     </>
   );
 }
 
 /* =========================================================
-   WORLD ENVIRONMENT
+   ZONA DERECHA
+
+   De momento solo marca dónde irán A y B.
+
+   Todavía no son botones físicos.
+========================================================= */
+
+function ActionZone() {
+  return (
+    <>
+      <mesh
+        position={[
+          92,
+          0.026,
+          0,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            92,
+            0.026,
+            100,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.panelSecondary}
+          roughness={0.86}
+          metalness={0.01}
+        />
+      </mesh>
+
+      {/* posición B */}
+
+      <mesh
+        position={[
+          70,
+          0.045,
+          20,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
+      >
+        <circleGeometry
+          args={[
+            20,
+            40,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundyDark}
+          roughness={0.72}
+        />
+      </mesh>
+
+      {/* posición A */}
+
+      <mesh
+        position={[
+          110,
+          0.046,
+          -20,
+        ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
+      >
+        <circleGeometry
+          args={[
+            20,
+            40,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.7}
+        />
+      </mesh>
+    </>
+  );
+}
+
+/* =========================================================
+   SELECT / START
+
+   Por ahora siguen siendo marcas planas.
+
+   Después los levantamos físicamente.
+========================================================= */
+
+function CenterControls() {
+  return (
+    <group>
+      {/* SELECT */}
+
+      <mesh
+        position={[
+          -8,
+          0.047,
+          34,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            25,
+            0.02,
+            9,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.dark}
+          roughness={0.7}
+        />
+      </mesh>
+
+      {/* START */}
+
+      <mesh
+        position={[
+          24,
+          0.048,
+          34,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            25,
+            0.02,
+            9,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.black}
+          roughness={0.7}
+        />
+      </mesh>
+
+      {/* línea bordó */}
+
+      <mesh
+        position={[
+          8,
+          0.05,
+          48,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            76,
+            0.018,
+            2.5,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.75}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* =========================================================
+   DETALLES DEL BORDE
+
+   Ayudan a que la carcasa se lea como mando,
+   pero no crean desniveles físicos.
+========================================================= */
+
+function ControllerTrim() {
+  return (
+    <>
+      {/* superior */}
+
+      <mesh
+        position={[
+          0,
+          0.035,
+          -66,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            306,
+            0.02,
+            3,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.75}
+        />
+      </mesh>
+
+      {/* inferior */}
+
+      <mesh
+        position={[
+          0,
+          0.036,
+          66,
+        ]}
+      >
+        <boxGeometry
+          args={[
+            306,
+            0.02,
+            3,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={COLORS.burgundy}
+          roughness={0.75}
+        />
+      </mesh>
+    </>
+  );
+}
+
+/* =========================================================
+   WORLD
 ========================================================= */
 
 export default function WorldEnvironment() {
   return (
     <group>
-      <WorkLights />
+      {/* ===================================================
+          NO agregamos luces acá.
+
+          WorldScene ya tiene:
+          - DynamicSky
+          - WorldLighting
+          - AdaptiveWorldLighting
+
+          Y ahora está fijado a las 13:00.
+
+          Esto evita volver a quemar los colores.
+      =================================================== */}
 
       <ControllerBase />
+
+      <MainFacePanel />
+
+      <DpadZone />
+
+      <ActionZone />
+
+      <CenterControls />
+
+      <ControllerTrim />
+
+      {/* ===================================================
+          CRUCETA / HALL
+      =================================================== */}
 
       <Museum />
     </group>
