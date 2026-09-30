@@ -60,51 +60,95 @@ function getYear(game) {
 }
 
 function getScore(game) {
-  const freaky =
+  const official =
     Number(
       game?.freakyOfficialScore
     );
 
   if (
-    Number.isFinite(freaky) &&
-    freaky > 0
+    Number.isFinite(official) &&
+    official > 0
   ) {
     return {
       value:
-        freaky > 10
-          ? freaky / 10
-          : freaky,
+        official > 10
+          ? official / 10
+          : official,
 
       votes:
         Number(
           game?.freakyOfficialVotes
         ) || 0,
+
+      source:
+        "official",
     };
   }
 
-  const igdb =
-    typeof game?.totalRating ===
-    "number"
-      ? game.totalRating
-      : typeof game?.rating ===
-          "number"
-        ? game.rating
-        : null;
+  const totalRating =
+    Number(
+      game?.totalRating
+    );
+
+  if (
+    Number.isFinite(
+      totalRating
+    ) &&
+    totalRating > 0
+  ) {
+    return {
+      value:
+        totalRating > 10
+          ? totalRating / 10
+          : totalRating,
+
+      votes:
+        Number(
+          game?.totalRatingCount
+        ) || 0,
+
+      source:
+        "igdb",
+    };
+  }
+
+  const rating =
+    Number(
+      game?.rating
+    );
+
+  if (
+    Number.isFinite(
+      rating
+    ) &&
+    rating > 0
+  ) {
+    return {
+      value:
+        rating > 10
+          ? rating / 10
+          : rating,
+
+      votes:
+        Number(
+          game?.ratingCount
+        ) || 0,
+
+      source:
+        "igdb",
+    };
+  }
 
   return {
-    value:
-      igdb !== null
-        ? igdb / 10
-        : null,
-
-    votes:
-      game?.totalRatingCount ||
-      game?.ratingCount ||
-      0,
+    value: null,
+    votes: 0,
+    source: null,
   };
 }
 
-function getCommunityScore(game) {
+function getCommunityScore(
+  game
+) {
   const value =
     Number(
       game?.communityScore
@@ -137,9 +181,8 @@ function formatScore(value) {
     return "—";
   }
 
-  return Number(value).toFixed(
-    1
-  );
+  return Number(value)
+    .toFixed(1);
 }
 
 function normalizeNamedItems(
@@ -252,7 +295,78 @@ function getViewport() {
 }
 
 /* =========================================================
-   UI BASE
+   ESTILOS BASE
+========================================================= */
+
+function navButtonStyle() {
+  return {
+    width: 40,
+    height: 40,
+
+    flex:
+      "0 0 auto",
+
+    display:
+      "grid",
+
+    placeItems:
+      "center",
+
+    padding: 0,
+
+    border:
+      "1px solid rgba(255,255,255,.15)",
+
+    borderRadius:
+      "50%",
+
+    background:
+      "rgba(15,19,24,.96)",
+
+    color:
+      "#ffffff",
+
+    fontSize:
+      24,
+
+    lineHeight: 1,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
+
+function expandButtonStyle() {
+  return {
+    marginTop: 9,
+
+    padding: 0,
+
+    border: 0,
+
+    background:
+      "transparent",
+
+    color:
+      "#8bdff5",
+
+    fontSize: 9,
+
+    fontWeight: 900,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
+
+/* =========================================================
+   SECTION
 ========================================================= */
 
 function Section({
@@ -285,14 +399,11 @@ function Section({
             color:
               "#f4f6f7",
 
-            fontSize:
-              14,
+            fontSize: 14,
 
-            lineHeight:
-              1.2,
+            lineHeight: 1.2,
 
-            fontWeight:
-              850,
+            fontWeight: 850,
           }}
         >
           {title}
@@ -303,6 +414,10 @@ function Section({
     </section>
   );
 }
+
+/* =========================================================
+   CHIP
+========================================================= */
 
 function Chip({
   children,
@@ -317,8 +432,7 @@ function Chip({
         alignItems:
           "center",
 
-        minHeight:
-          25,
+        minHeight: 25,
 
         padding:
           "4px 8px",
@@ -326,8 +440,7 @@ function Chip({
         border:
           `1px solid ${accent}38`,
 
-        borderRadius:
-          999,
+        borderRadius: 999,
 
         background:
           `${accent}10`,
@@ -335,11 +448,9 @@ function Chip({
         color:
           "#dbe2e6",
 
-        fontSize:
-          9,
+        fontSize: 9,
 
-        fontWeight:
-          750,
+        fontWeight: 750,
       }}
     >
       {children}
@@ -347,53 +458,207 @@ function Chip({
   );
 }
 
-function navButtonStyle() {
-  return {
-    width:
-      38,
+/* =========================================================
+   SCORE
+========================================================= */
 
-    height:
-      38,
+function ScoreBox({
+  label,
+  value,
+  accent,
+  sublabel,
+}) {
+  return (
+    <div
+      style={{
+        minWidth: 0,
 
-    display:
-      "grid",
+        padding:
+          "9px 6px",
 
-    placeItems:
-      "center",
+        border:
+          "1px solid rgba(255,255,255,.075)",
 
-    padding:
-      0,
+        borderRadius: 12,
 
-    border:
-      "1px solid rgba(255,255,255,.14)",
+        background:
+          "#0d1014",
 
-    borderRadius:
-      "50%",
+        textAlign:
+          "center",
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#7d878e",
 
-    background:
-      "rgba(15,19,24,.94)",
+          fontSize: 7,
 
-    color:
-      "#ffffff",
+          fontWeight: 850,
 
-    fontSize:
-      23,
+          textTransform:
+            "uppercase",
 
-    lineHeight:
-      1,
+          letterSpacing:
+            ".05em",
+        }}
+      >
+        {label}
+      </div>
 
-    cursor:
-      "pointer",
+      <div
+        style={{
+          marginTop: 4,
 
-    touchAction:
-      "manipulation",
+          color:
+            accent ||
+            "#ffffff",
 
-    userSelect:
-      "none",
+          fontSize: 20,
 
-    WebkitUserSelect:
-      "none",
-  };
+          lineHeight: 1,
+
+          fontWeight: 950,
+        }}
+      >
+        {value}
+      </div>
+
+      {sublabel && (
+        <div
+          style={{
+            marginTop: 4,
+
+            color:
+              "#69737a",
+
+            fontSize: 7,
+          }}
+        >
+          {sublabel}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   HERO DATA
+========================================================= */
+
+function HeroData({
+  label,
+  value,
+}) {
+  return (
+    <div
+      style={{
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#727c83",
+
+          fontSize: 7,
+
+          textTransform:
+            "uppercase",
+
+          fontWeight: 850,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          marginTop: 3,
+
+          overflow:
+            "hidden",
+
+          textOverflow:
+            "ellipsis",
+
+          whiteSpace:
+            "nowrap",
+
+          color:
+            "#dce1e4",
+
+          fontSize: 9,
+
+          fontWeight: 750,
+        }}
+      >
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DATA ROW
+========================================================= */
+
+function DataRow({
+  label,
+  value,
+}) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        display:
+          "grid",
+
+        gridTemplateColumns:
+          "100px minmax(0,1fr)",
+
+        gap: 8,
+
+        padding:
+          "7px 0",
+
+        borderBottom:
+          "1px solid rgba(255,255,255,.05)",
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#747f86",
+
+          fontSize: 9,
+
+          fontWeight: 750,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          minWidth: 0,
+
+          color:
+            "#d3d9dc",
+
+          fontSize: 10,
+
+          lineHeight: 1.35,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
 }
 
 /* =========================================================
@@ -429,9 +694,7 @@ function CollapsibleText({
               : lines,
 
           WebkitBoxOrient:
-            expanded
-              ? undefined
-              : "vertical",
+            "vertical",
 
           overflow:
             "hidden",
@@ -439,11 +702,9 @@ function CollapsibleText({
           color:
             "#bdc5ca",
 
-          fontSize:
-            12,
+          fontSize: 12,
 
-          lineHeight:
-            1.58,
+          lineHeight: 1.58,
 
           whiteSpace:
             "pre-line",
@@ -461,14 +722,11 @@ function CollapsibleText({
           )
         }
         style={{
-          marginTop:
-            8,
+          marginTop: 8,
 
-          padding:
-            0,
+          padding: 0,
 
-          border:
-            0,
+          border: 0,
 
           background:
             "transparent",
@@ -476,123 +734,18 @@ function CollapsibleText({
           color:
             accent,
 
-          fontSize:
-            9,
+          fontSize: 9,
 
-          fontWeight:
-            900,
+          fontWeight: 900,
 
           cursor:
             "pointer",
-
-          touchAction:
-            "manipulation",
         }}
       >
         {expanded
           ? "VER MENOS"
           : "VER MÁS"}
       </button>
-    </div>
-  );
-}
-
-/* =========================================================
-   SCORE
-========================================================= */
-
-function ScoreBox({
-  label,
-  value,
-  sublabel,
-  accent,
-  compact = false,
-}) {
-  return (
-    <div
-      style={{
-        minWidth:
-          0,
-
-        padding:
-          compact
-            ? "8px 5px"
-            : "9px 6px",
-
-        border:
-          "1px solid rgba(255,255,255,.075)",
-
-        borderRadius:
-          12,
-
-        background:
-          "#0d1014",
-
-        textAlign:
-          "center",
-      }}
-    >
-      <div
-        style={{
-          color:
-            "#7d878e",
-
-          fontSize:
-            7,
-
-          fontWeight:
-            850,
-
-          textTransform:
-            "uppercase",
-
-          letterSpacing:
-            ".05em",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginTop:
-            4,
-
-          color:
-            accent ||
-            "#ffffff",
-
-          fontSize:
-            compact
-              ? 18
-              : 21,
-
-          lineHeight:
-            1,
-
-          fontWeight:
-            950,
-        }}
-      >
-        {value}
-      </div>
-
-      {sublabel && (
-        <div
-          style={{
-            marginTop:
-              4,
-
-            color:
-              "#69737a",
-
-            fontSize:
-              7,
-          }}
-        >
-          {sublabel}
-        </div>
-      )}
     </div>
   );
 }
@@ -616,13 +769,10 @@ function VideoPlayer({
           )
           .filter(Boolean);
 
-      const preferred =
+      return unique([
         chooseFirstVideo(
           game
-        );
-
-      return unique([
-        preferred,
+        ),
         ...ids,
       ]);
     }, [
@@ -656,7 +806,7 @@ function VideoPlayer({
 
           minHeight:
             fillHeight
-              ? 220
+              ? 200
               : 180,
 
           aspectRatio:
@@ -670,11 +820,7 @@ function VideoPlayer({
           placeItems:
             "center",
 
-          border:
-            "1px solid rgba(255,255,255,.07)",
-
-          borderRadius:
-            14,
+          borderRadius: 14,
 
           background:
             "#0c0f13",
@@ -682,8 +828,7 @@ function VideoPlayer({
           color:
             "#68727a",
 
-          fontSize:
-            10,
+          fontSize: 10,
         }}
       >
         Sin vídeo disponible
@@ -743,11 +888,7 @@ function VideoPlayer({
           overflow:
             "hidden",
 
-          border:
-            "1px solid rgba(255,255,255,.09)",
-
-          borderRadius:
-            14,
+          borderRadius: 14,
 
           background:
             "#000",
@@ -758,15 +899,16 @@ function VideoPlayer({
             videoId
           }
           src={`https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0`}
-          title={`${getTitle(game)} — vídeo`}
+          title={`${getTitle(
+            game
+          )} — vídeo`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           style={{
             position:
               "absolute",
 
-            inset:
-              0,
+            inset: 0,
 
             width:
               "100%",
@@ -774,8 +916,7 @@ function VideoPlayer({
             height:
               "100%",
 
-            border:
-              0,
+            border: 0,
           }}
         />
       </div>
@@ -793,11 +934,9 @@ function VideoPlayer({
             alignItems:
               "center",
 
-            gap:
-              8,
+            gap: 8,
 
-            marginTop:
-              7,
+            marginTop: 7,
           }}
         >
           <button
@@ -822,8 +961,7 @@ function VideoPlayer({
 
           <span
             style={{
-              minWidth:
-                48,
+              minWidth: 48,
 
               textAlign:
                 "center",
@@ -831,8 +969,7 @@ function VideoPlayer({
               color:
                 "#7f8990",
 
-              fontSize:
-                8,
+              fontSize: 8,
             }}
           >
             {safeIndex + 1} de{" "}
@@ -864,12 +1001,11 @@ function VideoPlayer({
 }
 
 /* =========================================================
-   GALERÍA DINÁMICA
+   GALERÍA
 ========================================================= */
 
 function Gallery({
   game,
-  portrait,
 }) {
   const images =
     useMemo(() => {
@@ -903,12 +1039,6 @@ function Gallery({
       game,
     ]);
 
-  const scrollRef =
-    useRef(null);
-
-  const touchStartX =
-    useRef(null);
-
   const [
     fullscreen,
     setFullscreen,
@@ -919,12 +1049,8 @@ function Gallery({
     setActiveIndex,
   ] = useState(0);
 
-  useEffect(() => {
-    setFullscreen(false);
-    setActiveIndex(0);
-  }, [
-    game?.id,
-  ]);
+  const scrollRef =
+    useRef(null);
 
   if (
     !images.length
@@ -932,31 +1058,31 @@ function Gallery({
     return null;
   }
 
-  function moveCarousel(
+  function move(
     direction
   ) {
-    const element =
-      scrollRef.current;
+    scrollRef.current
+      ?.scrollBy({
+        left:
+          direction *
+          Math.max(
+            240,
+            scrollRef.current
+              .clientWidth *
+              0.8
+          ),
 
-    if (!element) {
-      return;
-    }
-
-    element.scrollBy({
-      left:
-        direction *
-        Math.max(
-          250,
-          element.clientWidth *
-            0.82
-        ),
-
-      behavior:
-        "smooth",
-    });
+        behavior:
+          "smooth",
+      });
   }
 
-  function previousImage() {
+  function openImage(index) {
+    setActiveIndex(index);
+    setFullscreen(true);
+  }
+
+  function previous() {
     setActiveIndex(
       (current) =>
         (
@@ -968,7 +1094,7 @@ function Gallery({
     );
   }
 
-  function nextImage() {
+  function next() {
     setActiveIndex(
       (current) =>
         (
@@ -976,108 +1102,6 @@ function Gallery({
           1
         ) %
         images.length
-    );
-  }
-
-  function handleFullscreenTouchStart(
-    event
-  ) {
-    touchStartX.current =
-      event.touches?.[0]
-        ?.clientX ??
-      null;
-  }
-
-  function handleFullscreenTouchEnd(
-    event
-  ) {
-    if (
-      touchStartX.current ===
-      null
-    ) {
-      return;
-    }
-
-    const endX =
-      event.changedTouches
-        ?.[0]?.clientX;
-
-    if (
-      typeof endX !==
-      "number"
-    ) {
-      touchStartX.current =
-        null;
-
-      return;
-    }
-
-    const delta =
-      endX -
-      touchStartX.current;
-
-    if (
-      Math.abs(delta) >
-      45
-    ) {
-      if (
-        delta > 0
-      ) {
-        previousImage();
-      } else {
-        nextImage();
-      }
-    }
-
-    touchStartX.current =
-      null;
-  }
-
-  const groups = [];
-
-  let cursor = 0;
-  let groupIndex = 0;
-
-  while (
-    cursor <
-    images.length
-  ) {
-    const pattern =
-      groupIndex %
-      4;
-
-    const take =
-      pattern === 2
-        ? 4
-        : 3;
-
-    groups.push({
-      pattern,
-      start:
-        cursor,
-      images:
-        images.slice(
-          cursor,
-          cursor + take
-        ),
-    });
-
-    cursor +=
-      take;
-
-    groupIndex +=
-      1;
-  }
-
-  function openImage(
-    index
-  ) {
-    setActiveIndex(
-      index
-    );
-
-    setFullscreen(
-      true
     );
   }
 
@@ -1091,127 +1115,119 @@ function Gallery({
           }}
         >
           <div
-            ref={
-              scrollRef
-            }
+            ref={scrollRef}
             style={{
               display:
                 "flex",
 
-              gap:
-                10,
+              gap: 9,
 
               overflowX:
                 "auto",
 
-              overflowY:
-                "hidden",
-
-              padding:
-                "2px 4px 5px",
+              scrollbarWidth:
+                "none",
 
               WebkitOverflowScrolling:
                 "touch",
-
-              scrollSnapType:
-                "x proximity",
-
-              scrollbarWidth:
-                "none",
             }}
           >
-            {groups.map(
+            {images.map(
               (
-                group,
+                image,
                 index
               ) => (
-                <GalleryGroup
-                  key={
-                    `${group.start}-${index}`
+                <button
+                  key={`${image}-${index}`}
+                  type="button"
+                  onClick={() =>
+                    openImage(
+                      index
+                    )
                   }
-                  group={
-                    group
-                  }
-                  portrait={
-                    portrait
-                  }
-                  onOpen={
-                    openImage
-                  }
-                />
+                  style={{
+                    flex:
+                      "0 0 min(72vw,380px)",
+
+                    height: 220,
+
+                    padding: 0,
+
+                    overflow:
+                      "hidden",
+
+                    border:
+                      "1px solid rgba(255,255,255,.08)",
+
+                    borderRadius:
+                      12,
+
+                    background:
+                      "#080a0d",
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt=""
+                    loading="lazy"
+                    style={{
+                      width:
+                        "100%",
+
+                      height:
+                        "100%",
+
+                      objectFit:
+                        "cover",
+
+                      display:
+                        "block",
+                    }}
+                  />
+                </button>
               )
             )}
           </div>
 
           {images.length >
             1 && (
-            <>
+            <div
+              style={{
+                display:
+                  "flex",
+
+                justifyContent:
+                  "flex-end",
+
+                gap: 6,
+
+                marginTop: 8,
+              }}
+            >
               <button
                 type="button"
-                aria-label="Galería anterior"
                 onClick={() =>
-                  moveCarousel(
-                    -1
-                  )
+                  move(-1)
                 }
-                style={{
-                  ...navButtonStyle(),
-
-                  position:
-                    "absolute",
-
-                  left:
-                    5,
-
-                  top:
-                    "50%",
-
-                  transform:
-                    "translateY(-50%)",
-
-                  zIndex:
-                    5,
-
-                  background:
-                    "rgba(5,7,9,.82)",
-                }}
+                style={
+                  navButtonStyle()
+                }
               >
                 ‹
               </button>
 
               <button
                 type="button"
-                aria-label="Galería siguiente"
                 onClick={() =>
-                  moveCarousel(
-                    1
-                  )
+                  move(1)
                 }
-                style={{
-                  ...navButtonStyle(),
-
-                  position:
-                    "absolute",
-
-                  right:
-                    5,
-
-                  top:
-                    "50%",
-
-                  transform:
-                    "translateY(-50%)",
-
-                  zIndex:
-                    5,
-
-                  background:
-                    "rgba(5,7,9,.82)",
-                }}
+                style={
+                  navButtonStyle()
+                }
               >
                 ›
               </button>
-            </>
+            </div>
           )}
         </div>
       </Section>
@@ -1219,25 +1235,16 @@ function Gallery({
       {fullscreen && (
         <div
           onClick={() =>
-            setFullscreen(
-              false
-            )
-          }
-          onTouchStart={
-            handleFullscreenTouchStart
-          }
-          onTouchEnd={
-            handleFullscreenTouchEnd
+            setFullscreen(false)
           }
           style={{
             position:
               "fixed",
 
-            inset:
-              0,
+            inset: 0,
 
             zIndex:
-              100010,
+              400000,
 
             display:
               "grid",
@@ -1245,23 +1252,16 @@ function Gallery({
             placeItems:
               "center",
 
-            padding:
-              18,
+            padding: 18,
 
             background:
               "rgba(0,0,0,.96)",
-
-            touchAction:
-              "pan-y",
           }}
         >
           <button
             type="button"
-            aria-label="Cerrar galería"
             onClick={() =>
-              setFullscreen(
-                false
-              )
+              setFullscreen(false)
             }
             style={{
               ...navButtonStyle(),
@@ -1269,14 +1269,11 @@ function Gallery({
               position:
                 "absolute",
 
-              top:
-                15,
+              top: 14,
 
-              right:
-                15,
+              right: 14,
 
-              zIndex:
-                8,
+              zIndex: 3,
             }}
           >
             ×
@@ -1291,7 +1288,7 @@ function Gallery({
                   event
                 ) => {
                   event.stopPropagation();
-                  previousImage();
+                  previous();
                 }}
                 style={{
                   ...navButtonStyle(),
@@ -1299,17 +1296,13 @@ function Gallery({
                   position:
                     "absolute",
 
-                  left:
-                    14,
+                  left: 14,
 
                   top:
                     "50%",
 
                   transform:
                     "translateY(-50%)",
-
-                  zIndex:
-                    8,
                 }}
               >
                 ‹
@@ -1321,7 +1314,7 @@ function Gallery({
                   event
                 ) => {
                   event.stopPropagation();
-                  nextImage();
+                  next();
                 }}
                 style={{
                   ...navButtonStyle(),
@@ -1329,17 +1322,13 @@ function Gallery({
                   position:
                     "absolute",
 
-                  right:
-                    14,
+                  right: 14,
 
                   top:
                     "50%",
 
                   transform:
                     "translateY(-50%)",
-
-                  zIndex:
-                    8,
                 }}
               >
                 ›
@@ -1354,9 +1343,6 @@ function Gallery({
               ]
             }
             alt=""
-            draggable={
-              false
-            }
             onClick={(
               event
             ) =>
@@ -1374,12 +1360,6 @@ function Gallery({
 
               borderRadius:
                 12,
-
-              userSelect:
-                "none",
-
-              WebkitUserSelect:
-                "none",
             }}
           />
 
@@ -1388,8 +1368,7 @@ function Gallery({
               position:
                 "absolute",
 
-              bottom:
-                15,
+              bottom: 15,
 
               padding:
                 "6px 11px",
@@ -1400,11 +1379,9 @@ function Gallery({
               background:
                 "rgba(0,0,0,.75)",
 
-              fontSize:
-                10,
+              fontSize: 10,
 
-              fontWeight:
-                800,
+              fontWeight: 800,
             }}
           >
             {activeIndex + 1} de{" "}
@@ -1416,501 +1393,73 @@ function Gallery({
   );
 }
 
-function GalleryGroup({
-  group,
-  portrait,
-  onOpen,
+/* =========================================================
+   META GROUP
+========================================================= */
+
+function MetaGroup({
+  label,
+  values,
+  accent,
 }) {
-  const {
-    pattern,
-    start,
-    images,
-  } = group;
-
-  const width =
-    portrait
-      ? 470
-      : 660;
-
-  const height =
-    portrait
-      ? 270
-      : 300;
-
   if (
-    images.length ===
-    1
+    !values?.length
   ) {
-    return (
-      <div
-        style={{
-          flex:
-            `0 0 ${width}px`,
-
-          width,
-          height,
-
-          scrollSnapAlign:
-            "start",
-        }}
-      >
-        <GalleryTile
-          image={
-            images[0]
-          }
-          index={
-            start
-          }
-          onOpen={
-            onOpen
-          }
-        />
-      </div>
-    );
+    return null;
   }
-
-  if (
-    images.length ===
-    2
-  ) {
-    return (
-      <div
-        style={{
-          flex:
-            `0 0 ${width}px`,
-
-          width,
-          height,
-
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "1fr 1fr",
-
-          gap:
-            8,
-
-          scrollSnapAlign:
-            "start",
-        }}
-      >
-        <GalleryTile
-          image={
-            images[0]
-          }
-          index={
-            start
-          }
-          onOpen={
-            onOpen
-          }
-        />
-
-        <GalleryTile
-          image={
-            images[1]
-          }
-          index={
-            start + 1
-          }
-          onOpen={
-            onOpen
-          }
-        />
-      </div>
-    );
-  }
-
-  /* =======================================================
-     PATRÓN A
-     Vertical + dos horizontales
-  ======================================================= */
-
-  if (
-    pattern ===
-    0
-  ) {
-    return (
-      <div
-        style={{
-          flex:
-            `0 0 ${width}px`,
-
-          width,
-          height,
-
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "0.95fr 1.45fr",
-
-          gridTemplateRows:
-            "1fr 1fr",
-
-          gap:
-            8,
-
-          scrollSnapAlign:
-            "start",
-        }}
-      >
-        <div
-          style={{
-            gridRow:
-              "1 / span 2",
-
-            minWidth:
-              0,
-
-            minHeight:
-              0,
-          }}
-        >
-          <GalleryTile
-            image={
-              images[0]
-            }
-            index={
-              start
-            }
-            onOpen={
-              onOpen
-            }
-          />
-        </div>
-
-        <GalleryTile
-          image={
-            images[1]
-          }
-          index={
-            start + 1
-          }
-          onOpen={
-            onOpen
-          }
-        />
-
-        <GalleryTile
-          image={
-            images[2]
-          }
-          index={
-            start + 2
-          }
-          onOpen={
-            onOpen
-          }
-        />
-      </div>
-    );
-  }
-
-  /* =======================================================
-     PATRÓN B
-     Grande arriba + dos abajo
-  ======================================================= */
-
-  if (
-    pattern ===
-    1
-  ) {
-    return (
-      <div
-        style={{
-          flex:
-            `0 0 ${width}px`,
-
-          width,
-          height,
-
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "1fr 1fr",
-
-          gridTemplateRows:
-            "1.2fr .8fr",
-
-          gap:
-            8,
-
-          scrollSnapAlign:
-            "start",
-        }}
-      >
-        <div
-          style={{
-            gridColumn:
-              "1 / span 2",
-
-            minWidth:
-              0,
-
-            minHeight:
-              0,
-          }}
-        >
-          <GalleryTile
-            image={
-              images[0]
-            }
-            index={
-              start
-            }
-            onOpen={
-              onOpen
-            }
-          />
-        </div>
-
-        <GalleryTile
-          image={
-            images[1]
-          }
-          index={
-            start + 1
-          }
-          onOpen={
-            onOpen
-          }
-        />
-
-        <GalleryTile
-          image={
-            images[2]
-          }
-          index={
-            start + 2
-          }
-          onOpen={
-            onOpen
-          }
-        />
-      </div>
-    );
-  }
-
-  /* =======================================================
-     PATRÓN C
-     Cuatro iguales
-  ======================================================= */
-
-  if (
-    pattern ===
-    2
-  ) {
-    return (
-      <div
-        style={{
-          flex:
-            `0 0 ${width}px`,
-
-          width,
-          height,
-
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "1fr 1fr",
-
-          gridTemplateRows:
-            "1fr 1fr",
-
-          gap:
-            8,
-
-          scrollSnapAlign:
-            "start",
-        }}
-      >
-        {images.map(
-          (
-            image,
-            index
-          ) => (
-            <GalleryTile
-              key={
-                `${image}-${index}`
-              }
-              image={
-                image
-              }
-              index={
-                start +
-                index
-              }
-              onOpen={
-                onOpen
-              }
-            />
-          )
-        )}
-      </div>
-    );
-  }
-
-  /* =======================================================
-     PATRÓN D
-     Dos horizontales izquierda + vertical derecha
-  ======================================================= */
 
   return (
     <div
       style={{
-        flex:
-          `0 0 ${width}px`,
+        paddingBottom: 10,
 
-        width,
-        height,
+        marginBottom: 10,
 
-        display:
-          "grid",
-
-        gridTemplateColumns:
-          "1.45fr .95fr",
-
-        gridTemplateRows:
-          "1fr 1fr",
-
-        gap:
-          8,
-
-        scrollSnapAlign:
-          "start",
+        borderBottom:
+          "1px solid rgba(255,255,255,.05)",
       }}
     >
-      <GalleryTile
-        image={
-          images[0]
-        }
-        index={
-          start
-        }
-        onOpen={
-          onOpen
-        }
-      />
+      <div
+        style={{
+          marginBottom: 6,
+
+          color:
+            "#747f86",
+
+          fontSize: 8,
+
+          fontWeight: 850,
+
+          textTransform:
+            "uppercase",
+        }}
+      >
+        {label}
+      </div>
 
       <div
         style={{
-          gridColumn:
-            2,
+          display:
+            "flex",
 
-          gridRow:
-            "1 / span 2",
+          flexWrap:
+            "wrap",
 
-          minWidth:
-            0,
-
-          minHeight:
-            0,
+          gap: 5,
         }}
       >
-        <GalleryTile
-          image={
-            images[1]
-          }
-          index={
-            start + 1
-          }
-          onOpen={
-            onOpen
-          }
-        />
+        {values.map(
+          (value) => (
+            <Chip
+              key={value}
+              accent={accent}
+            >
+              {value}
+            </Chip>
+          )
+        )}
       </div>
-
-      <GalleryTile
-        image={
-          images[2]
-        }
-        index={
-          start + 2
-        }
-        onOpen={
-          onOpen
-        }
-      />
     </div>
-  );
-}
-
-function GalleryTile({
-  image,
-  index,
-  onOpen,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        onOpen?.(
-          index
-        )
-      }
-      style={{
-        width:
-          "100%",
-
-        height:
-          "100%",
-
-        minWidth:
-          0,
-
-        minHeight:
-          0,
-
-        padding:
-          0,
-
-        overflow:
-          "hidden",
-
-        border:
-          "1px solid rgba(255,255,255,.08)",
-
-        borderRadius:
-          12,
-
-        background:
-          "#090b0f",
-
-        cursor:
-          "pointer",
-
-        touchAction:
-          "manipulation",
-      }}
-    >
-      <img
-        src={
-          image
-        }
-        alt=""
-        loading="lazy"
-        draggable={
-          false
-        }
-        style={{
-          width:
-            "100%",
-
-          height:
-            "100%",
-
-          display:
-            "block",
-
-          objectFit:
-            "cover",
-        }}
-      />
-    </button>
   );
 }
 
@@ -1942,7 +1491,7 @@ function Languages({
       ? languages
       : languages.slice(
           0,
-          3
+          4
         );
 
   return (
@@ -1958,8 +1507,7 @@ function Languages({
             width:
               "100%",
 
-            minWidth:
-              320,
+            minWidth: 320,
 
             borderCollapse:
               "collapse",
@@ -1973,37 +1521,23 @@ function Languages({
                 "Sub.",
                 "Interfaz",
               ].map(
-                (
-                  label
-                ) => (
+                (label) => (
                   <th
-                    key={
-                      label
-                    }
+                    key={label}
                     style={{
                       padding:
                         "6px 5px",
 
-                      borderBottom:
-                        "1px solid rgba(255,255,255,.08)",
-
                       color:
                         "#758087",
 
-                      fontSize:
-                        8,
-
-                      fontWeight:
-                        850,
+                      fontSize: 8,
 
                       textAlign:
                         label ===
                         "Idioma"
                           ? "left"
                           : "center",
-
-                      textTransform:
-                        "uppercase",
                     }}
                   >
                     {label}
@@ -2018,70 +1552,80 @@ function Languages({
               (
                 language,
                 index
-              ) => {
-                const name =
-                  language?.name ||
-                  language?.languageName ||
-                  language?.nativeName ||
-                  "Idioma";
+              ) => (
+                <tr
+                  key={
+                    language?.id ||
+                    index
+                  }
+                >
+                  <td
+                    style={{
+                      padding:
+                        "7px 5px",
 
-                return (
-                  <tr
-                    key={
-                      language?.id ||
-                      language?.languageId ||
-                      `${name}-${index}`
-                    }
+                      color:
+                        "#cbd1d5",
+
+                      fontSize: 10,
+                    }}
                   >
-                    <td
-                      style={
-                        languageCellStyle(
-                          "left"
-                        )
-                      }
-                    >
-                      {name}
-                    </td>
+                    {language?.name ||
+                      language?.languageName ||
+                      language?.nativeName ||
+                      "Idioma"}
+                  </td>
 
-                    <td
-                      style={
-                        languageCellStyle()
-                      }
-                    >
-                      {language?.audio
-                        ? "✓"
-                        : "—"}
-                    </td>
+                  <td
+                    style={{
+                      textAlign:
+                        "center",
 
-                    <td
-                      style={
-                        languageCellStyle()
-                      }
-                    >
-                      {language?.subtitles
-                        ? "✓"
-                        : "—"}
-                    </td>
+                      color:
+                        "#cbd1d5",
+                    }}
+                  >
+                    {language?.audio
+                      ? "✓"
+                      : "—"}
+                  </td>
 
-                    <td
-                      style={
-                        languageCellStyle()
-                      }
-                    >
-                      {language?.interface
-                        ? "✓"
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              }
+                  <td
+                    style={{
+                      textAlign:
+                        "center",
+
+                      color:
+                        "#cbd1d5",
+                    }}
+                  >
+                    {language?.subtitles
+                      ? "✓"
+                      : "—"}
+                  </td>
+
+                  <td
+                    style={{
+                      textAlign:
+                        "center",
+
+                      color:
+                        "#cbd1d5",
+                    }}
+                  >
+                    {language?.interface
+                      ? "✓"
+                      : "—"}
+                  </td>
+                </tr>
+              )
             )}
           </tbody>
         </table>
       </div>
 
       {languages.length >
-        3 && (
+        4 && (
         <button
           type="button"
           onClick={() =>
@@ -2096,34 +1640,11 @@ function Languages({
         >
           {expanded
             ? "VER MENOS"
-            : `VER MÁS (${languages.length - 3})`}
+            : `VER MÁS (${languages.length - 4})`}
         </button>
       )}
     </Section>
   );
-}
-
-function languageCellStyle(
-  textAlign = "center"
-) {
-  return {
-    padding:
-      "7px 5px",
-
-    borderBottom:
-      "1px solid rgba(255,255,255,.045)",
-
-    color:
-      "#cbd1d5",
-
-    fontSize:
-      10,
-
-    textAlign,
-
-    fontWeight:
-      650,
-  };
 }
 
 /* =========================================================
@@ -2133,41 +1654,17 @@ function languageCellStyle(
 function AgeRatings({
   game,
   accent,
-  portrait,
 }) {
   const ratings =
     asArray(
       game?.ageRatings
     );
 
-  const [
-    expanded,
-    setExpanded,
-  ] = useState(false);
-
-  const [
-    openIndex,
-    setOpenIndex,
-  ] = useState(null);
-
   if (
     !ratings.length
   ) {
     return null;
   }
-
-  const firstRowCount =
-    portrait
-      ? 3
-      : 4;
-
-  const visible =
-    expanded
-      ? ratings
-      : ratings.slice(
-          0,
-          firstRowCount
-        );
 
   return (
     <Section title="Clasificación">
@@ -2177,534 +1674,148 @@ function AgeRatings({
             "grid",
 
           gridTemplateColumns:
-            portrait
-              ? "repeat(3,minmax(0,1fr))"
-              : "repeat(4,minmax(0,1fr))",
+            "repeat(auto-fit,minmax(100px,1fr))",
 
-          gap:
-            7,
+          gap: 8,
         }}
       >
-        {visible.map(
+        {ratings.map(
           (
             rating,
             index
-          ) => {
-            const actualIndex =
-              ratings.indexOf(
-                rating
-              );
+          ) => (
+            <div
+              key={
+                rating?.id ||
+                index
+              }
+              style={{
+                padding: 10,
 
-            const isOpen =
-              openIndex ===
-              actualIndex;
+                border:
+                  `1px solid ${accent}22`,
 
-            const image =
-              rating?.imageUrl ||
-              rating?.image_url ||
-              rating?.logoUrl ||
-              rating?.logo_url ||
-              rating?.iconUrl ||
-              rating?.icon_url ||
-              null;
+                borderRadius:
+                  10,
 
-            const label =
-              rating?.region ||
-              rating?.organization ||
-              "—";
-
-            return (
+                background:
+                  "#12161c",
+              }}
+            >
               <div
-                key={`${label}-${actualIndex}`}
                 style={{
-                  minWidth:
-                    0,
+                  color:
+                    "#8a949a",
+
+                  fontSize: 8,
+
+                  fontWeight: 850,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenIndex(
-                      isOpen
-                        ? null
-                        : actualIndex
-                    )
-                  }
+                {rating?.organization ||
+                  rating?.region ||
+                  "Clasificación"}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 5,
+
+                  color:
+                    "#ffffff",
+
+                  fontSize: 18,
+
+                  fontWeight: 950,
+                }}
+              >
+                {rating?.rating ||
+                  "—"}
+              </div>
+
+              {asArray(
+                rating?.contentDescriptors ||
+                  rating?.descriptors
+              ).length >
+                0 && (
+                <div
                   style={{
-                    width:
-                      "100%",
+                    display:
+                      "flex",
 
-                    minHeight:
-                      78,
+                    flexWrap:
+                      "wrap",
 
-                    padding:
-                      "6px 5px",
+                    gap: 4,
 
-                    border:
-                      `1px solid ${accent}22`,
-
-                    borderRadius:
-                      10,
-
-                    background:
-                      "#12161c",
-
-                    color:
-                      "#ffffff",
-
-                    cursor:
-                      "pointer",
-
-                    touchAction:
-                      "manipulation",
+                    marginTop: 7,
                   }}
                 >
-                  <div
-                    style={{
-                      marginBottom:
-                        4,
-
-                      overflow:
-                        "hidden",
-
-                      textOverflow:
-                        "ellipsis",
-
-                      whiteSpace:
-                        "nowrap",
-
-                      fontSize:
-                        8,
-
-                      fontWeight:
-                        850,
-
-                      opacity:
-                        0.75,
-                    }}
-                  >
-                    {label}
-                  </div>
-
-                  <div
-                    style={{
-                      height:
-                        38,
-
-                      display:
-                        "grid",
-
-                      placeItems:
-                        "center",
-                    }}
-                  >
-                    {image ? (
-                      <img
-                        src={
-                          image
+                  {asArray(
+                    rating?.contentDescriptors ||
+                      rating?.descriptors
+                  ).map(
+                    (
+                      descriptor,
+                      descriptorIndex
+                    ) => (
+                      <span
+                        key={
+                          descriptorIndex
                         }
-                        alt=""
                         style={{
-                          maxWidth:
-                            42,
-
-                          maxHeight:
-                            38,
-
-                          objectFit:
-                            "contain",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          minWidth:
-                            38,
-
                           padding:
-                            "6px 7px",
+                            "3px 5px",
 
                           borderRadius:
-                            7,
+                            6,
 
                           background:
-                            `${accent}14`,
+                            "rgba(255,255,255,.055)",
 
                           color:
-                            "#ffffff",
+                            "#a9b1b6",
 
-                          fontSize:
-                            14,
-
-                          fontWeight:
-                            900,
-
-                          textAlign:
-                            "center",
+                          fontSize: 7,
                         }}
                       >
-                        {rating?.rating ||
-                          "—"}
-                      </div>
-                    )}
-                  </div>
+                        {typeof descriptor ===
+                        "string"
+                          ? descriptor
+                          : descriptor?.name ||
+                            descriptor?.description ||
+                            "Contenido"}
+                      </span>
+                    )
+                  )}
+                </div>
+              )}
 
+              {rating?.synopsis &&
+                rating.synopsis !==
+                  "No Rating Summary" && (
                   <div
                     style={{
-                      marginTop:
-                        3,
-
-                      fontSize:
-                        10,
-
-                      opacity:
-                        0.65,
+                      marginTop: 7,
                     }}
                   >
-                    {isOpen
-                      ? "⌃"
-                      : "⌄"}
-                  </div>
-                </button>
-
-                {isOpen && (
-                  <div
-                    style={{
-                      marginTop:
-                        6,
-
-                      padding:
-                        8,
-
-                      borderRadius:
-                        9,
-
-                      background:
-                        "#0c0f13",
-
-                      border:
-                        "1px solid rgba(255,255,255,.06)",
-                    }}
-                  >
-                    {asArray(
-                      rating?.descriptors ||
-                        rating?.contentDescriptors
-                    ).length >
-                      0 && (
-                      <div
-                        style={{
-                          display:
-                            "flex",
-
-                          flexWrap:
-                            "wrap",
-
-                          gap:
-                            4,
-
-                          marginBottom:
-                            rating?.synopsis
-                              ? 7
-                              : 0,
-                        }}
-                      >
-                        {asArray(
-                          rating?.descriptors ||
-                            rating?.contentDescriptors
-                        ).map(
-                          (
-                            descriptor,
-                            descriptorIndex
-                          ) => (
-                            <span
-                              key={`${actualIndex}-${descriptorIndex}`}
-                              style={{
-                                padding:
-                                  "3px 5px",
-
-                                borderRadius:
-                                  6,
-
-                                background:
-                                  "rgba(255,255,255,.055)",
-
-                                color:
-                                  "#a9b1b6",
-
-                                fontSize:
-                                  7,
-                              }}
-                            >
-                              {typeof descriptor ===
-                              "string"
-                                ? descriptor
-                                : descriptor?.name ||
-                                  descriptor?.description ||
-                                  "Contenido"}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {rating?.synopsis &&
-                      rating.synopsis !==
-                        "No Rating Summary" && (
-                        <CollapsibleText
-                          lines={
-                            3
-                          }
-                          accent={
-                            accent
-                          }
-                        >
-                          {
-                            rating.synopsis
-                          }
-                        </CollapsibleText>
-                      )}
+                    <CollapsibleText
+                      lines={3}
+                      accent={
+                        accent
+                      }
+                    >
+                      {
+                        rating.synopsis
+                      }
+                    </CollapsibleText>
                   </div>
                 )}
-              </div>
-            );
-          }
-        )}
-      </div>
-
-      {ratings.length >
-        firstRowCount && (
-        <button
-          type="button"
-          onClick={() =>
-            setExpanded(
-              (current) =>
-                !current
-            )
-          }
-          style={
-            expandButtonStyle()
-          }
-        >
-          {expanded
-            ? "VER MENOS"
-            : `VER MÁS (${ratings.length - firstRowCount})`}
-        </button>
-      )}
-    </Section>
-  );
-}
-
-/* =========================================================
-   DATA ROW
-========================================================= */
-
-function DataRow({
-  label,
-  value,
-}) {
-  if (!value) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        display:
-          "grid",
-
-        gridTemplateColumns:
-          "100px minmax(0,1fr)",
-
-        gap:
-          8,
-
-        padding:
-          "7px 0",
-
-        borderBottom:
-          "1px solid rgba(255,255,255,.05)",
-      }}
-    >
-      <div
-        style={{
-          color:
-            "#747f86",
-
-          fontSize:
-            9,
-
-          fontWeight:
-            750,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          minWidth:
-            0,
-
-          color:
-            "#d3d9dc",
-
-          fontSize:
-            10,
-
-          lineHeight:
-            1.35,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   HERO DATA
-========================================================= */
-
-function HeroData({
-  label,
-  value,
-}) {
-  if (!value) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        minWidth:
-          0,
-      }}
-    >
-      <div
-        style={{
-          color:
-            "#727c83",
-
-          fontSize:
-            7,
-
-          textTransform:
-            "uppercase",
-
-          fontWeight:
-            850,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginTop:
-            3,
-
-          overflow:
-            "hidden",
-
-          textOverflow:
-            "ellipsis",
-
-          whiteSpace:
-            "nowrap",
-
-          color:
-            "#dce1e4",
-
-          fontSize:
-            9,
-
-          fontWeight:
-            750,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   META GROUP
-========================================================= */
-
-function MetaGroup({
-  label,
-  values,
-  accent,
-}) {
-  if (
-    !values?.length
-  ) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        paddingBottom:
-          10,
-
-        marginBottom:
-          10,
-
-        borderBottom:
-          "1px solid rgba(255,255,255,.05)",
-      }}
-    >
-      <div
-        style={{
-          marginBottom:
-            6,
-
-          color:
-            "#747f86",
-
-          fontSize:
-            8,
-
-          fontWeight:
-            850,
-
-          textTransform:
-            "uppercase",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          display:
-            "flex",
-
-          flexWrap:
-            "wrap",
-
-          gap:
-            5,
-        }}
-      >
-        {values.map(
-          (value) => (
-            <Chip
-              key={
-                value
-              }
-              accent={
-                accent
-              }
-            >
-              {value}
-            </Chip>
+            </div>
           )
         )}
       </div>
-    </div>
+    </Section>
   );
 }
 
@@ -2717,9 +1828,6 @@ function SimilarGames({
   accent,
   onOpenGame,
 }) {
-  const scrollRef =
-    useRef(null);
-
   const similar =
     asArray(
       game?.similarGames
@@ -2730,253 +1838,205 @@ function SimilarGames({
         item?.name
     );
 
+  const scrollRef =
+    useRef(null);
+
   if (
     !similar.length
   ) {
     return null;
   }
 
-  function move(
-    direction
-  ) {
-    const element =
-      scrollRef.current;
+  function move(direction) {
+    scrollRef.current
+      ?.scrollBy({
+        left:
+          direction *
+          Math.max(
+            180,
+            scrollRef.current
+              .clientWidth *
+              0.72
+          ),
 
-    if (!element) {
-      return;
-    }
-
-    element.scrollBy({
-      left:
-        direction *
-        Math.max(
-          180,
-          element.clientWidth *
-            0.72
-        ),
-
-      behavior:
-        "smooth",
-    });
+        behavior:
+          "smooth",
+      });
   }
 
   return (
     <Section title="Juegos similares">
       <div
+        ref={scrollRef}
         style={{
-          position:
-            "relative",
+          display:
+            "flex",
+
+          gap: 10,
+
+          overflowX:
+            "auto",
+
+          paddingBottom: 4,
+
+          WebkitOverflowScrolling:
+            "touch",
+
+          scrollbarWidth:
+            "none",
         }}
       >
-        <div
-          ref={
-            scrollRef
-          }
-          style={{
-            display:
-              "flex",
+        {similar.map(
+          (item) => {
+            const cover =
+              getCover(item);
 
-            gap:
-              10,
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() =>
+                  onOpenGame(
+                    item
+                  )
+                }
+                style={{
+                  flex:
+                    "0 0 138px",
 
-            overflowX:
-              "auto",
+                  width: 138,
 
-            paddingBottom:
-              4,
+                  padding: 0,
 
-            WebkitOverflowScrolling:
-              "touch",
+                  overflow:
+                    "hidden",
 
-            scrollSnapType:
-              "x proximity",
+                  border:
+                    "1px solid rgba(255,255,255,.08)",
 
-            scrollbarWidth:
-              "none",
-          }}
-        >
-          {similar.map(
-            (item) => {
-              const cover =
-                getCover(
-                  item
-                );
+                  borderRadius:
+                    12,
 
-              return (
-                <button
-                  key={
-                    item.id
-                  }
-                  type="button"
-                  onClick={() =>
-                    onOpenGame?.(
-                      item
-                    )
-                  }
+                  background:
+                    "#0d1014",
+
+                  color:
+                    "#ffffff",
+
+                  textAlign:
+                    "left",
+                }}
+              >
+                <div
                   style={{
-                    flex:
-                      "0 0 138px",
-
-                    width:
-                      138,
-
-                    padding:
-                      0,
-
-                    overflow:
-                      "hidden",
-
-                    border:
-                      "1px solid rgba(255,255,255,.08)",
-
-                    borderRadius:
-                      12,
+                    aspectRatio:
+                      "3 / 4",
 
                     background:
-                      "#0d1014",
+                      "#080a0d",
+                  }}
+                >
+                  {cover && (
+                    <img
+                      src={cover}
+                      alt={
+                        item.name
+                      }
+                      loading="lazy"
+                      style={{
+                        width:
+                          "100%",
 
-                    color:
-                      "#ffffff",
+                        height:
+                          "100%",
 
-                    textAlign:
-                      "left",
+                        objectFit:
+                          "cover",
+                      }}
+                    />
+                  )}
+                </div>
 
-                    cursor:
-                      "pointer",
-
-                    scrollSnapAlign:
-                      "start",
-
-                    touchAction:
-                      "manipulation",
+                <div
+                  style={{
+                    padding:
+                      "8px 8px 9px",
                   }}
                 >
                   <div
                     style={{
-                      aspectRatio:
-                        "3 / 4",
+                      minHeight: 30,
 
-                      background:
-                        "#080a0d",
+                      fontSize: 10,
+
+                      lineHeight: 1.35,
+
+                      fontWeight: 800,
                     }}
                   >
-                    {cover && (
-                      <img
-                        src={
-                          cover
-                        }
-                        alt={
-                          item.name
-                        }
-                        loading="lazy"
-                        style={{
-                          width:
-                            "100%",
-
-                          height:
-                            "100%",
-
-                          objectFit:
-                            "cover",
-
-                          display:
-                            "block",
-                        }}
-                      />
-                    )}
+                    {item.name}
                   </div>
 
                   <div
                     style={{
-                      padding:
-                        "8px 8px 9px",
+                      marginTop: 4,
+
+                      color:
+                        accent,
+
+                      fontSize: 8,
                     }}
                   >
-                    <div
-                      style={{
-                        minHeight:
-                          30,
-
-                        fontSize:
-                          10,
-
-                        lineHeight:
-                          1.35,
-
-                        fontWeight:
-                          800,
-                      }}
-                    >
-                      {
-                        item.name
-                      }
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop:
-                          4,
-
-                        color:
-                          accent,
-
-                        fontSize:
-                          8,
-                      }}
-                    >
-                      {item.year ||
-                        "Ver ficha"}
-                    </div>
+                    {item.year ||
+                      "Ver ficha"}
                   </div>
-                </button>
-              );
-            }
-          )}
-        </div>
-
-        {similar.length >
-          2 && (
-          <div
-            style={{
-              display:
-                "flex",
-
-              justifyContent:
-                "flex-end",
-
-              gap:
-                6,
-
-              marginTop:
-                8,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                move(-1)
-              }
-              style={
-                navButtonStyle()
-              }
-            >
-              ‹
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                move(1)
-              }
-              style={
-                navButtonStyle()
-              }
-            >
-              ›
-            </button>
-          </div>
+                </div>
+              </button>
+            );
+          }
         )}
       </div>
+
+      {similar.length >
+        2 && (
+        <div
+          style={{
+            display:
+              "flex",
+
+            justifyContent:
+              "flex-end",
+
+            gap: 6,
+
+            marginTop: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              move(-1)
+            }
+            style={
+              navButtonStyle()
+            }
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              move(1)
+            }
+            style={
+              navButtonStyle()
+            }
+          >
+            ›
+          </button>
+        </div>
+      )}
     </Section>
   );
 }
@@ -2991,8 +2051,7 @@ function LoadingBar({
   return (
     <div
       style={{
-        height:
-          3,
+        height: 3,
 
         background:
           "rgba(255,255,255,.05)",
@@ -3003,8 +2062,7 @@ function LoadingBar({
     >
       <div
         style={{
-          width:
-            "40%",
+          width: "40%",
 
           height:
             "100%",
@@ -3026,6 +2084,9 @@ export default function FullGameOverlay({
   onClose,
   onBack,
 }) {
+  const overlayRef =
+    useRef(null);
+
   const [
     viewport,
     setViewport,
@@ -3033,15 +2094,10 @@ export default function FullGameOverlay({
     getViewport
   );
 
-  const overlayRef =
-    useRef(null);
-
   const [
     activeGame,
     setActiveGame,
-  ] = useState(
-    game
-  );
+  ] = useState(game);
 
   const [
     masterGame,
@@ -3063,64 +2119,50 @@ export default function FullGameOverlay({
     setGameHistory,
   ] = useState([]);
 
-    /* =======================================================
-     RADIO — REANUDAR AL CERRAR LA FICHA
-  ======================================================= */
-
-  useEffect(() => {
-    return () => {
-      window.dispatchEvent(
-        new CustomEvent(
-          "tierra-vicio-media-end"
-        )
-      );
-    };
-  }, []);
-  
   /* =======================================================
-     VIEWPORT
+     VIEWPORT / ORIENTATION
   ======================================================= */
 
   useEffect(() => {
-    function update() {
+    function updateViewport() {
       setViewport(
         getViewport()
       );
     }
 
-    update();
+    updateViewport();
 
     window.addEventListener(
       "resize",
-      update
+      updateViewport
     );
 
     window.addEventListener(
       "orientationchange",
-      update
+      updateViewport
     );
 
     window.visualViewport
       ?.addEventListener(
         "resize",
-        update
+        updateViewport
       );
 
     return () => {
       window.removeEventListener(
         "resize",
-        update
+        updateViewport
       );
 
       window.removeEventListener(
         "orientationchange",
-        update
+        updateViewport
       );
 
       window.visualViewport
         ?.removeEventListener(
           "resize",
-          update
+          updateViewport
         );
     };
   }, []);
@@ -3130,31 +2172,23 @@ export default function FullGameOverlay({
     viewport.width;
 
   /* =======================================================
-     RESET JUEGO
+     RESET AL CAMBIAR JUEGO DE ORIGEN
   ======================================================= */
 
   useEffect(() => {
-    setActiveGame(
-      game
-    );
+    setActiveGame(game);
 
-    setMasterGame(
-      null
-    );
+    setMasterGame(null);
 
-    setLoadError(
-      null
-    );
+    setLoadError(null);
 
-    setGameHistory(
-      []
-    );
+    setGameHistory([]);
   }, [
     game?.id,
   ]);
 
   /* =======================================================
-     CARGAR MASTER
+     CARGAR FICHA COMPLETA
   ======================================================= */
 
   useEffect(() => {
@@ -3168,17 +2202,12 @@ export default function FullGameOverlay({
     const controller =
       new AbortController();
 
-    let alive =
-      true;
+    let alive = true;
 
     async function loadGame() {
-      setLoading(
-        true
-      );
+      setLoading(true);
 
-      setLoadError(
-        null
-      );
+      setLoadError(null);
 
       try {
         const response =
@@ -3202,33 +2231,22 @@ export default function FullGameOverlay({
           await response.json();
 
         if (
-          !response.ok
-        ) {
-          throw new Error(
-            data?.error ||
-              `No se pudo cargar el juego ${gameId}.`
-          );
-        }
-
-        if (
+          !response.ok ||
           !data?.ok ||
           !data?.game
         ) {
           throw new Error(
-            "La biblioteca devolvió una ficha inválida."
+            data?.error ||
+              "No se pudo cargar la ficha completa."
           );
         }
 
-        if (
-          alive
-        ) {
+        if (alive) {
           setMasterGame(
             data.game
           );
         }
-      } catch (
-        error
-      ) {
+      } catch (error) {
         if (
           error?.name ===
           "AbortError"
@@ -3236,9 +2254,7 @@ export default function FullGameOverlay({
           return;
         }
 
-        if (
-          alive
-        ) {
+        if (alive) {
           setLoadError(
             error instanceof
               Error
@@ -3247,12 +2263,8 @@ export default function FullGameOverlay({
           );
         }
       } finally {
-        if (
-          alive
-        ) {
-          setLoading(
-            false
-          );
+        if (alive) {
+          setLoading(false);
         }
       }
     }
@@ -3260,14 +2272,17 @@ export default function FullGameOverlay({
     loadGame();
 
     return () => {
-      alive =
-        false;
+      alive = false;
 
       controller.abort();
     };
   }, [
     activeGame?.id,
   ]);
+
+  /* =======================================================
+     GAME DISPLAY
+  ======================================================= */
 
   const displayGame =
     masterGame &&
@@ -3366,16 +2381,15 @@ export default function FullGameOverlay({
       .filter(Boolean);
 
   /* =======================================================
-     SIMILARES
+     NAVEGACIÓN SIMILARES
   ======================================================= */
 
-  function scrollOverlayTop() {
+  function scrollTop() {
     requestAnimationFrame(
       () => {
         overlayRef.current
           ?.scrollTo({
-            top:
-              0,
+            top: 0,
 
             behavior:
               "auto",
@@ -3401,49 +2415,47 @@ export default function FullGameOverlay({
       ]
     );
 
-    setMasterGame(
-      null
-    );
+    setMasterGame(null);
 
     setActiveGame({
       ...similar,
       accent,
     });
 
-    scrollOverlayTop();
+    scrollTop();
   }
 
-  function goToPreviousGame() {
+  function goBack() {
     if (
-      gameHistory.length ===
+      gameHistory.length >
       0
     ) {
+      const previous =
+        gameHistory[
+          gameHistory.length -
+            1
+        ];
+
+      setGameHistory(
+        (current) =>
+          current.slice(
+            0,
+            -1
+          )
+      );
+
+      setMasterGame(null);
+
+      setActiveGame(
+        previous
+      );
+
+      scrollTop();
+
       return;
     }
 
-    const previous =
-      gameHistory[
-        gameHistory.length -
-          1
-      ];
-
-    setGameHistory(
-      (current) =>
-        current.slice(
-          0,
-          -1
-        )
-    );
-
-    setMasterGame(
-      null
-    );
-
-    setActiveGame(
-      previous
-    );
-
-    scrollOverlayTop();
+    onBack?.();
   }
 
   /* =======================================================
@@ -3467,7 +2479,7 @@ export default function FullGameOverlay({
   }, []);
 
   /* =======================================================
-     ESCAPE
+     ESCAPE = ATRÁS
   ======================================================= */
 
   useEffect(() => {
@@ -3481,30 +2493,40 @@ export default function FullGameOverlay({
         return;
       }
 
-      if (
-        gameHistory.length >
-        0
-      ) {
-        goToPreviousGame();
+      event.preventDefault();
+      event.stopPropagation();
 
-        return;
-      }
-
-      onClose?.();
+      goBack();
     }
 
     window.addEventListener(
       "keydown",
-      handleKeyDown
+      handleKeyDown,
+      true
     );
 
     return () => {
       window.removeEventListener(
         "keydown",
-        handleKeyDown
+        handleKeyDown,
+        true
       );
     };
   });
+
+  /* =======================================================
+     RADIO / MEDIA
+  ======================================================= */
+
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent(
+          "tierra-vicio-media-end"
+        )
+      );
+    };
+  }, []);
 
   if (
     !activeGame?.id
@@ -3512,28 +2534,24 @@ export default function FullGameOverlay({
     return null;
   }
 
-  const canGoBackGame =
-    gameHistory.length >
-    0;
-
   /* =======================================================
      UI
   ======================================================= */
 
   return (
     <div
-      ref={
-        overlayRef
-      }
+      ref={overlayRef}
       style={{
         position:
           "fixed",
 
-        inset:
-          0,
+        inset: 0,
 
+        /*
+          Por encima de la radio.
+        */
         zIndex:
-          100000,
+          300000,
 
         width:
           "100%",
@@ -3569,11 +2587,9 @@ export default function FullGameOverlay({
           position:
             "sticky",
 
-          top:
-            0,
+          top: 0,
 
-          zIndex:
-            30,
+          zIndex: 40,
 
           display:
             "flex",
@@ -3581,8 +2597,7 @@ export default function FullGameOverlay({
           alignItems:
             "center",
 
-          gap:
-            10,
+          gap: 10,
 
           minHeight:
             portrait
@@ -3594,11 +2609,14 @@ export default function FullGameOverlay({
               ? "8px 10px"
               : "6px 14px",
 
+          boxSizing:
+            "border-box",
+
           borderBottom:
             `1px solid ${accent}33`,
 
           background:
-            "rgba(5,7,9,.96)",
+            "rgba(5,7,9,.98)",
 
           backdropFilter:
             "blur(18px)",
@@ -3607,28 +2625,26 @@ export default function FullGameOverlay({
             "blur(18px)",
         }}
       >
-        {(canGoBackGame ||
-          onBack) && (
-          <button
-            type="button"
-            onClick={
-              canGoBackGame
-                ? goToPreviousGame
-                : onBack
-            }
-            style={
-              navButtonStyle()
-            }
-          >
-            ‹
-          </button>
-        )}
+        {/* ATRÁS */}
+
+        <button
+          type="button"
+          aria-label="Volver"
+          onClick={
+            goBack
+          }
+          style={
+            navButtonStyle()
+          }
+        >
+          ‹
+        </button>
+
+        {/* PORTADA HEADER */}
 
         {cover && (
           <img
-            src={
-              cover
-            }
+            src={cover}
             alt=""
             style={{
               width:
@@ -3644,19 +2660,18 @@ export default function FullGameOverlay({
               objectFit:
                 "cover",
 
-              borderRadius:
-                6,
+              borderRadius: 6,
             }}
           />
         )}
 
+        {/* TÍTULO */}
+
         <div
           style={{
-            minWidth:
-              0,
+            minWidth: 0,
 
-            flex:
-              1,
+            flex: 1,
           }}
         >
           <div
@@ -3670,13 +2685,9 @@ export default function FullGameOverlay({
               whiteSpace:
                 "nowrap",
 
-              fontSize:
-                portrait
-                  ? 15
-                  : 15,
+              fontSize: 15,
 
-              fontWeight:
-                850,
+              fontWeight: 850,
             }}
           >
             {title}
@@ -3684,8 +2695,7 @@ export default function FullGameOverlay({
 
           <div
             style={{
-              marginTop:
-                2,
+              marginTop: 2,
 
               overflow:
                 "hidden",
@@ -3699,12 +2709,12 @@ export default function FullGameOverlay({
               color:
                 "#858f95",
 
-              fontSize:
-                9,
+              fontSize: 9,
             }}
           >
             {[
-              displayGame?.developer,
+              displayGame
+                ?.developer,
               year,
             ]
               .filter(Boolean)
@@ -3712,8 +2722,11 @@ export default function FullGameOverlay({
           </div>
         </div>
 
+        {/* CERRAR */}
+
         <button
           type="button"
+          aria-label="Cerrar ficha"
           onClick={
             onClose
           }
@@ -3727,9 +2740,7 @@ export default function FullGameOverlay({
 
       {loading && (
         <LoadingBar
-          accent={
-            accent
-          }
+          accent={accent}
         />
       )}
 
@@ -3738,16 +2749,15 @@ export default function FullGameOverlay({
           width:
             "100%",
 
-          maxWidth:
-            1280,
+          maxWidth: 1280,
 
           margin:
             "0 auto",
 
           padding:
             portrait
-              ? "12px 10px 60px"
-              : "10px 14px 60px",
+              ? "12px 10px 44px"
+              : "10px 14px 44px",
 
           boxSizing:
             "border-box",
@@ -3756,14 +2766,11 @@ export default function FullGameOverlay({
         {loadError && (
           <div
             style={{
-              marginBottom:
-                10,
+              marginBottom: 10,
 
-              padding:
-                10,
+              padding: 10,
 
-              borderRadius:
-                10,
+              borderRadius: 10,
 
               background:
                 "rgba(120,20,20,.13)",
@@ -3771,16 +2778,15 @@ export default function FullGameOverlay({
               color:
                 "#d9a1a1",
 
-              fontSize:
-                10,
+              fontSize: 10,
             }}
           >
-            {loadError}
+            No se pudo cargar toda la información de esta ficha. Se muestran los datos disponibles.
           </div>
         )}
 
         {/* =================================================
-            HERO VERTICAL
+            VERTICAL
         ================================================= */}
 
         {portrait ? (
@@ -3795,8 +2801,7 @@ export default function FullGameOverlay({
                     ? "145px minmax(0,1fr)"
                     : "1fr",
 
-                gap:
-                  11,
+                gap: 11,
 
                 alignItems:
                   "start",
@@ -3808,23 +2813,15 @@ export default function FullGameOverlay({
                     overflow:
                       "hidden",
 
-                    borderRadius:
-                      14,
-
-                    border:
-                      "1px solid rgba(255,255,255,.09)",
+                    borderRadius: 14,
 
                     background:
                       "#101318",
                   }}
                 >
                   <img
-                    src={
-                      cover
-                    }
-                    alt={
-                      title
-                    }
+                    src={cover}
+                    alt={title}
                     style={{
                       width:
                         "100%",
@@ -3844,10 +2841,11 @@ export default function FullGameOverlay({
 
               <div
                 style={{
-                  minWidth:
-                    0,
+                  minWidth: 0,
                 }}
               >
+                {/* PUNTAJES SIEMPRE */}
+
                 <div
                   style={{
                     display:
@@ -3856,31 +2854,31 @@ export default function FullGameOverlay({
                     gridTemplateColumns:
                       "repeat(3,minmax(0,1fr))",
 
-                    gap:
-                      5,
+                    gap: 5,
                   }}
                 >
                   <ScoreBox
-                    compact
                     label="Oficial"
-                    value={formatScore(
-                      official.value
-                    )}
+                    value={
+                      formatScore(
+                        official.value
+                      )
+                    }
                     accent={
                       accent
                     }
                   />
 
                   <ScoreBox
-                    compact
                     label="Comunidad"
-                    value={formatScore(
-                      community.value
-                    )}
+                    value={
+                      formatScore(
+                        community.value
+                      )
+                    }
                   />
 
                   <ScoreBox
-                    compact
                     label="Mi evaluación"
                     value="—"
                   />
@@ -3888,15 +2886,12 @@ export default function FullGameOverlay({
 
                 <div
                   style={{
-                    marginTop:
-                      7,
+                    marginTop: 7,
                   }}
                 >
                   <DataRow
                     label="Año"
-                    value={
-                      year
-                    }
+                    value={year}
                   />
 
                   <DataRow
@@ -3926,11 +2921,9 @@ export default function FullGameOverlay({
                       flexWrap:
                         "wrap",
 
-                      gap:
-                        5,
+                      gap: 5,
 
-                      marginTop:
-                        7,
+                      marginTop: 7,
                     }}
                   >
                     {platforms
@@ -3963,16 +2956,11 @@ export default function FullGameOverlay({
 
             <div
               style={{
-                marginTop:
-                  11,
+                marginTop: 11,
               }}
             >
               <Section
                 title="Vídeo"
-                style={{
-                  padding:
-                    12,
-                }}
               >
                 <VideoPlayer
                   game={
@@ -3984,7 +2972,7 @@ export default function FullGameOverlay({
           </>
         ) : (
           /* =================================================
-             HERO HORIZONTAL
+             HORIZONTAL
           ================================================= */
 
           <>
@@ -3995,20 +2983,17 @@ export default function FullGameOverlay({
 
                 gridTemplateColumns:
                   cover
-                    ? "minmax(170px, 24%) minmax(0,1fr)"
+                    ? "minmax(150px,22%) minmax(0,1fr)"
                     : "1fr",
 
-                gap:
-                  12,
+                gap: 12,
 
                 height:
-                  "min(330px, 46vw)",
+                  "min(310px,42vw)",
 
-                minHeight:
-                  240,
+                minHeight: 210,
 
-                maxHeight:
-                  330,
+                maxHeight: 310,
 
                 alignItems:
                   "stretch",
@@ -4023,23 +3008,15 @@ export default function FullGameOverlay({
                     overflow:
                       "hidden",
 
-                    borderRadius:
-                      14,
-
-                    border:
-                      "1px solid rgba(255,255,255,.09)",
+                    borderRadius: 14,
 
                     background:
                       "#101318",
                   }}
                 >
                   <img
-                    src={
-                      cover
-                    }
-                    alt={
-                      title
-                    }
+                    src={cover}
+                    alt={title}
                     style={{
                       width:
                         "100%",
@@ -4065,7 +3042,7 @@ export default function FullGameOverlay({
               />
             </div>
 
-            {/* DATOS + PUNTAJES */}
+            {/* PUNTAJES + DATOS */}
 
             <div
               style={{
@@ -4075,20 +3052,13 @@ export default function FullGameOverlay({
                 gridTemplateColumns:
                   "repeat(7,minmax(0,1fr))",
 
-                gap:
-                  6,
+                gap: 6,
 
-                marginTop:
-                  9,
+                marginTop: 9,
 
-                padding:
-                  9,
+                padding: 9,
 
-                borderRadius:
-                  12,
-
-                border:
-                  "1px solid rgba(255,255,255,.07)",
+                borderRadius: 12,
 
                 background:
                   "#101318",
@@ -4096,9 +3066,7 @@ export default function FullGameOverlay({
             >
               <HeroData
                 label="Año"
-                value={
-                  year
-                }
+                value={year}
               />
 
               <HeroData
@@ -4164,18 +3132,13 @@ export default function FullGameOverlay({
         {description && (
           <div
             style={{
-              marginTop:
-                11,
+              marginTop: 11,
             }}
           >
             <Section title="Descripción">
               <CollapsibleText
-                lines={
-                  4
-                }
-                accent={
-                  accent
-                }
+                lines={4}
+                accent={accent}
               >
                 {description}
               </CollapsibleText>
@@ -4189,22 +3152,18 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 11,
           }}
         >
           <Gallery
             game={
               displayGame
             }
-            portrait={
-              portrait
-            }
           />
         </div>
 
         {/* =================================================
-            FICHA TÉCNICA
+            FICHA + CARACTERÍSTICAS
         ================================================= */}
 
         <div
@@ -4217,19 +3176,15 @@ export default function FullGameOverlay({
                 ? "1fr"
                 : "1fr 1fr",
 
-            gap:
-              10,
+            gap: 10,
 
-            marginTop:
-              11,
+            marginTop: 11,
           }}
         >
           <Section title="Ficha técnica">
             <DataRow
               label="Año"
-              value={
-                year
-              }
+              value={year}
             />
 
             <DataRow
@@ -4319,17 +3274,13 @@ export default function FullGameOverlay({
           <Section title="Características">
             <MetaGroup
               label="Géneros"
-              values={
-                genres
-              }
+              values={genres}
               accent="#58d68d"
             />
 
             <MetaGroup
               label="Temas"
-              values={
-                themes
-              }
+              values={themes}
               accent="#f0b35a"
             />
 
@@ -4357,8 +3308,7 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 11,
           }}
         >
           <Languages
@@ -4374,20 +3324,14 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 11,
           }}
         >
           <AgeRatings
             game={
               displayGame
             }
-            accent={
-              accent
-            }
-            portrait={
-              portrait
-            }
+            accent={accent}
           />
         </div>
 
@@ -4398,18 +3342,13 @@ export default function FullGameOverlay({
         {storyline && (
           <div
             style={{
-              marginTop:
-                11,
+              marginTop: 11,
             }}
           >
             <Section title="Historia">
               <CollapsibleText
-                lines={
-                  4
-                }
-                accent={
-                  accent
-                }
+                lines={4}
+                accent={accent}
               >
                 {storyline}
               </CollapsibleText>
@@ -4423,17 +3362,14 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 11,
           }}
         >
           <SimilarGames
             game={
               displayGame
             }
-            accent={
-              accent
-            }
+            accent={accent}
             onOpenGame={
               openSimilarGame
             }
@@ -4441,165 +3377,14 @@ export default function FullGameOverlay({
         </div>
 
         {/* =================================================
-            BOTONES FINALES
+            NO HAY BOTONES VOLVER/CERRAR ABAJO
+
+            La navegación queda únicamente arriba:
+
+            ← = historial / origen
+            × = cerrar ficha al origen
         ================================================= */}
-
-        <div
-          style={{
-            display:
-              "flex",
-
-            justifyContent:
-              "center",
-
-            gap:
-              8,
-
-            flexWrap:
-              "wrap",
-
-            marginTop:
-              17,
-          }}
-        >
-          {canGoBackGame ? (
-            <button
-              type="button"
-              onClick={
-                goToPreviousGame
-              }
-              style={
-                secondaryButtonStyle()
-              }
-            >
-              VOLVER AL JUEGO ANTERIOR
-            </button>
-          ) : (
-            onBack && (
-              <button
-                type="button"
-                onClick={
-                  onBack
-                }
-                style={
-                  secondaryButtonStyle()
-                }
-              >
-                VOLVER
-              </button>
-            )
-          )}
-
-          <button
-            type="button"
-            onClick={
-              onClose
-            }
-            style={{
-              minHeight:
-                41,
-
-              padding:
-                "9px 17px",
-
-              border:
-                `1px solid ${accent}`,
-
-              borderRadius:
-                11,
-
-              background:
-                accent,
-
-              color:
-                "#050708",
-
-              fontSize:
-                10,
-
-              fontWeight:
-                950,
-
-              cursor:
-                "pointer",
-
-              touchAction:
-                "manipulation",
-            }}
-          >
-            CERRAR
-          </button>
-        </div>
       </main>
     </div>
   );
-}
-
-/* =========================================================
-   BUTTONS
-========================================================= */
-
-function expandButtonStyle() {
-  return {
-    marginTop:
-      9,
-
-    padding:
-      0,
-
-    border:
-      0,
-
-    background:
-      "transparent",
-
-    color:
-      "#8bdff5",
-
-    fontSize:
-      9,
-
-    fontWeight:
-      900,
-
-    cursor:
-      "pointer",
-
-    touchAction:
-      "manipulation",
-  };
-}
-
-function secondaryButtonStyle() {
-  return {
-    minHeight:
-      41,
-
-    padding:
-      "9px 15px",
-
-    border:
-      "1px solid rgba(255,255,255,.13)",
-
-    borderRadius:
-      11,
-
-    background:
-      "#171b20",
-
-    color:
-      "#ffffff",
-
-    fontSize:
-      10,
-
-    fontWeight:
-      900,
-
-    cursor:
-      "pointer",
-
-    touchAction:
-      "manipulation",
-  };
 }
