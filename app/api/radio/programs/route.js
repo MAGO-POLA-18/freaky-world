@@ -28,89 +28,157 @@ const SHOWS = [
 export const revalidate = 21600;
 
 /* =========================================================
-   CORRECCIÓN DE TEXTO
+   REPARAR TEXTO ROTO
 ========================================================= */
 
-function fixMojibake(value = "") {
-  let text = String(value);
+const CP1252_TO_BYTE = new Map([
+  [0x20ac, 0x80],
+  [0x201a, 0x82],
+  [0x0192, 0x83],
+  [0x201e, 0x84],
+  [0x2026, 0x85],
+  [0x2020, 0x86],
+  [0x2021, 0x87],
+  [0x02c6, 0x88],
+  [0x2030, 0x89],
+  [0x0160, 0x8a],
+  [0x2039, 0x8b],
+  [0x0152, 0x8c],
+  [0x017d, 0x8e],
+  [0x2018, 0x91],
+  [0x2019, 0x92],
+  [0x201c, 0x93],
+  [0x201d, 0x94],
+  [0x2022, 0x95],
+  [0x2013, 0x96],
+  [0x2014, 0x97],
+  [0x02dc, 0x98],
+  [0x2122, 0x99],
+  [0x0161, 0x9a],
+  [0x203a, 0x9b],
+  [0x0153, 0x9c],
+  [0x017e, 0x9e],
+  [0x0178, 0x9f],
+]);
 
-  const replacements = [
-    ["\u00C3\u00A1", "á"],
-    ["\u00C3\u00A9", "é"],
-    ["\u00C3\u00AD", "í"],
-    ["\u00C3\u00B3", "ó"],
-    ["\u00C3\u00BA", "ú"],
-    ["\u00C3\u00B1", "ñ"],
-    ["\u00C3\u00BC", "ü"],
+function badTextScore(value = "") {
+  const text = String(value);
 
-    ["\u00C3\u0081", "Á"],
-    ["\u00C3\u0089", "É"],
-    ["\u00C3\u008D", "Í"],
-    ["\u00C3\u0093", "Ó"],
-    ["\u00C3\u009A", "Ú"],
-    ["\u00C3\u0091", "Ñ"],
-    ["\u00C3\u009C", "Ü"],
+  const matches =
+    text.match(
+      /Ã|Â|â€|â€“|â€”|â€¦|ï¿½|�/g
+    ) || [];
 
-    ["\u00C2\u00BF", "¿"],
-    ["\u00C2\u00A1", "¡"],
-    ["\u00C2\u00BA", "º"],
-    ["\u00C2\u00AA", "ª"],
-    ["\u00C2\u00B7", "·"],
+  return matches.length;
+}
 
-    [
-      "\u00E2\u20AC\u201C",
-      "–",
-    ],
-    [
-      "\u00E2\u20AC\u201D",
-      "—",
-    ],
-    [
-      "\u00E2\u20AC\u00A6",
-      "…",
-    ],
-    [
-      "\u00E2\u20AC\u0153",
-      "“",
-    ],
-    [
-      "\u00E2\u20AC\u009D",
-      "”",
-    ],
-    [
-      "\u00E2\u20AC\u2122",
-      "’",
-    ],
-  ];
+function reinterpretWindows1252AsUtf8(
+  value = ""
+) {
+  const text = String(value);
 
-  for (const [
-    broken,
-    correct,
-  ] of replacements) {
-    text =
-      text.split(
-        broken
-      ).join(
-        correct
+  try {
+    const bytes = [];
+
+    for (const char of text) {
+      const code =
+        char.codePointAt(0);
+
+      if (code <= 0xff) {
+        bytes.push(code);
+        continue;
+      }
+
+      const mapped =
+        CP1252_TO_BYTE.get(
+          code
+        );
+
+      if (
+        mapped !==
+        undefined
+      ) {
+        bytes.push(
+          mapped
+        );
+        continue;
+      }
+
+      return text;
+    }
+
+    return new TextDecoder(
+      "utf-8",
+      {
+        fatal: true,
+      }
+    ).decode(
+      new Uint8Array(
+        bytes
+      )
+    );
+  } catch {
+    return text;
+  }
+}
+
+function fixMojibake(
+  value = ""
+) {
+  let current =
+    String(value);
+
+  for (
+    let attempt = 0;
+    attempt < 3;
+    attempt += 1
+  ) {
+    if (
+      badTextScore(
+        current
+      ) === 0
+    ) {
+      break;
+    }
+
+    const repaired =
+      reinterpretWindows1252AsUtf8(
+        current
       );
+
+    if (
+      repaired ===
+      current
+    ) {
+      break;
+    }
+
+    if (
+      badTextScore(
+        repaired
+      ) <
+      badTextScore(
+        current
+      )
+    ) {
+      current =
+        repaired;
+    } else {
+      break;
+    }
   }
 
-  // Caracteres "Â" residuales típicos
-  text =
-    text.replace(
-      /\u00C2(?=[\s:;,.!?])/g,
-      ""
-    );
-
-  return text;
+  return current;
 }
 
 /* =========================================================
    XML
 ========================================================= */
 
-function decodeEntities(value = "") {
-  return fixMojibake(
+function decodeEntities(
+  value = ""
+) {
+  const decoded =
     String(value)
       .replace(
         /<!\[CDATA\[([\s\S]*?)\]\]>/g,
@@ -157,11 +225,16 @@ function decodeEntities(value = "") {
             )
           )
       )
-      .trim()
+      .trim();
+
+  return fixMojibake(
+    decoded
   );
 }
 
-function stripHtml(value = "") {
+function stripHtml(
+  value = ""
+) {
   return fixMojibake(
     decodeEntities(
       String(value)
@@ -186,7 +259,9 @@ function stripHtml(value = "") {
   );
 }
 
-function escapeRegex(value) {
+function escapeRegex(
+  value
+) {
   return String(value)
     .replace(
       /[-/\\^$*+?.()|[\]{}]/g,
@@ -260,17 +335,20 @@ function getAttribute(
    DURACIÓN
 ========================================================= */
 
-function parseDuration(value) {
+function parseDuration(
+  value
+) {
   if (!value) {
     return null;
   }
 
   const text =
-    String(value)
-      .trim();
+    String(value).trim();
 
   if (
-    /^\d+$/.test(text)
+    /^\d+$/.test(
+      text
+    )
   ) {
     return Number(text);
   }
@@ -320,7 +398,9 @@ function parseDuration(value) {
    FECHA
 ========================================================= */
 
-function parseDate(value) {
+function parseDate(
+  value
+) {
   if (!value) {
     return null;
   }
@@ -340,7 +420,7 @@ function parseDate(value) {
 }
 
 /* =========================================================
-   URL DE AUDIO
+   URL AUDIO
 ========================================================= */
 
 function normalizeAudioUrl(
@@ -370,7 +450,7 @@ function normalizeAudioUrl(
 }
 
 /* =========================================================
-   PARSEAR EPISODIOS
+   EPISODIOS
 ========================================================= */
 
 function parseItems(
@@ -389,27 +469,31 @@ function parseItems(
         index
       ) => {
         const title =
-          stripHtml(
-            getTag(
-              block,
-              "title"
+          fixMojibake(
+            stripHtml(
+              getTag(
+                block,
+                "title"
+              )
             )
           );
 
         const description =
-          stripHtml(
-            getTag(
-              block,
-              "description"
-            ) ||
+          fixMojibake(
+            stripHtml(
               getTag(
                 block,
-                "content:encoded"
+                "description"
               ) ||
-              getTag(
-                block,
-                "itunes:summary"
-              )
+                getTag(
+                  block,
+                  "content:encoded"
+                ) ||
+                getTag(
+                  block,
+                  "itunes:summary"
+                )
+            )
           );
 
         const audioUrl =
@@ -470,15 +554,9 @@ function parseItems(
           badge:
             show.badge,
 
-          title:
-            fixMojibake(
-              title
-            ),
+          title,
 
-          description:
-            fixMojibake(
-              description
-            ),
+          description,
 
           audioUrl,
 
@@ -519,7 +597,9 @@ async function getFeedUrl(
       }
     );
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     throw new Error(
       `Apple lookup ${response.status}`
     );
@@ -578,29 +658,20 @@ async function loadShow(
         }
       );
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
       throw new Error(
         `RSS ${response.status}`
       );
     }
 
-    /*
-      response.text() deja que fetch maneje
-      la respuesta antes de aplicar nuestra
-      corrección de mojibake.
-    */
-
     const rawXml =
       await response.text();
 
-    const xml =
-      fixMojibake(
-        rawXml
-      );
-
     const episodes =
       parseItems(
-        xml,
+        rawXml,
         show
       );
 
@@ -619,7 +690,9 @@ async function loadShow(
 
       episodes,
     };
-  } catch (error) {
+  } catch (
+    error
+  ) {
     console.error(
       `[Radio Tierra Vicio] ${show.name}:`,
       error
