@@ -31,24 +31,85 @@ export const revalidate = 21600;
    HELPERS
 ========================================================= */
 
-function decodeEntities(value = "") {
-  return String(value)
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&#(\d+);/g, (_, number) =>
-      String.fromCharCode(
-        Number(number)
-      )
-    )
-    .trim();
+function fixMojibake(value = "") {
+  const text =
+    String(value);
+
+  if (
+    !/[ÃÂâ]/.test(text)
+  ) {
+    return text;
+  }
+
+  try {
+    const bytes =
+      Uint8Array.from(
+        text,
+        (char) =>
+          char.charCodeAt(0)
+      );
+
+    return new TextDecoder(
+      "utf-8"
+    ).decode(bytes);
+  } catch {
+    return text;
+  }
 }
 
-function stripHtml(value = "") {
+function decodeEntities(
+  value = ""
+) {
+  const decoded =
+    String(value)
+      .replace(
+        /<!\[CDATA\[([\s\S]*?)\]\]>/g,
+        "$1"
+      )
+      .replace(
+        /&amp;/g,
+        "&"
+      )
+      .replace(
+        /&quot;/g,
+        '"'
+      )
+      .replace(
+        /&#39;/g,
+        "'"
+      )
+      .replace(
+        /&apos;/g,
+        "'"
+      )
+      .replace(
+        /&lt;/g,
+        "<"
+      )
+      .replace(
+        /&gt;/g,
+        ">"
+      )
+      .replace(
+        /&#(\d+);/g,
+        (
+          _,
+          number
+        ) =>
+          String.fromCharCode(
+            Number(number)
+          )
+      )
+      .trim();
+
+  return fixMojibake(
+    decoded
+  );
+}
+
+function stripHtml(
+  value = ""
+) {
   return decodeEntities(
     String(value)
       .replace(
@@ -64,7 +125,10 @@ function stripHtml(value = "") {
         ""
       )
   )
-    .replace(/\s+/g, " ")
+    .replace(
+      /\s+/g,
+      " "
+    )
     .trim();
 }
 
@@ -217,6 +281,48 @@ function parseDate(
   return date.toISOString();
 }
 
+function normalizeAudioUrl(
+  value
+) {
+  if (!value) {
+    return "";
+  }
+
+  let url =
+    String(value).trim();
+
+  url =
+    fixMojibake(
+      url
+    );
+
+  if (
+    url.startsWith(
+      "http://www.portalgameover.com/"
+    )
+  ) {
+    url =
+      url.replace(
+        "http://www.portalgameover.com/",
+        "https://www.portalgameover.com/"
+      );
+  }
+
+  if (
+    url.startsWith(
+      "http://portalgameover.com/"
+    )
+  ) {
+    url =
+      url.replace(
+        "http://portalgameover.com/",
+        "https://www.portalgameover.com/"
+      );
+  }
+
+  return url;
+}
+
 function parseItems(
   xml,
   show
@@ -257,10 +363,12 @@ function parseItems(
           );
 
         const audioUrl =
-          getAttribute(
-            block,
-            "enclosure",
-            "url"
+          normalizeAudioUrl(
+            getAttribute(
+              block,
+              "enclosure",
+              "url"
+            )
           );
 
         const guid =
@@ -425,8 +533,24 @@ async function loadShow(
       );
     }
 
-    const xml =
-      await response.text();
+    const arrayBuffer =
+      await response.arrayBuffer();
+
+    let xml;
+
+    try {
+      xml =
+        new TextDecoder(
+          "utf-8"
+        ).decode(
+          arrayBuffer
+        );
+    } catch {
+      xml =
+        new TextDecoder().decode(
+          arrayBuffer
+        );
+    }
 
     const episodes =
       parseItems(
