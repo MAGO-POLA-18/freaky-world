@@ -18,7 +18,7 @@ const MAX_BATCH_SIZE = 500;
   Cuando queramos ampliar la biblioteca, por ejemplo a
   10.000 juegos, solamente cambiamos este valor.
 */
-const TARGET_GAME_COUNT = 5000;
+const TARGET_GAME_COUNT = 15000;
 
 /* =========================================================
    ENVIRONMENT
