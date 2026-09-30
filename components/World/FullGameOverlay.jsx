@@ -104,9 +104,7 @@ function getScore(game) {
   };
 }
 
-function getCommunityScore(
-  game
-) {
+function getCommunityScore(game) {
   const value =
     Number(
       game?.communityScore
@@ -139,30 +137,27 @@ function formatScore(value) {
     return "—";
   }
 
-  return Number(
-    value
-  ).toFixed(1);
+  return Number(value).toFixed(
+    1
+  );
 }
 
 function normalizeNamedItems(
   items
 ) {
   return asArray(items)
-    .map(
-      (item) =>
-        typeof item ===
-        "string"
-          ? item
-          : item?.name ||
-            item?.title ||
-            item?.abbreviation
+    .map((item) =>
+      typeof item ===
+      "string"
+        ? item
+        : item?.name ||
+          item?.title ||
+          item?.abbreviation
     )
     .filter(Boolean);
 }
 
-function getYoutubeId(
-  video
-) {
+function getYoutubeId(video) {
   return (
     video?.youtubeId ||
     video?.youtube_id ||
@@ -170,9 +165,7 @@ function getYoutubeId(
   );
 }
 
-function chooseFirstVideo(
-  game
-) {
+function chooseFirstVideo(game) {
   const manual =
     game?.manualTrailer
       ?.youtubeId ||
@@ -203,7 +196,8 @@ function chooseFirstVideo(
       videos.find(
         (video) =>
           String(
-            video?.name || ""
+            video?.name ||
+              ""
           )
             .toLowerCase()
             .includes(
@@ -226,6 +220,10 @@ function chooseFirstVideo(
   );
 }
 
+/* =========================================================
+   VIEWPORT
+========================================================= */
+
 function getViewport() {
   if (
     typeof window ===
@@ -237,24 +235,24 @@ function getViewport() {
     };
   }
 
-  const viewport =
+  const visual =
     window.visualViewport;
 
   return {
     width:
-      viewport?.width ||
+      visual?.width ||
       window.innerWidth ||
       390,
 
     height:
-      viewport?.height ||
+      visual?.height ||
       window.innerHeight ||
       700,
   };
 }
 
 /* =========================================================
-   BASE UI
+   UI BASE
 ========================================================= */
 
 function Section({
@@ -265,12 +263,16 @@ function Section({
   return (
     <section
       style={{
-        padding: 16,
+        padding: 14,
+
         border:
           "1px solid rgba(255,255,255,.075)",
+
         borderRadius: 16,
+
         background:
           "rgba(17,20,25,.96)",
+
         ...style,
       }}
     >
@@ -278,13 +280,16 @@ function Section({
         <h2
           style={{
             margin:
-              "0 0 12px",
+              "0 0 11px",
 
             color:
               "#f4f6f7",
 
             fontSize:
               14,
+
+            lineHeight:
+              1.2,
 
             fontWeight:
               850,
@@ -313,10 +318,10 @@ function Chip({
           "center",
 
         minHeight:
-          27,
+          25,
 
         padding:
-          "4px 9px",
+          "4px 8px",
 
         border:
           `1px solid ${accent}38`,
@@ -331,10 +336,10 @@ function Chip({
           "#dbe2e6",
 
         fontSize:
-          10,
+          9,
 
         fontWeight:
-          700,
+          750,
       }}
     >
       {children}
@@ -355,6 +360,9 @@ function navButtonStyle() {
 
     placeItems:
       "center",
+
+    padding:
+      0,
 
     border:
       "1px solid rgba(255,255,255,.14)",
@@ -379,6 +387,12 @@ function navButtonStyle() {
 
     touchAction:
       "manipulation",
+
+    userSelect:
+      "none",
+
+    WebkitUserSelect:
+      "none",
   };
 }
 
@@ -426,10 +440,10 @@ function CollapsibleText({
             "#bdc5ca",
 
           fontSize:
-            13,
+            12,
 
           lineHeight:
-            1.65,
+            1.58,
 
           whiteSpace:
             "pre-line",
@@ -448,7 +462,7 @@ function CollapsibleText({
         }
         style={{
           marginTop:
-            9,
+            8,
 
           padding:
             0,
@@ -463,7 +477,7 @@ function CollapsibleText({
             accent,
 
           fontSize:
-            10,
+            9,
 
           fontWeight:
             900,
@@ -492,6 +506,7 @@ function ScoreBox({
   value,
   sublabel,
   accent,
+  compact = false,
 }) {
   return (
     <div
@@ -500,13 +515,15 @@ function ScoreBox({
           0,
 
         padding:
-          "10px 7px",
+          compact
+            ? "8px 5px"
+            : "9px 6px",
 
         border:
           "1px solid rgba(255,255,255,.075)",
 
         borderRadius:
-          13,
+          12,
 
         background:
           "#0d1014",
@@ -521,13 +538,16 @@ function ScoreBox({
             "#7d878e",
 
           fontSize:
-            8,
+            7,
 
           fontWeight:
             850,
 
           textTransform:
             "uppercase",
+
+          letterSpacing:
+            ".05em",
         }}
       >
         {label}
@@ -536,14 +556,16 @@ function ScoreBox({
       <div
         style={{
           marginTop:
-            5,
+            4,
 
           color:
             accent ||
             "#ffffff",
 
           fontSize:
-            23,
+            compact
+              ? 18
+              : 21,
 
           lineHeight:
             1,
@@ -565,7 +587,7 @@ function ScoreBox({
               "#69737a",
 
             fontSize:
-              8,
+              7,
           }}
         >
           {sublabel}
@@ -581,7 +603,7 @@ function ScoreBox({
 
 function VideoPlayer({
   game,
-  compact = false,
+  fillHeight = false,
 }) {
   const videos =
     useMemo(() => {
@@ -627,8 +649,20 @@ function VideoPlayer({
           width:
             "100%",
 
+          height:
+            fillHeight
+              ? "100%"
+              : "auto",
+
+          minHeight:
+            fillHeight
+              ? 220
+              : 180,
+
           aspectRatio:
-            "16 / 9",
+            fillHeight
+              ? undefined
+              : "16 / 9",
 
           display:
             "grid",
@@ -640,7 +674,7 @@ function VideoPlayer({
             "1px solid rgba(255,255,255,.07)",
 
           borderRadius:
-            15,
+            14,
 
           background:
             "#0c0f13",
@@ -649,7 +683,7 @@ function VideoPlayer({
             "#68727a",
 
           fontSize:
-            11,
+            10,
         }}
       >
         Sin vídeo disponible
@@ -669,7 +703,20 @@ function VideoPlayer({
     ];
 
   return (
-    <div>
+    <div
+      style={{
+        height:
+          fillHeight
+            ? "100%"
+            : "auto",
+
+        display:
+          "flex",
+
+        flexDirection:
+          "column",
+      }}
+    >
       <div
         style={{
           position:
@@ -678,8 +725,20 @@ function VideoPlayer({
           width:
             "100%",
 
+          flex:
+            fillHeight
+              ? 1
+              : undefined,
+
+          minHeight:
+            fillHeight
+              ? 0
+              : undefined,
+
           aspectRatio:
-            "16 / 9",
+            fillHeight
+              ? undefined
+              : "16 / 9",
 
           overflow:
             "hidden",
@@ -688,9 +747,7 @@ function VideoPlayer({
             "1px solid rgba(255,255,255,.09)",
 
           borderRadius:
-            compact
-              ? 13
-              : 16,
+            14,
 
           background:
             "#000",
@@ -737,10 +794,10 @@ function VideoPlayer({
               "center",
 
             gap:
-              9,
+              8,
 
             marginTop:
-              8,
+              7,
           }}
         >
           <button
@@ -766,7 +823,7 @@ function VideoPlayer({
           <span
             style={{
               minWidth:
-                50,
+                48,
 
               textAlign:
                 "center",
@@ -775,7 +832,7 @@ function VideoPlayer({
                 "#7f8990",
 
               fontSize:
-                9,
+                8,
             }}
           >
             {safeIndex + 1} de{" "}
@@ -807,11 +864,12 @@ function VideoPlayer({
 }
 
 /* =========================================================
-   GALERÍA MOSAICO
+   GALERÍA DINÁMICA
 ========================================================= */
 
 function Gallery({
   game,
+  portrait,
 }) {
   const images =
     useMemo(() => {
@@ -848,6 +906,9 @@ function Gallery({
   const scrollRef =
     useRef(null);
 
+  const touchStartX =
+    useRef(null);
+
   const [
     fullscreen,
     setFullscreen,
@@ -857,9 +918,6 @@ function Gallery({
     activeIndex,
     setActiveIndex,
   ] = useState(0);
-
-  const touchStartX =
-    useRef(null);
 
   useEffect(() => {
     setFullscreen(false);
@@ -888,9 +946,9 @@ function Gallery({
       left:
         direction *
         Math.max(
-          260,
+          250,
           element.clientWidth *
-            0.78
+            0.82
         ),
 
       behavior:
@@ -921,7 +979,7 @@ function Gallery({
     );
   }
 
-  function handleTouchStart(
+  function handleFullscreenTouchStart(
     event
   ) {
     touchStartX.current =
@@ -930,7 +988,7 @@ function Gallery({
       null;
   }
 
-  function handleTouchEnd(
+  function handleFullscreenTouchEnd(
     event
   ) {
     if (
@@ -975,13 +1033,53 @@ function Gallery({
       null;
   }
 
-  const activeImage =
-    images[
-      Math.min(
-        activeIndex,
-        images.length - 1
-      )
-    ];
+  const groups = [];
+
+  let cursor = 0;
+  let groupIndex = 0;
+
+  while (
+    cursor <
+    images.length
+  ) {
+    const pattern =
+      groupIndex %
+      4;
+
+    const take =
+      pattern === 2
+        ? 4
+        : 3;
+
+    groups.push({
+      pattern,
+      start:
+        cursor,
+      images:
+        images.slice(
+          cursor,
+          cursor + take
+        ),
+    });
+
+    cursor +=
+      take;
+
+    groupIndex +=
+      1;
+  }
+
+  function openImage(
+    index
+  ) {
+    setActiveIndex(
+      index
+    );
+
+    setFullscreen(
+      true
+    );
+  }
 
   return (
     <>
@@ -992,37 +1090,6 @@ function Gallery({
               "relative",
           }}
         >
-          <button
-            type="button"
-            aria-label="Galería anterior"
-            onClick={() =>
-              moveCarousel(-1)
-            }
-            style={{
-              ...navButtonStyle(),
-
-              position:
-                "absolute",
-
-              left:
-                5,
-
-              top:
-                "50%",
-
-              transform:
-                "translateY(-50%)",
-
-              zIndex:
-                5,
-
-              background:
-                "rgba(5,7,9,.82)",
-            }}
-          >
-            ‹
-          </button>
-
           <div
             ref={
               scrollRef
@@ -1041,7 +1108,7 @@ function Gallery({
                 "hidden",
 
               padding:
-                "2px 48px 5px",
+                "2px 4px 5px",
 
               WebkitOverflowScrolling:
                 "touch",
@@ -1053,129 +1120,99 @@ function Gallery({
                 "none",
             }}
           >
-            {images.map(
+            {groups.map(
               (
-                image,
+                group,
                 index
-              ) => {
-                const pattern =
-                  index %
-                  3;
-
-                const tall =
-                  pattern ===
-                  0;
-
-                return (
-                  <button
-                    key={`${image}-${index}`}
-                    type="button"
-                    onClick={() => {
-                      setActiveIndex(
-                        index
-                      );
-
-                      setFullscreen(
-                        true
-                      );
-                    }}
-                    style={{
-                      flex:
-                        tall
-                          ? "0 0 210px"
-                          : "0 0 280px",
-
-                      width:
-                        tall
-                          ? 210
-                          : 280,
-
-                      height:
-                        tall
-                          ? 320
-                          : 155,
-
-                      padding:
-                        0,
-
-                      overflow:
-                        "hidden",
-
-                      border:
-                        "1px solid rgba(255,255,255,.08)",
-
-                      borderRadius:
-                        13,
-
-                      background:
-                        "#090b0f",
-
-                      cursor:
-                        "pointer",
-
-                      scrollSnapAlign:
-                        "start",
-                    }}
-                  >
-                    <img
-                      src={
-                        image
-                      }
-                      alt=""
-                      loading="lazy"
-                      draggable={
-                        false
-                      }
-                      style={{
-                        width:
-                          "100%",
-
-                        height:
-                          "100%",
-
-                        objectFit:
-                          "cover",
-
-                        display:
-                          "block",
-                      }}
-                    />
-                  </button>
-                );
-              }
+              ) => (
+                <GalleryGroup
+                  key={
+                    `${group.start}-${index}`
+                  }
+                  group={
+                    group
+                  }
+                  portrait={
+                    portrait
+                  }
+                  onOpen={
+                    openImage
+                  }
+                />
+              )
             )}
           </div>
 
-          <button
-            type="button"
-            aria-label="Galería siguiente"
-            onClick={() =>
-              moveCarousel(1)
-            }
-            style={{
-              ...navButtonStyle(),
+          {images.length >
+            1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Galería anterior"
+                onClick={() =>
+                  moveCarousel(
+                    -1
+                  )
+                }
+                style={{
+                  ...navButtonStyle(),
 
-              position:
-                "absolute",
+                  position:
+                    "absolute",
 
-              right:
-                5,
+                  left:
+                    5,
 
-              top:
-                "50%",
+                  top:
+                    "50%",
 
-              transform:
-                "translateY(-50%)",
+                  transform:
+                    "translateY(-50%)",
 
-              zIndex:
-                5,
+                  zIndex:
+                    5,
 
-              background:
-                "rgba(5,7,9,.82)",
-            }}
-          >
-            ›
-          </button>
+                  background:
+                    "rgba(5,7,9,.82)",
+                }}
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                aria-label="Galería siguiente"
+                onClick={() =>
+                  moveCarousel(
+                    1
+                  )
+                }
+                style={{
+                  ...navButtonStyle(),
+
+                  position:
+                    "absolute",
+
+                  right:
+                    5,
+
+                  top:
+                    "50%",
+
+                  transform:
+                    "translateY(-50%)",
+
+                  zIndex:
+                    5,
+
+                  background:
+                    "rgba(5,7,9,.82)",
+                }}
+              >
+                ›
+              </button>
+            </>
+          )}
         </div>
       </Section>
 
@@ -1187,10 +1224,10 @@ function Gallery({
             )
           }
           onTouchStart={
-            handleTouchStart
+            handleFullscreenTouchStart
           }
           onTouchEnd={
-            handleTouchEnd
+            handleFullscreenTouchEnd
           }
           style={{
             position:
@@ -1220,6 +1257,7 @@ function Gallery({
         >
           <button
             type="button"
+            aria-label="Cerrar galería"
             onClick={() =>
               setFullscreen(
                 false
@@ -1253,7 +1291,6 @@ function Gallery({
                   event
                 ) => {
                   event.stopPropagation();
-
                   previousImage();
                 }}
                 style={{
@@ -1284,7 +1321,6 @@ function Gallery({
                   event
                 ) => {
                   event.stopPropagation();
-
                   nextImage();
                 }}
                 style={{
@@ -1313,9 +1349,14 @@ function Gallery({
 
           <img
             src={
-              activeImage
+              images[
+                activeIndex
+              ]
             }
             alt=""
+            draggable={
+              false
+            }
             onClick={(
               event
             ) =>
@@ -1335,6 +1376,9 @@ function Gallery({
                 12,
 
               userSelect:
+                "none",
+
+              WebkitUserSelect:
                 "none",
             }}
           />
@@ -1369,6 +1413,504 @@ function Gallery({
         </div>
       )}
     </>
+  );
+}
+
+function GalleryGroup({
+  group,
+  portrait,
+  onOpen,
+}) {
+  const {
+    pattern,
+    start,
+    images,
+  } = group;
+
+  const width =
+    portrait
+      ? 470
+      : 660;
+
+  const height =
+    portrait
+      ? 270
+      : 300;
+
+  if (
+    images.length ===
+    1
+  ) {
+    return (
+      <div
+        style={{
+          flex:
+            `0 0 ${width}px`,
+
+          width,
+          height,
+
+          scrollSnapAlign:
+            "start",
+        }}
+      >
+        <GalleryTile
+          image={
+            images[0]
+          }
+          index={
+            start
+          }
+          onOpen={
+            onOpen
+          }
+        />
+      </div>
+    );
+  }
+
+  if (
+    images.length ===
+    2
+  ) {
+    return (
+      <div
+        style={{
+          flex:
+            `0 0 ${width}px`,
+
+          width,
+          height,
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "1fr 1fr",
+
+          gap:
+            8,
+
+          scrollSnapAlign:
+            "start",
+        }}
+      >
+        <GalleryTile
+          image={
+            images[0]
+          }
+          index={
+            start
+          }
+          onOpen={
+            onOpen
+          }
+        />
+
+        <GalleryTile
+          image={
+            images[1]
+          }
+          index={
+            start + 1
+          }
+          onOpen={
+            onOpen
+          }
+        />
+      </div>
+    );
+  }
+
+  /* =======================================================
+     PATRÓN A
+     Vertical + dos horizontales
+  ======================================================= */
+
+  if (
+    pattern ===
+    0
+  ) {
+    return (
+      <div
+        style={{
+          flex:
+            `0 0 ${width}px`,
+
+          width,
+          height,
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "0.95fr 1.45fr",
+
+          gridTemplateRows:
+            "1fr 1fr",
+
+          gap:
+            8,
+
+          scrollSnapAlign:
+            "start",
+        }}
+      >
+        <div
+          style={{
+            gridRow:
+              "1 / span 2",
+
+            minWidth:
+              0,
+
+            minHeight:
+              0,
+          }}
+        >
+          <GalleryTile
+            image={
+              images[0]
+            }
+            index={
+              start
+            }
+            onOpen={
+              onOpen
+            }
+          />
+        </div>
+
+        <GalleryTile
+          image={
+            images[1]
+          }
+          index={
+            start + 1
+          }
+          onOpen={
+            onOpen
+          }
+        />
+
+        <GalleryTile
+          image={
+            images[2]
+          }
+          index={
+            start + 2
+          }
+          onOpen={
+            onOpen
+          }
+        />
+      </div>
+    );
+  }
+
+  /* =======================================================
+     PATRÓN B
+     Grande arriba + dos abajo
+  ======================================================= */
+
+  if (
+    pattern ===
+    1
+  ) {
+    return (
+      <div
+        style={{
+          flex:
+            `0 0 ${width}px`,
+
+          width,
+          height,
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "1fr 1fr",
+
+          gridTemplateRows:
+            "1.2fr .8fr",
+
+          gap:
+            8,
+
+          scrollSnapAlign:
+            "start",
+        }}
+      >
+        <div
+          style={{
+            gridColumn:
+              "1 / span 2",
+
+            minWidth:
+              0,
+
+            minHeight:
+              0,
+          }}
+        >
+          <GalleryTile
+            image={
+              images[0]
+            }
+            index={
+              start
+            }
+            onOpen={
+              onOpen
+            }
+          />
+        </div>
+
+        <GalleryTile
+          image={
+            images[1]
+          }
+          index={
+            start + 1
+          }
+          onOpen={
+            onOpen
+          }
+        />
+
+        <GalleryTile
+          image={
+            images[2]
+          }
+          index={
+            start + 2
+          }
+          onOpen={
+            onOpen
+          }
+        />
+      </div>
+    );
+  }
+
+  /* =======================================================
+     PATRÓN C
+     Cuatro iguales
+  ======================================================= */
+
+  if (
+    pattern ===
+    2
+  ) {
+    return (
+      <div
+        style={{
+          flex:
+            `0 0 ${width}px`,
+
+          width,
+          height,
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "1fr 1fr",
+
+          gridTemplateRows:
+            "1fr 1fr",
+
+          gap:
+            8,
+
+          scrollSnapAlign:
+            "start",
+        }}
+      >
+        {images.map(
+          (
+            image,
+            index
+          ) => (
+            <GalleryTile
+              key={
+                `${image}-${index}`
+              }
+              image={
+                image
+              }
+              index={
+                start +
+                index
+              }
+              onOpen={
+                onOpen
+              }
+            />
+          )
+        )}
+      </div>
+    );
+  }
+
+  /* =======================================================
+     PATRÓN D
+     Dos horizontales izquierda + vertical derecha
+  ======================================================= */
+
+  return (
+    <div
+      style={{
+        flex:
+          `0 0 ${width}px`,
+
+        width,
+        height,
+
+        display:
+          "grid",
+
+        gridTemplateColumns:
+          "1.45fr .95fr",
+
+        gridTemplateRows:
+          "1fr 1fr",
+
+        gap:
+          8,
+
+        scrollSnapAlign:
+          "start",
+      }}
+    >
+      <GalleryTile
+        image={
+          images[0]
+        }
+        index={
+          start
+        }
+        onOpen={
+          onOpen
+        }
+      />
+
+      <div
+        style={{
+          gridColumn:
+            2,
+
+          gridRow:
+            "1 / span 2",
+
+          minWidth:
+            0,
+
+          minHeight:
+            0,
+        }}
+      >
+        <GalleryTile
+          image={
+            images[1]
+          }
+          index={
+            start + 1
+          }
+          onOpen={
+            onOpen
+          }
+        />
+      </div>
+
+      <GalleryTile
+        image={
+          images[2]
+        }
+        index={
+          start + 2
+        }
+        onOpen={
+          onOpen
+        }
+      />
+    </div>
+  );
+}
+
+function GalleryTile({
+  image,
+  index,
+  onOpen,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        onOpen?.(
+          index
+        )
+      }
+      style={{
+        width:
+          "100%",
+
+        height:
+          "100%",
+
+        minWidth:
+          0,
+
+        minHeight:
+          0,
+
+        padding:
+          0,
+
+        overflow:
+          "hidden",
+
+        border:
+          "1px solid rgba(255,255,255,.08)",
+
+        borderRadius:
+          12,
+
+        background:
+          "#090b0f",
+
+        cursor:
+          "pointer",
+
+        touchAction:
+          "manipulation",
+      }}
+    >
+      <img
+        src={
+          image
+        }
+        alt=""
+        loading="lazy"
+        draggable={
+          false
+        }
+        style={{
+          width:
+            "100%",
+
+          height:
+            "100%",
+
+          display:
+            "block",
+
+          objectFit:
+            "cover",
+        }}
+      />
+    </button>
   );
 }
 
@@ -1417,7 +1959,7 @@ function Languages({
               "100%",
 
             minWidth:
-              330,
+              320,
 
             borderCollapse:
               "collapse",
@@ -1431,14 +1973,16 @@ function Languages({
                 "Sub.",
                 "Interfaz",
               ].map(
-                (label) => (
+                (
+                  label
+                ) => (
                   <th
                     key={
                       label
                     }
                     style={{
                       padding:
-                        "7px 6px",
+                        "6px 5px",
 
                       borderBottom:
                         "1px solid rgba(255,255,255,.08)",
@@ -1447,7 +1991,10 @@ function Languages({
                         "#758087",
 
                       fontSize:
-                        9,
+                        8,
+
+                      fontWeight:
+                        850,
 
                       textAlign:
                         label ===
@@ -1561,7 +2108,7 @@ function languageCellStyle(
 ) {
   return {
     padding:
-      "8px 6px",
+      "7px 5px",
 
     borderBottom:
       "1px solid rgba(255,255,255,.045)",
@@ -1570,7 +2117,7 @@ function languageCellStyle(
       "#cbd1d5",
 
     fontSize:
-      11,
+      10,
 
     textAlign,
 
@@ -1586,6 +2133,7 @@ function languageCellStyle(
 function AgeRatings({
   game,
   accent,
+  portrait,
 }) {
   const ratings =
     asArray(
@@ -1608,12 +2156,17 @@ function AgeRatings({
     return null;
   }
 
+  const firstRowCount =
+    portrait
+      ? 3
+      : 4;
+
   const visible =
     expanded
       ? ratings
       : ratings.slice(
           0,
-          4
+          firstRowCount
         );
 
   return (
@@ -1624,10 +2177,12 @@ function AgeRatings({
             "grid",
 
           gridTemplateColumns:
-            "repeat(auto-fit,minmax(82px,1fr))",
+            portrait
+              ? "repeat(3,minmax(0,1fr))"
+              : "repeat(4,minmax(0,1fr))",
 
           gap:
-            8,
+            7,
         }}
       >
         {visible.map(
@@ -1647,6 +2202,8 @@ function AgeRatings({
             const image =
               rating?.imageUrl ||
               rating?.image_url ||
+              rating?.logoUrl ||
+              rating?.logo_url ||
               rating?.iconUrl ||
               rating?.icon_url ||
               null;
@@ -1678,16 +2235,16 @@ function AgeRatings({
                       "100%",
 
                     minHeight:
-                      102,
+                      78,
 
                     padding:
-                      "8px 7px",
+                      "6px 5px",
 
                     border:
                       `1px solid ${accent}22`,
 
                     borderRadius:
-                      12,
+                      10,
 
                     background:
                       "#12161c",
@@ -1705,84 +2262,103 @@ function AgeRatings({
                   <div
                     style={{
                       marginBottom:
-                        6,
+                        4,
+
+                      overflow:
+                        "hidden",
+
+                      textOverflow:
+                        "ellipsis",
+
+                      whiteSpace:
+                        "nowrap",
 
                       fontSize:
-                        9,
+                        8,
 
                       fontWeight:
                         850,
 
                       opacity:
-                        0.72,
+                        0.75,
                     }}
                   >
                     {label}
                   </div>
 
-                  {image ? (
-                    <img
-                      src={
-                        image
-                      }
-                      alt=""
-                      style={{
-                        width:
-                          52,
+                  <div
+                    style={{
+                      height:
+                        38,
 
-                        height:
-                          52,
+                      display:
+                        "grid",
 
-                        objectFit:
-                          "contain",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        minHeight:
-                          52,
+                      placeItems:
+                        "center",
+                    }}
+                  >
+                    {image ? (
+                      <img
+                        src={
+                          image
+                        }
+                        alt=""
+                        style={{
+                          maxWidth:
+                            42,
 
-                        display:
-                          "grid",
+                          maxHeight:
+                            38,
 
-                        placeItems:
-                          "center",
+                          objectFit:
+                            "contain",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          minWidth:
+                            38,
 
-                        padding:
-                          6,
+                          padding:
+                            "6px 7px",
 
-                        borderRadius:
-                          9,
+                          borderRadius:
+                            7,
 
-                        background:
-                          `${accent}18`,
+                          background:
+                            `${accent}14`,
 
-                        color:
-                          "#ffffff",
+                          color:
+                            "#ffffff",
 
-                        fontSize:
-                          17,
+                          fontSize:
+                            14,
 
-                        fontWeight:
-                          900,
-                      }}
-                    >
-                      {rating?.rating ||
-                        "—"}
-                    </div>
-                  )}
+                          fontWeight:
+                            900,
+
+                          textAlign:
+                            "center",
+                        }}
+                      >
+                        {rating?.rating ||
+                          "—"}
+                      </div>
+                    )}
+                  </div>
 
                   <div
                     style={{
                       marginTop:
-                        5,
+                        3,
 
                       fontSize:
-                        12,
+                        10,
 
                       opacity:
-                        0.7,
+                        0.65,
                     }}
                   >
                     {isOpen
@@ -1795,13 +2371,13 @@ function AgeRatings({
                   <div
                     style={{
                       marginTop:
-                        7,
+                        6,
 
                       padding:
-                        10,
+                        8,
 
                       borderRadius:
-                        10,
+                        9,
 
                       background:
                         "#0c0f13",
@@ -1824,11 +2400,11 @@ function AgeRatings({
                             "wrap",
 
                           gap:
-                            5,
+                            4,
 
                           marginBottom:
                             rating?.synopsis
-                              ? 8
+                              ? 7
                               : 0,
                         }}
                       >
@@ -1844,10 +2420,10 @@ function AgeRatings({
                               key={`${actualIndex}-${descriptorIndex}`}
                               style={{
                                 padding:
-                                  "4px 6px",
+                                  "3px 5px",
 
                                 borderRadius:
-                                  7,
+                                  6,
 
                                 background:
                                   "rgba(255,255,255,.055)",
@@ -1856,7 +2432,7 @@ function AgeRatings({
                                   "#a9b1b6",
 
                                 fontSize:
-                                  8,
+                                  7,
                               }}
                             >
                               {typeof descriptor ===
@@ -1896,7 +2472,7 @@ function AgeRatings({
       </div>
 
       {ratings.length >
-        4 && (
+        firstRowCount && (
         <button
           type="button"
           onClick={() =>
@@ -1911,7 +2487,7 @@ function AgeRatings({
         >
           {expanded
             ? "VER MENOS"
-            : `VER MÁS (${ratings.length - 4})`}
+            : `VER MÁS (${ratings.length - firstRowCount})`}
         </button>
       )}
     </Section>
@@ -1937,13 +2513,13 @@ function DataRow({
           "grid",
 
         gridTemplateColumns:
-          "110px minmax(0,1fr)",
+          "100px minmax(0,1fr)",
 
         gap:
-          10,
+          8,
 
         padding:
-          "8px 0",
+          "7px 0",
 
         borderBottom:
           "1px solid rgba(255,255,255,.05)",
@@ -1955,7 +2531,7 @@ function DataRow({
             "#747f86",
 
           fontSize:
-            10,
+            9,
 
           fontWeight:
             750,
@@ -1973,10 +2549,77 @@ function DataRow({
             "#d3d9dc",
 
           fontSize:
-            11,
+            10,
 
           lineHeight:
-            1.4,
+            1.35,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   HERO DATA
+========================================================= */
+
+function HeroData({
+  label,
+  value,
+}) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        minWidth:
+          0,
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#727c83",
+
+          fontSize:
+            7,
+
+          textTransform:
+            "uppercase",
+
+          fontWeight:
+            850,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          marginTop:
+            3,
+
+          overflow:
+            "hidden",
+
+          textOverflow:
+            "ellipsis",
+
+          whiteSpace:
+            "nowrap",
+
+          color:
+            "#dce1e4",
+
+          fontSize:
+            9,
+
+          fontWeight:
+            750,
         }}
       >
         {value}
@@ -2004,10 +2647,10 @@ function MetaGroup({
     <div
       style={{
         paddingBottom:
-          12,
+          10,
 
         marginBottom:
-          12,
+          10,
 
         borderBottom:
           "1px solid rgba(255,255,255,.05)",
@@ -2016,13 +2659,13 @@ function MetaGroup({
       <div
         style={{
           marginBottom:
-            7,
+            6,
 
           color:
             "#747f86",
 
           fontSize:
-            9,
+            8,
 
           fontWeight:
             850,
@@ -2172,10 +2815,10 @@ function SimilarGames({
                   }
                   style={{
                     flex:
-                      "0 0 140px",
+                      "0 0 138px",
 
                     width:
-                      140,
+                      138,
 
                     padding:
                       0,
@@ -2187,7 +2830,7 @@ function SimilarGames({
                       "1px solid rgba(255,255,255,.08)",
 
                     borderRadius:
-                      13,
+                      12,
 
                     background:
                       "#0d1014",
@@ -2203,6 +2846,9 @@ function SimilarGames({
 
                     scrollSnapAlign:
                       "start",
+
+                    touchAction:
+                      "manipulation",
                   }}
                 >
                   <div
@@ -2243,16 +2889,16 @@ function SimilarGames({
                   <div
                     style={{
                       padding:
-                        "9px 9px 10px",
+                        "8px 8px 9px",
                     }}
                   >
                     <div
                       style={{
                         minHeight:
-                          32,
+                          30,
 
                         fontSize:
-                          11,
+                          10,
 
                         lineHeight:
                           1.35,
@@ -2275,7 +2921,7 @@ function SimilarGames({
                           accent,
 
                         fontSize:
-                          9,
+                          8,
                       }}
                     >
                       {item.year ||
@@ -2302,7 +2948,7 @@ function SimilarGames({
                 6,
 
               marginTop:
-                9,
+                8,
             }}
           >
             <button
@@ -2470,7 +3116,7 @@ export default function FullGameOverlay({
     viewport.width;
 
   /* =======================================================
-     RESET
+     RESET JUEGO
   ======================================================= */
 
   useEffect(() => {
@@ -2787,7 +3433,7 @@ export default function FullGameOverlay({
   }
 
   /* =======================================================
-     BODY SCROLL
+     BODY LOCK
   ======================================================= */
 
   useEffect(() => {
@@ -2795,11 +3441,13 @@ export default function FullGameOverlay({
       document.body.style
         .overflow;
 
-    document.body.style.overflow =
+    document.body.style
+      .overflow =
       "hidden";
 
     return () => {
-      document.body.style.overflow =
+      document.body.style
+        .overflow =
         previous;
     };
   }, []);
@@ -2900,7 +3548,6 @@ export default function FullGameOverlay({
     >
       {/* ===================================================
           HEADER
-          TÍTULO ÚNICO
       =================================================== */}
 
       <header
@@ -2924,18 +3571,20 @@ export default function FullGameOverlay({
             10,
 
           minHeight:
-            58,
+            portrait
+              ? 58
+              : 52,
 
           padding:
             portrait
               ? "8px 10px"
-              : "8px 14px",
+              : "6px 14px",
 
           borderBottom:
             `1px solid ${accent}33`,
 
           background:
-            "rgba(5,7,9,.95)",
+            "rgba(5,7,9,.96)",
 
           backdropFilter:
             "blur(18px)",
@@ -2969,10 +3618,14 @@ export default function FullGameOverlay({
             alt=""
             style={{
               width:
-                38,
+                portrait
+                  ? 38
+                  : 34,
 
               height:
-                50,
+                portrait
+                  ? 50
+                  : 45,
 
               objectFit:
                 "cover",
@@ -3006,7 +3659,7 @@ export default function FullGameOverlay({
               fontSize:
                 portrait
                   ? 15
-                  : 17,
+                  : 15,
 
               fontWeight:
                 850,
@@ -3033,7 +3686,7 @@ export default function FullGameOverlay({
                 "#858f95",
 
               fontSize:
-                10,
+                9,
             }}
           >
             {[
@@ -3080,7 +3733,7 @@ export default function FullGameOverlay({
           padding:
             portrait
               ? "12px 10px 60px"
-              : "14px 16px 70px",
+              : "10px 14px 60px",
 
           boxSizing:
             "border-box",
@@ -3129,7 +3782,7 @@ export default function FullGameOverlay({
                     : "1fr",
 
                 gap:
-                  12,
+                  11,
 
                 alignItems:
                   "start",
@@ -3142,7 +3795,7 @@ export default function FullGameOverlay({
                       "hidden",
 
                     borderRadius:
-                      15,
+                      14,
 
                     border:
                       "1px solid rgba(255,255,255,.09)",
@@ -3175,51 +3828,54 @@ export default function FullGameOverlay({
                 </div>
               )}
 
-              <div>
+              <div
+                style={{
+                  minWidth:
+                    0,
+                }}
+              >
                 <div
                   style={{
                     display:
                       "grid",
 
                     gridTemplateColumns:
-                      "repeat(2,minmax(0,1fr))",
+                      "repeat(3,minmax(0,1fr))",
 
                     gap:
-                      6,
+                      5,
                   }}
                 >
                   <ScoreBox
+                    compact
                     label="Oficial"
                     value={formatScore(
                       official.value
                     )}
-                    sublabel={
-                      official.votes
-                        ? `${official.votes} votos`
-                        : "Sin evaluar"
-                    }
                     accent={
                       accent
                     }
                   />
 
                   <ScoreBox
+                    compact
                     label="Comunidad"
                     value={formatScore(
                       community.value
                     )}
-                    sublabel={
-                      community.votes
-                        ? `${community.votes} votos`
-                        : "Sin votos"
-                    }
+                  />
+
+                  <ScoreBox
+                    compact
+                    label="Mi evaluación"
+                    value="—"
                   />
                 </div>
 
                 <div
                   style={{
                     marginTop:
-                      8,
+                      7,
                   }}
                 >
                   <DataRow
@@ -3260,13 +3916,13 @@ export default function FullGameOverlay({
                         5,
 
                       marginTop:
-                        8,
+                        7,
                     }}
                   >
                     {platforms
                       .slice(
                         0,
-                        4
+                        5
                       )
                       .map(
                         (
@@ -3294,10 +3950,16 @@ export default function FullGameOverlay({
             <div
               style={{
                 marginTop:
-                  12,
+                  11,
               }}
             >
-              <Section title="Vídeo">
+              <Section
+                title="Vídeo"
+                style={{
+                  padding:
+                    12,
+                }}
+              >
                 <VideoPlayer
                   game={
                     displayGame
@@ -3319,24 +3981,36 @@ export default function FullGameOverlay({
 
                 gridTemplateColumns:
                   cover
-                    ? "180px minmax(0,1fr)"
+                    ? "minmax(170px, 24%) minmax(0,1fr)"
                     : "1fr",
 
                 gap:
-                  14,
+                  12,
+
+                height:
+                  "min(330px, 46vw)",
+
+                minHeight:
+                  240,
+
+                maxHeight:
+                  330,
 
                 alignItems:
-                  "start",
+                  "stretch",
               }}
             >
               {cover && (
                 <div
                   style={{
+                    height:
+                      "100%",
+
                     overflow:
                       "hidden",
 
                     borderRadius:
-                      15,
+                      14,
 
                     border:
                       "1px solid rgba(255,255,255,.09)",
@@ -3356,8 +4030,8 @@ export default function FullGameOverlay({
                       width:
                         "100%",
 
-                      aspectRatio:
-                        "3 / 4",
+                      height:
+                        "100%",
 
                       objectFit:
                         "cover",
@@ -3373,9 +4047,11 @@ export default function FullGameOverlay({
                 game={
                   displayGame
                 }
-                compact
+                fillHeight
               />
             </div>
+
+            {/* DATOS + PUNTAJES */}
 
             <div
               style={{
@@ -3383,19 +4059,19 @@ export default function FullGameOverlay({
                   "grid",
 
                 gridTemplateColumns:
-                  "repeat(6,minmax(0,1fr))",
+                  "repeat(7,minmax(0,1fr))",
 
                 gap:
                   6,
 
                 marginTop:
-                  10,
+                  9,
 
                 padding:
-                  10,
+                  9,
 
                 borderRadius:
-                  13,
+                  12,
 
                 border:
                   "1px solid rgba(255,255,255,.07)",
@@ -3429,16 +4105,25 @@ export default function FullGameOverlay({
 
               <HeroData
                 label="Oficial"
-                value={formatScore(
-                  official.value
-                )}
+                value={
+                  formatScore(
+                    official.value
+                  )
+                }
               />
 
               <HeroData
                 label="Comunidad"
-                value={formatScore(
-                  community.value
-                )}
+                value={
+                  formatScore(
+                    community.value
+                  )
+                }
+              />
+
+              <HeroData
+                label="Mi evaluación"
+                value="—"
               />
 
               <HeroData
@@ -3466,7 +4151,7 @@ export default function FullGameOverlay({
           <div
             style={{
               marginTop:
-                12,
+                11,
             }}
           >
             <Section title="Descripción">
@@ -3491,12 +4176,15 @@ export default function FullGameOverlay({
         <div
           style={{
             marginTop:
-              12,
+              11,
           }}
         >
           <Gallery
             game={
               displayGame
+            }
+            portrait={
+              portrait
             }
           />
         </div>
@@ -3519,7 +4207,7 @@ export default function FullGameOverlay({
               10,
 
             marginTop:
-              12,
+              11,
           }}
         >
           <Section title="Ficha técnica">
@@ -3549,9 +4237,11 @@ export default function FullGameOverlay({
             <DataRow
               label="Saga"
               value={
-                typeof displayGame?.collection ===
+                typeof displayGame
+                  ?.collection ===
                 "string"
-                  ? displayGame.collection
+                  ? displayGame
+                      .collection
                   : displayGame
                       ?.collection
                       ?.name ||
@@ -3563,9 +4253,11 @@ export default function FullGameOverlay({
             <DataRow
               label="Franquicia"
               value={
-                typeof displayGame?.franchise ===
+                typeof displayGame
+                  ?.franchise ===
                 "string"
-                  ? displayGame.franchise
+                  ? displayGame
+                      .franchise
                   : displayGame
                       ?.franchise
                       ?.name ||
@@ -3652,7 +4344,7 @@ export default function FullGameOverlay({
         <div
           style={{
             marginTop:
-              12,
+              11,
           }}
         >
           <Languages
@@ -3669,7 +4361,7 @@ export default function FullGameOverlay({
         <div
           style={{
             marginTop:
-              12,
+              11,
           }}
         >
           <AgeRatings
@@ -3678,6 +4370,9 @@ export default function FullGameOverlay({
             }
             accent={
               accent
+            }
+            portrait={
+              portrait
             }
           />
         </div>
@@ -3690,7 +4385,7 @@ export default function FullGameOverlay({
           <div
             style={{
               marginTop:
-                12,
+                11,
             }}
           >
             <Section title="Historia">
@@ -3715,7 +4410,7 @@ export default function FullGameOverlay({
         <div
           style={{
             marginTop:
-              12,
+              11,
           }}
         >
           <SimilarGames
@@ -3750,7 +4445,7 @@ export default function FullGameOverlay({
               "wrap",
 
             marginTop:
-              18,
+              17,
           }}
         >
           {canGoBackGame ? (
@@ -3788,16 +4483,16 @@ export default function FullGameOverlay({
             }
             style={{
               minHeight:
-                42,
+                41,
 
               padding:
-                "9px 18px",
+                "9px 17px",
 
               border:
                 `1px solid ${accent}`,
 
               borderRadius:
-                12,
+                11,
 
               background:
                 accent,
@@ -3813,6 +4508,9 @@ export default function FullGameOverlay({
 
               cursor:
                 "pointer",
+
+              touchAction:
+                "manipulation",
             }}
           >
             CERRAR
@@ -3824,82 +4522,13 @@ export default function FullGameOverlay({
 }
 
 /* =========================================================
-   HERO DATA
-========================================================= */
-
-function HeroData({
-  label,
-  value,
-}) {
-  if (!value) {
-    return (
-      <div />
-    );
-  }
-
-  return (
-    <div
-      style={{
-        minWidth:
-          0,
-      }}
-    >
-      <div
-        style={{
-          color:
-            "#727c83",
-
-          fontSize:
-            8,
-
-          textTransform:
-            "uppercase",
-
-          fontWeight:
-            800,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          marginTop:
-            3,
-
-          overflow:
-            "hidden",
-
-          textOverflow:
-            "ellipsis",
-
-          whiteSpace:
-            "nowrap",
-
-          color:
-            "#dce1e4",
-
-          fontSize:
-            10,
-
-          fontWeight:
-            750,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
    BUTTONS
 ========================================================= */
 
 function expandButtonStyle() {
   return {
     marginTop:
-      10,
+      9,
 
     padding:
       0,
@@ -3930,16 +4559,16 @@ function expandButtonStyle() {
 function secondaryButtonStyle() {
   return {
     minHeight:
-      42,
+      41,
 
     padding:
-      "9px 16px",
+      "9px 15px",
 
     border:
       "1px solid rgba(255,255,255,.13)",
 
     borderRadius:
-      12,
+      11,
 
     background:
       "#171b20",
@@ -3955,5 +4584,8 @@ function secondaryButtonStyle() {
 
     cursor:
       "pointer",
+
+    touchAction:
+      "manipulation",
   };
 }
