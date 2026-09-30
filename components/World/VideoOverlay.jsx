@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { getYouTubeEmbedUrl } from "./featuredVideoConfig";
+import {
+  useEffect,
+  useMemo,
+} from "react";
+
+import {
+  getYouTubeEmbedUrl,
+} from "./featuredVideoConfig";
+
+const MEDIA_START_EVENT =
+  "tierra-vicio-media-start";
+
+const MEDIA_END_EVENT =
+  "tierra-vicio-media-end";
 
 export default function VideoOverlay({
   video,
@@ -12,31 +24,49 @@ export default function VideoOverlay({
     video?.videoUrl ||
     null;
 
-  const embedUrl = useMemo(
-    () =>
-      getYouTubeEmbedUrl(sourceUrl, {
-        autoplay: true,
-      }),
-    [sourceUrl]
-  );
+  const embedUrl =
+    useMemo(
+      () =>
+        getYouTubeEmbedUrl(
+          sourceUrl,
+          {
+            autoplay: true,
+          }
+        ),
+      [
+        sourceUrl,
+      ]
+    );
+
+  /* =========================================================
+     BLOQUEAR SCROLL + ESC
+  ========================================================= */
 
   useEffect(() => {
+    if (
+      !video ||
+      !embedUrl
+    ) {
+      return;
+    }
+
     const previousOverflow =
       document.body.style.overflow;
 
     document.body.style.overflow =
       "hidden";
 
-    const handleKeyDown = (
-      event
-    ) => {
-      if (
-        event.code === "Escape"
-      ) {
-        event.preventDefault();
-        onClose?.();
-      }
-    };
+    const handleKeyDown =
+      (event) => {
+        if (
+          event.code ===
+          "Escape"
+        ) {
+          event.preventDefault();
+
+          onClose?.();
+        }
+      };
 
     window.addEventListener(
       "keydown",
@@ -52,9 +82,46 @@ export default function VideoOverlay({
         handleKeyDown
       );
     };
-  }, [onClose]);
+  }, [
+    video,
+    embedUrl,
+    onClose,
+  ]);
 
-  if (!video || !embedUrl) {
+  /* =========================================================
+     AVISAR A LA RADIO
+  ========================================================= */
+
+  useEffect(() => {
+    if (
+      !video ||
+      !embedUrl
+    ) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(
+        MEDIA_START_EVENT
+      )
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent(
+          MEDIA_END_EVENT
+        )
+      );
+    };
+  }, [
+    video,
+    embedUrl,
+  ]);
+
+  if (
+    !video ||
+    !embedUrl
+  ) {
     return null;
   }
 
@@ -66,7 +133,9 @@ export default function VideoOverlay({
         video.title ||
         "Video Freaky World"
       }
-      onPointerDown={(event) => {
+      onPointerDown={(
+        event
+      ) => {
         if (
           event.target ===
           event.currentTarget
@@ -75,13 +144,23 @@ export default function VideoOverlay({
         }
       }}
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 99999,
+        position:
+          "fixed",
 
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        inset:
+          0,
+
+        zIndex:
+          99999,
+
+        display:
+          "flex",
+
+        alignItems:
+          "center",
+
+        justifyContent:
+          "center",
 
         padding:
           "max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom))",
@@ -97,11 +176,14 @@ export default function VideoOverlay({
       }}
     >
       <div
-        onPointerDown={(event) =>
+        onPointerDown={(
+          event
+        ) =>
           event.stopPropagation()
         }
         style={{
-          position: "relative",
+          position:
+            "relative",
 
           width:
             "min(1200px, 96vw)",
@@ -109,22 +191,29 @@ export default function VideoOverlay({
           maxHeight:
             "calc(100dvh - 32px)",
 
-          aspectRatio: "16 / 9",
+          aspectRatio:
+            "16 / 9",
 
-          background: "#000",
+          background:
+            "#000",
 
           borderRadius:
             "18px",
 
-          overflow: "hidden",
+          overflow:
+            "hidden",
 
           boxShadow:
             "0 30px 100px rgba(0,0,0,0.65)",
         }}
       >
         <iframe
-          key={embedUrl}
-          src={embedUrl}
+          key={
+            embedUrl
+          }
+          src={
+            embedUrl
+          }
           title={
             video.title ||
             "Video Freaky World"
@@ -132,31 +221,47 @@ export default function VideoOverlay({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           style={{
-            display: "block",
+            display:
+              "block",
 
-            width: "100%",
-            height: "100%",
+            width:
+              "100%",
 
-            border: 0,
+            height:
+              "100%",
 
-            background: "#000",
+            border:
+              0,
+
+            background:
+              "#000",
           }}
         />
 
         <button
           type="button"
           aria-label="Cerrar video"
-          onClick={onClose}
+          onClick={
+            onClose
+          }
           style={{
-            position: "absolute",
+            position:
+              "absolute",
 
-            top: "12px",
-            right: "12px",
+            top:
+              "12px",
 
-            zIndex: 10,
+            right:
+              "12px",
 
-            width: "44px",
-            height: "44px",
+            zIndex:
+              10,
+
+            width:
+              "44px",
+
+            height:
+              "44px",
 
             border:
               "1px solid rgba(255,255,255,0.25)",
@@ -167,12 +272,17 @@ export default function VideoOverlay({
             background:
               "rgba(0,0,0,0.72)",
 
-            color: "#fff",
+            color:
+              "#fff",
 
-            fontSize: "25px",
-            lineHeight: 1,
+            fontSize:
+              "25px",
 
-            cursor: "pointer",
+            lineHeight:
+              1,
+
+            cursor:
+              "pointer",
 
             WebkitTapHighlightColor:
               "transparent",
