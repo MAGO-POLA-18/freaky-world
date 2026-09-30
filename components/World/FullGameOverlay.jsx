@@ -12,11 +12,25 @@ import {
 ========================================================= */
 
 function asArray(value) {
-  return Array.isArray(value) ? value : [];
+  return Array.isArray(value)
+    ? value
+    : [];
+}
+
+function unique(items) {
+  return [
+    ...new Set(
+      items.filter(Boolean)
+    ),
+  ];
 }
 
 function getTitle(game) {
-  return game?.title || game?.name || "Juego";
+  return (
+    game?.title ||
+    game?.name ||
+    "Juego"
+  );
 }
 
 function getCover(game) {
@@ -35,31 +49,54 @@ function getYear(game) {
   return (
     game?.year ||
     game?.releaseYear ||
-    (game?.releaseDate
-      ? new Date(game.releaseDate).getFullYear()
-      : null)
+    (
+      game?.releaseDate
+        ? new Date(
+            game.releaseDate
+          ).getFullYear()
+        : null
+    )
   );
 }
 
 function getScore(game) {
-  const freaky = Number(game?.freakyOfficialScore);
+  const freaky =
+    Number(
+      game?.freakyOfficialScore
+    );
 
-  if (Number.isFinite(freaky) && freaky > 0) {
+  if (
+    Number.isFinite(freaky) &&
+    freaky > 0
+  ) {
     return {
-      value: freaky > 10 ? freaky / 10 : freaky,
-      votes: Number(game?.freakyOfficialVotes) || 0,
+      value:
+        freaky > 10
+          ? freaky / 10
+          : freaky,
+
+      votes:
+        Number(
+          game?.freakyOfficialVotes
+        ) || 0,
     };
   }
 
   const igdb =
-    typeof game?.totalRating === "number"
+    typeof game?.totalRating ===
+    "number"
       ? game.totalRating
-      : typeof game?.rating === "number"
+      : typeof game?.rating ===
+          "number"
         ? game.rating
         : null;
 
   return {
-    value: igdb !== null ? igdb / 10 : null,
+    value:
+      igdb !== null
+        ? igdb / 10
+        : null,
+
     votes:
       game?.totalRatingCount ||
       game?.ratingCount ||
@@ -67,34 +104,88 @@ function getScore(game) {
   };
 }
 
-function getCommunityScore(game) {
-  const value = Number(game?.communityScore);
+function getCommunityScore(
+  game
+) {
+  const value =
+    Number(
+      game?.communityScore
+    );
 
   return {
     value:
-      Number.isFinite(value) && value > 0
+      Number.isFinite(value) &&
+      value > 0
         ? value > 10
           ? value / 10
           : value
         : null,
-    votes: Number(game?.communityVotes) || 0,
+
+    votes:
+      Number(
+        game?.communityVotes
+      ) || 0,
   };
 }
 
-function getYoutubeId(video) {
-  return video?.youtubeId || video?.youtube_id || null;
+function formatScore(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+    return "—";
+  }
+
+  return Number(
+    value
+  ).toFixed(1);
 }
 
-function chooseFirstVideo(game) {
+function normalizeNamedItems(
+  items
+) {
+  return asArray(items)
+    .map(
+      (item) =>
+        typeof item ===
+        "string"
+          ? item
+          : item?.name ||
+            item?.title ||
+            item?.abbreviation
+    )
+    .filter(Boolean);
+}
+
+function getYoutubeId(
+  video
+) {
+  return (
+    video?.youtubeId ||
+    video?.youtube_id ||
+    null
+  );
+}
+
+function chooseFirstVideo(
+  game
+) {
   const manual =
-    game?.manualTrailer?.youtubeId ||
+    game?.manualTrailer
+      ?.youtubeId ||
     game?.manualTrailerYoutubeId;
 
   if (manual) {
     return manual;
   }
 
-  const videos = asArray(game?.videos);
+  const videos =
+    asArray(
+      game?.videos
+    );
 
   const preferences = [
     "launch trailer",
@@ -104,109 +195,106 @@ function chooseFirstVideo(game) {
     "trailer",
   ];
 
-  for (const preference of preferences) {
-    const found = videos.find((video) =>
-      String(video?.name || "")
-        .toLowerCase()
-        .includes(preference)
-    );
+  for (
+    const preference
+    of preferences
+  ) {
+    const found =
+      videos.find(
+        (video) =>
+          String(
+            video?.name || ""
+          )
+            .toLowerCase()
+            .includes(
+              preference
+            )
+      );
 
-    const id = getYoutubeId(found);
+    const id =
+      getYoutubeId(
+        found
+      );
 
     if (id) {
       return id;
     }
   }
 
-  return getYoutubeId(videos[0]);
+  return getYoutubeId(
+    videos[0]
+  );
 }
 
-function normalizeNamedItems(items) {
-  return asArray(items)
-    .map((item) =>
-      typeof item === "string"
-        ? item
-        : item?.name ||
-          item?.title ||
-          item?.abbreviation
-    )
-    .filter(Boolean);
-}
-
-function unique(items) {
-  return [...new Set(items.filter(Boolean))];
-}
-
-function formatScore(value) {
+function getViewport() {
   if (
-    value === null ||
-    value === undefined ||
-    !Number.isFinite(Number(value))
+    typeof window ===
+    "undefined"
   ) {
-    return "—";
+    return {
+      width: 390,
+      height: 700,
+    };
   }
 
-  return Number(value).toFixed(1);
-}
+  const viewport =
+    window.visualViewport;
 
-function useMediaQuery(query) {
-  const [matches, setMatches] = useState(false);
+  return {
+    width:
+      viewport?.width ||
+      window.innerWidth ||
+      390,
 
-  useEffect(() => {
-    const media = window.matchMedia(query);
-
-    const update = () => setMatches(media.matches);
-
-    update();
-
-    media.addEventListener?.("change", update);
-
-    return () =>
-      media.removeEventListener?.("change", update);
-  }, [query]);
-
-  return matches;
+    height:
+      viewport?.height ||
+      window.innerHeight ||
+      700,
+  };
 }
 
 /* =========================================================
-   UI BASE
+   BASE UI
 ========================================================= */
 
 function Section({
   title,
   children,
   style,
-  contentStyle,
 }) {
   return (
     <section
       style={{
-        padding: 18,
-        border: "1px solid rgba(255,255,255,.09)",
-        borderRadius: 18,
-        background: "rgba(17,21,26,.94)",
-        boxShadow: "0 18px 50px rgba(0,0,0,.18)",
+        padding: 16,
+        border:
+          "1px solid rgba(255,255,255,.075)",
+        borderRadius: 16,
+        background:
+          "rgba(17,20,25,.96)",
         ...style,
       }}
     >
       {title && (
         <h2
           style={{
-            margin: "0 0 14px",
-            color: "#f5f7f8",
-            fontSize: 15,
-            lineHeight: 1.2,
-            fontWeight: 850,
-            letterSpacing: ".015em",
+            margin:
+              "0 0 12px",
+
+            color:
+              "#f4f6f7",
+
+            fontSize:
+              14,
+
+            fontWeight:
+              850,
           }}
         >
           {title}
         </h2>
       )}
 
-      <div style={contentStyle}>
-        {children}
-      </div>
+      {children}
     </section>
   );
 }
@@ -218,23 +306,186 @@ function Chip({
   return (
     <span
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        minHeight: 28,
-        padding: "5px 10px",
-        border: `1px solid ${accent}42`,
-        borderRadius: 999,
-        background: `${accent}12`,
-        color: "#dce4e8",
-        fontSize: 11,
-        fontWeight: 700,
-        lineHeight: 1.25,
+        display:
+          "inline-flex",
+
+        alignItems:
+          "center",
+
+        minHeight:
+          27,
+
+        padding:
+          "4px 9px",
+
+        border:
+          `1px solid ${accent}38`,
+
+        borderRadius:
+          999,
+
+        background:
+          `${accent}10`,
+
+        color:
+          "#dbe2e6",
+
+        fontSize:
+          10,
+
+        fontWeight:
+          700,
       }}
     >
       {children}
     </span>
   );
 }
+
+function navButtonStyle() {
+  return {
+    width:
+      38,
+
+    height:
+      38,
+
+    display:
+      "grid",
+
+    placeItems:
+      "center",
+
+    border:
+      "1px solid rgba(255,255,255,.14)",
+
+    borderRadius:
+      "50%",
+
+    background:
+      "rgba(15,19,24,.94)",
+
+    color:
+      "#ffffff",
+
+    fontSize:
+      23,
+
+    lineHeight:
+      1,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
+
+/* =========================================================
+   TEXTO COLAPSABLE
+========================================================= */
+
+function CollapsibleText({
+  children,
+  lines = 4,
+  accent = "#5fdcff",
+}) {
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  if (!children) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div
+        style={{
+          display:
+            expanded
+              ? "block"
+              : "-webkit-box",
+
+          WebkitLineClamp:
+            expanded
+              ? undefined
+              : lines,
+
+          WebkitBoxOrient:
+            expanded
+              ? undefined
+              : "vertical",
+
+          overflow:
+            "hidden",
+
+          color:
+            "#bdc5ca",
+
+          fontSize:
+            13,
+
+          lineHeight:
+            1.65,
+
+          whiteSpace:
+            "pre-line",
+        }}
+      >
+        {children}
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          setExpanded(
+            (current) =>
+              !current
+          )
+        }
+        style={{
+          marginTop:
+            9,
+
+          padding:
+            0,
+
+          border:
+            0,
+
+          background:
+            "transparent",
+
+          color:
+            accent,
+
+          fontSize:
+            10,
+
+          fontWeight:
+            900,
+
+          cursor:
+            "pointer",
+
+          touchAction:
+            "manipulation",
+        }}
+      >
+        {expanded
+          ? "VER MENOS"
+          : "VER MÁS"}
+      </button>
+    </div>
+  );
+}
+
+/* =========================================================
+   SCORE
+========================================================= */
 
 function ScoreBox({
   label,
@@ -245,21 +496,38 @@ function ScoreBox({
   return (
     <div
       style={{
-        minWidth: 0,
-        padding: "13px 8px",
-        border: "1px solid rgba(255,255,255,.09)",
-        borderRadius: 15,
-        background: "#0d1115",
-        textAlign: "center",
+        minWidth:
+          0,
+
+        padding:
+          "10px 7px",
+
+        border:
+          "1px solid rgba(255,255,255,.075)",
+
+        borderRadius:
+          13,
+
+        background:
+          "#0d1014",
+
+        textAlign:
+          "center",
       }}
     >
       <div
         style={{
-          color: "#8e999f",
-          fontSize: 9,
-          fontWeight: 850,
-          textTransform: "uppercase",
-          letterSpacing: ".07em",
+          color:
+            "#7d878e",
+
+          fontSize:
+            8,
+
+          fontWeight:
+            850,
+
+          textTransform:
+            "uppercase",
         }}
       >
         {label}
@@ -267,11 +535,21 @@ function ScoreBox({
 
       <div
         style={{
-          marginTop: 6,
-          color: accent || "#ffffff",
-          fontSize: 26,
-          lineHeight: 1,
-          fontWeight: 950,
+          marginTop:
+            5,
+
+          color:
+            accent ||
+            "#ffffff",
+
+          fontSize:
+            23,
+
+          lineHeight:
+            1,
+
+          fontWeight:
+            950,
         }}
       >
         {value}
@@ -280,153 +558,19 @@ function ScoreBox({
       {sublabel && (
         <div
           style={{
-            marginTop: 5,
-            color: "#6f7a81",
-            fontSize: 9,
-            fontWeight: 700,
+            marginTop:
+              4,
+
+            color:
+              "#69737a",
+
+            fontSize:
+              8,
           }}
         >
           {sublabel}
         </div>
       )}
-    </div>
-  );
-}
-
-function DataRow({
-  label,
-  value,
-  mobile,
-}) {
-  if (!value) {
-    return null;
-  }
-
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: mobile
-          ? "92px minmax(0,1fr)"
-          : "125px minmax(0,1fr)",
-        gap: 12,
-        padding: "9px 0",
-        borderBottom:
-          "1px solid rgba(255,255,255,.055)",
-      }}
-    >
-      <div
-        style={{
-          color: "#778188",
-          fontSize: 11,
-          fontWeight: 750,
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          minWidth: 0,
-          color: "#d8dde0",
-          fontSize: 12,
-          lineHeight: 1.45,
-          fontWeight: 650,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function navButtonStyle() {
-  return {
-    width: 36,
-    height: 36,
-    display: "grid",
-    placeItems: "center",
-    border: "1px solid rgba(255,255,255,.14)",
-    borderRadius: "50%",
-    background: "rgba(18,23,28,.92)",
-    color: "#ffffff",
-    fontSize: 24,
-    lineHeight: 1,
-    cursor: "pointer",
-    boxShadow: "0 8px 22px rgba(0,0,0,.24)",
-  };
-}
-
-/* =========================================================
-   HISTORIA PLEGABLE
-========================================================= */
-
-function CollapsibleStory({
-  children,
-  accent = "#5fdcff",
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  if (!children) {
-    return null;
-  }
-
-  return (
-    <div>
-      <div
-        style={{
-          position: "relative",
-          maxHeight: expanded ? "none" : 155,
-          overflow: "hidden",
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            whiteSpace: "pre-line",
-            color: "#bdc5ca",
-            fontSize: 13,
-            lineHeight: 1.7,
-          }}
-        >
-          {children}
-        </p>
-
-        {!expanded && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 68,
-              pointerEvents: "none",
-              background:
-                "linear-gradient(to bottom,rgba(17,21,26,0),rgba(17,21,26,1))",
-            }}
-          />
-        )}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setExpanded((current) => !current)}
-        style={{
-          marginTop: 11,
-          padding: 0,
-          border: 0,
-          background: "transparent",
-          color: accent,
-          fontSize: 10,
-          fontWeight: 900,
-          letterSpacing: ".07em",
-          cursor: "pointer",
-        }}
-      >
-        {expanded
-          ? "OCULTAR HISTORIA"
-          : "VER HISTORIA COMPLETA"}
-      </button>
     </div>
   );
 }
@@ -437,180 +581,331 @@ function CollapsibleStory({
 
 function VideoPlayer({
   game,
+  compact = false,
 }) {
-  const videos = useMemo(() => {
-    const ids = asArray(game?.videos)
-      .map(getYoutubeId)
-      .filter(Boolean);
+  const videos =
+    useMemo(() => {
+      const ids =
+        asArray(
+          game?.videos
+        )
+          .map(
+            getYoutubeId
+          )
+          .filter(Boolean);
 
-    const preferred = chooseFirstVideo(game);
+      const preferred =
+        chooseFirstVideo(
+          game
+        );
 
-    return unique([
-      preferred,
-      ...ids,
+      return unique([
+        preferred,
+        ...ids,
+      ]);
+    }, [
+      game,
     ]);
-  }, [game]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [game?.id]);
+  }, [
+    game?.id,
+  ]);
 
-  if (!videos.length) {
-    return null;
-  }
-
-  const safeIndex = Math.min(
-    activeIndex,
-    videos.length - 1
-  );
-
-  const videoId = videos[safeIndex];
-
-  return (
-    <Section title="Vídeos">
+  if (
+    !videos.length
+  ) {
+    return (
       <div
         style={{
-          position: "relative",
-          width: "100%",
-          aspectRatio: "16 / 9",
-          overflow: "hidden",
+          width:
+            "100%",
+
+          aspectRatio:
+            "16 / 9",
+
+          display:
+            "grid",
+
+          placeItems:
+            "center",
+
           border:
-            "1px solid rgba(255,255,255,.1)",
-          borderRadius: 15,
-          background: "#000",
+            "1px solid rgba(255,255,255,.07)",
+
+          borderRadius:
+            15,
+
+          background:
+            "#0c0f13",
+
+          color:
+            "#68727a",
+
+          fontSize:
+            11,
+        }}
+      >
+        Sin vídeo disponible
+      </div>
+    );
+  }
+
+  const safeIndex =
+    Math.min(
+      activeIndex,
+      videos.length - 1
+    );
+
+  const videoId =
+    videos[
+      safeIndex
+    ];
+
+  return (
+    <div>
+      <div
+        style={{
+          position:
+            "relative",
+
+          width:
+            "100%",
+
+          aspectRatio:
+            "16 / 9",
+
+          overflow:
+            "hidden",
+
+          border:
+            "1px solid rgba(255,255,255,.09)",
+
+          borderRadius:
+            compact
+              ? 13
+              : 16,
+
+          background:
+            "#000",
         }}
       >
         <iframe
-          key={videoId}
+          key={
+            videoId
+          }
           src={`https://www.youtube.com/embed/${videoId}?playsinline=1&rel=0`}
           title={`${getTitle(game)} — vídeo`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            border: 0,
+            position:
+              "absolute",
+
+            inset:
+              0,
+
+            width:
+              "100%",
+
+            height:
+              "100%",
+
+            border:
+              0,
           }}
         />
       </div>
 
-      {videos.length > 1 && (
+      {videos.length >
+        1 && (
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 11,
-            marginTop: 11,
+            display:
+              "flex",
+
+            justifyContent:
+              "center",
+
+            alignItems:
+              "center",
+
+            gap:
+              9,
+
+            marginTop:
+              8,
           }}
         >
           <button
             type="button"
-            aria-label="Vídeo anterior"
             onClick={() =>
               setActiveIndex(
                 (current) =>
-                  (current - 1 + videos.length) %
+                  (
+                    current -
+                    1 +
+                    videos.length
+                  ) %
                   videos.length
               )
             }
-            style={navButtonStyle()}
+            style={
+              navButtonStyle()
+            }
           >
             ‹
           </button>
 
           <span
             style={{
-              minWidth: 55,
-              color: "#8e999f",
-              fontSize: 10,
-              fontWeight: 800,
-              textAlign: "center",
+              minWidth:
+                50,
+
+              textAlign:
+                "center",
+
+              color:
+                "#7f8990",
+
+              fontSize:
+                9,
             }}
           >
-            {safeIndex + 1} de {videos.length}
+            {safeIndex + 1} de{" "}
+            {videos.length}
           </span>
 
           <button
             type="button"
-            aria-label="Vídeo siguiente"
             onClick={() =>
               setActiveIndex(
                 (current) =>
-                  (current + 1) % videos.length
+                  (
+                    current +
+                    1
+                  ) %
+                  videos.length
               )
             }
-            style={navButtonStyle()}
+            style={
+              navButtonStyle()
+            }
           >
             ›
           </button>
         </div>
       )}
-    </Section>
+    </div>
   );
 }
 
 /* =========================================================
-   GALERÍA
+   GALERÍA MOSAICO
 ========================================================= */
 
 function Gallery({
   game,
 }) {
-  const images = useMemo(() => {
-    const screenshots = asArray(
-      game?.screenshots
-    )
-      .map(
-        (item) =>
-          item?.url ||
-          item?.imageUrl
-      )
-      .filter(Boolean);
+  const images =
+    useMemo(() => {
+      const screenshots =
+        asArray(
+          game?.screenshots
+        )
+          .map(
+            (item) =>
+              item?.url ||
+              item?.imageUrl
+          )
+          .filter(Boolean);
 
-    const artworks = asArray(
-      game?.artworks
-    )
-      .map(
-        (item) =>
-          item?.url ||
-          item?.imageUrl
-      )
-      .filter(Boolean);
+      const artworks =
+        asArray(
+          game?.artworks
+        )
+          .map(
+            (item) =>
+              item?.url ||
+              item?.imageUrl
+          )
+          .filter(Boolean);
 
-    return unique([
-      ...screenshots,
-      ...artworks,
+      return unique([
+        ...screenshots,
+        ...artworks,
+      ]);
+    }, [
+      game,
     ]);
-  }, [game]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [fullscreen, setFullscreen] = useState(false);
+  const scrollRef =
+    useRef(null);
+
+  const [
+    fullscreen,
+    setFullscreen,
+  ] = useState(false);
+
+  const [
+    activeIndex,
+    setActiveIndex,
+  ] = useState(0);
+
+  const touchStartX =
+    useRef(null);
 
   useEffect(() => {
-    setActiveIndex(0);
     setFullscreen(false);
-  }, [game?.id]);
+    setActiveIndex(0);
+  }, [
+    game?.id,
+  ]);
 
-  if (!images.length) {
+  if (
+    !images.length
+  ) {
     return null;
   }
 
-  const safeIndex = Math.min(
-    activeIndex,
-    images.length - 1
-  );
+  function moveCarousel(
+    direction
+  ) {
+    const element =
+      scrollRef.current;
 
-  const activeImage = images[safeIndex];
+    if (!element) {
+      return;
+    }
+
+    element.scrollBy({
+      left:
+        direction *
+        Math.max(
+          260,
+          element.clientWidth *
+            0.78
+        ),
+
+      behavior:
+        "smooth",
+    });
+  }
 
   function previousImage() {
     setActiveIndex(
       (current) =>
-        (current - 1 + images.length) %
+        (
+          current -
+          1 +
+          images.length
+        ) %
         images.length
     );
   }
@@ -618,70 +913,366 @@ function Gallery({
   function nextImage() {
     setActiveIndex(
       (current) =>
-        (current + 1) % images.length
+        (
+          current +
+          1
+        ) %
+        images.length
     );
   }
+
+  function handleTouchStart(
+    event
+  ) {
+    touchStartX.current =
+      event.touches?.[0]
+        ?.clientX ??
+      null;
+  }
+
+  function handleTouchEnd(
+    event
+  ) {
+    if (
+      touchStartX.current ===
+      null
+    ) {
+      return;
+    }
+
+    const endX =
+      event.changedTouches
+        ?.[0]?.clientX;
+
+    if (
+      typeof endX !==
+      "number"
+    ) {
+      touchStartX.current =
+        null;
+
+      return;
+    }
+
+    const delta =
+      endX -
+      touchStartX.current;
+
+    if (
+      Math.abs(delta) >
+      45
+    ) {
+      if (
+        delta > 0
+      ) {
+        previousImage();
+      } else {
+        nextImage();
+      }
+    }
+
+    touchStartX.current =
+      null;
+  }
+
+  const activeImage =
+    images[
+      Math.min(
+        activeIndex,
+        images.length - 1
+      )
+    ];
 
   return (
     <>
       <Section title="Galería">
         <div
           style={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: "16 / 9",
-            overflow: "hidden",
-            borderRadius: 16,
-            border:
-              "1px solid rgba(255,255,255,.1)",
-            background: "#050608",
+            position:
+              "relative",
           }}
         >
           <button
             type="button"
-            aria-label="Abrir imagen"
-            onClick={() => setFullscreen(true)}
+            aria-label="Galería anterior"
+            onClick={() =>
+              moveCarousel(-1)
+            }
             style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              padding: 0,
-              border: 0,
-              background: "transparent",
-              cursor: "pointer",
+              ...navButtonStyle(),
+
+              position:
+                "absolute",
+
+              left:
+                5,
+
+              top:
+                "50%",
+
+              transform:
+                "translateY(-50%)",
+
+              zIndex:
+                5,
+
+              background:
+                "rgba(5,7,9,.82)",
             }}
           >
-            <img
-              src={activeImage}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "block",
-                objectFit: "cover",
-              }}
-            />
+            ‹
           </button>
 
-          {images.length > 1 && (
+          <div
+            ref={
+              scrollRef
+            }
+            style={{
+              display:
+                "flex",
+
+              gap:
+                10,
+
+              overflowX:
+                "auto",
+
+              overflowY:
+                "hidden",
+
+              padding:
+                "2px 48px 5px",
+
+              WebkitOverflowScrolling:
+                "touch",
+
+              scrollSnapType:
+                "x proximity",
+
+              scrollbarWidth:
+                "none",
+            }}
+          >
+            {images.map(
+              (
+                image,
+                index
+              ) => {
+                const pattern =
+                  index %
+                  3;
+
+                const tall =
+                  pattern ===
+                  0;
+
+                return (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(
+                        index
+                      );
+
+                      setFullscreen(
+                        true
+                      );
+                    }}
+                    style={{
+                      flex:
+                        tall
+                          ? "0 0 210px"
+                          : "0 0 280px",
+
+                      width:
+                        tall
+                          ? 210
+                          : 280,
+
+                      height:
+                        tall
+                          ? 320
+                          : 155,
+
+                      padding:
+                        0,
+
+                      overflow:
+                        "hidden",
+
+                      border:
+                        "1px solid rgba(255,255,255,.08)",
+
+                      borderRadius:
+                        13,
+
+                      background:
+                        "#090b0f",
+
+                      cursor:
+                        "pointer",
+
+                      scrollSnapAlign:
+                        "start",
+                    }}
+                  >
+                    <img
+                      src={
+                        image
+                      }
+                      alt=""
+                      loading="lazy"
+                      draggable={
+                        false
+                      }
+                      style={{
+                        width:
+                          "100%",
+
+                        height:
+                          "100%",
+
+                        objectFit:
+                          "cover",
+
+                        display:
+                          "block",
+                      }}
+                    />
+                  </button>
+                );
+              }
+            )}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Galería siguiente"
+            onClick={() =>
+              moveCarousel(1)
+            }
+            style={{
+              ...navButtonStyle(),
+
+              position:
+                "absolute",
+
+              right:
+                5,
+
+              top:
+                "50%",
+
+              transform:
+                "translateY(-50%)",
+
+              zIndex:
+                5,
+
+              background:
+                "rgba(5,7,9,.82)",
+            }}
+          >
+            ›
+          </button>
+        </div>
+      </Section>
+
+      {fullscreen && (
+        <div
+          onClick={() =>
+            setFullscreen(
+              false
+            )
+          }
+          onTouchStart={
+            handleTouchStart
+          }
+          onTouchEnd={
+            handleTouchEnd
+          }
+          style={{
+            position:
+              "fixed",
+
+            inset:
+              0,
+
+            zIndex:
+              100010,
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            padding:
+              18,
+
+            background:
+              "rgba(0,0,0,.96)",
+
+            touchAction:
+              "pan-y",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              setFullscreen(
+                false
+              )
+            }
+            style={{
+              ...navButtonStyle(),
+
+              position:
+                "absolute",
+
+              top:
+                15,
+
+              right:
+                15,
+
+              zIndex:
+                8,
+            }}
+          >
+            ×
+          </button>
+
+          {images.length >
+            1 && (
             <>
               <button
                 type="button"
-                aria-label="Imagen anterior"
-                onClick={(event) => {
+                onClick={(
+                  event
+                ) => {
                   event.stopPropagation();
+
                   previousImage();
                 }}
                 style={{
-                  position: "absolute",
-                  zIndex: 3,
-                  left: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
                   ...navButtonStyle(),
-                  background: "rgba(5,7,9,.78)",
-                  backdropFilter: "blur(8px)",
+
+                  position:
+                    "absolute",
+
+                  left:
+                    14,
+
+                  top:
+                    "50%",
+
+                  transform:
+                    "translateY(-50%)",
+
+                  zIndex:
+                    8,
                 }}
               >
                 ‹
@@ -689,20 +1280,30 @@ function Gallery({
 
               <button
                 type="button"
-                aria-label="Imagen siguiente"
-                onClick={(event) => {
+                onClick={(
+                  event
+                ) => {
                   event.stopPropagation();
+
                   nextImage();
                 }}
                 style={{
-                  position: "absolute",
-                  zIndex: 3,
-                  right: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
                   ...navButtonStyle(),
-                  background: "rgba(5,7,9,.78)",
-                  backdropFilter: "blur(8px)",
+
+                  position:
+                    "absolute",
+
+                  right:
+                    14,
+
+                  top:
+                    "50%",
+
+                  transform:
+                    "translateY(-50%)",
+
+                  zIndex:
+                    8,
                 }}
               >
                 ›
@@ -710,180 +1311,60 @@ function Gallery({
             </>
           )}
 
-          <div
-            style={{
-              position: "absolute",
-              zIndex: 3,
-              right: 12,
-              bottom: 12,
-              padding: "6px 10px",
-              borderRadius: 999,
-              background: "rgba(0,0,0,.72)",
-              color: "#ffffff",
-              fontSize: 10,
-              fontWeight: 850,
-              pointerEvents: "none",
-            }}
-          >
-            {safeIndex + 1} de {images.length}
-          </div>
-        </div>
-
-        {images.length > 1 && (
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              marginTop: 10,
-              paddingBottom: 4,
-              overflowX: "auto",
-              WebkitOverflowScrolling: "touch",
-              scrollSnapType: "x proximity",
-            }}
-          >
-            {images.map((image, index) => {
-              const selected =
-                index === safeIndex;
-
-              return (
-                <button
-                  key={`${image}-${index}`}
-                  type="button"
-                  onClick={() => setActiveIndex(index)}
-                  style={{
-                    flex: "0 0 120px",
-                    width: 120,
-                    aspectRatio: "16 / 9",
-                    padding: 0,
-                    overflow: "hidden",
-                    border: selected
-                      ? "2px solid #ffffff"
-                      : "1px solid rgba(255,255,255,.09)",
-                    borderRadius: 10,
-                    background: "#080a0d",
-                    opacity: selected ? 1 : 0.62,
-                    cursor: "pointer",
-                    scrollSnapAlign: "start",
-                    transition:
-                      "opacity .18s ease, border-color .18s ease",
-                  }}
-                >
-                  <img
-                    src={image}
-                    alt=""
-                    loading="lazy"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </Section>
-
-      {fullscreen && (
-        <div
-          role="presentation"
-          onClick={() => setFullscreen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 100002,
-            display: "grid",
-            placeItems: "center",
-            padding: 18,
-            background: "rgba(0,0,0,.95)",
-          }}
-        >
-          <button
-            type="button"
-            aria-label="Cerrar galería"
-            onClick={() => setFullscreen(false)}
-            style={{
-              position: "absolute",
-              zIndex: 5,
-              top: 16,
-              right: 16,
-              ...navButtonStyle(),
-            }}
-          >
-            ×
-          </button>
-
-          {images.length > 1 && (
-            <button
-              type="button"
-              aria-label="Imagen anterior"
-              onClick={(event) => {
-                event.stopPropagation();
-                previousImage();
-              }}
-              style={{
-                position: "absolute",
-                zIndex: 5,
-                left: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                ...navButtonStyle(),
-              }}
-            >
-              ‹
-            </button>
-          )}
-
           <img
-            src={activeImage}
+            src={
+              activeImage
+            }
             alt=""
-            onClick={(event) =>
+            onClick={(
+              event
+            ) =>
               event.stopPropagation()
             }
             style={{
-              maxWidth: "min(1400px,94vw)",
-              maxHeight: "88vh",
-              objectFit: "contain",
-              borderRadius: 14,
+              maxWidth:
+                "94vw",
+
+              maxHeight:
+                "88dvh",
+
+              objectFit:
+                "contain",
+
+              borderRadius:
+                12,
+
+              userSelect:
+                "none",
             }}
           />
 
-          {images.length > 1 && (
-            <button
-              type="button"
-              aria-label="Imagen siguiente"
-              onClick={(event) => {
-                event.stopPropagation();
-                nextImage();
-              }}
-              style={{
-                position: "absolute",
-                zIndex: 5,
-                right: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                ...navButtonStyle(),
-              }}
-            >
-              ›
-            </button>
-          )}
-
           <div
             style={{
-              position: "absolute",
-              bottom: 16,
-              padding: "6px 11px",
-              borderRadius: 999,
-              background: "rgba(0,0,0,.72)",
-              color: "#ffffff",
-              fontSize: 11,
-              fontWeight: 850,
+              position:
+                "absolute",
+
+              bottom:
+                15,
+
+              padding:
+                "6px 11px",
+
+              borderRadius:
+                999,
+
+              background:
+                "rgba(0,0,0,.75)",
+
+              fontSize:
+                10,
+
+              fontWeight:
+                800,
             }}
           >
-            {safeIndex + 1} de {images.length}
+            {activeIndex + 1} de{" "}
+            {images.length}
           </div>
         </div>
       )}
@@ -897,111 +1378,49 @@ function Gallery({
 
 function Languages({
   game,
-  mobile,
 }) {
-  const languages = asArray(game?.languages);
+  const languages =
+    asArray(
+      game?.languages
+    );
 
-  if (!languages.length) {
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  if (
+    !languages.length
+  ) {
     return null;
   }
 
-  if (mobile) {
-    return (
-      <Section title="Idiomas">
-        <div
-          style={{
-            display: "grid",
-            gap: 7,
-          }}
-        >
-          {languages.map((language, index) => {
-            const name =
-              language.name ||
-              language.languageName ||
-              language.nativeName ||
-              "Idioma";
-
-            return (
-              <div
-                key={
-                  language.id ||
-                  language.languageId ||
-                  `${name}-${index}`
-                }
-                style={{
-                  padding: "10px 11px",
-                  border:
-                    "1px solid rgba(255,255,255,.065)",
-                  borderRadius: 11,
-                  background: "#0d1115",
-                }}
-              >
-                <div
-                  style={{
-                    color: "#e3e7e9",
-                    fontSize: 12,
-                    fontWeight: 800,
-                  }}
-                >
-                  {name}
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 6,
-                    marginTop: 7,
-                  }}
-                >
-                  {language.audio && (
-                    <LanguageBadge>
-                      AUDIO
-                    </LanguageBadge>
-                  )}
-
-                  {language.subtitles && (
-                    <LanguageBadge>
-                      SUBTÍTULOS
-                    </LanguageBadge>
-                  )}
-
-                  {language.interface && (
-                    <LanguageBadge>
-                      INTERFAZ
-                    </LanguageBadge>
-                  )}
-
-                  {!language.audio &&
-                    !language.subtitles &&
-                    !language.interface && (
-                      <span
-                        style={{
-                          color: "#667078",
-                          fontSize: 9,
-                          fontWeight: 750,
-                        }}
-                      >
-                        SIN DATOS DE SOPORTE
-                      </span>
-                    )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
-    );
-  }
+  const visible =
+    expanded
+      ? languages
+      : languages.slice(
+          0,
+          3
+        );
 
   return (
     <Section title="Idiomas">
-      <div style={{ overflowX: "auto" }}>
+      <div
+        style={{
+          overflowX:
+            "auto",
+        }}
+      >
         <table
           style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            minWidth: 420,
+            width:
+              "100%",
+
+            minWidth:
+              330,
+
+            borderCollapse:
+              "collapse",
           }}
         >
           <thead>
@@ -1011,85 +1430,129 @@ function Languages({
                 "Audio",
                 "Sub.",
                 "Interfaz",
-              ].map((label) => (
-                <th
-                  key={label}
-                  style={{
-                    padding: "7px 8px",
-                    color: "#778188",
-                    fontSize: 9,
-                    fontWeight: 850,
-                    textAlign:
-                      label === "Idioma"
-                        ? "left"
-                        : "center",
-                    textTransform: "uppercase",
-                    letterSpacing: ".07em",
-                    borderBottom:
-                      "1px solid rgba(255,255,255,.08)",
-                  }}
-                >
-                  {label}
-                </th>
-              ))}
+              ].map(
+                (label) => (
+                  <th
+                    key={
+                      label
+                    }
+                    style={{
+                      padding:
+                        "7px 6px",
+
+                      borderBottom:
+                        "1px solid rgba(255,255,255,.08)",
+
+                      color:
+                        "#758087",
+
+                      fontSize:
+                        9,
+
+                      textAlign:
+                        label ===
+                        "Idioma"
+                          ? "left"
+                          : "center",
+
+                      textTransform:
+                        "uppercase",
+                    }}
+                  >
+                    {label}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
 
           <tbody>
-            {languages.map((language, index) => (
-              <tr
-                key={
-                  language.id ||
-                  language.languageId ||
-                  `${language.name}-${index}`
-                }
-              >
-                <td style={languageCellStyle("left")}>
-                  {language.name ||
-                    language.languageName ||
-                    language.nativeName ||
-                    "—"}
-                </td>
+            {visible.map(
+              (
+                language,
+                index
+              ) => {
+                const name =
+                  language?.name ||
+                  language?.languageName ||
+                  language?.nativeName ||
+                  "Idioma";
 
-                <td style={languageCellStyle()}>
-                  {language.audio ? "✓" : "—"}
-                </td>
+                return (
+                  <tr
+                    key={
+                      language?.id ||
+                      language?.languageId ||
+                      `${name}-${index}`
+                    }
+                  >
+                    <td
+                      style={
+                        languageCellStyle(
+                          "left"
+                        )
+                      }
+                    >
+                      {name}
+                    </td>
 
-                <td style={languageCellStyle()}>
-                  {language.subtitles ? "✓" : "—"}
-                </td>
+                    <td
+                      style={
+                        languageCellStyle()
+                      }
+                    >
+                      {language?.audio
+                        ? "✓"
+                        : "—"}
+                    </td>
 
-                <td style={languageCellStyle()}>
-                  {language.interface ? "✓" : "—"}
-                </td>
-              </tr>
-            ))}
+                    <td
+                      style={
+                        languageCellStyle()
+                      }
+                    >
+                      {language?.subtitles
+                        ? "✓"
+                        : "—"}
+                    </td>
+
+                    <td
+                      style={
+                        languageCellStyle()
+                      }
+                    >
+                      {language?.interface
+                        ? "✓"
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              }
+            )}
           </tbody>
         </table>
       </div>
-    </Section>
-  );
-}
 
-function LanguageBadge({
-  children,
-}) {
-  return (
-    <span
-      style={{
-        padding: "4px 7px",
-        borderRadius: 999,
-        background: "rgba(95,220,255,.08)",
-        border:
-          "1px solid rgba(95,220,255,.17)",
-        color: "#a8dbe7",
-        fontSize: 8,
-        fontWeight: 900,
-        letterSpacing: ".05em",
-      }}
-    >
-      ✓ {children}
-    </span>
+      {languages.length >
+        3 && (
+        <button
+          type="button"
+          onClick={() =>
+            setExpanded(
+              (current) =>
+                !current
+            )
+          }
+          style={
+            expandButtonStyle()
+          }
+        >
+          {expanded
+            ? "VER MENOS"
+            : `VER MÁS (${languages.length - 3})`}
+        </button>
+      )}
+    </Section>
   );
 }
 
@@ -1097,154 +1560,513 @@ function languageCellStyle(
   textAlign = "center"
 ) {
   return {
-    padding: "8px",
+    padding:
+      "8px 6px",
+
     borderBottom:
       "1px solid rgba(255,255,255,.045)",
-    color: "#c9d0d4",
-    fontSize: 11,
-    fontWeight: 650,
+
+    color:
+      "#cbd1d5",
+
+    fontSize:
+      11,
+
     textAlign,
+
+    fontWeight:
+      650,
   };
 }
 
 /* =========================================================
-   CLASIFICACIÓN POR EDADES
+   CLASIFICACIÓN
 ========================================================= */
 
 function AgeRatings({
   game,
   accent,
 }) {
-  const ratings = asArray(game?.ageRatings);
+  const ratings =
+    asArray(
+      game?.ageRatings
+    );
 
-  if (!ratings.length) {
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  const [
+    openIndex,
+    setOpenIndex,
+  ] = useState(null);
+
+  if (
+    !ratings.length
+  ) {
     return null;
   }
 
+  const visible =
+    expanded
+      ? ratings
+      : ratings.slice(
+          0,
+          4
+        );
+
   return (
-    <Section title="Clasificación por edades">
+    <Section title="Clasificación">
       <div
         style={{
-          display: "grid",
+          display:
+            "grid",
+
           gridTemplateColumns:
-            "repeat(auto-fit,minmax(135px,1fr))",
-          gap: 9,
+            "repeat(auto-fit,minmax(82px,1fr))",
+
+          gap:
+            8,
         }}
       >
-        {ratings.map((rating, index) => {
-          const descriptors = asArray(
-            rating.descriptors ||
-              rating.contentDescriptors
-          );
+        {visible.map(
+          (
+            rating,
+            index
+          ) => {
+            const actualIndex =
+              ratings.indexOf(
+                rating
+              );
 
-          return (
-            <div
-              key={`${rating.organization}-${rating.rating}-${index}`}
-              style={{
-                minWidth: 0,
-                padding: 12,
-                border: `1px solid ${accent}2d`,
-                borderRadius: 13,
-                background: "#0d1115",
-              }}
-            >
+            const isOpen =
+              openIndex ===
+              actualIndex;
+
+            const image =
+              rating?.imageUrl ||
+              rating?.image_url ||
+              rating?.iconUrl ||
+              rating?.icon_url ||
+              null;
+
+            const label =
+              rating?.region ||
+              rating?.organization ||
+              "—";
+
+            return (
               <div
+                key={`${label}-${actualIndex}`}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
+                  minWidth:
+                    0,
                 }}
               >
-                <div
-                  style={{
-                    color: "#89949a",
-                    fontSize: 9,
-                    fontWeight: 900,
-                    letterSpacing: ".08em",
-                  }}
-                >
-                  {rating.organization ||
-                    "CLASIFICACIÓN"}
-                </div>
-
-                <div
-                  style={{
-                    minWidth: 40,
-                    padding: "5px 7px",
-                    borderRadius: 8,
-                    background: `${accent}16`,
-                    border: `1px solid ${accent}35`,
-                    color: "#ffffff",
-                    fontSize: 15,
-                    lineHeight: 1,
-                    fontWeight: 950,
-                    textAlign: "center",
-                  }}
-                >
-                  {rating.rating || "—"}
-                </div>
-              </div>
-
-              {descriptors.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 5,
-                    marginTop: 10,
-                  }}
-                >
-                  {descriptors.map(
-                    (descriptor, descriptorIndex) => (
-                      <span
-                        key={`${descriptor}-${descriptorIndex}`}
-                        style={{
-                          padding: "4px 6px",
-                          borderRadius: 7,
-                          background:
-                            "rgba(255,255,255,.045)",
-                          color: "#9da7ac",
-                          fontSize: 8,
-                          lineHeight: 1.3,
-                          fontWeight: 750,
-                        }}
-                      >
-                        {typeof descriptor === "string"
-                          ? descriptor
-                          : descriptor?.name ||
-                            descriptor?.description ||
-                            "Contenido"}
-                      </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenIndex(
+                      isOpen
+                        ? null
+                        : actualIndex
                     )
-                  )}
-                </div>
-              )}
+                  }
+                  style={{
+                    width:
+                      "100%",
 
-              {rating.synopsis &&
-                rating.synopsis !==
-                  "No Rating Summary" && (
+                    minHeight:
+                      102,
+
+                    padding:
+                      "8px 7px",
+
+                    border:
+                      `1px solid ${accent}22`,
+
+                    borderRadius:
+                      12,
+
+                    background:
+                      "#12161c",
+
+                    color:
+                      "#ffffff",
+
+                    cursor:
+                      "pointer",
+
+                    touchAction:
+                      "manipulation",
+                  }}
+                >
                   <div
                     style={{
-                      marginTop: 9,
-                      color: "#78838a",
-                      fontSize: 9,
-                      lineHeight: 1.5,
+                      marginBottom:
+                        6,
+
+                      fontSize:
+                        9,
+
+                      fontWeight:
+                        850,
+
+                      opacity:
+                        0.72,
                     }}
                   >
-                    {rating.synopsis}
+                    {label}
+                  </div>
+
+                  {image ? (
+                    <img
+                      src={
+                        image
+                      }
+                      alt=""
+                      style={{
+                        width:
+                          52,
+
+                        height:
+                          52,
+
+                        objectFit:
+                          "contain",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        minHeight:
+                          52,
+
+                        display:
+                          "grid",
+
+                        placeItems:
+                          "center",
+
+                        padding:
+                          6,
+
+                        borderRadius:
+                          9,
+
+                        background:
+                          `${accent}18`,
+
+                        color:
+                          "#ffffff",
+
+                        fontSize:
+                          17,
+
+                        fontWeight:
+                          900,
+                      }}
+                    >
+                      {rating?.rating ||
+                        "—"}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      marginTop:
+                        5,
+
+                      fontSize:
+                        12,
+
+                      opacity:
+                        0.7,
+                    }}
+                  >
+                    {isOpen
+                      ? "⌃"
+                      : "⌄"}
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div
+                    style={{
+                      marginTop:
+                        7,
+
+                      padding:
+                        10,
+
+                      borderRadius:
+                        10,
+
+                      background:
+                        "#0c0f13",
+
+                      border:
+                        "1px solid rgba(255,255,255,.06)",
+                    }}
+                  >
+                    {asArray(
+                      rating?.descriptors ||
+                        rating?.contentDescriptors
+                    ).length >
+                      0 && (
+                      <div
+                        style={{
+                          display:
+                            "flex",
+
+                          flexWrap:
+                            "wrap",
+
+                          gap:
+                            5,
+
+                          marginBottom:
+                            rating?.synopsis
+                              ? 8
+                              : 0,
+                        }}
+                      >
+                        {asArray(
+                          rating?.descriptors ||
+                            rating?.contentDescriptors
+                        ).map(
+                          (
+                            descriptor,
+                            descriptorIndex
+                          ) => (
+                            <span
+                              key={`${actualIndex}-${descriptorIndex}`}
+                              style={{
+                                padding:
+                                  "4px 6px",
+
+                                borderRadius:
+                                  7,
+
+                                background:
+                                  "rgba(255,255,255,.055)",
+
+                                color:
+                                  "#a9b1b6",
+
+                                fontSize:
+                                  8,
+                              }}
+                            >
+                              {typeof descriptor ===
+                              "string"
+                                ? descriptor
+                                : descriptor?.name ||
+                                  descriptor?.description ||
+                                  "Contenido"}
+                            </span>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {rating?.synopsis &&
+                      rating.synopsis !==
+                        "No Rating Summary" && (
+                        <CollapsibleText
+                          lines={
+                            3
+                          }
+                          accent={
+                            accent
+                          }
+                        >
+                          {
+                            rating.synopsis
+                          }
+                        </CollapsibleText>
+                      )}
                   </div>
                 )}
-            </div>
-          );
-        })}
+              </div>
+            );
+          }
+        )}
       </div>
+
+      {ratings.length >
+        4 && (
+        <button
+          type="button"
+          onClick={() =>
+            setExpanded(
+              (current) =>
+                !current
+            )
+          }
+          style={
+            expandButtonStyle()
+          }
+        >
+          {expanded
+            ? "VER MENOS"
+            : `VER MÁS (${ratings.length - 4})`}
+        </button>
+      )}
     </Section>
   );
 }
 
 /* =========================================================
-   JUEGOS SIMILARES
+   DATA ROW
+========================================================= */
+
+function DataRow({
+  label,
+  value,
+}) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        display:
+          "grid",
+
+        gridTemplateColumns:
+          "110px minmax(0,1fr)",
+
+        gap:
+          10,
+
+        padding:
+          "8px 0",
+
+        borderBottom:
+          "1px solid rgba(255,255,255,.05)",
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#747f86",
+
+          fontSize:
+            10,
+
+          fontWeight:
+            750,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          minWidth:
+            0,
+
+          color:
+            "#d3d9dc",
+
+          fontSize:
+            11,
+
+          lineHeight:
+            1.4,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   META GROUP
+========================================================= */
+
+function MetaGroup({
+  label,
+  values,
+  accent,
+}) {
+  if (
+    !values?.length
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        paddingBottom:
+          12,
+
+        marginBottom:
+          12,
+
+        borderBottom:
+          "1px solid rgba(255,255,255,.05)",
+      }}
+    >
+      <div
+        style={{
+          marginBottom:
+            7,
+
+          color:
+            "#747f86",
+
+          fontSize:
+            9,
+
+          fontWeight:
+            850,
+
+          textTransform:
+            "uppercase",
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          display:
+            "flex",
+
+          flexWrap:
+            "wrap",
+
+          gap:
+            5,
+        }}
+      >
+        {values.map(
+          (value) => (
+            <Chip
+              key={
+                value
+              }
+              accent={
+                accent
+              }
+            >
+              {value}
+            </Chip>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   SIMILARES
 ========================================================= */
 
 function SimilarGames({
@@ -1252,25 +2074,30 @@ function SimilarGames({
   accent,
   onOpenGame,
 }) {
-  const scrollRef = useRef(null);
+  const scrollRef =
+    useRef(null);
 
-  const similarGames = asArray(
-    game?.similarGames
-  );
+  const similar =
+    asArray(
+      game?.similarGames
+    ).filter(
+      (item) =>
+        item?.available &&
+        item?.id &&
+        item?.name
+    );
 
-  const availableGames = similarGames.filter(
-    (item) =>
-      item?.available &&
-      item?.id &&
-      item?.name
-  );
-
-  if (!availableGames.length) {
+  if (
+    !similar.length
+  ) {
     return null;
   }
 
-  function move(direction) {
-    const element = scrollRef.current;
+  function move(
+    direction
+  ) {
+    const element =
+      scrollRef.current;
 
     if (!element) {
       return;
@@ -1279,8 +2106,14 @@ function SimilarGames({
     element.scrollBy({
       left:
         direction *
-        Math.max(170, element.clientWidth * 0.72),
-      behavior: "smooth",
+        Math.max(
+          180,
+          element.clientWidth *
+            0.72
+        ),
+
+      behavior:
+        "smooth",
     });
   }
 
@@ -1288,169 +2121,210 @@ function SimilarGames({
     <Section title="Juegos similares">
       <div
         style={{
-          position: "relative",
+          position:
+            "relative",
         }}
       >
         <div
-          ref={scrollRef}
+          ref={
+            scrollRef
+          }
           style={{
-            display: "flex",
-            gap: 12,
-            overflowX: "auto",
-            paddingBottom: 5,
-            WebkitOverflowScrolling: "touch",
-            scrollSnapType: "x mandatory",
-            scrollbarWidth: "none",
+            display:
+              "flex",
+
+            gap:
+              10,
+
+            overflowX:
+              "auto",
+
+            paddingBottom:
+              4,
+
+            WebkitOverflowScrolling:
+              "touch",
+
+            scrollSnapType:
+              "x proximity",
+
+            scrollbarWidth:
+              "none",
           }}
         >
-          {availableGames.map((similar) => {
-            const cover = getCover(similar);
+          {similar.map(
+            (item) => {
+              const cover =
+                getCover(
+                  item
+                );
 
-            const score =
-              Number(similar.freakyOfficialScore) ||
-              Number(similar.totalRating) / 10 ||
-              Number(similar.rating) / 10 ||
-              null;
-
-            return (
-              <button
-                key={similar.id}
-                type="button"
-                onClick={() =>
-                  onOpenGame?.(similar)
-                }
-                style={{
-                  flex: "0 0 150px",
-                  width: 150,
-                  padding: 0,
-                  overflow: "hidden",
-                  border:
-                    "1px solid rgba(255,255,255,.09)",
-                  borderRadius: 14,
-                  background: "#0d1115",
-                  color: "#ffffff",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  scrollSnapAlign: "start",
-                }}
-              >
-                <div
+              return (
+                <button
+                  key={
+                    item.id
+                  }
+                  type="button"
+                  onClick={() =>
+                    onOpenGame?.(
+                      item
+                    )
+                  }
                   style={{
-                    position: "relative",
-                    width: "100%",
-                    aspectRatio: "3 / 4",
-                    overflow: "hidden",
-                    background: "#080a0d",
+                    flex:
+                      "0 0 140px",
+
+                    width:
+                      140,
+
+                    padding:
+                      0,
+
+                    overflow:
+                      "hidden",
+
+                    border:
+                      "1px solid rgba(255,255,255,.08)",
+
+                    borderRadius:
+                      13,
+
+                    background:
+                      "#0d1014",
+
+                    color:
+                      "#ffffff",
+
+                    textAlign:
+                      "left",
+
+                    cursor:
+                      "pointer",
+
+                    scrollSnapAlign:
+                      "start",
                   }}
                 >
-                  {cover ? (
-                    <img
-                      src={cover}
-                      alt={similar.name}
-                      loading="lazy"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
-                  ) : (
+                  <div
+                    style={{
+                      aspectRatio:
+                        "3 / 4",
+
+                      background:
+                        "#080a0d",
+                    }}
+                  >
+                    {cover && (
+                      <img
+                        src={
+                          cover
+                        }
+                        alt={
+                          item.name
+                        }
+                        loading="lazy"
+                        style={{
+                          width:
+                            "100%",
+
+                          height:
+                            "100%",
+
+                          objectFit:
+                            "cover",
+
+                          display:
+                            "block",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      padding:
+                        "9px 9px 10px",
+                    }}
+                  >
                     <div
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "grid",
-                        placeItems: "center",
-                        color: "#667078",
-                        fontSize: 10,
+                        minHeight:
+                          32,
+
+                        fontSize:
+                          11,
+
+                        lineHeight:
+                          1.35,
+
+                        fontWeight:
+                          800,
                       }}
                     >
-                      SIN PORTADA
+                      {
+                        item.name
+                      }
                     </div>
-                  )}
 
-                  {Number.isFinite(score) &&
-                    score > 0 && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          right: 7,
-                          bottom: 7,
-                          minWidth: 34,
-                          padding: "5px 7px",
-                          borderRadius: 9,
-                          background:
-                            "rgba(5,7,9,.88)",
-                          border: `1px solid ${accent}55`,
-                          color: accent,
-                          fontSize: 11,
-                          fontWeight: 950,
-                          textAlign: "center",
-                          backdropFilter: "blur(8px)",
-                        }}
-                      >
-                        {formatScore(score)}
-                      </div>
-                    )}
-                </div>
+                    <div
+                      style={{
+                        marginTop:
+                          4,
 
-                <div
-                  style={{
-                    padding: "10px 10px 11px",
-                  }}
-                >
-                  <div
-                    style={{
-                      minHeight: 34,
-                      color: "#f4f6f7",
-                      fontSize: 12,
-                      lineHeight: 1.35,
-                      fontWeight: 850,
-                    }}
-                  >
-                    {similar.name}
+                        color:
+                          accent,
+
+                        fontSize:
+                          9,
+                      }}
+                    >
+                      {item.year ||
+                        "Ver ficha"}
+                    </div>
                   </div>
-
-                  <div
-                    style={{
-                      marginTop: 5,
-                      color: "#7f8a90",
-                      fontSize: 10,
-                      fontWeight: 750,
-                    }}
-                  >
-                    {similar.year || "Ver ficha"}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            }
+          )}
         </div>
 
-        {availableGames.length > 2 && (
+        {similar.length >
+          2 && (
           <div
             style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 7,
-              marginTop: 10,
+              display:
+                "flex",
+
+              justifyContent:
+                "flex-end",
+
+              gap:
+                6,
+
+              marginTop:
+                9,
             }}
           >
             <button
               type="button"
-              aria-label="Similares anteriores"
-              onClick={() => move(-1)}
-              style={navButtonStyle()}
+              onClick={() =>
+                move(-1)
+              }
+              style={
+                navButtonStyle()
+              }
             >
               ‹
             </button>
 
             <button
               type="button"
-              aria-label="Similares siguientes"
-              onClick={() => move(1)}
-              style={navButtonStyle()}
+              onClick={() =>
+                move(1)
+              }
+              style={
+                navButtonStyle()
+              }
             >
               ›
             </button>
@@ -1462,7 +2336,7 @@ function SimilarGames({
 }
 
 /* =========================================================
-   ESTADO DE CARGA
+   LOADING
 ========================================================= */
 
 function LoadingBar({
@@ -1471,19 +2345,26 @@ function LoadingBar({
   return (
     <div
       style={{
-        position: "relative",
-        width: "100%",
-        height: 3,
-        overflow: "hidden",
-        background: "rgba(255,255,255,.05)",
+        height:
+          3,
+
+        background:
+          "rgba(255,255,255,.05)",
+
+        overflow:
+          "hidden",
       }}
     >
       <div
         style={{
-          width: "42%",
-          height: "100%",
-          background: accent,
-          opacity: 0.85,
+          width:
+            "40%",
+
+          height:
+            "100%",
+
+          background:
+            accent,
         }}
       />
     </div>
@@ -1491,7 +2372,7 @@ function LoadingBar({
 }
 
 /* =========================================================
-   OVERLAY COMPLETO
+   MAIN
 ========================================================= */
 
 export default function FullGameOverlay({
@@ -1499,107 +2380,219 @@ export default function FullGameOverlay({
   onClose,
   onBack,
 }) {
-  const mobile = useMediaQuery(
-    "(max-width: 767px)"
+  const [
+    viewport,
+    setViewport,
+  ] = useState(
+    getViewport
   );
 
-  const overlayRef = useRef(null);
+  const overlayRef =
+    useRef(null);
 
-  const [activeGame, setActiveGame] =
-    useState(game);
+  const [
+    activeGame,
+    setActiveGame,
+  ] = useState(
+    game
+  );
 
-  const [masterGame, setMasterGame] =
-    useState(null);
+  const [
+    masterGame,
+    setMasterGame,
+  ] = useState(null);
 
-  const [loading, setLoading] =
-    useState(false);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  const [loadError, setLoadError] =
-    useState(null);
+  const [
+    loadError,
+    setLoadError,
+  ] = useState(null);
 
-  const [gameHistory, setGameHistory] =
-    useState([]);
-
-  useEffect(() => {
-    setActiveGame(game);
-    setMasterGame(null);
-    setLoadError(null);
-    setGameHistory([]);
-  }, [game?.id]);
+  const [
+    gameHistory,
+    setGameHistory,
+  ] = useState([]);
 
   /* =======================================================
-     CARGAR FICHA MAESTRA
+     VIEWPORT
   ======================================================= */
 
   useEffect(() => {
-    const gameId = activeGame?.id;
+    function update() {
+      setViewport(
+        getViewport()
+      );
+    }
+
+    update();
+
+    window.addEventListener(
+      "resize",
+      update
+    );
+
+    window.addEventListener(
+      "orientationchange",
+      update
+    );
+
+    window.visualViewport
+      ?.addEventListener(
+        "resize",
+        update
+      );
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        update
+      );
+
+      window.removeEventListener(
+        "orientationchange",
+        update
+      );
+
+      window.visualViewport
+        ?.removeEventListener(
+          "resize",
+          update
+        );
+    };
+  }, []);
+
+  const portrait =
+    viewport.height >=
+    viewport.width;
+
+  /* =======================================================
+     RESET
+  ======================================================= */
+
+  useEffect(() => {
+    setActiveGame(
+      game
+    );
+
+    setMasterGame(
+      null
+    );
+
+    setLoadError(
+      null
+    );
+
+    setGameHistory(
+      []
+    );
+  }, [
+    game?.id,
+  ]);
+
+  /* =======================================================
+     CARGAR MASTER
+  ======================================================= */
+
+  useEffect(() => {
+    const gameId =
+      activeGame?.id;
 
     if (!gameId) {
       return;
     }
 
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
-    let alive = true;
+    let alive =
+      true;
 
     async function loadGame() {
-      setLoading(true);
-      setLoadError(null);
+      setLoading(
+        true
+      );
+
+      setLoadError(
+        null
+      );
 
       try {
-        const response = await fetch(
-          `/api/games?id=${encodeURIComponent(
-            gameId
-          )}`,
-          {
-            method: "GET",
-            cache: "no-store",
-            signal: controller.signal,
-          }
-        );
+        const response =
+          await fetch(
+            `/api/games?id=${encodeURIComponent(
+              gameId
+            )}`,
+            {
+              method:
+                "GET",
 
-        const data = await response.json();
+              cache:
+                "no-store",
 
-        if (!response.ok) {
+              signal:
+                controller.signal,
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok
+        ) {
           throw new Error(
             data?.error ||
               `No se pudo cargar el juego ${gameId}.`
           );
         }
 
-        if (!data?.ok || !data?.game) {
+        if (
+          !data?.ok ||
+          !data?.game
+        ) {
           throw new Error(
             "La biblioteca devolvió una ficha inválida."
           );
         }
 
-        if (!alive) {
+        if (
+          alive
+        ) {
+          setMasterGame(
+            data.game
+          );
+        }
+      } catch (
+        error
+      ) {
+        if (
+          error?.name ===
+          "AbortError"
+        ) {
           return;
         }
 
-        setMasterGame(data.game);
-      } catch (error) {
-        if (error?.name === "AbortError") {
-          return;
+        if (
+          alive
+        ) {
+          setLoadError(
+            error instanceof
+              Error
+              ? error.message
+              : "No se pudo cargar la ficha completa."
+          );
         }
-
-        if (!alive) {
-          return;
-        }
-
-        console.error(
-          "[Freaky World / FullGameOverlay]",
-          error
-        );
-
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : "No se pudo cargar la ficha completa."
-        );
       } finally {
-        if (alive) {
-          setLoading(false);
+        if (
+          alive
+        ) {
+          setLoading(
+            false
+          );
         }
       }
     }
@@ -1607,68 +2600,90 @@ export default function FullGameOverlay({
     loadGame();
 
     return () => {
-      alive = false;
+      alive =
+        false;
+
       controller.abort();
     };
-  }, [activeGame?.id]);
+  }, [
+    activeGame?.id,
+  ]);
 
   const displayGame =
     masterGame &&
-    Number(masterGame.id) ===
-      Number(activeGame?.id)
+    Number(
+      masterGame.id
+    ) ===
+      Number(
+        activeGame?.id
+      )
       ? masterGame
       : activeGame;
 
-  const title = getTitle(displayGame);
-  const cover = getCover(displayGame);
-  const year = getYear(displayGame);
+  const title =
+    getTitle(
+      displayGame
+    );
 
-  const official = getScore(displayGame);
+  const cover =
+    getCover(
+      displayGame
+    );
+
+  const year =
+    getYear(
+      displayGame
+    );
+
+  const official =
+    getScore(
+      displayGame
+    );
 
   const community =
-    getCommunityScore(displayGame);
+    getCommunityScore(
+      displayGame
+    );
 
   const accent =
     activeGame?.accent ||
     game?.accent ||
     "#5fdcff";
 
-  const platforms = normalizeNamedItems(
-    displayGame?.platforms
-  );
+  const platforms =
+    normalizeNamedItems(
+      displayGame?.platforms
+    );
 
-  const genres = normalizeNamedItems(
-    displayGame?.genres
-  );
+  const genres =
+    normalizeNamedItems(
+      displayGame?.genres
+    );
 
-  const themes = normalizeNamedItems(
-    displayGame?.themes
-  );
+  const themes =
+    normalizeNamedItems(
+      displayGame?.themes
+    );
 
-  const gameModes = normalizeNamedItems(
-    displayGame?.gameModes
-  );
+  const gameModes =
+    normalizeNamedItems(
+      displayGame?.gameModes
+    );
 
-  const perspectives = normalizeNamedItems(
-    displayGame?.playerPerspectives
-  );
+  const perspectives =
+    normalizeNamedItems(
+      displayGame
+        ?.playerPerspectives
+    );
 
-  const engines = normalizeNamedItems(
-    displayGame?.gameEngines
-  );
-
-  const alternativeNames = asArray(
-    displayGame?.alternativeNames
-  )
-    .map((item) =>
-      typeof item === "string"
-        ? item
-        : item?.name
-    )
-    .filter(Boolean);
+  const engines =
+    normalizeNamedItems(
+      displayGame?.gameEngines
+    );
 
   const description =
-    displayGame?.editorialSummary ||
+    displayGame
+      ?.editorialSummary ||
     displayGame?.summary ||
     null;
 
@@ -1676,20 +2691,42 @@ export default function FullGameOverlay({
     displayGame?.storyline ||
     null;
 
+  const alternativeNames =
+    asArray(
+      displayGame
+        ?.alternativeNames
+    )
+      .map(
+        (item) =>
+          typeof item ===
+          "string"
+            ? item
+            : item?.name
+      )
+      .filter(Boolean);
+
   /* =======================================================
-     NAVEGACIÓN ENTRE SIMILARES
+     SIMILARES
   ======================================================= */
 
   function scrollOverlayTop() {
-    requestAnimationFrame(() => {
-      overlayRef.current?.scrollTo({
-        top: 0,
-        behavior: "auto",
-      });
-    });
+    requestAnimationFrame(
+      () => {
+        overlayRef.current
+          ?.scrollTo({
+            top:
+              0,
+
+            behavior:
+              "auto",
+          });
+      }
+    );
   }
 
-  function openSimilarGame(similar) {
+  function openSimilarGame(
+    similar
+  ) {
     if (
       !similar?.id ||
       !similar?.available
@@ -1697,12 +2734,16 @@ export default function FullGameOverlay({
       return;
     }
 
-    setGameHistory((current) => [
-      ...current,
-      activeGame,
-    ]);
+    setGameHistory(
+      (current) => [
+        ...current,
+        activeGame,
+      ]
+    );
 
-    setMasterGame(null);
+    setMasterGame(
+      null
+    );
 
     setActiveGame({
       ...similar,
@@ -1713,35 +2754,53 @@ export default function FullGameOverlay({
   }
 
   function goToPreviousGame() {
-    if (gameHistory.length === 0) {
+    if (
+      gameHistory.length ===
+      0
+    ) {
       return;
     }
 
     const previous =
-      gameHistory[gameHistory.length - 1];
+      gameHistory[
+        gameHistory.length -
+          1
+      ];
 
-    setGameHistory((current) =>
-      current.slice(0, -1)
+    setGameHistory(
+      (current) =>
+        current.slice(
+          0,
+          -1
+        )
     );
 
-    setMasterGame(null);
-    setActiveGame(previous);
+    setMasterGame(
+      null
+    );
+
+    setActiveGame(
+      previous
+    );
 
     scrollOverlayTop();
   }
 
   /* =======================================================
-     BLOQUEAR SCROLL DEL MUNDO
+     BODY SCROLL
   ======================================================= */
 
   useEffect(() => {
     const previous =
-      document.body.style.overflow;
+      document.body.style
+        .overflow;
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+      "hidden";
 
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.overflow =
+        previous;
     };
   }, []);
 
@@ -1750,13 +2809,22 @@ export default function FullGameOverlay({
   ======================================================= */
 
   useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key !== "Escape") {
+    function handleKeyDown(
+      event
+    ) {
+      if (
+        event.key !==
+        "Escape"
+      ) {
         return;
       }
 
-      if (gameHistory.length > 0) {
+      if (
+        gameHistory.length >
+        0
+      ) {
         goToPreviousGame();
+
         return;
       }
 
@@ -1768,363 +2836,650 @@ export default function FullGameOverlay({
       handleKeyDown
     );
 
-    return () =>
+    return () => {
       window.removeEventListener(
         "keydown",
         handleKeyDown
       );
+    };
   });
 
-  if (!activeGame?.id) {
+  if (
+    !activeGame?.id
+  ) {
     return null;
   }
 
-  const canGoToPreviousGame =
-    gameHistory.length > 0;
+  const canGoBackGame =
+    gameHistory.length >
+    0;
+
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
     <div
-      ref={overlayRef}
+      ref={
+        overlayRef
+      }
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 100000,
-        width: "100%",
-        height: "100dvh",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        background: "#080a0d",
-        color: "#ffffff",
+        position:
+          "fixed",
+
+        inset:
+          0,
+
+        zIndex:
+          100000,
+
+        width:
+          "100%",
+
+        height:
+          viewport.height,
+
+        overflowY:
+          "auto",
+
+        overflowX:
+          "hidden",
+
+        WebkitOverflowScrolling:
+          "touch",
+
+        background:
+          "#080a0d",
+
+        color:
+          "#ffffff",
+
         fontFamily:
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       }}
     >
       {/* ===================================================
-          CABECERA
+          HEADER
+          TÍTULO ÚNICO
       =================================================== */}
 
       <header
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          minHeight: 62,
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: mobile
-            ? "9px 12px"
-            : "10px 22px",
+          position:
+            "sticky",
+
+          top:
+            0,
+
+          zIndex:
+            30,
+
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          gap:
+            10,
+
+          minHeight:
+            58,
+
+          padding:
+            portrait
+              ? "8px 10px"
+              : "8px 14px",
+
           borderBottom:
-            `1px solid ${accent}44`,
-          background: "rgba(5,7,9,.94)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
+            `1px solid ${accent}33`,
+
+          background:
+            "rgba(5,7,9,.95)",
+
+          backdropFilter:
+            "blur(18px)",
+
+          WebkitBackdropFilter:
+            "blur(18px)",
         }}
       >
-        {(canGoToPreviousGame || onBack) && (
+        {(canGoBackGame ||
+          onBack) && (
           <button
             type="button"
             onClick={
-              canGoToPreviousGame
+              canGoBackGame
                 ? goToPreviousGame
                 : onBack
             }
-            style={{
-              ...navButtonStyle(),
-              flex: "0 0 auto",
-            }}
-            aria-label={
-              canGoToPreviousGame
-                ? "Volver al juego anterior"
-                : "Volver a ficha rápida"
+            style={
+              navButtonStyle()
             }
           >
             ‹
           </button>
         )}
 
+        {cover && (
+          <img
+            src={
+              cover
+            }
+            alt=""
+            style={{
+              width:
+                38,
+
+              height:
+                50,
+
+              objectFit:
+                "cover",
+
+              borderRadius:
+                6,
+            }}
+          />
+        )}
+
         <div
           style={{
-            minWidth: 0,
-            flex: 1,
+            minWidth:
+              0,
+
+            flex:
+              1,
           }}
         >
           <div
             style={{
-              color: accent,
-              fontSize: 9,
-              fontWeight: 900,
-              letterSpacing: ".16em",
-            }}
-          >
-            FREAKY WORLD · FICHA COMPLETA
-          </div>
+              overflow:
+                "hidden",
 
-          <div
-            style={{
-              marginTop: 3,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              fontSize: mobile ? 16 : 20,
-              fontWeight: 850,
+              textOverflow:
+                "ellipsis",
+
+              whiteSpace:
+                "nowrap",
+
+              fontSize:
+                portrait
+                  ? 15
+                  : 17,
+
+              fontWeight:
+                850,
             }}
           >
             {title}
           </div>
-        </div>
 
-        {loading && (
           <div
             style={{
-              flex: "0 0 auto",
-              color: "#7f8a90",
-              fontSize: 9,
-              fontWeight: 800,
-              letterSpacing: ".06em",
+              marginTop:
+                2,
+
+              overflow:
+                "hidden",
+
+              textOverflow:
+                "ellipsis",
+
+              whiteSpace:
+                "nowrap",
+
+              color:
+                "#858f95",
+
+              fontSize:
+                10,
             }}
           >
-            CARGANDO
+            {[
+              displayGame?.developer,
+              year,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </div>
-        )}
+        </div>
 
         <button
           type="button"
-          onClick={onClose}
-          aria-label="Cerrar ficha"
-          style={{
-            ...navButtonStyle(),
-            flex: "0 0 auto",
-            fontSize: 25,
-          }}
+          onClick={
+            onClose
+          }
+          style={
+            navButtonStyle()
+          }
         >
           ×
         </button>
       </header>
 
       {loading && (
-        <LoadingBar accent={accent} />
+        <LoadingBar
+          accent={
+            accent
+          }
+        />
       )}
 
       <main
         style={{
-          width: "100%",
-          maxWidth: 1320,
-          margin: "0 auto",
-          padding: mobile
-            ? "14px 12px 60px"
-            : "24px 24px 80px",
-          boxSizing: "border-box",
+          width:
+            "100%",
+
+          maxWidth:
+            1280,
+
+          margin:
+            "0 auto",
+
+          padding:
+            portrait
+              ? "12px 10px 60px"
+              : "14px 16px 70px",
+
+          boxSizing:
+            "border-box",
         }}
       >
-        {/* =================================================
-            ERROR NO DESTRUCTIVO
-        ================================================= */}
-
         {loadError && (
           <div
             style={{
-              marginBottom: 14,
-              padding: "10px 13px",
-              border:
-                "1px solid rgba(255,120,120,.25)",
-              borderRadius: 12,
+              marginBottom:
+                10,
+
+              padding:
+                10,
+
+              borderRadius:
+                10,
+
               background:
                 "rgba(120,20,20,.13)",
-              color: "#d9a1a1",
-              fontSize: 11,
-              lineHeight: 1.5,
+
+              color:
+                "#d9a1a1",
+
+              fontSize:
+                10,
             }}
           >
-            No se pudo actualizar la ficha desde la
-            biblioteca. {loadError}
+            {loadError}
           </div>
         )}
 
         {/* =================================================
-            HERO
+            HERO VERTICAL
         ================================================= */}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: mobile
-              ? "1fr"
-              : "220px minmax(0,1fr)",
-            gap: mobile ? 14 : 24,
-            alignItems: "start",
-          }}
-        >
-          {cover && (
+        {portrait ? (
+          <>
             <div
               style={{
-                width: mobile ? 150 : "100%",
-                margin: mobile ? "0 auto" : 0,
-                overflow: "hidden",
-                border:
-                  "1px solid rgba(255,255,255,.1)",
-                borderRadius: 18,
-                background: "#101318",
-                boxShadow:
-                  "0 22px 60px rgba(0,0,0,.34)",
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  cover
+                    ? "145px minmax(0,1fr)"
+                    : "1fr",
+
+                gap:
+                  12,
+
+                alignItems:
+                  "start",
               }}
             >
-              <img
-                src={cover}
-                alt={title}
-                style={{
-                  width: "100%",
-                  aspectRatio: "3 / 4",
-                  objectFit: "cover",
-                  display: "block",
-                }}
+              {cover && (
+                <div
+                  style={{
+                    overflow:
+                      "hidden",
+
+                    borderRadius:
+                      15,
+
+                    border:
+                      "1px solid rgba(255,255,255,.09)",
+
+                    background:
+                      "#101318",
+                  }}
+                >
+                  <img
+                    src={
+                      cover
+                    }
+                    alt={
+                      title
+                    }
+                    style={{
+                      width:
+                        "100%",
+
+                      aspectRatio:
+                        "3 / 4",
+
+                      objectFit:
+                        "cover",
+
+                      display:
+                        "block",
+                    }}
+                  />
+                </div>
+              )}
+
+              <div>
+                <div
+                  style={{
+                    display:
+                      "grid",
+
+                    gridTemplateColumns:
+                      "repeat(2,minmax(0,1fr))",
+
+                    gap:
+                      6,
+                  }}
+                >
+                  <ScoreBox
+                    label="Oficial"
+                    value={formatScore(
+                      official.value
+                    )}
+                    sublabel={
+                      official.votes
+                        ? `${official.votes} votos`
+                        : "Sin evaluar"
+                    }
+                    accent={
+                      accent
+                    }
+                  />
+
+                  <ScoreBox
+                    label="Comunidad"
+                    value={formatScore(
+                      community.value
+                    )}
+                    sublabel={
+                      community.votes
+                        ? `${community.votes} votos`
+                        : "Sin votos"
+                    }
+                  />
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      8,
+                  }}
+                >
+                  <DataRow
+                    label="Año"
+                    value={
+                      year
+                    }
+                  />
+
+                  <DataRow
+                    label="Desarrollador"
+                    value={
+                      displayGame
+                        ?.developer
+                    }
+                  />
+
+                  <DataRow
+                    label="Distribuidor"
+                    value={
+                      displayGame
+                        ?.publisher
+                    }
+                  />
+                </div>
+
+                {platforms.length >
+                  0 && (
+                  <div
+                    style={{
+                      display:
+                        "flex",
+
+                      flexWrap:
+                        "wrap",
+
+                      gap:
+                        5,
+
+                      marginTop:
+                        8,
+                    }}
+                  >
+                    {platforms
+                      .slice(
+                        0,
+                        4
+                      )
+                      .map(
+                        (
+                          platform
+                        ) => (
+                          <Chip
+                            key={
+                              platform
+                            }
+                            accent={
+                              accent
+                            }
+                          >
+                            {
+                              platform
+                            }
+                          </Chip>
+                        )
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop:
+                  12,
+              }}
+            >
+              <Section title="Vídeo">
+                <VideoPlayer
+                  game={
+                    displayGame
+                  }
+                />
+              </Section>
+            </div>
+          </>
+        ) : (
+          /* =================================================
+             HERO HORIZONTAL
+          ================================================= */
+
+          <>
+            <div
+              style={{
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  cover
+                    ? "180px minmax(0,1fr)"
+                    : "1fr",
+
+                gap:
+                  14,
+
+                alignItems:
+                  "start",
+              }}
+            >
+              {cover && (
+                <div
+                  style={{
+                    overflow:
+                      "hidden",
+
+                    borderRadius:
+                      15,
+
+                    border:
+                      "1px solid rgba(255,255,255,.09)",
+
+                    background:
+                      "#101318",
+                  }}
+                >
+                  <img
+                    src={
+                      cover
+                    }
+                    alt={
+                      title
+                    }
+                    style={{
+                      width:
+                        "100%",
+
+                      aspectRatio:
+                        "3 / 4",
+
+                      objectFit:
+                        "cover",
+
+                      display:
+                        "block",
+                    }}
+                  />
+                </div>
+              )}
+
+              <VideoPlayer
+                game={
+                  displayGame
+                }
+                compact
               />
             </div>
-          )}
-
-          <div
-            style={{
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                color: accent,
-                fontSize: 10,
-                fontWeight: 900,
-                letterSpacing: ".15em",
-              }}
-            >
-              {displayGame?.rank
-                ? `TOP 10 · #${displayGame.rank}`
-                : displayGame?.releaseType ||
-                  "VIDEOJUEGO"}
-            </div>
-
-            <h1
-              style={{
-                margin: "7px 0 5px",
-                fontSize: mobile
-                  ? "clamp(27px,8vw,42px)"
-                  : "clamp(34px,4vw,58px)",
-                lineHeight: 1.02,
-                letterSpacing: "-.04em",
-                fontWeight: 900,
-              }}
-            >
-              {title}
-            </h1>
 
             <div
               style={{
-                color: "#9aa4aa",
-                fontSize: 14,
-                lineHeight: 1.45,
-              }}
-            >
-              {[
-                year,
-                displayGame?.developer,
-                displayGame?.publisher,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </div>
+                display:
+                  "grid",
 
-            {/* SCORES */}
-
-            <div
-              style={{
-                display: "grid",
                 gridTemplateColumns:
-                  "repeat(3,minmax(0,1fr))",
-                gap: mobile ? 6 : 10,
-                marginTop: 18,
+                  "repeat(6,minmax(0,1fr))",
+
+                gap:
+                  6,
+
+                marginTop:
+                  10,
+
+                padding:
+                  10,
+
+                borderRadius:
+                  13,
+
+                border:
+                  "1px solid rgba(255,255,255,.07)",
+
+                background:
+                  "#101318",
               }}
             >
-              <ScoreBox
-                label="Nota oficial"
+              <HeroData
+                label="Año"
+                value={
+                  year
+                }
+              />
+
+              <HeroData
+                label="Desarrollador"
+                value={
+                  displayGame
+                    ?.developer
+                }
+              />
+
+              <HeroData
+                label="Distribuidor"
+                value={
+                  displayGame
+                    ?.publisher
+                }
+              />
+
+              <HeroData
+                label="Oficial"
                 value={formatScore(
                   official.value
                 )}
-                sublabel={
-                  official.votes
-                    ? `${official.votes} evaluaciones`
-                    : "Sin evaluar"
-                }
-                accent={accent}
               />
 
-              <ScoreBox
+              <HeroData
                 label="Comunidad"
                 value={formatScore(
                   community.value
                 )}
-                sublabel={
-                  community.votes
-                    ? `${community.votes} votos`
-                    : "Sin votos"
+              />
+
+              <HeroData
+                label="Plataformas"
+                value={
+                  platforms
+                    .slice(
+                      0,
+                      3
+                    )
+                    .join(
+                      " · "
+                    )
                 }
               />
-
-              <ScoreBox
-                label="Mi evaluación"
-                value="—"
-                sublabel="Sin valorar"
-              />
             </div>
-
-            {/* PLATAFORMAS */}
-
-            {platforms.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 6,
-                  marginTop: 16,
-                }}
-              >
-                {platforms.map((item) => (
-                  <Chip
-                    key={item}
-                    accent={accent}
-                  >
-                    {item}
-                  </Chip>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* =================================================
-            VÍDEOS
-        ================================================= */}
-
-        <div style={{ marginTop: 18 }}>
-          <VideoPlayer game={displayGame} />
-        </div>
+          </>
+        )}
 
         {/* =================================================
             DESCRIPCIÓN
         ================================================= */}
 
         {description && (
-          <div style={{ marginTop: 12 }}>
+          <div
+            style={{
+              marginTop:
+                12,
+            }}
+          >
             <Section title="Descripción">
-              <p
-                style={{
-                  margin: 0,
-                  whiteSpace: "pre-line",
-                  color: "#bdc5ca",
-                  fontSize: 13,
-                  lineHeight: 1.72,
-                }}
+              <CollapsibleText
+                lines={
+                  4
+                }
+                accent={
+                  accent
+                }
               >
                 {description}
-              </p>
+              </CollapsibleText>
             </Section>
           </div>
         )}
@@ -2133,143 +3488,197 @@ export default function FullGameOverlay({
             GALERÍA
         ================================================= */}
 
-        <div style={{ marginTop: 12 }}>
-          <Gallery game={displayGame} />
+        <div
+          style={{
+            marginTop:
+              12,
+          }}
+        >
+          <Gallery
+            game={
+              displayGame
+            }
+          />
         </div>
 
         {/* =================================================
-            INFORMACIÓN PRINCIPAL
+            FICHA TÉCNICA
         ================================================= */}
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: mobile
-              ? "1fr"
-              : "minmax(0,1fr) minmax(0,1fr)",
-            gap: 12,
-            marginTop: 12,
+            display:
+              "grid",
+
+            gridTemplateColumns:
+              portrait
+                ? "1fr"
+                : "1fr 1fr",
+
+            gap:
+              10,
+
+            marginTop:
+              12,
           }}
         >
           <Section title="Ficha técnica">
             <DataRow
-              mobile={mobile}
               label="Año"
-              value={year}
+              value={
+                year
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Desarrollador"
-              value={displayGame?.developer}
+              value={
+                displayGame
+                  ?.developer
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Distribuidor"
-              value={displayGame?.publisher}
+              value={
+                displayGame
+                  ?.publisher
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Saga"
               value={
                 typeof displayGame?.collection ===
                 "string"
                   ? displayGame.collection
-                  : displayGame?.collection?.name ||
-                    displayGame?.collectionName
+                  : displayGame
+                      ?.collection
+                      ?.name ||
+                    displayGame
+                      ?.collectionName
               }
             />
 
             <DataRow
-              mobile={mobile}
               label="Franquicia"
               value={
                 typeof displayGame?.franchise ===
                 "string"
                   ? displayGame.franchise
-                  : displayGame?.franchise?.name ||
-                    displayGame?.franchiseName
+                  : displayGame
+                      ?.franchise
+                      ?.name ||
+                    displayGame
+                      ?.franchiseName
               }
             />
 
             <DataRow
-              mobile={mobile}
               label="Tipo"
-              value={displayGame?.releaseType}
+              value={
+                displayGame
+                  ?.releaseType
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Plataformas"
-              value={platforms.join(" · ")}
+              value={
+                platforms.join(
+                  " · "
+                )
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Motor"
-              value={engines.join(" · ")}
+              value={
+                engines.join(
+                  " · "
+                )
+              }
             />
 
             <DataRow
-              mobile={mobile}
               label="Otros títulos"
-              value={alternativeNames.join(
-                " · "
-              )}
+              value={
+                alternativeNames.join(
+                  " · "
+                )
+              }
             />
           </Section>
 
           <Section title="Características">
             <MetaGroup
               label="Géneros"
-              values={genres}
+              values={
+                genres
+              }
               accent="#58d68d"
             />
 
             <MetaGroup
               label="Temas"
-              values={themes}
+              values={
+                themes
+              }
               accent="#f0b35a"
             />
 
             <MetaGroup
               label="Modos de juego"
-              values={gameModes}
+              values={
+                gameModes
+              }
               accent="#9c8cff"
             />
 
             <MetaGroup
               label="Perspectiva"
-              values={perspectives}
+              values={
+                perspectives
+              }
               accent="#5fdcff"
             />
           </Section>
         </div>
 
         {/* =================================================
-            IDIOMAS + EDADES
+            IDIOMAS
         ================================================= */}
 
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: mobile
-              ? "1fr"
-              : "minmax(0,1.05fr) minmax(0,.95fr)",
-            gap: 12,
-            marginTop: 12,
+            marginTop:
+              12,
           }}
         >
           <Languages
-            game={displayGame}
-            mobile={mobile}
+            game={
+              displayGame
+            }
           />
+        </div>
 
+        {/* =================================================
+            CLASIFICACIÓN
+        ================================================= */}
+
+        <div
+          style={{
+            marginTop:
+              12,
+          }}
+        >
           <AgeRatings
-            game={displayGame}
-            accent={accent}
+            game={
+              displayGame
+            }
+            accent={
+              accent
+            }
           />
         </div>
 
@@ -2278,11 +3687,23 @@ export default function FullGameOverlay({
         ================================================= */}
 
         {storyline && (
-          <div style={{ marginTop: 12 }}>
+          <div
+            style={{
+              marginTop:
+                12,
+            }}
+          >
             <Section title="Historia">
-              <CollapsibleStory accent={accent}>
+              <CollapsibleText
+                lines={
+                  4
+                }
+                accent={
+                  accent
+                }
+              >
                 {storyline}
-              </CollapsibleStory>
+              </CollapsibleText>
             </Section>
           </div>
         )}
@@ -2291,11 +3712,22 @@ export default function FullGameOverlay({
             SIMILARES
         ================================================= */}
 
-        <div style={{ marginTop: 12 }}>
+        <div
+          style={{
+            marginTop:
+              12,
+          }}
+        >
           <SimilarGames
-            game={displayGame}
-            accent={accent}
-            onOpenGame={openSimilarGame}
+            game={
+              displayGame
+            }
+            accent={
+              accent
+            }
+            onOpenGame={
+              openSimilarGame
+            }
           />
         </div>
 
@@ -2305,18 +3737,31 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 22,
+            display:
+              "flex",
+
+            justifyContent:
+              "center",
+
+            gap:
+              8,
+
+            flexWrap:
+              "wrap",
+
+            marginTop:
+              18,
           }}
         >
-          {canGoToPreviousGame ? (
+          {canGoBackGame ? (
             <button
               type="button"
-              onClick={goToPreviousGame}
-              style={secondaryActionStyle()}
+              onClick={
+                goToPreviousGame
+              }
+              style={
+                secondaryButtonStyle()
+              }
             >
               VOLVER AL JUEGO ANTERIOR
             </button>
@@ -2324,30 +3769,53 @@ export default function FullGameOverlay({
             onBack && (
               <button
                 type="button"
-                onClick={onBack}
-                style={secondaryActionStyle()}
+                onClick={
+                  onBack
+                }
+                style={
+                  secondaryButtonStyle()
+                }
               >
-                VOLVER A FICHA RÁPIDA
+                VOLVER
               </button>
             )
           )}
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={
+              onClose
+            }
             style={{
-              minHeight: 44,
-              padding: "10px 20px",
-              border: `1px solid ${accent}`,
-              borderRadius: 13,
-              background: accent,
-              color: "#050708",
-              fontSize: 11,
-              fontWeight: 950,
-              cursor: "pointer",
+              minHeight:
+                42,
+
+              padding:
+                "9px 18px",
+
+              border:
+                `1px solid ${accent}`,
+
+              borderRadius:
+                12,
+
+              background:
+                accent,
+
+              color:
+                "#050708",
+
+              fontSize:
+                10,
+
+              fontWeight:
+                950,
+
+              cursor:
+                "pointer",
             }}
           >
-            VOLVER AL MUNDO
+            CERRAR
           </button>
         </div>
       </main>
@@ -2356,35 +3824,39 @@ export default function FullGameOverlay({
 }
 
 /* =========================================================
-   COMPONENTES FINALES
+   HERO DATA
 ========================================================= */
 
-function MetaGroup({
+function HeroData({
   label,
-  values,
-  accent,
+  value,
 }) {
-  if (!values?.length) {
-    return null;
+  if (!value) {
+    return (
+      <div />
+    );
   }
 
   return (
     <div
       style={{
-        paddingBottom: 14,
-        marginBottom: 14,
-        borderBottom:
-          "1px solid rgba(255,255,255,.055)",
+        minWidth:
+          0,
       }}
     >
       <div
         style={{
-          marginBottom: 8,
-          color: "#778188",
-          fontSize: 10,
-          fontWeight: 850,
-          textTransform: "uppercase",
-          letterSpacing: ".07em",
+          color:
+            "#727c83",
+
+          fontSize:
+            8,
+
+          textTransform:
+            "uppercase",
+
+          fontWeight:
+            800,
         }}
       >
         {label}
@@ -2392,35 +3864,96 @@ function MetaGroup({
 
       <div
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 6,
+          marginTop:
+            3,
+
+          overflow:
+            "hidden",
+
+          textOverflow:
+            "ellipsis",
+
+          whiteSpace:
+            "nowrap",
+
+          color:
+            "#dce1e4",
+
+          fontSize:
+            10,
+
+          fontWeight:
+            750,
         }}
       >
-        {values.map((value) => (
-          <Chip
-            key={value}
-            accent={accent}
-          >
-            {value}
-          </Chip>
-        ))}
+        {value}
       </div>
     </div>
   );
 }
 
-function secondaryActionStyle() {
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+function expandButtonStyle() {
   return {
-    minHeight: 44,
-    padding: "10px 18px",
+    marginTop:
+      10,
+
+    padding:
+      0,
+
     border:
-      "1px solid rgba(255,255,255,.15)",
-    borderRadius: 13,
-    background: "#181d22",
-    color: "#ffffff",
-    fontSize: 11,
-    fontWeight: 900,
-    cursor: "pointer",
+      0,
+
+    background:
+      "transparent",
+
+    color:
+      "#8bdff5",
+
+    fontSize:
+      9,
+
+    fontWeight:
+      900,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+  };
+}
+
+function secondaryButtonStyle() {
+  return {
+    minHeight:
+      42,
+
+    padding:
+      "9px 16px",
+
+    border:
+      "1px solid rgba(255,255,255,.13)",
+
+    borderRadius:
+      12,
+
+    background:
+      "#171b20",
+
+    color:
+      "#ffffff",
+
+    fontSize:
+      10,
+
+    fontWeight:
+      900,
+
+    cursor:
+      "pointer",
   };
 }
