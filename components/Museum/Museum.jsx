@@ -1,92 +1,34 @@
-import DpadWing from "./DpadWing";
-import PopularTodayHall from "./PopularTodayHall";
-import ManufacturerStand from "../ManufacturerHall/ManufacturerStand";
+import MainHall from "./MainHall";
 
 /* =========================================================
    FREAKY WORLD — MUSEUM
 
-   Las cuatro alas conservan la misma carcasa.
+   NUEVA ESTRUCTURA
 
-   NORTE → Populares hoy
-   SUR   → Fabricantes
-   ESTE  → Vacía
-   OESTE → Vacía
+   Antes:
+   - 4 edificios separados
+   - norte / sur / este / oeste
+
+   Ahora:
+   - 1 único edificio
+   - planta completa en forma de cruceta
+   - interior continuo
+   - preparada para distribuir contenidos después
+
+   IMPORTANTE:
+   por ahora dejamos el interior vacío a propósito.
+   Primero validamos:
+   - escala
+   - circulación
+   - cámara
+   - suelo
+   - rendimiento
 ========================================================= */
 
 export default function Museum() {
   return (
     <group>
-      {/* ===================================================
-          NORTE — POPULARES HOY
-      =================================================== */}
-
-      <DpadWing
-        position={[
-          0,
-          0,
-          -85,
-        ]}
-        rotation={[
-          0,
-          0,
-          0,
-        ]}
-      >
-        <PopularTodayHall />
-      </DpadWing>
-
-      {/* ===================================================
-          SUR — FABRICANTES
-      =================================================== */}
-
-      <DpadWing
-        position={[
-          0,
-          0,
-          85,
-        ]}
-        rotation={[
-          0,
-          Math.PI,
-          0,
-        ]}
-      >
-        <ManufacturerStand />
-      </DpadWing>
-
-      {/* ===================================================
-          ESTE — VACÍA
-      =================================================== */}
-
-      <DpadWing
-        position={[
-          85,
-          0,
-          0,
-        ]}
-        rotation={[
-          0,
-          -Math.PI / 2,
-          0,
-        ]}
-      />
-
-      {/* ===================================================
-          OESTE — VACÍA
-      =================================================== */}
-
-      <DpadWing
-        position={[
-          -85,
-          0,
-          0,
-        ]}
-        rotation={[
-          0,
-          Math.PI / 2,
-          0,
-        ]}
-      />
+      <MainHall />
     </group>
   );
 }
