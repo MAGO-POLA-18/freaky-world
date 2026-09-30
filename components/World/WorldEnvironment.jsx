@@ -10,568 +10,381 @@ import {
 import Museum from "../Museum/Museum";
 
 /* =========================================================
-   FREAKY WORLD — WORLD ENVIRONMENT
-   VERSIÓN MANDO FAMILY GAME / NES-LIKE
+   FREAKY WORLD — CONTROLLER BASE
 
-   Objetivo:
-   - el mundo entero es el joystick
-   - proporción coherente entre:
-     - cruceta / hall
-     - botones A / B
-     - select / start
-   - cambio visual / estructural
-   - sin tocar la lógica existente
+   PRUEBA DE ESCALA LIMPIA
+
+   OBJETIVO:
+
+   - una única superficie plana
+   - completamente caminable
+   - mando claramente legible
+   - cruceta/hall a la izquierda
+   - botones a la derecha
+   - Select / Start en el centro
+   - iluminación fuerte temporal
 ========================================================= */
 
 /* =========================================================
-   MEDIDAS GENERALES DEL MANDO
+   MANDO
 ========================================================= */
 
-const PAD_WIDTH = 300;
-const PAD_DEPTH = 170;
-const PAD_HEIGHT = 1.8;
+const CONTROLLER_WIDTH = 320;
+const CONTROLLER_DEPTH = 180;
 
-/*
-  La superficie superior jugable del mando
-  queda exactamente en Y = 0.
-*/
-const PAD_TOP_Y = 0;
+const CONTROLLER_HEIGHT = 2;
+
+const CONTROLLER_TOP_Y = 0;
 
 /* =========================================================
-   COLORES
+   COLORES FAMILY / FAMICOM INSPIRADOS
 ========================================================= */
 
 const COLORS = {
-  underFloor: "#2a2523",
+  body: "#d8d0c2",
+  bodySide: "#bcb2a2",
 
-  shell: "#d6cdbd",
-  shellShadow: "#beb3a1",
+  burgundy: "#7a2639",
+  burgundyDark: "#541b29",
 
-  inset: "#c7bca9",
-  insetDark: "#b3a693",
+  buttonDark: "#28272a",
+  buttonMid: "#464449",
 
-  burgundy: "#7a2e3c",
-  burgundyDark: "#57202b",
-
-  darkGray: "#48484c",
-  darkGray2: "#59595e",
-
-  black: "#121215",
-  blackSoft: "#202024",
-
-  textGray: "#8d867e",
+  line: "#9d9180",
 };
 
 /* =========================================================
-   POSICIONES MAESTRAS
+   BOTONES GRANDES
 
-   D-pad / Hall:
-   - lo coloca Museum.jsx
+   El tamaño está relacionado con la cruceta/hall.
 
-   Botones:
-   - suficientemente grandes para futuro uso
-   - proporcionales al hall
+   No son pequeños botones decorativos:
+   en el futuro podrán convertirse en espacios utilizables.
 ========================================================= */
 
-const BUTTON_A_POS = [96, 0, -18];
-const BUTTON_B_POS = [58, 0, 18];
+const ACTION_BUTTON_RADIUS = 25;
 
-const BUTTON_RADIUS = 27;
+const BUTTON_A = [
+  102,
+  0,
+  -22,
+];
 
-const SELECT_POS = [-2, 0, 34];
-const START_POS = [30, 0, 34];
-
-/* =========================================================
-   SUELO INFERIOR GENERAL
-
-   Solo para no dejar vacío alrededor del mando.
-========================================================= */
-
-function UnderFloor() {
-  return (
-    <RigidBody
-      type="fixed"
-      colliders="cuboid"
-    >
-      <mesh
-        position={[
-          0,
-          -2.15,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            520,
-            2,
-            320,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={COLORS.underFloor}
-          roughness={1}
-        />
-      </mesh>
-    </RigidBody>
-  );
-}
+const BUTTON_B = [
+  62,
+  0,
+  20,
+];
 
 /* =========================================================
-   CUERPO PRINCIPAL DEL MANDO
-========================================================= */
-
-function ControllerShell() {
-  return (
-    <group>
-      {/* ===================================================
-          CUERPO EXTERIOR CREMA
-      =================================================== */}
-
-      <RigidBody
-        type="fixed"
-        colliders={false}
-      >
-        <RoundedBox
-          position={[
-            0,
-            -PAD_HEIGHT / 2,
-            0,
-          ]}
-          args={[
-            PAD_WIDTH,
-            PAD_HEIGHT,
-            PAD_DEPTH,
-          ]}
-          radius={9}
-          smoothness={4}
-          castShadow
-          receiveShadow
-        >
-          <meshStandardMaterial
-            color={COLORS.shell}
-            roughness={0.86}
-            metalness={0.03}
-          />
-        </RoundedBox>
-
-        <CuboidCollider
-          position={[
-            0,
-            -PAD_HEIGHT / 2,
-            0,
-          ]}
-          args={[
-            PAD_WIDTH / 2,
-            PAD_HEIGHT / 2,
-            PAD_DEPTH / 2,
-          ]}
-        />
-      </RigidBody>
-
-      {/* ===================================================
-          PLACA INTERIOR SUAVE
-
-          Unifica el "play area".
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          0,
-          -0.045,
-          0,
-        ]}
-        args={[
-          280,
-          0.09,
-          148,
-        ]}
-        radius={7}
-        smoothness={4}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={COLORS.inset}
-          roughness={0.9}
-          metalness={0.02}
-        />
-      </RoundedBox>
-
-      {/* ===================================================
-          PLACA BORDÓ DERECHA
-
-          Zona visual de botones / acciones.
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          70,
-          -0.03,
-          8,
-        ]}
-        args={[
-          150,
-          0.06,
-          78,
-        ]}
-        radius={6}
-        smoothness={4}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={COLORS.burgundy}
-          roughness={0.82}
-          metalness={0.02}
-        />
-      </RoundedBox>
-
-      {/* ===================================================
-          PLACA CENTRAL PARA SELECT / START
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          14,
-          -0.028,
-          34,
-        ]}
-        args={[
-          92,
-          0.055,
-          26,
-        ]}
-        radius={4}
-        smoothness={4}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={COLORS.insetDark}
-          roughness={0.88}
-          metalness={0.02}
-        />
-      </RoundedBox>
-
-      {/* ===================================================
-          SOMBRA IZQUIERDA BAJO LA CRUCETA-HALL
-
-          Ayuda a integrarla como parte real del mando.
-      =================================================== */}
-
-      <RoundedBox
-        position={[
-          -89,
-          -0.025,
-          0,
-        ]}
-        args={[
-          118,
-          0.05,
-          118,
-        ]}
-        radius={8}
-        smoothness={4}
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={COLORS.blackSoft}
-          roughness={0.95}
-          metalness={0.01}
-        />
-      </RoundedBox>
-    </group>
-  );
-}
-
-/* =========================================================
-   BOTÓN CIRCULAR
-
-   Por ahora:
-   - gran volumen visual
-   - proporcional
-   - preparado para futuro uso como sala
-
-   Se mantiene al ras del mando para no romper
-   la caminata ni exigir salto.
+   BOTÓN A / B
 ========================================================= */
 
 function ActionButton({
   position,
-  label,
 }) {
   return (
-    <group position={position}>
-      {/* anillo exterior */}
+    <group
+      position={[
+        position[0],
+        0,
+        position[2],
+      ]}
+    >
+      {/* BASE */}
 
       <mesh
         position={[
           0,
-          -0.05,
+          0.55,
           0,
         ]}
-        receiveShadow
         castShadow
+        receiveShadow
       >
         <cylinderGeometry
           args={[
-            BUTTON_RADIUS,
-            BUTTON_RADIUS,
-            0.1,
+            ACTION_BUTTON_RADIUS +
+              2,
+            ACTION_BUTTON_RADIUS +
+              2,
+            1.1,
             48,
           ]}
         />
 
         <meshStandardMaterial
-          color={COLORS.burgundyDark}
-          roughness={0.8}
+          color={
+            COLORS.burgundyDark
+          }
+          roughness={0.78}
           metalness={0.02}
         />
       </mesh>
 
-      {/* cara superior */}
+      {/* BOTÓN */}
 
       <mesh
         position={[
           0,
-          -0.03,
+          1.25,
           0,
         ]}
-        receiveShadow
         castShadow
+        receiveShadow
       >
         <cylinderGeometry
           args={[
-            BUTTON_RADIUS - 4,
-            BUTTON_RADIUS - 4,
-            0.06,
+            ACTION_BUTTON_RADIUS,
+            ACTION_BUTTON_RADIUS,
+            1.5,
             48,
           ]}
         />
 
         <meshStandardMaterial
-          color={COLORS.burgundy}
-          roughness={0.72}
+          color={
+            COLORS.burgundy
+          }
+          roughness={0.66}
           metalness={0.04}
         />
       </mesh>
-
-      {/* núcleo oscuro */}
-
-      <mesh
-        position={[
-          0,
-          -0.01,
-          0,
-        ]}
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            BUTTON_RADIUS - 9,
-            BUTTON_RADIUS - 9,
-            0.02,
-            40,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={COLORS.blackSoft}
-          roughness={0.94}
-          metalness={0.01}
-        />
-      </mesh>
-
-      {/* letra */}
-
-      <mesh
-        position={[
-          0,
-          0.004,
-          0,
-        ]}
-        rotation={[
-          -Math.PI / 2,
-          0,
-          0,
-        ]}
-      >
-        <ringGeometry
-          args={[
-            0.001,
-            0.0015,
-            8,
-          ]}
-        />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-        />
-      </mesh>
-
-      <group
-        position={[
-          0,
-          0.008,
-          0,
-        ]}
-      >
-        <mesh>
-          <boxGeometry
-            args={[
-              0.001,
-              0.001,
-              0.001,
-            ]}
-          />
-          <meshBasicMaterial
-            transparent
-            opacity={0}
-          />
-        </mesh>
-      </group>
     </group>
   );
 }
 
 /* =========================================================
-   BOTONES SELECT / START
+   SELECT / START
+
+   También proporcionados al mando gigante.
 ========================================================= */
 
 function CenterButton({
-  position,
-  width = 24,
-  depth = 9,
-  color = COLORS.darkGray,
+  x,
 }) {
   return (
     <RoundedBox
       position={[
-        position[0],
-        -0.035,
-        position[2],
+        x,
+        0.55,
+        35,
       ]}
       args={[
-        width,
-        0.07,
-        depth,
+        29,
+        1.1,
+        11,
       ]}
-      radius={2.3}
+      radius={3}
       smoothness={4}
       castShadow
       receiveShadow
     >
       <meshStandardMaterial
-        color={color}
-        roughness={0.78}
-        metalness={0.05}
+        color={
+          COLORS.buttonDark
+        }
+        roughness={0.72}
+        metalness={0.04}
       />
     </RoundedBox>
   );
 }
 
 /* =========================================================
-   DETALLES VISUALES
+   SUPERFICIE COMPLETA DEL MANDO
+========================================================= */
+
+function ControllerBody() {
+  return (
+    <RigidBody
+      type="fixed"
+      colliders={false}
+    >
+      {/* ===================================================
+          CARCASA
+
+          La cara superior queda exactamente en Y = 0.
+      =================================================== */}
+
+      <RoundedBox
+        position={[
+          0,
+          -CONTROLLER_HEIGHT /
+            2,
+          0,
+        ]}
+        args={[
+          CONTROLLER_WIDTH,
+          CONTROLLER_HEIGHT,
+          CONTROLLER_DEPTH,
+        ]}
+        radius={10}
+        smoothness={4}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial
+          color={COLORS.body}
+          roughness={0.86}
+          metalness={0.01}
+        />
+      </RoundedBox>
+
+      {/* ===================================================
+          COLISIÓN ÚNICA
+
+          TODO EL RECTÁNGULO ES CAMINABLE.
+      =================================================== */}
+
+      <CuboidCollider
+        position={[
+          0,
+          -CONTROLLER_HEIGHT /
+            2,
+          0,
+        ]}
+        args={[
+          CONTROLLER_WIDTH / 2,
+          CONTROLLER_HEIGHT / 2,
+          CONTROLLER_DEPTH / 2,
+        ]}
+      />
+    </RigidBody>
+  );
+}
+
+/* =========================================================
+   DETALLES MUY SIMPLES
+
+   Nada de paneles gigantes ni superficies oscuras.
+
+   Solo unas líneas para ayudar a leer el objeto.
 ========================================================= */
 
 function ControllerDetails() {
   return (
     <group>
-      {/* línea bordó inferior */}
+      {/* línea superior */}
 
       <RoundedBox
         position={[
           0,
-          -0.02,
-          -54,
+          0.025,
+          -66,
         ]}
         args={[
-          214,
-          0.04,
-          10,
+          250,
+          0.05,
+          3,
         ]}
-        radius={2}
+        radius={1.2}
         smoothness={3}
       >
         <meshStandardMaterial
-          color={COLORS.burgundy}
+          color={
+            COLORS.burgundy
+          }
           roughness={0.82}
         />
       </RoundedBox>
 
-      {/* línea bordó superior */}
+      {/* línea inferior */}
 
       <RoundedBox
         position={[
           0,
-          -0.02,
-          58,
+          0.025,
+          66,
         ]}
         args={[
-          214,
-          0.04,
-          8,
+          250,
+          0.05,
+          3,
         ]}
-        radius={2}
+        radius={1.2}
         smoothness={3}
       >
         <meshStandardMaterial
-          color={COLORS.burgundy}
+          color={
+            COLORS.burgundy
+          }
           roughness={0.82}
         />
       </RoundedBox>
 
-      {/* select */}
+      {/* botones centrales */}
 
       <CenterButton
-        position={SELECT_POS}
-        width={24}
-        depth={9}
-        color={COLORS.darkGray2}
+        x={5}
       />
-
-      {/* start */}
 
       <CenterButton
-        position={START_POS}
-        width={24}
-        depth={9}
-        color={COLORS.darkGray}
+        x={40}
       />
 
-      {/* A */}
+      {/* A / B */}
 
       <ActionButton
-        position={BUTTON_A_POS}
-        label="A"
+        position={BUTTON_A}
       />
 
-      {/* B */}
-
       <ActionButton
-        position={BUTTON_B_POS}
-        label="B"
+        position={BUTTON_B}
       />
     </group>
   );
 }
 
 /* =========================================================
-   WORLD ENVIRONMENT
+   WORLD
 ========================================================= */
 
 export default function WorldEnvironment() {
   return (
     <group>
-      <UnderFloor />
+      {/* ===================================================
+          ILUMINACIÓN TEMPORAL DE TRABAJO
 
-      <ControllerShell />
+          NO reemplaza el cielo.
+
+          Simplemente evita que el mando quede oscuro
+          mientras definimos arquitectura y escala.
+      =================================================== */}
+
+      <ambientLight
+        intensity={2.2}
+      />
+
+      <hemisphereLight
+        intensity={1.7}
+        groundColor="#8d8476"
+      />
+
+      <directionalLight
+        position={[
+          80,
+          120,
+          70,
+        ]}
+        intensity={2.3}
+        castShadow={false}
+      />
+
+      {/* ===================================================
+          SUPERFICIE ÚNICA
+      =================================================== */}
+
+      <ControllerBody />
+
+      {/* ===================================================
+          DETALLES
+      =================================================== */}
 
       <ControllerDetails />
 
       {/* ===================================================
-          MUSEUM = CRUCETA / HALL
-
-          Se posiciona aparte en Museum.jsx
+          CRUCETA / HALL
       =================================================== */}
 
       <Museum />
