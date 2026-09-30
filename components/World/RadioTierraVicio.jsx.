@@ -1,194 +1,80 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
-/* =========================================================
-   RADIO TIERRA VICIO — PRUEBA 1
-
-   Esta primera versión NO utiliza música externa.
-
-   Objetivo:
-   - probar audio en iPhone / Android / PC
-   - play / pausa
-   - mute
-   - volumen
-   - cambio de estación
-   - recordar preferencias
-
-   Después sustituiremos el generador por pistas reales
-   sin cambiar la interfaz.
-========================================================= */
+import { useEffect, useRef, useState } from "react";
 
 const STATIONS = [
   {
-    id: "tierra-vicio",
-    name: "Tierra Vicio",
-    subtitle: "Radio principal",
-    icon: "TV",
-    frequencies: [
-      110,
-      164.81,
-      220,
-    ],
-    pulse: 0.75,
-    filter: 1250,
+    id: "rpgn",
+    name: "RPGN Radio",
+    subtitle: "Game Music Radio",
+    badge: "GAME",
+    url: "https://listen.rpgamers.net/rpgn",
   },
-
   {
-    id: "retro",
-    name: "Retro",
-    subtitle: "8/16 bits",
-    icon: "8B",
-    frequencies: [
-      130.81,
-      196,
-      261.63,
-    ],
-    pulse: 0.32,
-    filter: 2100,
+    id: "radiosega",
+    name: "RadioSEGA",
+    subtitle: "SEGA music 24/7",
+    badge: "SEGA",
+    url: "https://icecast.radiosega.net/rs-mpeg.mp3",
   },
-
   {
-    id: "ambient",
-    name: "Ambient",
-    subtitle: "Exploración",
-    icon: "AM",
-    frequencies: [
-      82.41,
-      123.47,
-      164.81,
-    ],
-    pulse: 1.8,
-    filter: 780,
+    id: "chiptune",
+    name: "Chiptune 24/7",
+    subtitle: "8-bit · 16-bit · demoscene",
+    badge: "8BIT",
+    url: "https://radio.zelerk.com/listen/chiptune/stream.mp3",
+  },
+  {
+    id: "vapor",
+    name: "Vapor Funk",
+    subtitle: "Future funk · vaporwave",
+    badge: "VPR",
+    url: "https://radio.zelerk.com/listen/vapor/stream.mp3",
   },
 ];
 
-const STORAGE_VOLUME =
-  "freakyRadioVolume";
+const STORAGE_STATION = "tierraVicioRadioStation";
+const STORAGE_VOLUME = "tierraVicioRadioVolume";
+const STORAGE_MUTED = "tierraVicioRadioMuted";
 
-const STORAGE_STATION =
-  "freakyRadioStation";
+export default function RadioTierraVicio() {
+  const audioRef = useRef(null);
+  const userPausedRef = useRef(false);
 
-const STORAGE_MUTED =
-  "freakyRadioMuted";
-
-/* =========================================================
-   COMPONENTE
-========================================================= */
-
-export default function RadioTierraVicio({
-  mobile = false,
-}) {
-  const [
-    open,
-    setOpen,
-  ] = useState(false);
-
-  const [
-    playing,
-    setPlaying,
-  ] = useState(false);
-
-  const [
-    muted,
-    setMuted,
-  ] = useState(false);
-
-  const [
-    volume,
-    setVolume,
-  ] = useState(0.35);
-
-  const [
-    stationId,
-    setStationId,
-  ] = useState(
-    "tierra-vicio"
-  );
-
-  const audioContextRef =
-    useRef(null);
-
-  const masterGainRef =
-    useRef(null);
-
-  const stationNodesRef =
-    useRef([]);
-
-  const intervalRef =
-    useRef(null);
-
-  /* =======================================================
-     ESTACIÓN ACTUAL
-  ======================================================= */
+  const [open, setOpen] = useState(false);
+  const [stationId, setStationId] = useState("rpgn");
+  const [volume, setVolume] = useState(0.35);
+  const [muted, setMuted] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [status, setStatus] = useState("Esperando interacción");
 
   const station =
-    STATIONS.find(
-      (item) =>
-        item.id ===
-        stationId
-    ) ||
+    STATIONS.find((item) => item.id === stationId) ||
     STATIONS[0];
-
-  /* =======================================================
-     CARGAR PREFERENCIAS
-  ======================================================= */
 
   useEffect(() => {
     try {
-      const savedVolume =
-        window.localStorage
-          .getItem(
-            STORAGE_VOLUME
-          );
-
       const savedStation =
-        window.localStorage
-          .getItem(
-            STORAGE_STATION
-          );
+        window.localStorage.getItem(
+          STORAGE_STATION
+        );
+
+      const savedVolume =
+        Number(
+          window.localStorage.getItem(
+            STORAGE_VOLUME
+          )
+        );
 
       const savedMuted =
-        window.localStorage
-          .getItem(
-            STORAGE_MUTED
-          );
-
-      if (
-        savedVolume !==
-        null
-      ) {
-        const parsed =
-          Number(
-            savedVolume
-          );
-
-        if (
-          Number.isFinite(
-            parsed
-          )
-        ) {
-          setVolume(
-            Math.min(
-              1,
-              Math.max(
-                0,
-                parsed
-              )
-            )
-          );
-        }
-      }
+        window.localStorage.getItem(
+          STORAGE_MUTED
+        );
 
       if (
         STATIONS.some(
           (item) =>
-            item.id ===
-            savedStation
+            item.id === savedStation
         )
       ) {
         setStationId(
@@ -197,1060 +83,461 @@ export default function RadioTierraVicio({
       }
 
       if (
-        savedMuted ===
-        "true"
+        Number.isFinite(
+          savedVolume
+        ) &&
+        savedVolume >= 0 &&
+        savedVolume <= 1
+      ) {
+        setVolume(
+          savedVolume
+        );
+      }
+
+      if (
+        savedMuted === "true"
       ) {
         setMuted(true);
       }
     } catch {
-      // localStorage puede no estar disponible
+      // Preferencias opcionales.
     }
   }, []);
 
-  /* =======================================================
-     GUARDAR VOLUMEN
-  ======================================================= */
-
   useEffect(() => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.volume =
+      volume;
+
+    audio.muted =
+      muted;
+
     try {
-      window.localStorage
-        .setItem(
-          STORAGE_VOLUME,
-          String(volume)
-        );
+      window.localStorage.setItem(
+        STORAGE_VOLUME,
+        String(volume)
+      );
+
+      window.localStorage.setItem(
+        STORAGE_MUTED,
+        String(muted)
+      );
     } catch {
-      // ignorar
+      // Preferencias opcionales.
     }
   }, [
     volume,
+    muted,
   ]);
-
-  /* =======================================================
-     GUARDAR ESTACIÓN
-  ======================================================= */
 
   useEffect(() => {
     try {
-      window.localStorage
-        .setItem(
-          STORAGE_STATION,
-          stationId
-        );
+      window.localStorage.setItem(
+        STORAGE_STATION,
+        stationId
+      );
     } catch {
-      // ignorar
+      // Preferencias opcionales.
     }
   }, [
     stationId,
   ]);
 
-  /* =======================================================
-     GUARDAR MUTE
-  ======================================================= */
-
   useEffect(() => {
-    try {
-      window.localStorage
-        .setItem(
-          STORAGE_MUTED,
-          String(muted)
-        );
-    } catch {
-      // ignorar
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    const wasPlaying =
+      !audio.paused;
+
+    audio.src =
+      station.url;
+
+    audio.load();
+
+    setStatus(
+      wasPlaying
+        ? "Conectando…"
+        : "Lista"
+    );
+
+    if (
+      wasPlaying
+    ) {
+      audio
+        .play()
+        .then(() => {
+          setPlaying(true);
+          setStatus(
+            "En directo"
+          );
+        })
+        .catch(() => {
+          setPlaying(false);
+          setStatus(
+            "Toca ▶ para escuchar"
+          );
+        });
     }
   }, [
-    muted,
+    station.id,
+    station.url,
   ]);
 
-  /* =======================================================
-     CREAR AUDIO CONTEXT
+  useEffect(() => {
+    const unlockAndPlay =
+      () => {
+        const audio =
+          audioRef.current;
 
-     Se crea SOLO después de interacción humana.
-     Esto es importante para iOS / Safari.
-  ======================================================= */
+        if (
+          !audio ||
+          userPausedRef.current ||
+          !audio.paused
+        ) {
+          return;
+        }
 
-  function ensureAudioContext() {
-    if (
-      audioContextRef.current
-    ) {
-      const context =
-        audioContextRef.current;
+        audio
+          .play()
+          .then(() => {
+            setPlaying(
+              true
+            );
 
-      if (
-        context.state ===
-        "suspended"
-      ) {
-        context.resume();
+            setStatus(
+              "En directo"
+            );
+          })
+          .catch(() => {
+            setStatus(
+              "Toca ▶ para escuchar"
+            );
+          });
+      };
+
+    window.addEventListener(
+      "pointerdown",
+      unlockAndPlay,
+      {
+        once: true,
+        capture: true,
       }
-
-      return context;
-    }
-
-    const AudioContextClass =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    if (
-      !AudioContextClass
-    ) {
-      return null;
-    }
-
-    const context =
-      new AudioContextClass();
-
-    const masterGain =
-      context.createGain();
-
-    masterGain.gain.value =
-      muted
-        ? 0
-        : volume;
-
-    masterGain.connect(
-      context.destination
     );
 
-    audioContextRef.current =
-      context;
+    window.addEventListener(
+      "keydown",
+      unlockAndPlay,
+      {
+        once: true,
+        capture: true,
+      }
+    );
 
-    masterGainRef.current =
-      masterGain;
-
-    return context;
-  }
-
-  /* =======================================================
-     ELIMINAR SONIDOS DE ESTACIÓN
-  ======================================================= */
-
-  function stopStationNodes() {
-    if (
-      intervalRef.current
-    ) {
-      window.clearInterval(
-        intervalRef.current
+    return () => {
+      window.removeEventListener(
+        "pointerdown",
+        unlockAndPlay,
+        true
       );
 
-      intervalRef.current =
-        null;
-    }
-
-    stationNodesRef.current
-      .forEach(
-        (
-          node
-        ) => {
-          try {
-            node.stop();
-          } catch {
-            // ya detenido
-          }
-
-          try {
-            node.disconnect();
-          } catch {
-            // ignorar
-          }
-        }
+      window.removeEventListener(
+        "keydown",
+        unlockAndPlay,
+        true
       );
+    };
+  }, []);
 
-    stationNodesRef.current =
-      [];
-  }
+  function togglePlay() {
+    const audio =
+      audioRef.current;
 
-  /* =======================================================
-     NOTA CORTA RETRO
-  ======================================================= */
-
-  function playRetroNote(
-    context,
-    frequency
-  ) {
-    if (
-      !masterGainRef.current
-    ) {
+    if (!audio) {
       return;
     }
 
-    const oscillator =
-      context.createOscillator();
-
-    const gain =
-      context.createGain();
-
-    oscillator.type =
-      "square";
-
-    oscillator.frequency
-      .setValueAtTime(
-        frequency,
-        context.currentTime
-      );
-
-    gain.gain
-      .setValueAtTime(
-        0.0001,
-        context.currentTime
-      );
-
-    gain.gain
-      .exponentialRampToValueAtTime(
-        0.055,
-        context.currentTime +
-          0.015
-      );
-
-    gain.gain
-      .exponentialRampToValueAtTime(
-        0.0001,
-        context.currentTime +
-          0.22
-      );
-
-    oscillator.connect(
-      gain
-    );
-
-    gain.connect(
-      masterGainRef.current
-    );
-
-    oscillator.start();
-
-    oscillator.stop(
-      context.currentTime +
-        0.24
-    );
-  }
-
-  /* =======================================================
-     INICIAR ESTACIÓN
-  ======================================================= */
-
-  function startStation(
-    selectedStation =
-      station
-  ) {
-    const context =
-      ensureAudioContext();
-
-    if (!context) {
-      return;
-    }
-
-    stopStationNodes();
-
-    /* -----------------------------------------------------
-       RETRO
-    ----------------------------------------------------- */
-
     if (
-      selectedStation.id ===
-      "retro"
+      !audio.paused
     ) {
-      let step =
-        0;
+      userPausedRef.current =
+        true;
 
-      const melody = [
-        0,
-        1,
-        2,
-        1,
-        0,
-        2,
-        1,
-        2,
-      ];
-
-      const playStep =
-        () => {
-          const index =
-            melody[
-              step %
-              melody.length
-            ];
-
-          const frequency =
-            selectedStation
-              .frequencies[
-                index
-              ];
-
-          playRetroNote(
-            context,
-            frequency
-          );
-
-          if (
-            step % 4 ===
-            0
-          ) {
-            playRetroNote(
-              context,
-              selectedStation
-                .frequencies[0] /
-                2
-            );
-          }
-
-          step +=
-            1;
-        };
-
-      playStep();
-
-      intervalRef.current =
-        window.setInterval(
-          playStep,
-          260
-        );
-
-      return;
-    }
-
-    /* -----------------------------------------------------
-       TIERRA VICIO / AMBIENT
-    ----------------------------------------------------- */
-
-    const filter =
-      context.createBiquadFilter();
-
-    filter.type =
-      "lowpass";
-
-    filter.frequency.value =
-      selectedStation.filter;
-
-    filter.Q.value =
-      selectedStation.id ===
-      "ambient"
-        ? 0.4
-        : 0.8;
-
-    filter.connect(
-      masterGainRef.current
-    );
-
-    const stationGain =
-      context.createGain();
-
-    stationGain.gain.value =
-      selectedStation.id ===
-      "ambient"
-        ? 0.075
-        : 0.065;
-
-    stationGain.connect(
-      filter
-    );
-
-    selectedStation
-      .frequencies
-      .forEach(
-        (
-          frequency,
-          index
-        ) => {
-          const oscillator =
-            context.createOscillator();
-
-          const oscillatorGain =
-            context.createGain();
-
-          oscillator.type =
-            selectedStation.id ===
-            "ambient"
-              ? "sine"
-              : index === 0
-                ? "triangle"
-                : "sine";
-
-          oscillator.frequency.value =
-            frequency;
-
-          oscillatorGain.gain.value =
-            index === 0
-              ? 0.52
-              : 0.25;
-
-          oscillator.connect(
-            oscillatorGain
-          );
-
-          oscillatorGain.connect(
-            stationGain
-          );
-
-          oscillator.start();
-
-          stationNodesRef.current
-            .push(
-              oscillator
-            );
-        }
-      );
-
-    /* -----------------------------------------------------
-       MOVIMIENTO SUAVE
-
-       Hace que no sea un tono completamente estático.
-    ----------------------------------------------------- */
-
-    const lfo =
-      context.createOscillator();
-
-    const lfoGain =
-      context.createGain();
-
-    lfo.type =
-      "sine";
-
-    lfo.frequency.value =
-      selectedStation.id ===
-      "ambient"
-        ? 0.08
-        : 0.18;
-
-    lfoGain.gain.value =
-      selectedStation.id ===
-      "ambient"
-        ? 110
-        : 180;
-
-    lfo.connect(
-      lfoGain
-    );
-
-    lfoGain.connect(
-      filter.frequency
-    );
-
-    lfo.start();
-
-    stationNodesRef.current
-      .push(
-        lfo
-      );
-  }
-
-  /* =======================================================
-     PLAY / PAUSA
-  ======================================================= */
-
-  function togglePlaying() {
-    if (
-      playing
-    ) {
-      stopStationNodes();
+      audio.pause();
 
       setPlaying(false);
 
+      setStatus(
+        "Pausada"
+      );
+
       return;
     }
 
-    startStation(
-      station
+    userPausedRef.current =
+      false;
+
+    setStatus(
+      "Conectando…"
     );
 
-    setPlaying(true);
-  }
+    audio
+      .play()
+      .then(() => {
+        setPlaying(true);
 
-  /* =======================================================
-     CAMBIO DE ESTACIÓN
-  ======================================================= */
+        setStatus(
+          "En directo"
+        );
+      })
+      .catch(() => {
+        setPlaying(false);
+
+        setStatus(
+          "No se pudo reproducir"
+        );
+      });
+  }
 
   function changeStation(
     nextStationId
   ) {
-    const nextStation =
-      STATIONS.find(
-        (item) =>
-          item.id ===
-          nextStationId
-      );
-
-    if (!nextStation) {
+    if (
+      nextStationId ===
+      stationId
+    ) {
       return;
     }
+
+    userPausedRef.current =
+      false;
 
     setStationId(
       nextStationId
     );
+  }
 
+  function handleCanPlay() {
     if (
-      playing
+      !audioRef.current?.paused
     ) {
-      startStation(
-        nextStation
+      setPlaying(true);
+
+      setStatus(
+        "En directo"
       );
     }
   }
 
-  /* =======================================================
-     MUTE
-  ======================================================= */
+  function handlePlaying() {
+    setPlaying(true);
 
-  function toggleMute() {
-    setMuted(
-      (
-        current
-      ) =>
-        !current
+    setStatus(
+      "En directo"
     );
   }
 
-  /* =======================================================
-     APLICAR VOLUMEN
-  ======================================================= */
-
-  useEffect(() => {
-    const masterGain =
-      masterGainRef.current;
-
-    const context =
-      audioContextRef.current;
-
-    if (
-      !masterGain ||
-      !context
-    ) {
-      return;
-    }
-
-    const target =
-      muted
-        ? 0
-        : volume;
-
-    masterGain.gain
-      .cancelScheduledValues(
-        context.currentTime
-      );
-
-    masterGain.gain
-      .linearRampToValueAtTime(
-        target,
-        context.currentTime +
-          0.08
-      );
-  }, [
-    volume,
-    muted,
-  ]);
-
-  /* =======================================================
-     LIMPIEZA
-  ======================================================= */
-
-  useEffect(() => {
-    return () => {
-      stopStationNodes();
-
-      if (
-        audioContextRef.current
-      ) {
-        try {
-          audioContextRef
-            .current
-            .close();
-        } catch {
-          // ignorar
-        }
-      }
-    };
-  }, []);
-
-  /* =======================================================
-     VOLUMEN VISUAL
-  ======================================================= */
-
-  const volumePercent =
-    Math.round(
-      volume *
-        100
+  function handleWaiting() {
+    setStatus(
+      "Conectando…"
     );
+  }
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
+  function handlePause() {
+    setPlaying(false);
+  }
+
+  function handleError() {
+    setPlaying(false);
+
+    setStatus(
+      "Stream no disponible"
+    );
+  }
 
   return (
-    <div
-      onPointerDown={(
-        event
-      ) => {
-        event.stopPropagation();
-      }}
-      onPointerMove={(
-        event
-      ) => {
-        event.stopPropagation();
-      }}
-      onPointerUp={(
-        event
-      ) => {
-        event.stopPropagation();
-      }}
-      style={{
-        position:
-          "fixed",
-
-        top:
-          14,
-
-        right:
-          mobile
-            ? 110
-            : 118,
-
-        zIndex:
-          120,
-
-        fontFamily:
-          "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-
-        color:
-          "#ffffff",
-      }}
-    >
-      {/* ===================================================
-          BOTÓN RADIO
-      =================================================== */}
-
-      <button
-        type="button"
-        aria-label="Radio Tierra Vicio"
-        onClick={() =>
-          setOpen(
-            (
-              current
-            ) =>
-              !current
-          )
+    <>
+      <audio
+        ref={audioRef}
+        preload="none"
+        src={station.url}
+        onCanPlay={
+          handleCanPlay
         }
+        onPlaying={
+          handlePlaying
+        }
+        onWaiting={
+          handleWaiting
+        }
+        onPause={
+          handlePause
+        }
+        onError={
+          handleError
+        }
+      />
+
+      <div
         style={{
-          width:
-            38,
+          position:
+            "fixed",
 
-          height:
-            34,
+          top:
+            14,
 
-          display:
-            "grid",
+          left:
+            14,
 
-          placeItems:
-            "center",
+          zIndex:
+            100000,
 
-          padding:
-            0,
-
-          border:
-            playing
-              ? "1px solid rgba(95,220,255,.6)"
-              : "1px solid rgba(255,255,255,.14)",
-
-          borderRadius:
-            9,
-
-          background:
-            playing
-              ? "rgba(18,68,82,.78)"
-              : "rgba(0,0,0,.48)",
-
-          backdropFilter:
-            "blur(8px)",
-
-          WebkitBackdropFilter:
-            "blur(8px)",
+          fontFamily:
+            "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
 
           color:
-            "#ffffff",
+            "#fff",
 
-          fontSize:
-            18,
-
-          fontWeight:
-            900,
-
-          cursor:
-            "pointer",
-
-          touchAction:
-            "manipulation",
-
-          boxShadow:
-            playing
-              ? "0 0 16px rgba(95,220,255,.16)"
-              : "none",
+          pointerEvents:
+            "auto",
         }}
+        onPointerDown={(
+          event
+        ) =>
+          event.stopPropagation()
+        }
+        onPointerMove={(
+          event
+        ) =>
+          event.stopPropagation()
+        }
+        onPointerUp={(
+          event
+        ) =>
+          event.stopPropagation()
+        }
       >
-        ♪
-      </button>
-
-      {/* ===================================================
-          PANEL
-      =================================================== */}
-
-      {open && (
-        <div
+        <button
+          type="button"
+          aria-label="Abrir Radio Tierra Vicio"
+          aria-expanded={
+            open
+          }
+          onClick={() =>
+            setOpen(
+              (
+                current
+              ) =>
+                !current
+            )
+          }
           style={{
-            position:
-              "absolute",
-
-            top:
-              44,
-
-            right:
-              0,
-
             width:
-              mobile
-                ? 270
-                : 290,
+              42,
 
-            boxSizing:
-              "border-box",
+            height:
+              36,
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
 
             padding:
-              14,
+              0,
 
             border:
-              "1px solid rgba(255,255,255,.16)",
+              playing
+                ? "1px solid rgba(95,220,255,.58)"
+                : "1px solid rgba(255,255,255,.16)",
 
             borderRadius:
-              16,
+              10,
 
             background:
-              "rgba(5,8,12,.92)",
+              playing
+                ? "rgba(10,62,76,.84)"
+                : "rgba(0,0,0,.54)",
 
             backdropFilter:
-              "blur(18px)",
+              "blur(10px)",
 
             WebkitBackdropFilter:
-              "blur(18px)",
+              "blur(10px)",
+
+            color:
+              "#fff",
+
+            fontSize:
+              19,
+
+            fontWeight:
+              900,
+
+            cursor:
+              "pointer",
+
+            touchAction:
+              "manipulation",
 
             boxShadow:
-              "0 18px 50px rgba(0,0,0,.38)",
+              playing
+                ? "0 0 18px rgba(95,220,255,.16)"
+                : "none",
           }}
         >
-          {/* CABECERA */}
+          ♪
+        </button>
 
+        {open && (
           <div
             style={{
-              display:
-                "flex",
+              position:
+                "absolute",
 
-              alignItems:
-                "center",
+              top:
+                45,
 
-              justifyContent:
-                "space-between",
+              left:
+                0,
 
-              gap:
-                10,
+              width:
+                "min(290px, calc(100vw - 28px))",
 
-              marginBottom:
-                14,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize:
-                    10,
+              boxSizing:
+                "border-box",
 
-                  fontWeight:
-                    900,
-
-                  letterSpacing:
-                    ".14em",
-
-                  color:
-                    "#5fdcff",
-                }}
-              >
-                RADIO
-              </div>
-
-              <div
-                style={{
-                  marginTop:
-                    2,
-
-                  fontSize:
-                    17,
-
-                  fontWeight:
-                    900,
-                }}
-              >
-                TIERRA VICIO
-              </div>
-            </div>
-
-            <div
-              style={{
-                minWidth:
-                  48,
-
-                padding:
-                  "5px 7px",
-
-                borderRadius:
-                  8,
-
-                background:
-                  playing
-                    ? "rgba(95,220,255,.12)"
-                    : "rgba(255,255,255,.07)",
-
-                color:
-                  playing
-                    ? "#71e5ff"
-                    : "rgba(255,255,255,.55)",
-
-                fontSize:
-                  9,
-
-                fontWeight:
-                  900,
-
-                textAlign:
-                  "center",
-
-                letterSpacing:
-                  ".08em",
-              }}
-            >
-              {playing
-                ? "ON AIR"
-                : "OFF"}
-            </div>
-          </div>
-
-          {/* ESTACIÓN ACTUAL */}
-
-          <div
-            style={{
               padding:
-                "10px 11px",
-
-              marginBottom:
-                12,
-
-              borderRadius:
-                11,
-
-              background:
-                "rgba(255,255,255,.055)",
+                14,
 
               border:
-                "1px solid rgba(255,255,255,.08)",
-            }}
-          >
-            <div
-              style={{
-                display:
-                  "flex",
+                "1px solid rgba(255,255,255,.15)",
 
-                alignItems:
-                  "center",
+              borderRadius:
+                16,
 
-                gap:
-                  10,
-              }}
-            >
-              <div
-                style={{
-                  width:
-                    38,
+              background:
+                "rgba(5,8,12,.94)",
 
-                  height:
-                    38,
+              backdropFilter:
+                "blur(18px)",
 
-                  flex:
-                    "0 0 auto",
+              WebkitBackdropFilter:
+                "blur(18px)",
 
-                  display:
-                    "grid",
-
-                  placeItems:
-                    "center",
-
-                  borderRadius:
-                    10,
-
-                  background:
-                    "rgba(95,220,255,.13)",
-
-                  color:
-                    "#68e2ff",
-
-                  fontSize:
-                    11,
-
-                  fontWeight:
-                    950,
-
-                  letterSpacing:
-                    ".04em",
-                }}
-              >
-                {station.icon}
-              </div>
-
-              <div
-                style={{
-                  minWidth:
-                    0,
-                }}
-              >
-                <div
-                  style={{
-                    overflow:
-                      "hidden",
-
-                    textOverflow:
-                      "ellipsis",
-
-                    whiteSpace:
-                      "nowrap",
-
-                    fontSize:
-                      14,
-
-                    fontWeight:
-                      850,
-                  }}
-                >
-                  {station.name}
-                </div>
-
-                <div
-                  style={{
-                    marginTop:
-                      2,
-
-                    color:
-                      "rgba(255,255,255,.55)",
-
-                    fontSize:
-                      11,
-                  }}
-                >
-                  {station.subtitle}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* PLAY + MUTE */}
-
-          <div
-            style={{
-              display:
-                "grid",
-
-              gridTemplateColumns:
-                "1fr 52px",
-
-              gap:
-                8,
-
-              marginBottom:
-                12,
-            }}
-          >
-            <button
-              type="button"
-              onClick={
-                togglePlaying
-              }
-              style={{
-                height:
-                  42,
-
-                border:
-                  "1px solid rgba(95,220,255,.32)",
-
-                borderRadius:
-                  10,
-
-                background:
-                  "rgba(95,220,255,.11)",
-
-                color:
-                  "#ffffff",
-
-                fontSize:
-                  13,
-
-                fontWeight:
-                  850,
-
-                cursor:
-                  "pointer",
-
-                touchAction:
-                  "manipulation",
-              }}
-            >
-              {playing
-                ? "Ⅱ  Pausar"
-                : "▶  Escuchar"}
-            </button>
-
-            <button
-              type="button"
-              aria-label={
-                muted
-                  ? "Activar sonido"
-                  : "Silenciar"
-              }
-              onClick={
-                toggleMute
-              }
-              style={{
-                height:
-                  42,
-
-                border:
-                  "1px solid rgba(255,255,255,.12)",
-
-                borderRadius:
-                  10,
-
-                background:
-                  "rgba(255,255,255,.055)",
-
-                color:
-                  "#ffffff",
-
-                fontSize:
-                  16,
-
-                cursor:
-                  "pointer",
-
-                touchAction:
-                  "manipulation",
-              }}
-            >
-              {muted
-                ? "×♪"
-                : "♪"}
-            </button>
-          </div>
-
-          {/* VOLUMEN */}
-
-          <div
-            style={{
-              marginBottom:
-                14,
-
-              padding:
-                "0 2px",
+              boxShadow:
+                "0 18px 55px rgba(0,0,0,.42)",
             }}
           >
             <div
@@ -1264,315 +551,627 @@ export default function RadioTierraVicio({
                 alignItems:
                   "center",
 
+                gap:
+                  12,
+
                 marginBottom:
-                  7,
-
-                color:
-                  "rgba(255,255,255,.68)",
-
-                fontSize:
-                  10,
-
-                fontWeight:
-                  800,
+                  12,
               }}
             >
-              <span>
-                VOLUMEN
-              </span>
+              <div>
+                <div
+                  style={{
+                    color:
+                      "#5fdcff",
 
-              <span>
-                {muted
-                  ? "MUTE"
-                  : `${volumePercent}%`}
-              </span>
+                    fontSize:
+                      9,
+
+                    fontWeight:
+                      950,
+
+                    letterSpacing:
+                      ".16em",
+                  }}
+                >
+                  RADIO
+                </div>
+
+                <div
+                  style={{
+                    marginTop:
+                      2,
+
+                    fontSize:
+                      17,
+
+                    fontWeight:
+                      900,
+                  }}
+                >
+                  TIERRA VICIO
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding:
+                    "5px 7px",
+
+                  borderRadius:
+                    8,
+
+                  background:
+                    playing
+                      ? "rgba(95,220,255,.12)"
+                      : "rgba(255,255,255,.07)",
+
+                  color:
+                    playing
+                      ? "#68e2ff"
+                      : "rgba(255,255,255,.55)",
+
+                  fontSize:
+                    9,
+
+                  fontWeight:
+                    900,
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {playing
+                  ? "ON AIR"
+                  : "OFF"}
+              </div>
             </div>
 
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={
-                volume
-              }
-              onChange={(
-                event
-              ) => {
-                const next =
-                  Number(
-                    event
-                      .target
-                      .value
-                  );
-
-                setVolume(
-                  next
-                );
-
-                if (
-                  muted &&
-                  next >
-                    0
-                ) {
-                  setMuted(
-                    false
-                  );
-                }
-              }}
+            <div
               style={{
-                width:
-                  "100%",
+                padding:
+                  "10px 11px",
 
-                height:
-                  28,
+                marginBottom:
+                  10,
 
-                margin:
-                  0,
+                borderRadius:
+                  11,
 
-                accentColor:
-                  "#5fdcff",
+                border:
+                  "1px solid rgba(255,255,255,.08)",
 
-                cursor:
-                  "pointer",
-
-                touchAction:
-                  "manipulation",
+                background:
+                  "rgba(255,255,255,.055)",
               }}
-            />
-          </div>
+            >
+              <div
+                style={{
+                  display:
+                    "flex",
 
-          {/* ESTACIONES */}
+                  alignItems:
+                    "center",
 
-          <div
-            style={{
-              marginBottom:
-                7,
+                  gap:
+                    10,
+                }}
+              >
+                <div
+                  style={{
+                    width:
+                      42,
 
-              color:
-                "rgba(255,255,255,.55)",
+                    height:
+                      36,
 
-              fontSize:
-                9,
+                    flex:
+                      "0 0 auto",
 
-              fontWeight:
-                900,
+                    display:
+                      "grid",
 
-              letterSpacing:
-                ".12em",
-            }}
-          >
-            ESTACIONES
-          </div>
+                    placeItems:
+                      "center",
 
-          <div
-            style={{
-              display:
-                "grid",
+                    borderRadius:
+                      9,
 
-              gap:
-                6,
-            }}
-          >
-            {STATIONS.map(
-              (
-                item
-              ) => {
-                const active =
-                  item.id ===
-                  stationId;
+                    background:
+                      "rgba(95,220,255,.12)",
 
-                return (
-                  <button
-                    key={
-                      item.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      changeStation(
-                        item.id
-                      )
-                    }
+                    color:
+                      "#68e2ff",
+
+                    fontSize:
+                      9,
+
+                    fontWeight:
+                      950,
+                  }}
+                >
+                  {station.badge}
+                </div>
+
+                <div
+                  style={{
+                    minWidth:
+                      0,
+
+                    flex:
+                      1,
+                  }}
+                >
+                  <div
                     style={{
-                      width:
-                        "100%",
+                      overflow:
+                        "hidden",
 
-                      minHeight:
-                        42,
+                      textOverflow:
+                        "ellipsis",
 
-                      display:
-                        "flex",
+                      whiteSpace:
+                        "nowrap",
 
-                      alignItems:
-                        "center",
+                      fontSize:
+                        13,
 
-                      gap:
-                        9,
-
-                      padding:
-                        "7px 9px",
-
-                      border:
-                        active
-                          ? "1px solid rgba(95,220,255,.34)"
-                          : "1px solid rgba(255,255,255,.07)",
-
-                      borderRadius:
-                        9,
-
-                      background:
-                        active
-                          ? "rgba(95,220,255,.095)"
-                          : "rgba(255,255,255,.035)",
-
-                      color:
-                        "#ffffff",
-
-                      textAlign:
-                        "left",
-
-                      cursor:
-                        "pointer",
-
-                      touchAction:
-                        "manipulation",
+                      fontWeight:
+                        850,
                     }}
                   >
-                    <span
+                    {station.name}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop:
+                        2,
+
+                      overflow:
+                        "hidden",
+
+                      textOverflow:
+                        "ellipsis",
+
+                      whiteSpace:
+                        "nowrap",
+
+                      color:
+                        "rgba(255,255,255,.5)",
+
+                      fontSize:
+                        10,
+                    }}
+                  >
+                    {station.subtitle}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    8,
+
+                  color:
+                    "rgba(255,255,255,.45)",
+
+                  fontSize:
+                    9,
+                }}
+              >
+                {status}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "1fr 48px",
+
+                gap:
+                  7,
+
+                marginBottom:
+                  12,
+              }}
+            >
+              <button
+                type="button"
+                onClick={
+                  togglePlay
+                }
+                style={{
+                  height:
+                    40,
+
+                  border:
+                    "1px solid rgba(95,220,255,.28)",
+
+                  borderRadius:
+                    10,
+
+                  background:
+                    "rgba(95,220,255,.10)",
+
+                  color:
+                    "#fff",
+
+                  fontSize:
+                    12,
+
+                  fontWeight:
+                    850,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
+                }}
+              >
+                {playing
+                  ? "Ⅱ  Pausar"
+                  : "▶  Escuchar"}
+              </button>
+
+              <button
+                type="button"
+                aria-label={
+                  muted
+                    ? "Activar sonido"
+                    : "Silenciar"
+                }
+                onClick={() =>
+                  setMuted(
+                    (
+                      current
+                    ) =>
+                      !current
+                  )
+                }
+                style={{
+                  height:
+                    40,
+
+                  border:
+                    "1px solid rgba(255,255,255,.11)",
+
+                  borderRadius:
+                    10,
+
+                  background:
+                    "rgba(255,255,255,.05)",
+
+                  color:
+                    "#fff",
+
+                  fontSize:
+                    16,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
+                }}
+              >
+                {muted
+                  ? "×♪"
+                  : "♪"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                marginBottom:
+                  13,
+
+                padding:
+                  "0 2px",
+              }}
+            >
+              <div
+                style={{
+                  display:
+                    "flex",
+
+                  justifyContent:
+                    "space-between",
+
+                  marginBottom:
+                    5,
+
+                  color:
+                    "rgba(255,255,255,.56)",
+
+                  fontSize:
+                    9,
+
+                  fontWeight:
+                    850,
+                }}
+              >
+                <span>
+                  VOLUMEN
+                </span>
+
+                <span>
+                  {muted
+                    ? "MUTE"
+                    : `${Math.round(
+                        volume *
+                          100
+                      )}%`}
+                </span>
+              </div>
+
+              <input
+                aria-label="Volumen de Radio Tierra Vicio"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={
+                  volume
+                }
+                onChange={(
+                  event
+                ) => {
+                  const nextVolume =
+                    Number(
+                      event
+                        .target
+                        .value
+                    );
+
+                  setVolume(
+                    nextVolume
+                  );
+
+                  if (
+                    muted &&
+                    nextVolume >
+                      0
+                  ) {
+                    setMuted(
+                      false
+                    );
+                  }
+                }}
+                style={{
+                  width:
+                    "100%",
+
+                  height:
+                    26,
+
+                  margin:
+                    0,
+
+                  accentColor:
+                    "#5fdcff",
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                marginBottom:
+                  6,
+
+                color:
+                  "rgba(255,255,255,.42)",
+
+                fontSize:
+                  8,
+
+                fontWeight:
+                  900,
+
+                letterSpacing:
+                  ".13em",
+              }}
+            >
+              CANALES
+            </div>
+
+            <div
+              style={{
+                display:
+                  "grid",
+
+                gap:
+                  5,
+              }}
+            >
+              {STATIONS.map(
+                (
+                  item
+                ) => {
+                  const active =
+                    item.id ===
+                    stationId;
+
+                  return (
+                    <button
+                      key={
+                        item.id
+                      }
+                      type="button"
+                      onClick={() =>
+                        changeStation(
+                          item.id
+                        )
+                      }
                       style={{
+                        minHeight:
+                          40,
+
                         width:
-                          31,
-
-                        height:
-                          27,
-
-                        flex:
-                          "0 0 auto",
+                          "100%",
 
                         display:
-                          "grid",
+                          "flex",
 
-                        placeItems:
+                        alignItems:
                           "center",
 
+                        gap:
+                          8,
+
+                        padding:
+                          "7px 8px",
+
+                        border:
+                          active
+                            ? "1px solid rgba(95,220,255,.30)"
+                            : "1px solid rgba(255,255,255,.065)",
+
                         borderRadius:
-                          7,
+                          9,
 
                         background:
                           active
-                            ? "rgba(95,220,255,.14)"
-                            : "rgba(255,255,255,.06)",
+                            ? "rgba(95,220,255,.09)"
+                            : "rgba(255,255,255,.03)",
 
                         color:
-                          active
-                            ? "#68e2ff"
-                            : "rgba(255,255,255,.7)",
+                          "#fff",
 
-                        fontSize:
-                          9,
+                        textAlign:
+                          "left",
 
-                        fontWeight:
-                          950,
-                      }}
-                    >
-                      {item.icon}
-                    </span>
+                        cursor:
+                          "pointer",
 
-                    <span
-                      style={{
-                        minWidth:
-                          0,
-
-                        flex:
-                          1,
+                        touchAction:
+                          "manipulation",
                       }}
                     >
                       <span
                         style={{
+                          width:
+                            37,
+
+                          height:
+                            26,
+
+                          flex:
+                            "0 0 auto",
+
                           display:
-                            "block",
+                            "grid",
+
+                          placeItems:
+                            "center",
+
+                          borderRadius:
+                            7,
+
+                          background:
+                            active
+                              ? "rgba(95,220,255,.13)"
+                              : "rgba(255,255,255,.055)",
+
+                          color:
+                            active
+                              ? "#68e2ff"
+                              : "rgba(255,255,255,.62)",
 
                           fontSize:
-                            12,
+                            8,
 
                           fontWeight:
-                            850,
+                            950,
                         }}
                       >
-                        {item.name}
+                        {item.badge}
                       </span>
 
                       <span
                         style={{
-                          display:
-                            "block",
+                          minWidth:
+                            0,
 
-                          marginTop:
+                          flex:
                             1,
-
-                          color:
-                            "rgba(255,255,255,.48)",
-
-                          fontSize:
-                            9,
                         }}
                       >
-                        {item.subtitle}
+                        <span
+                          style={{
+                            display:
+                              "block",
+
+                            fontSize:
+                              11,
+
+                            fontWeight:
+                              850,
+                          }}
+                        >
+                          {item.name}
+                        </span>
+
+                        <span
+                          style={{
+                            display:
+                              "block",
+
+                            marginTop:
+                              1,
+
+                            overflow:
+                              "hidden",
+
+                            textOverflow:
+                              "ellipsis",
+
+                            whiteSpace:
+                              "nowrap",
+
+                            color:
+                              "rgba(255,255,255,.42)",
+
+                            fontSize:
+                              8,
+                          }}
+                        >
+                          {item.subtitle}
+                        </span>
                       </span>
-                    </span>
 
-                    {active && (
-                      <span
-                        style={{
-                          color:
-                            "#68e2ff",
+                      {active && (
+                        <span
+                          style={{
+                            color:
+                              "#68e2ff",
 
-                          fontSize:
-                            11,
-
-                          fontWeight:
-                            900,
-                        }}
-                      >
-                        ●
-                      </span>
-                    )}
-                  </button>
-                );
-              }
-            )}
+                            fontSize:
+                              9,
+                          }}
+                        >
+                          ●
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
+              )}
+            </div>
           </div>
-
-          {/* NOTA PRUEBA */}
-
-          <div
-            style={{
-              marginTop:
-                11,
-
-              paddingTop:
-                9,
-
-              borderTop:
-                "1px solid rgba(255,255,255,.07)",
-
-              color:
-                "rgba(255,255,255,.35)",
-
-              fontSize:
-                9,
-
-              lineHeight:
-                1.4,
-            }}
-          >
-            Audio de prueba.
-            Después se sustituye por
-            música de Radio Tierra
-            Vicio.
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
