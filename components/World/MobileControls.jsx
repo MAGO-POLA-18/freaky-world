@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useRef,
 } from "react";
 
@@ -19,12 +20,21 @@ import {
    DERECHA
    - arrastrar = cámara
    - doble toque = dash
+
+   WEB / IOS
+   - sin selección azul
+   - sin callout de mantener pulsado
+   - sin drag accidental
+   - resetea touches al girar pantalla
 ========================================================= */
 
 const DOUBLE_TAP_TIME = 280;
 const TAP_MOVE_LIMIT = 18;
 
 export default function MobileControls() {
+  const controlsRef =
+    useRef(null);
+
   const joystick =
     useRef(null);
 
@@ -54,16 +64,6 @@ export default function MobileControls() {
     if (!dpad.current) {
       return;
     }
-
-    /*
-      x:
-      -1 izquierda
-       1 derecha
-
-      y:
-      -1 arriba
-       1 abajo
-    */
 
     const left =
       Math.max(
@@ -143,15 +143,6 @@ export default function MobileControls() {
       touch.clientY -
       centerY;
 
-    /*
-      Área útil analógica.
-
-      La cruceta NO se mueve.
-      Solo usamos la posición
-      del dedo para calcular
-      dirección e intensidad.
-    */
-
     const maxDistance =
       rect.width *
       0.42;
@@ -183,9 +174,7 @@ export default function MobileControls() {
       dy /
       maxDistance;
 
-    /* =====================================================
-       MOVIMIENTO REAL DEL PERSONAJE
-    ===================================================== */
+    /* MOVIMIENTO */
 
     playerInput.x =
       normalizedX;
@@ -193,13 +182,7 @@ export default function MobileControls() {
     playerInput.y =
       -normalizedY;
 
-    /* =====================================================
-       PRESIÓN VISUAL
-
-       Aquí usamos Y normal de pantalla:
-       negativo = arriba
-       positivo = abajo
-    ===================================================== */
+    /* PRESIÓN VISUAL */
 
     setDpadPressure(
       normalizedX,
@@ -208,7 +191,7 @@ export default function MobileControls() {
   };
 
   /* =======================================================
-     RESET
+     RESET JOYSTICK
   ======================================================= */
 
   const resetJoystick =
@@ -226,6 +209,137 @@ export default function MobileControls() {
     };
 
   /* =======================================================
+     RESET COMPLETO DE TOUCH
+
+     Útil al:
+     - girar dispositivo
+     - cancelar gesto
+     - perder foco
+  ======================================================= */
+
+  const resetTouches =
+    () => {
+      resetJoystick();
+
+      lookTouch.current =
+        null;
+
+      rightTouchStart.current =
+        null;
+
+      lastRightTap.current =
+        0;
+
+      playerInput.dashRequested =
+        false;
+    };
+
+  /* =======================================================
+     ORIENTACIÓN / FOCUS
+
+     Evita que un dedo quede "enganchado"
+     después de vertical ↔ horizontal.
+  ======================================================= */
+
+  useEffect(() => {
+    function resetAfterViewportChange() {
+      resetTouches();
+    }
+
+    function handleBlur() {
+      resetTouches();
+    }
+
+    window.addEventListener(
+      "orientationchange",
+      resetAfterViewportChange
+    );
+
+    window.addEventListener(
+      "blur",
+      handleBlur
+    );
+
+    return () => {
+      window.removeEventListener(
+        "orientationchange",
+        resetAfterViewportChange
+      );
+
+      window.removeEventListener(
+        "blur",
+        handleBlur
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     EVITAR SELECCIÓN / CALLOUT IOS
+
+     Solo dentro de los controles del mundo.
+     No afecta fichas, buscadores ni overlays.
+  ======================================================= */
+
+  useEffect(() => {
+    const element =
+      controlsRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    function preventContextMenu(
+      event
+    ) {
+      event.preventDefault();
+    }
+
+    function preventSelect(
+      event
+    ) {
+      event.preventDefault();
+    }
+
+    function preventDrag(
+      event
+    ) {
+      event.preventDefault();
+    }
+
+    element.addEventListener(
+      "contextmenu",
+      preventContextMenu
+    );
+
+    element.addEventListener(
+      "selectstart",
+      preventSelect
+    );
+
+    element.addEventListener(
+      "dragstart",
+      preventDrag
+    );
+
+    return () => {
+      element.removeEventListener(
+        "contextmenu",
+        preventContextMenu
+      );
+
+      element.removeEventListener(
+        "selectstart",
+        preventSelect
+      );
+
+      element.removeEventListener(
+        "dragstart",
+        preventDrag
+      );
+    };
+  }, []);
+
+  /* =======================================================
      TOUCH START
   ======================================================= */
 
@@ -238,9 +352,7 @@ export default function MobileControls() {
       const touch
       of event.changedTouches
     ) {
-      /* ===================================================
-         IZQUIERDA
-      =================================================== */
+      /* IZQUIERDA */
 
       if (
         touch.clientX <
@@ -260,9 +372,7 @@ export default function MobileControls() {
         }
       }
 
-      /* ===================================================
-         DERECHA
-      =================================================== */
+      /* DERECHA */
 
       else {
         if (
@@ -311,9 +421,7 @@ export default function MobileControls() {
       const touch
       of event.changedTouches
     ) {
-      /* ===================================================
-         CRUCETA ANALÓGICA
-      =================================================== */
+      /* CRUCETA */
 
       if (
         touch.identifier ===
@@ -324,9 +432,7 @@ export default function MobileControls() {
         );
       }
 
-      /* ===================================================
-         CÁMARA
-      =================================================== */
+      /* CÁMARA */
 
       if (
         lookTouch.current &&
@@ -356,21 +462,17 @@ export default function MobileControls() {
           touch.clientY;
 
         if (
-          rightTouchStart
-            .current &&
+          rightTouchStart.current &&
           touch.identifier ===
-            rightTouchStart
-              .current.id
+            rightTouchStart.current.id
         ) {
           const totalDX =
             touch.clientX -
-            rightTouchStart
-              .current.x;
+            rightTouchStart.current.x;
 
           const totalDY =
             touch.clientY -
-            rightTouchStart
-              .current.y;
+            rightTouchStart.current.y;
 
           const totalDistance =
             Math.sqrt(
@@ -384,8 +486,7 @@ export default function MobileControls() {
             totalDistance >
             TAP_MOVE_LIMIT
           ) {
-            rightTouchStart
-              .current.moved =
+            rightTouchStart.current.moved =
               true;
           }
         }
@@ -400,13 +501,13 @@ export default function MobileControls() {
   const handleTouchEnd = (
     event
   ) => {
+    event.preventDefault();
+
     for (
       const touch
       of event.changedTouches
     ) {
-      /* ===================================================
-         CRUCETA
-      =================================================== */
+      /* CRUCETA */
 
       if (
         touch.identifier ===
@@ -415,9 +516,7 @@ export default function MobileControls() {
         resetJoystick();
       }
 
-      /* ===================================================
-         DERECHA
-      =================================================== */
+      /* DERECHA */
 
       if (
         lookTouch.current &&
@@ -425,8 +524,7 @@ export default function MobileControls() {
           lookTouch.current.id
       ) {
         const touchStart =
-          rightTouchStart
-            .current;
+          rightTouchStart.current;
 
         if (
           touchStart &&
@@ -446,15 +544,12 @@ export default function MobileControls() {
             elapsed <
               DOUBLE_TAP_TIME
           ) {
-            playerInput
-              .dashRequested =
+            playerInput.dashRequested =
               true;
 
             lastRightTap.current =
               0;
-          }
-
-          else {
+          } else {
             lastRightTap.current =
               now;
           }
@@ -470,36 +565,109 @@ export default function MobileControls() {
   };
 
   /* =======================================================
+     TOUCH CANCEL
+  ======================================================= */
+
+  const handleTouchCancel =
+    (event) => {
+      event.preventDefault();
+
+      resetTouches();
+    };
+
+  /* =======================================================
      UI
   ======================================================= */
 
   return (
     <div
+      ref={
+        controlsRef
+      }
       className="mobile-controls"
+
       onTouchStart={
         handleTouchStart
       }
+
       onTouchMove={
         handleTouchMove
       }
+
       onTouchEnd={
         handleTouchEnd
       }
+
       onTouchCancel={
-        handleTouchEnd
+        handleTouchCancel
       }
+
+      style={{
+        /*
+          Hace que la zona jugable se comporte
+          como una superficie de control y no
+          como una página web seleccionable.
+        */
+
+        userSelect:
+          "none",
+
+        WebkitUserSelect:
+          "none",
+
+        WebkitTouchCallout:
+          "none",
+
+        touchAction:
+          "none",
+
+        WebkitTapHighlightColor:
+          "transparent",
+      }}
     >
       {/* =================================================
           CRUCETA ANALÓGICA FIJA
       ================================================= */}
 
       <div
-        ref={joystick}
+        ref={
+          joystick
+        }
         className="mobile-joystick"
+
+        style={{
+          userSelect:
+            "none",
+
+          WebkitUserSelect:
+            "none",
+
+          WebkitTouchCallout:
+            "none",
+
+          touchAction:
+            "none",
+        }}
       >
         <div
-          ref={dpad}
+          ref={
+            dpad
+          }
           className="mobile-dpad"
+
+          style={{
+            userSelect:
+              "none",
+
+            WebkitUserSelect:
+              "none",
+
+            WebkitTouchCallout:
+              "none",
+
+            touchAction:
+              "none",
+          }}
         >
           {/* ARRIBA */}
 
@@ -535,7 +703,26 @@ export default function MobileControls() {
           DERECHA
       ================================================= */}
 
-      <div className="mobile-look">
+      <div
+        className="mobile-look"
+
+        style={{
+          userSelect:
+            "none",
+
+          WebkitUserSelect:
+            "none",
+
+          WebkitTouchCallout:
+            "none",
+
+          touchAction:
+            "none",
+
+          pointerEvents:
+            "none",
+        }}
+      >
         Desliza para mirar
       </div>
     </div>
