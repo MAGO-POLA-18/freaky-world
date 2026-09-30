@@ -28,137 +28,89 @@ const SHOWS = [
 export const revalidate = 21600;
 
 /* =========================================================
-   ENCODING
+   CORRECCIÓN DE TEXTO
 ========================================================= */
 
-function windows1252ByteFromChar(char) {
-  const code =
-    char.charCodeAt(0);
+function fixMojibake(value = "") {
+  let text = String(value);
 
-  if (code <= 255) {
-    return code;
-  }
+  const replacements = [
+    ["\u00C3\u00A1", "á"],
+    ["\u00C3\u00A9", "é"],
+    ["\u00C3\u00AD", "í"],
+    ["\u00C3\u00B3", "ó"],
+    ["\u00C3\u00BA", "ú"],
+    ["\u00C3\u00B1", "ñ"],
+    ["\u00C3\u00BC", "ü"],
 
-  const map = {
-    8364: 0x80,
-    8218: 0x82,
-    402: 0x83,
-    8222: 0x84,
-    8230: 0x85,
-    8224: 0x86,
-    8225: 0x87,
-    710: 0x88,
-    8240: 0x89,
-    352: 0x8a,
-    8249: 0x8b,
-    338: 0x8c,
-    381: 0x8e,
-    8216: 0x91,
-    8217: 0x92,
-    8220: 0x93,
-    8221: 0x94,
-    8226: 0x95,
-    8211: 0x96,
-    8212: 0x97,
-    732: 0x98,
-    8482: 0x99,
-    353: 0x9a,
-    8250: 0x9b,
-    339: 0x9c,
-    382: 0x9e,
-    376: 0x9f,
-  };
+    ["\u00C3\u0081", "Á"],
+    ["\u00C3\u0089", "É"],
+    ["\u00C3\u008D", "Í"],
+    ["\u00C3\u0093", "Ó"],
+    ["\u00C3\u009A", "Ú"],
+    ["\u00C3\u0091", "Ñ"],
+    ["\u00C3\u009C", "Ü"],
 
-  return (
-    map[code] ??
-    0x3f
-  );
-}
+    ["\u00C2\u00BF", "¿"],
+    ["\u00C2\u00A1", "¡"],
+    ["\u00C2\u00BA", "º"],
+    ["\u00C2\u00AA", "ª"],
+    ["\u00C2\u00B7", "·"],
 
-function fixMojibake(
-  value = ""
-) {
-  const text =
-    String(value);
+    [
+      "\u00E2\u20AC\u201C",
+      "–",
+    ],
+    [
+      "\u00E2\u20AC\u201D",
+      "—",
+    ],
+    [
+      "\u00E2\u20AC\u00A6",
+      "…",
+    ],
+    [
+      "\u00E2\u20AC\u0153",
+      "“",
+    ],
+    [
+      "\u00E2\u20AC\u009D",
+      "”",
+    ],
+    [
+      "\u00E2\u20AC\u2122",
+      "’",
+    ],
+  ];
 
-  if (
-    !/[ÃÂâ]/.test(
-      text
-    )
-  ) {
-    return text;
-  }
-
-  try {
-    const bytes =
-      Uint8Array.from(
-        [...text].map(
-          windows1252ByteFromChar
-        )
+  for (const [
+    broken,
+    correct,
+  ] of replacements) {
+    text =
+      text.split(
+        broken
+      ).join(
+        correct
       );
-
-    const decoded =
-      new TextDecoder(
-        "utf-8",
-        {
-          fatal: true,
-        }
-      ).decode(
-        bytes
-      );
-
-    return decoded;
-  } catch {
-    return text;
   }
-}
 
-function decodeXmlBuffer(
-  arrayBuffer
-) {
-  const bytes =
-    new Uint8Array(
-      arrayBuffer
+  // Caracteres "Â" residuales típicos
+  text =
+    text.replace(
+      /\u00C2(?=[\s:;,.!?])/g,
+      ""
     );
 
-  const head =
-    new TextDecoder(
-      "ascii"
-    )
-      .decode(
-        bytes.slice(
-          0,
-          300
-        )
-      )
-      .toLowerCase();
-
-  if (
-    head.includes(
-      "iso-8859-1"
-    ) ||
-    head.includes(
-      "windows-1252"
-    )
-  ) {
-    return new TextDecoder(
-      "windows-1252"
-    ).decode(bytes);
-  }
-
-  return new TextDecoder(
-    "utf-8"
-  ).decode(bytes);
+  return text;
 }
 
 /* =========================================================
-   HELPERS
+   XML
 ========================================================= */
 
-function decodeEntities(
-  value = ""
-) {
-  const decoded =
+function decodeEntities(value = "") {
+  return fixMojibake(
     String(value)
       .replace(
         /<!\[CDATA\[([\s\S]*?)\]\]>/g,
@@ -190,24 +142,26 @@ function decodeEntities(
       )
       .replace(
         /&#(\d+);/g,
-        (
-          _,
-          number
-        ) =>
+        (_, number) =>
           String.fromCharCode(
             Number(number)
           )
       )
-      .trim();
-
-  return fixMojibake(
-    decoded
+      .replace(
+        /&#x([0-9a-f]+);/gi,
+        (_, number) =>
+          String.fromCharCode(
+            parseInt(
+              number,
+              16
+            )
+          )
+      )
+      .trim()
   );
 }
 
-function stripHtml(
-  value = ""
-) {
+function stripHtml(value = "") {
   return fixMojibake(
     decodeEntities(
       String(value)
@@ -232,15 +186,20 @@ function stripHtml(
   );
 }
 
+function escapeRegex(value) {
+  return String(value)
+    .replace(
+      /[-/\\^$*+?.()|[\]{}]/g,
+      "\\$&"
+    );
+}
+
 function getTag(
   block,
   tag
 ) {
   const escaped =
-    tag.replace(
-      /[-/\\^$*+?.()|[\]{}]/g,
-      "\\$&"
-    );
+    escapeRegex(tag);
 
   const match =
     block.match(
@@ -263,15 +222,11 @@ function getAttribute(
   attribute
 ) {
   const escapedTag =
-    tag.replace(
-      /[-/\\^$*+?.()|[\]{}]/g,
-      "\\$&"
-    );
+    escapeRegex(tag);
 
   const escapedAttribute =
-    attribute.replace(
-      /[-/\\^$*+?.()|[\]{}]/g,
-      "\\$&"
+    escapeRegex(
+      attribute
     );
 
   const tagMatch =
@@ -301,20 +256,21 @@ function getAttribute(
     : "";
 }
 
-function parseDuration(
-  value
-) {
+/* =========================================================
+   DURACIÓN
+========================================================= */
+
+function parseDuration(value) {
   if (!value) {
     return null;
   }
 
   const text =
-    String(value).trim();
+    String(value)
+      .trim();
 
   if (
-    /^\d+$/.test(
-      text
-    )
+    /^\d+$/.test(text)
   ) {
     return Number(text);
   }
@@ -360,9 +316,11 @@ function parseDuration(
   return null;
 }
 
-function parseDate(
-  value
-) {
+/* =========================================================
+   FECHA
+========================================================= */
+
+function parseDate(value) {
   if (!value) {
     return null;
   }
@@ -381,6 +339,10 @@ function parseDate(
   return date.toISOString();
 }
 
+/* =========================================================
+   URL DE AUDIO
+========================================================= */
+
 function normalizeAudioUrl(
   value
 ) {
@@ -389,9 +351,8 @@ function normalizeAudioUrl(
   }
 
   let url =
-    fixMojibake(
-      String(value).trim()
-    );
+    String(value)
+      .trim();
 
   url =
     url.replace(
@@ -409,7 +370,7 @@ function normalizeAudioUrl(
 }
 
 /* =========================================================
-   EPISODIOS
+   PARSEAR EPISODIOS
 ========================================================= */
 
 function parseItems(
@@ -472,7 +433,7 @@ function parseItems(
             "link"
           );
 
-        const pubDate =
+        const date =
           parseDate(
             getTag(
               block,
@@ -498,7 +459,7 @@ function parseItems(
         return {
           id:
             guid ||
-            `${show.id}-${index}-${title}`,
+            `${show.id}-${index}`,
 
           showId:
             show.id,
@@ -525,8 +486,7 @@ function parseItems(
             link ||
             null,
 
-          date:
-            pubDate,
+          date,
 
           duration,
         };
@@ -559,9 +519,7 @@ async function getFeedUrl(
       }
     );
 
-  if (
-    !response.ok
-  ) {
+  if (!response.ok) {
     throw new Error(
       `Apple lookup ${response.status}`
     );
@@ -620,20 +578,24 @@ async function loadShow(
         }
       );
 
-    if (
-      !response.ok
-    ) {
+    if (!response.ok) {
       throw new Error(
         `RSS ${response.status}`
       );
     }
 
-    const arrayBuffer =
-      await response.arrayBuffer();
+    /*
+      response.text() deja que fetch maneje
+      la respuesta antes de aplicar nuestra
+      corrección de mojibake.
+    */
+
+    const rawXml =
+      await response.text();
 
     const xml =
-      decodeXmlBuffer(
-        arrayBuffer
+      fixMojibake(
+        rawXml
       );
 
     const episodes =
@@ -657,9 +619,7 @@ async function loadShow(
 
       episodes,
     };
-  } catch (
-    error
-  ) {
+  } catch (error) {
     console.error(
       `[Radio Tierra Vicio] ${show.name}:`,
       error
@@ -713,7 +673,8 @@ export async function GET() {
         0,
 
       generatedAt:
-        new Date().toISOString(),
+        new Date()
+          .toISOString(),
 
       refreshSeconds:
         21600,
