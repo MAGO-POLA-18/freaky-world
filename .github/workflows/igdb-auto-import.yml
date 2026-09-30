@@ -2,7 +2,7 @@ name: IGDB Auto Import
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
 
   workflow_dispatch:
 
