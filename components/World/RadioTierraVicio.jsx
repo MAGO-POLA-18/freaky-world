@@ -834,3 +834,2282 @@ export default function RadioTierraVicio() {
       // Preferencias opcionales.
     }
   }, []);
+
+    /* =======================================================
+     MUTE
+  ======================================================= */
+
+  useEffect(() => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    audio.muted =
+      muted;
+
+    try {
+      window.localStorage
+        .setItem(
+          STORAGE_MUTED,
+          String(muted)
+        );
+    } catch {
+      // Storage opcional.
+    }
+  }, [
+    muted,
+  ]);
+
+  /* =======================================================
+     GUARDAR FUENTE
+  ======================================================= */
+
+  useEffect(() => {
+    try {
+      window.localStorage
+        .setItem(
+          STORAGE_STATION,
+          sourceId
+        );
+    } catch {
+      // Storage opcional.
+    }
+  }, [
+    sourceId,
+  ]);
+
+  /* =======================================================
+     CAMBIO DE FUENTE
+  ======================================================= */
+
+  useEffect(() => {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    restoredPositionRef.current =
+      null;
+
+    lastSavedPositionRef.current =
+      0;
+
+    setCurrentTime(0);
+
+    setDuration(
+      Number.isFinite(
+        source.apiDuration
+      )
+        ? source.apiDuration
+        : 0
+    );
+
+    audio.src =
+      source.url;
+
+    audio.load();
+
+    if (
+      stationShouldResumeRef.current
+    ) {
+      stationShouldResumeRef.current =
+        false;
+
+      setStatus(
+        "Conectando…"
+      );
+
+      playRadio();
+    } else {
+      setPlaying(false);
+
+      setStatus(
+        isProgram
+          ? "Listo para reproducir"
+          : "Lista"
+      );
+    }
+  }, [
+    source.id,
+    source.url,
+  ]);
+
+  /* =======================================================
+     RESTAURAR POSICIÓN
+  ======================================================= */
+
+  function restoreProgramPosition() {
+    const audio =
+      audioRef.current;
+
+    const selectedSource =
+      sourceRef.current;
+
+    if (
+      !audio ||
+      selectedSource.kind !==
+        "program"
+    ) {
+      return;
+    }
+
+    if (
+      restoredPositionRef.current ===
+      selectedSource.id
+    ) {
+      return;
+    }
+
+    restoredPositionRef.current =
+      selectedSource.id;
+
+    const key =
+      positionStorageKey(
+        selectedSource
+      );
+
+    if (!key) {
+      return;
+    }
+
+    try {
+      const saved =
+        Number(
+          window.localStorage
+            .getItem(
+              key
+            )
+        );
+
+      if (
+        Number.isFinite(
+          saved
+        ) &&
+        saved > 0
+      ) {
+        const realDuration =
+          Number.isFinite(
+            audio.duration
+          )
+            ? audio.duration
+            : 0;
+
+        if (
+          realDuration > 0 &&
+          saved >=
+            realDuration - 5
+        ) {
+          clearSavedPosition(
+            selectedSource
+          );
+
+          return;
+        }
+
+        audio.currentTime =
+          saved;
+
+        setCurrentTime(
+          saved
+        );
+
+        lastSavedPositionRef.current =
+          saved;
+      }
+    } catch {
+      // Storage opcional.
+    }
+  }
+
+  /* =======================================================
+     INTERACCIONES DEL USUARIO
+  ======================================================= */
+
+  useEffect(() => {
+    const handleUserInteraction =
+      () => {
+        const audio =
+          audioRef.current;
+
+        if (
+          !audio ||
+          document.hidden ||
+          userPausedRef.current ||
+          mediaActiveRef.current ||
+          !audio.paused
+        ) {
+          return;
+        }
+
+        if (
+          pendingMediaResumeRef.current
+        ) {
+          pendingMediaResumeRef.current =
+            false;
+
+          playRadio();
+
+          return;
+        }
+
+        playRadio();
+      };
+
+    window.addEventListener(
+      "pointerdown",
+      handleUserInteraction,
+      true
+    );
+
+    return () => {
+      window.removeEventListener(
+        "pointerdown",
+        handleUserInteraction,
+        true
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     CERRAR AL TOCAR FUERA
+  ======================================================= */
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleOutsidePointer =
+      (event) => {
+        if (
+          rootRef.current &&
+          !rootRef.current.contains(
+            event.target
+          )
+        ) {
+          setOpen(false);
+        }
+      };
+
+    document.addEventListener(
+      "pointerdown",
+      handleOutsidePointer,
+      true
+    );
+
+    return () => {
+      document.removeEventListener(
+        "pointerdown",
+        handleOutsidePointer,
+        true
+      );
+    };
+  }, [
+    open,
+  ]);
+
+  /* =======================================================
+     SALIR DE LA APP
+  ======================================================= */
+
+  useEffect(() => {
+    const handleVisibilityChange =
+      () => {
+        const audio =
+          audioRef.current;
+
+        if (!audio) {
+          return;
+        }
+
+        if (
+          document.hidden
+        ) {
+          saveCurrentPosition();
+
+          hiddenWasPlayingRef.current =
+            !audio.paused &&
+            !userPausedRef.current;
+
+          if (
+            hiddenWasPlayingRef.current
+          ) {
+            pauseRadio(
+              "Pausada al salir"
+            );
+          }
+
+          setOpen(false);
+
+          return;
+        }
+
+        if (
+          hiddenWasPlayingRef.current &&
+          !userPausedRef.current
+        ) {
+          hiddenWasPlayingRef.current =
+            false;
+
+          playRadio();
+        }
+      };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     GUARDAR AL CERRAR
+  ======================================================= */
+
+  useEffect(() => {
+    const handlePageHide =
+      () => {
+        saveCurrentPosition();
+      };
+
+    window.addEventListener(
+      "pagehide",
+      handlePageHide
+    );
+
+    return () => {
+      window.removeEventListener(
+        "pagehide",
+        handlePageHide
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     VÍDEOS / TRAILERS
+  ======================================================= */
+
+  useEffect(() => {
+    const handleMediaStart =
+      () => {
+        const audio =
+          audioRef.current;
+
+        mediaActiveRef.current =
+          true;
+
+        pendingMediaResumeRef.current =
+          false;
+
+        if (!audio) {
+          return;
+        }
+
+        mediaWasPlayingRef.current =
+          !audio.paused &&
+          !userPausedRef.current;
+
+        if (
+          mediaWasPlayingRef.current
+        ) {
+          pauseRadio(
+            "Pausada por vídeo"
+          );
+        }
+      };
+
+    const handleMediaEnd =
+      () => {
+        mediaActiveRef.current =
+          false;
+
+        const shouldResumeLater =
+          mediaWasPlayingRef.current &&
+          !userPausedRef.current;
+
+        mediaWasPlayingRef.current =
+          false;
+
+        if (
+          shouldResumeLater
+        ) {
+          pendingMediaResumeRef.current =
+            true;
+
+          setStatus(
+            "Lista para continuar"
+          );
+        }
+      };
+
+    window.addEventListener(
+      MEDIA_START_EVENT,
+      handleMediaStart
+    );
+
+    window.addEventListener(
+      MEDIA_END_EVENT,
+      handleMediaEnd
+    );
+
+    return () => {
+      window.removeEventListener(
+        MEDIA_START_EVENT,
+        handleMediaStart
+      );
+
+      window.removeEventListener(
+        MEDIA_END_EVENT,
+        handleMediaEnd
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     CONTROLES
+  ======================================================= */
+
+  function togglePlay() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (!audio.paused) {
+      userPausedRef.current =
+        true;
+
+      hiddenWasPlayingRef.current =
+        false;
+
+      mediaWasPlayingRef.current =
+        false;
+
+      pendingMediaResumeRef.current =
+        false;
+
+      pauseRadio(
+        "Pausada"
+      );
+
+      return;
+    }
+
+    userPausedRef.current =
+      false;
+
+    setStatus(
+      "Conectando…"
+    );
+
+    playRadio();
+  }
+
+  function changeSource(
+    nextId
+  ) {
+    if (
+      nextId ===
+      sourceId
+    ) {
+      return;
+    }
+
+    saveCurrentPosition();
+
+    const audio =
+      audioRef.current;
+
+    stationShouldResumeRef.current =
+      Boolean(audio) &&
+      !audio.paused &&
+      !userPausedRef.current;
+
+    setSourceId(
+      nextId
+    );
+  }
+
+  function seekTo(
+    value
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (
+      !audio ||
+      !isProgram
+    ) {
+      return;
+    }
+
+    const next =
+      Number(value);
+
+    if (
+      !Number.isFinite(
+        next
+      )
+    ) {
+      return;
+    }
+
+    const max =
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+        ? audio.duration
+        : duration;
+
+    const clamped =
+      max > 0
+        ? Math.max(
+            0,
+            Math.min(
+              next,
+              max
+            )
+          )
+        : Math.max(
+            0,
+            next
+          );
+
+    audio.currentTime =
+      clamped;
+
+    setCurrentTime(
+      clamped
+    );
+
+    saveCurrentPosition();
+  }
+
+  function skipBy(
+    seconds
+  ) {
+    const audio =
+      audioRef.current;
+
+    if (
+      !audio ||
+      !isProgram
+    ) {
+      return;
+    }
+
+    const max =
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+        ? audio.duration
+        : duration;
+
+    let next =
+      audio.currentTime +
+      seconds;
+
+    next =
+      Math.max(
+        0,
+        next
+      );
+
+    if (
+      max > 0
+    ) {
+      next =
+        Math.min(
+          next,
+          max
+        );
+    }
+
+    audio.currentTime =
+      next;
+
+    setCurrentTime(
+      next
+    );
+
+    saveCurrentPosition();
+  }
+
+  /* =======================================================
+     AUDIO EVENTS
+  ======================================================= */
+
+  function handlePlaying() {
+    setPlaying(true);
+
+    setStatus(
+      sourceRef.current.kind ===
+        "program"
+        ? "Reproduciendo"
+        : "En directo"
+    );
+  }
+
+  function handleWaiting() {
+    setStatus(
+      "Conectando…"
+    );
+  }
+
+  function handlePause() {
+    setPlaying(false);
+
+    saveCurrentPosition();
+  }
+
+  function handleLoadedMetadata() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+    ) {
+      setDuration(
+        audio.duration
+      );
+    }
+
+    restoreProgramPosition();
+  }
+
+  function handleDurationChange() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    if (
+      Number.isFinite(
+        audio.duration
+      ) &&
+      audio.duration > 0
+    ) {
+      setDuration(
+        audio.duration
+      );
+    }
+
+    restoreProgramPosition();
+  }
+
+  function handleTimeUpdate() {
+    const audio =
+      audioRef.current;
+
+    if (!audio) {
+      return;
+    }
+
+    const next =
+      audio.currentTime;
+
+    setCurrentTime(
+      next
+    );
+
+    if (
+      sourceRef.current.kind !==
+        "program"
+    ) {
+      return;
+    }
+
+    if (
+      Math.abs(
+        next -
+          lastSavedPositionRef.current
+      ) >= 5
+    ) {
+      saveCurrentPosition();
+    }
+  }
+
+  function handleEnded() {
+    setPlaying(false);
+
+    userPausedRef.current =
+      true;
+
+    if (
+      sourceRef.current.kind ===
+      "program"
+    ) {
+      clearSavedPosition();
+
+      setCurrentTime(
+        duration
+      );
+    }
+
+    setStatus(
+      "Programa terminado"
+    );
+  }
+
+  function handleError() {
+    setPlaying(false);
+
+    setStatus(
+      "Audio no disponible"
+    );
+  }
+
+  /* =======================================================
+     DATOS VISUALES
+  ======================================================= */
+
+  const sourceDate =
+    isProgram
+      ? formatDate(
+          source.date
+        )
+      : "";
+
+  const progressMax =
+    duration > 0
+      ? duration
+      : 1;
+
+  const progressValue =
+    duration > 0
+      ? Math.min(
+          currentTime,
+          duration
+        )
+      : 0;
+
+  /* =======================================================
+     ESTILOS RESPONSIVE
+  ======================================================= */
+
+  const panelStyle =
+    landscape
+      ? {
+          position:
+            "fixed",
+
+          top:
+            compactLandscape
+              ? 6
+              : 8,
+
+          left:
+            64,
+
+          width:
+            "min(650px, calc(100vw - 128px))",
+
+          height:
+            compactLandscape
+              ? "calc(100dvh - 12px)"
+              : "calc(100dvh - 16px)",
+
+          maxHeight:
+            compactLandscape
+              ? "calc(100dvh - 12px)"
+              : "calc(100dvh - 16px)",
+
+          overflow:
+            "hidden",
+
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "minmax(170px,.72fr) minmax(280px,1.28fr)",
+
+          gridTemplateRows:
+            "auto auto minmax(0,1fr)",
+
+          gridTemplateAreas:
+            `"header now"
+             "tabs controls"
+             "list progress"`,
+
+          columnGap:
+            compactLandscape
+              ? 7
+              : 10,
+
+          rowGap:
+            compactLandscape
+              ? 5
+              : 8,
+
+          boxSizing:
+            "border-box",
+
+          padding:
+            compactLandscape
+              ? 8
+              : 10,
+
+          border:
+            "1px solid rgba(255,255,255,.15)",
+
+          borderRadius:
+            14,
+
+          background:
+            "rgba(5,8,12,.97)",
+
+          backdropFilter:
+            "blur(18px)",
+
+          WebkitBackdropFilter:
+            "blur(18px)",
+
+          boxShadow:
+            "0 18px 55px rgba(0,0,0,.42)",
+        }
+      : {
+          position:
+            "absolute",
+
+          top: 45,
+
+          left: 0,
+
+          width:
+            "min(350px, calc(100vw - 28px))",
+
+          maxHeight:
+            "calc(100dvh - 78px)",
+
+          overflow:
+            "hidden",
+
+          display:
+            "flex",
+
+          flexDirection:
+            "column",
+
+          boxSizing:
+            "border-box",
+
+          padding: 14,
+
+          border:
+            "1px solid rgba(255,255,255,.15)",
+
+          borderRadius:
+            16,
+
+          background:
+            "rgba(5,8,12,.96)",
+
+          backdropFilter:
+            "blur(18px)",
+
+          WebkitBackdropFilter:
+            "blur(18px)",
+
+          boxShadow:
+            "0 18px 55px rgba(0,0,0,.42)",
+        };
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
+
+  return (
+    <>
+      <audio
+        ref={audioRef}
+        preload={
+          isProgram
+            ? "metadata"
+            : "none"
+        }
+        muted={muted}
+        onPlaying={
+          handlePlaying
+        }
+        onWaiting={
+          handleWaiting
+        }
+        onPause={
+          handlePause
+        }
+        onEnded={
+          handleEnded
+        }
+        onError={
+          handleError
+        }
+        onLoadedMetadata={
+          handleLoadedMetadata
+        }
+        onDurationChange={
+          handleDurationChange
+        }
+        onTimeUpdate={
+          handleTimeUpdate
+        }
+      />
+
+      <div
+        ref={rootRef}
+        style={{
+          position:
+            "fixed",
+
+          top: 14,
+
+          left: 14,
+
+          zIndex: 120,
+
+          fontFamily:
+            "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+
+          color:
+            "#fff",
+
+          pointerEvents:
+            "auto",
+        }}
+        onPointerDown={(
+          event
+        ) =>
+          event.stopPropagation()
+        }
+      >
+        <button
+          type="button"
+          aria-label="Abrir Radio Tierra Vicio"
+          onClick={() =>
+            setOpen(
+              (current) =>
+                !current
+            )
+          }
+          style={{
+            width:
+              landscape
+                ? 40
+                : 42,
+
+            height:
+              landscape
+                ? 34
+                : 36,
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            padding: 0,
+
+            border:
+              playing
+                ? "1px solid rgba(95,220,255,.58)"
+                : "1px solid rgba(255,255,255,.16)",
+
+            borderRadius: 10,
+
+            background:
+              playing
+                ? "rgba(10,62,76,.84)"
+                : "rgba(0,0,0,.54)",
+
+            color:
+              "#fff",
+
+            fontSize: 19,
+
+            fontWeight: 900,
+
+            cursor:
+              "pointer",
+
+            touchAction:
+              "manipulation",
+          }}
+        >
+          ♪
+        </button>
+
+                {open && (
+          <div
+            style={
+              panelStyle
+            }
+          >
+            <div
+              style={{
+                gridArea:
+                  landscape
+                    ? "header"
+                    : undefined,
+
+                display:
+                  "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "center",
+
+                minWidth: 0,
+
+                flexShrink: 0,
+
+                marginBottom:
+                  landscape
+                    ? 0
+                    : 12,
+              }}
+            >
+              <div
+                style={{
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  style={{
+                    color:
+                      "#5fdcff",
+
+                    fontSize:
+                      compactLandscape
+                        ? 7
+                        : 9,
+
+                    fontWeight: 950,
+
+                    letterSpacing:
+                      ".16em",
+                  }}
+                >
+                  RADIO
+                </div>
+
+                <div
+                  style={{
+                    overflow:
+                      "hidden",
+
+                    textOverflow:
+                      "ellipsis",
+
+                    whiteSpace:
+                      "nowrap",
+
+                    fontSize:
+                      landscape
+                        ? 14
+                        : 17,
+
+                    fontWeight: 900,
+                  }}
+                >
+                  TIERRA VICIO
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginLeft: 8,
+
+                  color:
+                    playing
+                      ? "#68e2ff"
+                      : "#777",
+
+                  fontSize:
+                    8,
+
+                  fontWeight: 900,
+
+                  whiteSpace:
+                    "nowrap",
+                }}
+              >
+                {playing
+                  ? "ON AIR"
+                  : "OFF"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                gridArea:
+                  landscape
+                    ? "tabs"
+                    : undefined,
+
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "1fr 1fr",
+
+                gap: 5,
+
+                minWidth: 0,
+
+                flexShrink: 0,
+
+                marginBottom:
+                  landscape
+                    ? 0
+                    : 12,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  setTab("live")
+                }
+                style={
+                  simpleButtonStyle({
+                    active:
+                      tab ===
+                      "live",
+
+                    height:
+                      landscape
+                        ? compactLandscape
+                          ? 27
+                          : 30
+                        : 34,
+                  })
+                }
+              >
+                EN DIRECTO
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setTab(
+                    "programs"
+                  )
+                }
+                style={
+                  simpleButtonStyle({
+                    active:
+                      tab ===
+                      "programs",
+
+                    height:
+                      landscape
+                        ? compactLandscape
+                          ? 27
+                          : 30
+                        : 34,
+                  })
+                }
+              >
+                PROGRAMAS
+              </button>
+            </div>
+
+            <div
+              style={{
+                gridArea:
+                  landscape
+                    ? "now"
+                    : undefined,
+
+                minWidth: 0,
+
+                flexShrink: 0,
+
+                padding:
+                  landscape
+                    ? compactLandscape
+                      ? "6px 8px"
+                      : "8px 10px"
+                    : "10px",
+
+                marginBottom:
+                  landscape
+                    ? 0
+                    : 10,
+
+                borderRadius: 11,
+
+                background:
+                  "rgba(255,255,255,.05)",
+              }}
+            >
+              <div
+                style={{
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    landscape
+                      ? "nowrap"
+                      : "normal",
+
+                  fontSize:
+                    landscape
+                      ? 11
+                      : 12,
+
+                  lineHeight: 1.3,
+
+                  fontWeight: 900,
+                }}
+              >
+                {source.name}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 3,
+
+                  overflow:
+                    "hidden",
+
+                  textOverflow:
+                    "ellipsis",
+
+                  whiteSpace:
+                    "nowrap",
+
+                  color:
+                    "rgba(255,255,255,.5)",
+
+                  fontSize:
+                    landscape
+                      ? 8
+                      : 9,
+                }}
+              >
+                {source.subtitle}
+
+                {sourceDate
+                  ? ` · ${sourceDate}`
+                  : ""}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+
+                  color:
+                    "#68e2ff",
+
+                  fontSize:
+                    landscape
+                      ? 8
+                      : 9,
+                }}
+              >
+                {status}
+              </div>
+            </div>
+
+            {isProgram && (
+              <div
+                style={{
+                  gridArea:
+                    landscape
+                      ? "progress"
+                      : undefined,
+
+                  minWidth: 0,
+                  minHeight: 0,
+
+                  flexShrink:
+                    landscape
+                      ? 1
+                      : 0,
+
+                  overflowY:
+                    landscape
+                      ? "auto"
+                      : "visible",
+
+                  WebkitOverflowScrolling:
+                    "touch",
+
+                  padding:
+                    landscape
+                      ? compactLandscape
+                        ? "6px 8px"
+                        : "8px 10px"
+                      : "9px 10px 10px",
+
+                  marginBottom:
+                    landscape
+                      ? 0
+                      : 10,
+
+                  border:
+                    "1px solid rgba(255,255,255,.07)",
+
+                  borderRadius: 11,
+
+                  background:
+                    "rgba(255,255,255,.025)",
+                }}
+              >
+                <input
+                  type="range"
+                  min="0"
+                  max={
+                    progressMax
+                  }
+                  step="1"
+                  value={
+                    progressValue
+                  }
+                  disabled={
+                    duration <= 0
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    seekTo(
+                      event.target
+                        .value
+                    )
+                  }
+                  style={{
+                    width:
+                      "100%",
+
+                    margin: 0,
+
+                    accentColor:
+                      "#68e2ff",
+
+                    touchAction:
+                      "manipulation",
+
+                    opacity:
+                      duration > 0
+                        ? 1
+                        : 0.45,
+                  }}
+                />
+
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    justifyContent:
+                      "space-between",
+
+                    marginTop: 3,
+
+                    color:
+                      "rgba(255,255,255,.48)",
+
+                    fontSize: 9,
+
+                    fontVariantNumeric:
+                      "tabular-nums",
+                  }}
+                >
+                  <span>
+                    {formatTime(
+                      currentTime
+                    )}
+                  </span>
+
+                  <span>
+                    {duration > 0
+                      ? formatTime(
+                          duration
+                        )
+                      : "--:--"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display:
+                      "grid",
+
+                    gridTemplateColumns:
+                      "1fr 1fr",
+
+                    gap: 6,
+
+                    marginTop:
+                      compactLandscape
+                        ? 5
+                        : 7,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      skipBy(-15)
+                    }
+                    style={{
+                      ...simpleButtonStyle({
+                        height:
+                          landscape
+                            ? 27
+                            : 29,
+                      }),
+
+                      color:
+                        "#ddd",
+                    }}
+                  >
+                    ↶ 15 s
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      skipBy(30)
+                    }
+                    style={{
+                      ...simpleButtonStyle({
+                        height:
+                          landscape
+                            ? 27
+                            : 29,
+                      }),
+
+                      color:
+                        "#ddd",
+                    }}
+                  >
+                    30 s ↷
+                  </button>
+                </div>
+
+                {source.description &&
+                  landscape && (
+                    <div
+                      style={{
+                        marginTop: 8,
+
+                        color:
+                          "rgba(255,255,255,.44)",
+
+                        fontSize: 8,
+
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {source.description}
+                    </div>
+                  )}
+              </div>
+            )}
+
+            <div
+              style={{
+                gridArea:
+                  landscape
+                    ? "controls"
+                    : undefined,
+
+                display:
+                  "grid",
+
+                gridTemplateColumns:
+                  "1fr 48px",
+
+                gap: 7,
+
+                minWidth: 0,
+
+                flexShrink: 0,
+
+                marginBottom:
+                  landscape
+                    ? 0
+                    : 12,
+              }}
+            >
+              <button
+                type="button"
+                onClick={
+                  togglePlay
+                }
+                style={{
+                  height:
+                    landscape
+                      ? compactLandscape
+                        ? 30
+                        : 34
+                      : 40,
+
+                  border:
+                    "1px solid rgba(95,220,255,.28)",
+
+                  borderRadius: 10,
+
+                  background:
+                    "rgba(95,220,255,.10)",
+
+                  color:
+                    "#fff",
+
+                  fontSize:
+                    landscape
+                      ? 9
+                      : 11,
+
+                  fontWeight: 850,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
+                }}
+              >
+                {playing
+                  ? "Ⅱ  Pausar"
+                  : "▶  Escuchar"}
+              </button>
+
+              <button
+                type="button"
+                aria-label={
+                  muted
+                    ? "Activar sonido"
+                    : "Silenciar"
+                }
+                onClick={() =>
+                  setMuted(
+                    (current) =>
+                      !current
+                  )
+                }
+                style={{
+                  height:
+                    landscape
+                      ? compactLandscape
+                        ? 30
+                        : 34
+                      : 40,
+
+                  border:
+                    "1px solid rgba(255,255,255,.11)",
+
+                  borderRadius: 10,
+
+                  background:
+                    "rgba(255,255,255,.05)",
+
+                  color:
+                    "#fff",
+
+                  fontSize: 16,
+
+                  cursor:
+                    "pointer",
+
+                  touchAction:
+                    "manipulation",
+                }}
+              >
+                {muted
+                  ? "×♪"
+                  : "♪"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                gridArea:
+                  landscape
+                    ? "list"
+                    : undefined,
+
+                minWidth: 0,
+                minHeight: 0,
+
+                flex:
+                  landscape
+                    ? undefined
+                    : 1,
+
+                overflowY:
+                  "auto",
+
+                overscrollBehavior:
+                  "contain",
+
+                WebkitOverflowScrolling:
+                  "touch",
+              }}
+            >
+              {tab ===
+                "live" && (
+                <div
+                  style={{
+                    display:
+                      "grid",
+
+                    gap: 6,
+                  }}
+                >
+                  {LIVE_STATIONS.map(
+                    (item) => {
+                      const active =
+                        item.id ===
+                        source.id;
+
+                      return (
+                        <button
+                          key={
+                            item.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            changeSource(
+                              item.id
+                            )
+                          }
+                          style={{
+                            width:
+                              "100%",
+
+                            minHeight:
+                              landscape
+                                ? 40
+                                : 48,
+
+                            display:
+                              "grid",
+
+                            gridTemplateColumns:
+                              landscape
+                                ? "34px 1fr"
+                                : "42px 1fr",
+
+                            alignItems:
+                              "center",
+
+                            gap:
+                              landscape
+                                ? 6
+                                : 8,
+
+                            padding:
+                              landscape
+                                ? "6px 7px"
+                                : "7px 9px",
+
+                            border:
+                              active
+                                ? "1px solid rgba(95,220,255,.30)"
+                                : "1px solid rgba(255,255,255,.07)",
+
+                            borderRadius: 10,
+
+                            background:
+                              active
+                                ? "rgba(95,220,255,.09)"
+                                : "rgba(255,255,255,.035)",
+
+                            color:
+                              "#fff",
+
+                            textAlign:
+                              "left",
+
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display:
+                                "grid",
+
+                              placeItems:
+                                "center",
+
+                              height:
+                                landscape
+                                  ? 26
+                                  : 28,
+
+                              borderRadius: 7,
+
+                              background:
+                                "rgba(255,255,255,.06)",
+
+                              color:
+                                active
+                                  ? "#68e2ff"
+                                  : "#999",
+
+                              fontSize: 8,
+
+                              fontWeight: 950,
+                            }}
+                          >
+                            {item.badge}
+                          </span>
+
+                          <span
+                            style={{
+                              minWidth: 0,
+                            }}
+                          >
+                            <span
+                              style={{
+                                display:
+                                  "block",
+
+                                overflow:
+                                  "hidden",
+
+                                textOverflow:
+                                  "ellipsis",
+
+                                whiteSpace:
+                                  "nowrap",
+
+                                fontSize:
+                                  landscape
+                                    ? 10
+                                    : 11,
+
+                                fontWeight: 850,
+                              }}
+                            >
+                              {item.name}
+                            </span>
+
+                            <span
+                              style={{
+                                display:
+                                  "block",
+
+                                overflow:
+                                  "hidden",
+
+                                textOverflow:
+                                  "ellipsis",
+
+                                whiteSpace:
+                                  "nowrap",
+
+                                marginTop: 2,
+
+                                color:
+                                  "rgba(255,255,255,.43)",
+
+                                fontSize:
+                                  landscape
+                                    ? 8
+                                    : 9,
+                              }}
+                            >
+                              {
+                                item.subtitle
+                              }
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              )}
+
+                           {tab ===
+                "programs" && (
+                <div>
+                  {programsLoading && (
+                    <div
+                      style={{
+                        padding: 16,
+
+                        textAlign:
+                          "center",
+
+                        color:
+                          "rgba(255,255,255,.48)",
+
+                        fontSize: 10,
+                      }}
+                    >
+                      Cargando programas…
+                    </div>
+                  )}
+
+                  {programsError && (
+                    <div
+                      style={{
+                        padding: 16,
+
+                        textAlign:
+                          "center",
+
+                        color:
+                          "#ff9b9b",
+
+                        fontSize: 10,
+                      }}
+                    >
+                      No se pudieron cargar los programas.
+                    </div>
+                  )}
+
+                  {!programsLoading &&
+                    !programsError &&
+                    shows.map(
+                      (show) => {
+                        const expanded =
+                          expandedShowId ===
+                          show.id;
+
+                        return (
+                          <div
+                            key={
+                              show.id
+                            }
+                            style={{
+                              marginBottom: 7,
+
+                              overflow:
+                                "hidden",
+
+                              border:
+                                "1px solid rgba(255,255,255,.07)",
+
+                              borderRadius: 11,
+
+                              background:
+                                "rgba(255,255,255,.025)",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedShowId(
+                                  expanded
+                                    ? null
+                                    : show.id
+                                )
+                              }
+                              style={{
+                                width:
+                                  "100%",
+
+                                minHeight:
+                                  landscape
+                                    ? 42
+                                    : 52,
+
+                                display:
+                                  "grid",
+
+                                gridTemplateColumns:
+                                  landscape
+                                    ? "34px 1fr auto"
+                                    : "42px 1fr auto",
+
+                                alignItems:
+                                  "center",
+
+                                gap:
+                                  landscape
+                                    ? 6
+                                    : 8,
+
+                                padding:
+                                  landscape
+                                    ? "6px 7px"
+                                    : "8px 10px",
+
+                                border: 0,
+
+                                background:
+                                  expanded
+                                    ? "rgba(95,220,255,.06)"
+                                    : "transparent",
+
+                                color:
+                                  "#fff",
+
+                                textAlign:
+                                  "left",
+
+                                cursor:
+                                  "pointer",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display:
+                                    "grid",
+
+                                  placeItems:
+                                    "center",
+
+                                  height:
+                                    landscape
+                                      ? 26
+                                      : 30,
+
+                                  borderRadius: 7,
+
+                                  background:
+                                    "rgba(255,255,255,.06)",
+
+                                  color:
+                                    "#68e2ff",
+
+                                  fontSize: 8,
+
+                                  fontWeight: 950,
+                                }}
+                              >
+                                {show.badge}
+                              </span>
+
+                              <span
+                                style={{
+                                  minWidth: 0,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    display:
+                                      "block",
+
+                                    overflow:
+                                      "hidden",
+
+                                    textOverflow:
+                                      "ellipsis",
+
+                                    whiteSpace:
+                                      "nowrap",
+
+                                    fontSize:
+                                      landscape
+                                        ? 10
+                                        : 11,
+
+                                    fontWeight: 900,
+                                  }}
+                                >
+                                  {show.name}
+                                </span>
+
+                                <span
+                                  style={{
+                                    display:
+                                      "block",
+
+                                    marginTop: 2,
+
+                                    color:
+                                      "rgba(255,255,255,.43)",
+
+                                    fontSize:
+                                      landscape
+                                        ? 8
+                                        : 9,
+                                  }}
+                                >
+                                  {show.episodeCount} episodios
+                                </span>
+                              </span>
+
+                              <span
+                                style={{
+                                  color:
+                                    "rgba(255,255,255,.48)",
+
+                                  fontSize: 14,
+
+                                  transform:
+                                    expanded
+                                      ? "rotate(180deg)"
+                                      : "rotate(0deg)",
+
+                                  transition:
+                                    "transform .15s ease",
+                                }}
+                              >
+                                ▾
+                              </span>
+                            </button>
+
+                            {expanded && (
+                              <div
+                                style={{
+                                  display:
+                                    "grid",
+
+                                  gap: 5,
+
+                                  padding:
+                                    landscape
+                                      ? "0 6px 6px"
+                                      : "0 7px 7px",
+                                }}
+                              >
+                                {show.episodes.map(
+                                  (
+                                    episode
+                                  ) => {
+                                    const episodeSource =
+                                      makeEpisodeSource(
+                                        show,
+                                        episode
+                                      );
+
+                                    const active =
+                                      source.id ===
+                                      episodeSource.id;
+
+                                    let savedPosition =
+                                      0;
+
+                                    try {
+                                      savedPosition =
+                                        Number(
+                                          window.localStorage
+                                            .getItem(
+                                              STORAGE_POSITION_PREFIX +
+                                                episodeSource.id
+                                            )
+                                        ) || 0;
+                                    } catch {
+                                      savedPosition =
+                                        0;
+                                    }
+
+                                    return (
+                                      <button
+                                        key={
+                                          episodeSource.id
+                                        }
+                                        type="button"
+                                        onClick={() =>
+                                          changeSource(
+                                            episodeSource.id
+                                          )
+                                        }
+                                        style={{
+                                          width:
+                                            "100%",
+
+                                          display:
+                                            "grid",
+
+                                          gridTemplateColumns:
+                                            "1fr auto",
+
+                                          alignItems:
+                                            "center",
+
+                                          gap: 8,
+
+                                          padding:
+                                            landscape
+                                              ? "6px 7px"
+                                              : "8px 9px",
+
+                                          border:
+                                            active
+                                              ? "1px solid rgba(95,220,255,.28)"
+                                              : "1px solid rgba(255,255,255,.055)",
+
+                                          borderRadius: 8,
+
+                                          background:
+                                            active
+                                              ? "rgba(95,220,255,.08)"
+                                              : "rgba(0,0,0,.15)",
+
+                                          color:
+                                            "#fff",
+
+                                          textAlign:
+                                            "left",
+
+                                          cursor:
+                                            "pointer",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            minWidth: 0,
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              display:
+                                                "block",
+
+                                              overflow:
+                                                "hidden",
+
+                                              textOverflow:
+                                                "ellipsis",
+
+                                              whiteSpace:
+                                                landscape
+                                                  ? "nowrap"
+                                                  : "normal",
+
+                                              fontSize:
+                                                landscape
+                                                  ? 9
+                                                  : 10,
+
+                                              lineHeight: 1.3,
+
+                                              fontWeight:
+                                                active
+                                                  ? 900
+                                                  : 750,
+                                            }}
+                                          >
+                                            {
+                                              episode.title
+                                            }
+                                          </span>
+
+                                          <span
+                                            style={{
+                                              display:
+                                                "block",
+
+                                              marginTop: 3,
+
+                                              color:
+                                                "rgba(255,255,255,.4)",
+
+                                              fontSize: 8,
+                                            }}
+                                          >
+                                            {formatDate(
+                                              episode.date
+                                            )}
+
+                                            {savedPosition >
+                                            5
+                                              ? ` · seguir en ${formatTime(
+                                                  savedPosition
+                                                )}`
+                                              : ""}
+                                          </span>
+                                        </span>
+
+                                        <span
+                                          style={{
+                                            color:
+                                              active
+                                                ? "#68e2ff"
+                                                : "rgba(255,255,255,.38)",
+
+                                            fontSize: 12,
+                                          }}
+                                        >
+                                          {active &&
+                                          playing
+                                            ? "Ⅱ"
+                                            : "▶"}
+                                        </span>
+                                      </button>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                </div>
+              )}
+            </div>
+
+            {landscape &&
+              !isProgram && (
+                <div
+                  style={{
+                    gridArea:
+                      "progress",
+
+                    minWidth: 0,
+                    minHeight: 0,
+
+                    display:
+                      "grid",
+
+                    placeItems:
+                      "center",
+
+                    padding: 12,
+
+                    border:
+                      "1px solid rgba(255,255,255,.06)",
+
+                    borderRadius: 11,
+
+                    background:
+                      "rgba(255,255,255,.02)",
+
+                    color:
+                      "rgba(255,255,255,.28)",
+
+                    textAlign:
+                      "center",
+
+                    fontSize: 9,
+                  }}
+                >
+                  Música y programas de videojuegos mientras recorrés Freaky World.
+                </div>
+              )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+
