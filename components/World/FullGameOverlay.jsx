@@ -756,6 +756,7 @@ function CollapsibleText({
 /* =========================================================
    VIDEO
 ========================================================= */
+
 function VideoPlayer({
   game,
   fillHeight = false,
@@ -808,7 +809,7 @@ function VideoPlayer({
 
           minHeight:
             fillHeight
-              ? 180
+              ? 200
               : 180,
 
           aspectRatio:
@@ -822,10 +823,10 @@ function VideoPlayer({
           placeItems:
             "center",
 
+          borderRadius: 14,
+
           overflow:
             "hidden",
-
-          borderRadius: 14,
 
           background:
             "#0c0f13",
@@ -870,15 +871,6 @@ function VideoPlayer({
 
         flexDirection:
           "column",
-
-        alignItems:
-          "center",
-
-        justifyContent:
-          "center",
-
-        overflow:
-          "hidden",
       }}
     >
       <div
@@ -887,20 +879,19 @@ function VideoPlayer({
             "relative",
 
           width:
-            fillHeight
-              ? "auto"
-              : "100%",
-
-          height:
-            fillHeight
-              ? "100%"
-              : "auto",
-
-          maxWidth:
             "100%",
 
+          flex:
+            fillHeight
+              ? 1
+              : undefined,
+
+          minHeight: 0,
+
           aspectRatio:
-            "16 / 9",
+            fillHeight
+              ? undefined
+              : "16 / 9",
 
           overflow:
             "hidden",
@@ -936,6 +927,45 @@ function VideoPlayer({
             border: 0,
           }}
         />
+
+        {videos.length > 1 && (
+          <div
+            style={{
+              position:
+                "absolute",
+
+              left: 10,
+
+              bottom: 10,
+
+              zIndex: 4,
+
+              padding:
+                "5px 9px",
+
+              borderRadius:
+                999,
+
+              background:
+                "rgba(0,0,0,.72)",
+
+              color:
+                "#ffffff",
+
+              fontSize: 9,
+
+              fontWeight: 850,
+
+              lineHeight: 1,
+
+              pointerEvents:
+                "none",
+            }}
+          >
+            {safeIndex + 1} de{" "}
+            {videos.length}
+          </div>
+        )}
       </div>
 
       {videos.length >
@@ -951,7 +981,7 @@ function VideoPlayer({
             alignItems:
               "center",
 
-            gap: 8,
+            gap: 10,
 
             marginTop: 7,
           }}
@@ -975,23 +1005,6 @@ function VideoPlayer({
           >
             ‹
           </button>
-
-          <span
-            style={{
-              minWidth: 48,
-
-              textAlign:
-                "center",
-
-              color:
-                "#7f8990",
-
-              fontSize: 8,
-            }}
-          >
-            {safeIndex + 1} de{" "}
-            {videos.length}
-          </span>
 
           <button
             type="button"
@@ -2529,13 +2542,14 @@ export default function FullGameOverlay({
     portrait
       ? undefined
       : Math.min(
-          265,
+          300,
           Math.max(
-            210,
+            225,
             viewport.height *
-              0.62
+              0.68
           )
         );
+
   return (
     <div
       ref={overlayRef}
@@ -2640,12 +2654,12 @@ export default function FullGameOverlay({
               width:
                 portrait
                   ? 38
-                  : 30,
+                  : 34,
 
               height:
                 portrait
                   ? 50
-                  : 40,
+                  : 45,
 
               objectFit:
                 "cover",
@@ -2749,7 +2763,7 @@ export default function FullGameOverlay({
           padding:
             portrait
               ? "12px 10px 44px"
-              : "7px 10px 30px",
+              : "8px 10px 30px",
 
           boxSizing:
             "border-box",
@@ -2914,7 +2928,8 @@ export default function FullGameOverlay({
                 />
               </Section>
             </div>
-          </>        ) : (
+          </>
+        ) : (
           <>
             <div
               style={{
@@ -2923,10 +2938,7 @@ export default function FullGameOverlay({
 
                 gridTemplateColumns:
                   cover
-                    ? `${Math.round(
-                        landscapeMediaHeight *
-                          0.75
-                      )}px minmax(0,1fr)`
+                    ? "minmax(185px,24%) minmax(0,1fr)"
                     : "1fr",
 
                 gap: 10,
@@ -2937,34 +2949,19 @@ export default function FullGameOverlay({
                 height:
                   landscapeMediaHeight,
 
-                minHeight: 210,
+                minHeight: 225,
 
-                maxHeight: 265,
+                maxHeight: 300,
 
                 alignItems:
                   "stretch",
-
-                overflow:
-                  "hidden",
               }}
             >
               {cover && (
                 <div
                   style={{
-                    width:
-                      "100%",
-
                     height:
                       "100%",
-
-                    display:
-                      "flex",
-
-                    alignItems:
-                      "center",
-
-                    justifyContent:
-                      "center",
 
                     overflow:
                       "hidden",
@@ -2986,7 +2983,7 @@ export default function FullGameOverlay({
                         "100%",
 
                       objectFit:
-                        "contain",
+                        "cover",
 
                       display:
                         "block",
@@ -2995,36 +2992,12 @@ export default function FullGameOverlay({
                 </div>
               )}
 
-              <div
-                style={{
-                  width:
-                    "100%",
-
-                  height:
-                    "100%",
-
-                  minWidth: 0,
-
-                  overflow:
-                    "hidden",
-
-                  display:
-                    "flex",
-
-                  alignItems:
-                    "center",
-
-                  justifyContent:
-                    "flex-start",
-                }}
-              >
-                <VideoPlayer
-                  game={
-                    displayGame
-                  }
-                  fillHeight
-                />
-              </div>
+              <VideoPlayer
+                game={
+                  displayGame
+                }
+                fillHeight
+              />
             </div>
 
             <div
@@ -3037,7 +3010,7 @@ export default function FullGameOverlay({
 
                 gap: 6,
 
-                marginTop: 7,
+                marginTop: 8,
 
                 padding:
                   "7px 9px",
@@ -3102,7 +3075,7 @@ export default function FullGameOverlay({
               marginTop:
                 portrait
                   ? 10
-                  : 7,
+                  : 8,
 
               display:
                 "flex",
@@ -3146,7 +3119,7 @@ export default function FullGameOverlay({
           </div>
         )}
 
-                {description && (
+        {description && (
           <div
             style={{
               marginTop: 11,
