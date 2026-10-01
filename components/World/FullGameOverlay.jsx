@@ -451,6 +451,9 @@ function Chip({
         fontSize: 9,
 
         fontWeight: 750,
+
+        whiteSpace:
+          "nowrap",
       }}
     >
       {children}
@@ -806,7 +809,7 @@ function VideoPlayer({
 
           minHeight:
             fillHeight
-              ? 200
+              ? 160
               : 180,
 
           aspectRatio:
@@ -850,16 +853,24 @@ function VideoPlayer({
   return (
     <div
       style={{
+        width:
+          "100%",
+
         height:
           fillHeight
             ? "100%"
             : "auto",
+
+        minWidth: 0,
 
         display:
           "flex",
 
         flexDirection:
           "column",
+
+        justifyContent:
+          "center",
       }}
     >
       <div
@@ -870,20 +881,13 @@ function VideoPlayer({
           width:
             "100%",
 
-          flex:
-            fillHeight
-              ? 1
-              : undefined,
-
-          minHeight:
-            fillHeight
-              ? 0
-              : undefined,
-
           aspectRatio:
+            "16 / 9",
+
+          maxHeight:
             fillHeight
-              ? undefined
-              : "16 / 9",
+              ? "100%"
+              : undefined,
 
           overflow:
             "hidden",
@@ -1354,6 +1358,12 @@ function Gallery({
 
               maxHeight:
                 "88dvh",
+
+              width:
+                "auto",
+
+              height:
+                "auto",
 
               objectFit:
                 "contain",
@@ -2119,10 +2129,6 @@ export default function FullGameOverlay({
     setGameHistory,
   ] = useState([]);
 
-  /* =======================================================
-     VIEWPORT / ORIENTATION
-  ======================================================= */
-
   useEffect(() => {
     function updateViewport() {
       setViewport(
@@ -2171,10 +2177,6 @@ export default function FullGameOverlay({
     viewport.height >=
     viewport.width;
 
-  /* =======================================================
-     RESET AL CAMBIAR JUEGO DE ORIGEN
-  ======================================================= */
-
   useEffect(() => {
     setActiveGame(game);
 
@@ -2186,10 +2188,6 @@ export default function FullGameOverlay({
   }, [
     game?.id,
   ]);
-
-  /* =======================================================
-     CARGAR FICHA COMPLETA
-  ======================================================= */
 
   useEffect(() => {
     const gameId =
@@ -2279,10 +2277,6 @@ export default function FullGameOverlay({
   }, [
     activeGame?.id,
   ]);
-
-  /* =======================================================
-     GAME DISPLAY
-  ======================================================= */
 
   const displayGame =
     masterGame &&
@@ -2380,10 +2374,6 @@ export default function FullGameOverlay({
       )
       .filter(Boolean);
 
-  /* =======================================================
-     NAVEGACIÓN SIMILARES
-  ======================================================= */
-
   function scrollTop() {
     requestAnimationFrame(
       () => {
@@ -2458,10 +2448,6 @@ export default function FullGameOverlay({
     onBack?.();
   }
 
-  /* =======================================================
-     BODY LOCK
-  ======================================================= */
-
   useEffect(() => {
     const previous =
       document.body.style
@@ -2477,10 +2463,6 @@ export default function FullGameOverlay({
         previous;
     };
   }, []);
-
-  /* =======================================================
-     ESCAPE = ATRÁS
-  ======================================================= */
 
   useEffect(() => {
     function handleKeyDown(
@@ -2514,10 +2496,6 @@ export default function FullGameOverlay({
     };
   });
 
-  /* =======================================================
-     RADIO / MEDIA
-  ======================================================= */
-
   useEffect(() => {
     return () => {
       window.dispatchEvent(
@@ -2534,9 +2512,17 @@ export default function FullGameOverlay({
     return null;
   }
 
-  /* =======================================================
-     UI
-  ======================================================= */
+  const landscapeMediaHeight =
+    portrait
+      ? undefined
+      : Math.min(
+          250,
+          Math.max(
+            185,
+            viewport.height *
+              0.58
+          )
+        );
 
   return (
     <div
@@ -2547,9 +2533,6 @@ export default function FullGameOverlay({
 
         inset: 0,
 
-        /*
-          Por encima de la radio.
-        */
         zIndex:
           300000,
 
@@ -2578,10 +2561,6 @@ export default function FullGameOverlay({
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       }}
     >
-      {/* ===================================================
-          HEADER
-      =================================================== */}
-
       <header
         style={{
           position:
@@ -2597,17 +2576,20 @@ export default function FullGameOverlay({
           alignItems:
             "center",
 
-          gap: 10,
+          gap:
+            portrait
+              ? 10
+              : 8,
 
           minHeight:
             portrait
               ? 58
-              : 52,
+              : 48,
 
           padding:
             portrait
               ? "8px 10px"
-              : "6px 14px",
+              : "4px 10px",
 
           boxSizing:
             "border-box",
@@ -2625,8 +2607,6 @@ export default function FullGameOverlay({
             "blur(18px)",
         }}
       >
-        {/* ATRÁS */}
-
         <button
           type="button"
           aria-label="Volver"
@@ -2640,8 +2620,6 @@ export default function FullGameOverlay({
           ‹
         </button>
 
-        {/* PORTADA HEADER */}
-
         {cover && (
           <img
             src={cover}
@@ -2650,12 +2628,12 @@ export default function FullGameOverlay({
               width:
                 portrait
                   ? 38
-                  : 34,
+                  : 30,
 
               height:
                 portrait
                   ? 50
-                  : 45,
+                  : 40,
 
               objectFit:
                 "cover",
@@ -2664,8 +2642,6 @@ export default function FullGameOverlay({
             }}
           />
         )}
-
-        {/* TÍTULO */}
 
         <div
           style={{
@@ -2685,7 +2661,10 @@ export default function FullGameOverlay({
               whiteSpace:
                 "nowrap",
 
-              fontSize: 15,
+              fontSize:
+                portrait
+                  ? 15
+                  : 14,
 
               fontWeight: 850,
             }}
@@ -2722,8 +2701,6 @@ export default function FullGameOverlay({
           </div>
         </div>
 
-        {/* CERRAR */}
-
         <button
           type="button"
           aria-label="Cerrar ficha"
@@ -2749,7 +2726,10 @@ export default function FullGameOverlay({
           width:
             "100%",
 
-          maxWidth: 1280,
+          maxWidth:
+            portrait
+              ? 1280
+              : 1500,
 
           margin:
             "0 auto",
@@ -2757,7 +2737,7 @@ export default function FullGameOverlay({
           padding:
             portrait
               ? "12px 10px 44px"
-              : "10px 14px 44px",
+              : "7px 10px 30px",
 
           boxSizing:
             "border-box",
@@ -2784,10 +2764,6 @@ export default function FullGameOverlay({
             No se pudo cargar toda la información de esta ficha. Se muestran los datos disponibles.
           </div>
         )}
-
-        {/* =================================================
-            VERTICAL
-        ================================================= */}
 
         {portrait ? (
           <>
@@ -2844,8 +2820,6 @@ export default function FullGameOverlay({
                   minWidth: 0,
                 }}
               >
-                {/* PUNTAJES SIEMPRE */}
-
                 <div
                   style={{
                     display:
@@ -2910,47 +2884,6 @@ export default function FullGameOverlay({
                     }
                   />
                 </div>
-
-                {platforms.length >
-                  0 && (
-                  <div
-                    style={{
-                      display:
-                        "flex",
-
-                      flexWrap:
-                        "wrap",
-
-                      gap: 5,
-
-                      marginTop: 7,
-                    }}
-                  >
-                    {platforms
-                      .slice(
-                        0,
-                        5
-                      )
-                      .map(
-                        (
-                          platform
-                        ) => (
-                          <Chip
-                            key={
-                              platform
-                            }
-                            accent={
-                              accent
-                            }
-                          >
-                            {
-                              platform
-                            }
-                          </Chip>
-                        )
-                      )}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -2971,10 +2904,6 @@ export default function FullGameOverlay({
             </div>
           </>
         ) : (
-          /* =================================================
-             HORIZONTAL
-          ================================================= */
-
           <>
             <div
               style={{
@@ -2983,17 +2912,20 @@ export default function FullGameOverlay({
 
                 gridTemplateColumns:
                   cover
-                    ? "minmax(150px,22%) minmax(0,1fr)"
+                    ? "minmax(135px,18%) minmax(0,1fr)"
                     : "1fr",
 
-                gap: 12,
+                gap: 10,
+
+                width:
+                  "100%",
 
                 height:
-                  "min(310px,42vw)",
+                  landscapeMediaHeight,
 
-                minHeight: 210,
+                minHeight: 185,
 
-                maxHeight: 310,
+                maxHeight: 250,
 
                 alignItems:
                   "stretch",
@@ -3004,6 +2936,12 @@ export default function FullGameOverlay({
                   style={{
                     height:
                       "100%",
+
+                    display:
+                      "grid",
+
+                    placeItems:
+                      "center",
 
                     overflow:
                       "hidden",
@@ -3025,7 +2963,7 @@ export default function FullGameOverlay({
                         "100%",
 
                       objectFit:
-                        "cover",
+                        "contain",
 
                       display:
                         "block",
@@ -3042,21 +2980,20 @@ export default function FullGameOverlay({
               />
             </div>
 
-            {/* PUNTAJES + DATOS */}
-
             <div
               style={{
                 display:
                   "grid",
 
                 gridTemplateColumns:
-                  "repeat(7,minmax(0,1fr))",
+                  "repeat(6,minmax(0,1fr))",
 
                 gap: 6,
 
-                marginTop: 9,
+                marginTop: 7,
 
-                padding: 9,
+                padding:
+                  "7px 9px",
 
                 borderRadius: 12,
 
@@ -3107,29 +3044,62 @@ export default function FullGameOverlay({
                 label="Mi evaluación"
                 value="—"
               />
-
-              <HeroData
-                label="Plataformas"
-                value={
-                  platforms
-                    .slice(
-                      0,
-                      3
-                    )
-                    .join(
-                      " · "
-                    )
-                }
-              />
             </div>
           </>
         )}
 
-        {/* =================================================
-            DESCRIPCIÓN
-        ================================================= */}
+        {platforms.length >
+          0 && (
+          <div
+            style={{
+              marginTop:
+                portrait
+                  ? 10
+                  : 7,
 
-        {description && (
+              display:
+                "flex",
+
+              gap: 6,
+
+              overflowX:
+                "auto",
+
+              padding:
+                "2px 1px 5px",
+
+              scrollbarWidth:
+                "none",
+
+              WebkitOverflowScrolling:
+                "touch",
+            }}
+          >
+            {platforms.map(
+              (platform) => (
+                <div
+                  key={
+                    platform
+                  }
+                  style={{
+                    flex:
+                      "0 0 auto",
+                  }}
+                >
+                  <Chip
+                    accent={
+                      accent
+                    }
+                  >
+                    {platform}
+                  </Chip>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+                {description && (
           <div
             style={{
               marginTop: 11,
@@ -3146,10 +3116,6 @@ export default function FullGameOverlay({
           </div>
         )}
 
-        {/* =================================================
-            GALERÍA
-        ================================================= */}
-
         <div
           style={{
             marginTop: 11,
@@ -3161,10 +3127,6 @@ export default function FullGameOverlay({
             }
           />
         </div>
-
-        {/* =================================================
-            FICHA + CARACTERÍSTICAS
-        ================================================= */}
 
         <div
           style={{
@@ -3302,10 +3264,6 @@ export default function FullGameOverlay({
           </Section>
         </div>
 
-        {/* =================================================
-            IDIOMAS
-        ================================================= */}
-
         <div
           style={{
             marginTop: 11,
@@ -3317,10 +3275,6 @@ export default function FullGameOverlay({
             }
           />
         </div>
-
-        {/* =================================================
-            CLASIFICACIÓN
-        ================================================= */}
 
         <div
           style={{
@@ -3334,10 +3288,6 @@ export default function FullGameOverlay({
             accent={accent}
           />
         </div>
-
-        {/* =================================================
-            HISTORIA
-        ================================================= */}
 
         {storyline && (
           <div
@@ -3356,10 +3306,6 @@ export default function FullGameOverlay({
           </div>
         )}
 
-        {/* =================================================
-            SIMILARES
-        ================================================= */}
-
         <div
           style={{
             marginTop: 11,
@@ -3375,15 +3321,6 @@ export default function FullGameOverlay({
             }
           />
         </div>
-
-        {/* =================================================
-            NO HAY BOTONES VOLVER/CERRAR ABAJO
-
-            La navegación queda únicamente arriba:
-
-            ← = historial / origen
-            × = cerrar ficha al origen
-        ================================================= */}
       </main>
     </div>
   );
