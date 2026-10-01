@@ -1791,3 +1791,396 @@ export default function FullGameOverlay({ game, onClose, onBack }) {
         desktop ? 360 : 300,
         Math.max(220, viewport.height * 0.66)
       );
+
+     return (
+    <div
+      ref={overlayRef}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 300000,
+        width: "100%",
+        height: viewport.height,
+        overflowY: "auto",
+        overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        background: "#080a0d",
+        color: "#ffffff",
+        fontFamily:
+          "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      }}
+    >
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          display: "flex",
+          alignItems: "center",
+          gap: portrait ? 10 : 8,
+          minHeight: portrait ? 58 : 48,
+          padding: portrait ? "8px 10px" : "4px 10px",
+          boxSizing: "border-box",
+          borderBottom: `1px solid ${accent}33`,
+          background: "rgba(5,7,9,.98)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+        }}
+      >
+        <button
+          type="button"
+          aria-label="Volver"
+          onClick={goBack}
+          style={navButtonStyle()}
+        >
+          ‹
+        </button>
+
+        {cover && (
+          <img
+            src={cover}
+            alt=""
+            style={{
+              width: portrait ? 38 : 34,
+              height: portrait ? 50 : 45,
+              objectFit: "cover",
+              borderRadius: 6,
+            }}
+          />
+        )}
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              fontSize: portrait ? 15 : 14,
+              fontWeight: 850,
+            }}
+          >
+            {title}
+          </div>
+
+          <div
+            style={{
+              marginTop: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              color: "#858f95",
+              fontSize: 9,
+            }}
+          >
+            {[displayGame?.developer, year]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Cerrar ficha"
+          onClick={onClose}
+          style={navButtonStyle()}
+        >
+          ×
+        </button>
+      </header>
+
+      {loading && <LoadingBar accent={accent} />}
+
+      <main
+        style={{
+          width: "100%",
+          maxWidth: portrait ? 1280 : 1500,
+          margin: "0 auto",
+          padding: portrait
+            ? "12px 10px 44px"
+            : "8px 10px 30px",
+          boxSizing: "border-box",
+        }}
+      >
+        {loadError && (
+          <div
+            style={{
+              marginBottom: 10,
+              padding: 10,
+              borderRadius: 10,
+              background: "rgba(120,20,20,.13)",
+              color: "#d9a1a1",
+              fontSize: 10,
+            }}
+          >
+            No se pudo cargar toda la información de esta ficha. Se muestran los datos disponibles.
+          </div>
+        )}
+
+        {portrait ? (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: cover
+                  ? "145px minmax(0,1fr)"
+                  : "1fr",
+                gap: 11,
+                alignItems: "start",
+              }}
+            >
+              {cover && (
+                <div
+                  style={{
+                    overflow: "hidden",
+                    borderRadius: 14,
+                    background: "#101318",
+                  }}
+                >
+                  <img
+                    src={cover}
+                    alt={title}
+                    style={{
+                      width: "100%",
+                      aspectRatio: "3 / 4",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                </div>
+              )}
+
+              <div style={{ minWidth: 0 }}>
+                <DataRow label="Año" value={year} />
+                <DataRow
+                  label="Desarrollador"
+                  value={displayGame?.developer}
+                />
+                <DataRow
+                  label="Distribuidor"
+                  value={displayGame?.publisher}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginTop: 11 }}>
+              <Section title="Vídeo">
+                <VideoPlayer game={displayGame} />
+              </Section>
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: cover
+                  ? "minmax(170px,24%) minmax(0,1fr)"
+                  : "1fr",
+                gap: 10,
+                width: "100%",
+                height: landscapeMediaHeight,
+                minHeight: 220,
+                maxHeight: desktop ? 360 : 300,
+                alignItems: "stretch",
+              }}
+            >
+              {cover && (
+                <div
+                  style={{
+                    height: "100%",
+                    overflow: "hidden",
+                    borderRadius: 14,
+                    background: "#101318",
+                  }}
+                >
+                  <img
+                    src={cover}
+                    alt={title}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                </div>
+              )}
+
+              <VideoPlayer game={displayGame} fillHeight />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+                gap: 6,
+                marginTop: 8,
+                padding: "7px 9px",
+                borderRadius: 12,
+                background: "#101318",
+              }}
+            >
+              <HeroData label="Año" value={year} />
+              <HeroData
+                label="Desarrollador"
+                value={displayGame?.developer}
+              />
+              <HeroData
+                label="Distribuidor"
+                value={displayGame?.publisher}
+              />
+            </div>
+          </>
+        )}
+
+        <div style={{ marginTop: 9 }}>
+          <ScoreStrip
+            official={official}
+            community={community}
+            accent={accent}
+          />
+        </div>
+
+        {platforms.length > 0 && (
+          <div
+            style={{
+              marginTop: 8,
+              display: "flex",
+              gap: 6,
+              overflowX: "auto",
+              padding: "2px 1px 5px",
+              scrollbarWidth: "none",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {platforms.map((platform) => (
+              <div key={platform} style={{ flex: "0 0 auto" }}>
+                <Chip accent={accent}>{platform}</Chip>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {description && (
+          <div style={{ marginTop: 11 }}>
+            <Section title="Descripción">
+              <CollapsibleText
+                lines={4}
+                accent={accent}
+                desktop={desktop}
+              >
+                {description}
+              </CollapsibleText>
+            </Section>
+          </div>
+        )}
+
+        <div style={{ marginTop: 11 }}>
+          <Gallery game={displayGame} />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: portrait ? "1fr" : "1fr 1fr",
+            gap: 10,
+            marginTop: 11,
+          }}
+        >
+          <Section title="Ficha técnica" compact>
+            <DataRow label="Año" value={year} />
+            <DataRow
+              label="Desarrollador"
+              value={displayGame?.developer}
+            />
+            <DataRow
+              label="Distribuidor"
+              value={displayGame?.publisher}
+            />
+            <DataRow
+              label="Saga"
+              value={
+                typeof displayGame?.collection === "string"
+                  ? displayGame.collection
+                  : displayGame?.collection?.name ||
+                    displayGame?.collectionName
+              }
+            />
+            <DataRow
+              label="Franquicia"
+              value={
+                typeof displayGame?.franchise === "string"
+                  ? displayGame.franchise
+                  : displayGame?.franchise?.name ||
+                    displayGame?.franchiseName
+              }
+            />
+            <DataRow
+              label="Tipo"
+              value={displayGame?.releaseType}
+            />
+            <DataRow
+              label="Plataformas"
+              value={platforms.join(" · ")}
+            />
+            <DataRow
+              label="Motor"
+              value={engines.join(" · ")}
+            />
+            <DataRow
+              label="Otros títulos"
+              value={alternativeNames.join(" · ")}
+            />
+          </Section>
+
+          <Features
+            genres={genres}
+            themes={themes}
+            gameModes={gameModes}
+            perspectives={perspectives}
+            accent={accent}
+            portrait={portrait}
+          />
+        </div>
+
+        <div style={{ marginTop: 11 }}>
+          <Languages
+            game={displayGame}
+            accent={accent}
+            portrait={portrait}
+          />
+        </div>
+
+        <div style={{ marginTop: 11 }}>
+          <AgeRatings
+            game={displayGame}
+            accent={accent}
+            portrait={portrait}
+          />
+        </div>
+
+        {storyline && (
+          <div style={{ marginTop: 11 }}>
+            <Section title="Historia">
+              <CollapsibleText
+                lines={4}
+                accent={accent}
+                desktop={desktop}
+              >
+                {storyline}
+              </CollapsibleText>
+            </Section>
+          </div>
+        )}
+
+        <div style={{ marginTop: 11 }}>
+          <SimilarGames
+            game={displayGame}
+            accent={accent}
+            onOpenGame={openSimilarGame}
+          />
+        </div>
+      </main>
+    </div>
+  );
+}
