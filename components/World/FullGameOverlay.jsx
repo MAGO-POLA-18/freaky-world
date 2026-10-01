@@ -756,7 +756,6 @@ function CollapsibleText({
 /* =========================================================
    VIDEO
 ========================================================= */
-
 function VideoPlayer({
   game,
   fillHeight = false,
@@ -809,7 +808,7 @@ function VideoPlayer({
 
           minHeight:
             fillHeight
-              ? 160
+              ? 180
               : 180,
 
           aspectRatio:
@@ -822,6 +821,9 @@ function VideoPlayer({
 
           placeItems:
             "center",
+
+          overflow:
+            "hidden",
 
           borderRadius: 14,
 
@@ -869,8 +871,14 @@ function VideoPlayer({
         flexDirection:
           "column",
 
+        alignItems:
+          "center",
+
         justifyContent:
           "center",
+
+        overflow:
+          "hidden",
       }}
     >
       <div
@@ -879,15 +887,20 @@ function VideoPlayer({
             "relative",
 
           width:
+            fillHeight
+              ? "auto"
+              : "100%",
+
+          height:
+            fillHeight
+              ? "100%"
+              : "auto",
+
+          maxWidth:
             "100%",
 
           aspectRatio:
             "16 / 9",
-
-          maxHeight:
-            fillHeight
-              ? "100%"
-              : undefined,
 
           overflow:
             "hidden",
@@ -2516,14 +2529,13 @@ export default function FullGameOverlay({
     portrait
       ? undefined
       : Math.min(
-          250,
+          265,
           Math.max(
-            185,
+            210,
             viewport.height *
-              0.58
+              0.62
           )
         );
-
   return (
     <div
       ref={overlayRef}
@@ -2902,8 +2914,7 @@ export default function FullGameOverlay({
                 />
               </Section>
             </div>
-          </>
-        ) : (
+          </>        ) : (
           <>
             <div
               style={{
@@ -2912,7 +2923,10 @@ export default function FullGameOverlay({
 
                 gridTemplateColumns:
                   cover
-                    ? "minmax(135px,18%) minmax(0,1fr)"
+                    ? `${Math.round(
+                        landscapeMediaHeight *
+                          0.75
+                      )}px minmax(0,1fr)`
                     : "1fr",
 
                 gap: 10,
@@ -2923,24 +2937,33 @@ export default function FullGameOverlay({
                 height:
                   landscapeMediaHeight,
 
-                minHeight: 185,
+                minHeight: 210,
 
-                maxHeight: 250,
+                maxHeight: 265,
 
                 alignItems:
                   "stretch",
+
+                overflow:
+                  "hidden",
               }}
             >
               {cover && (
                 <div
                   style={{
+                    width:
+                      "100%",
+
                     height:
                       "100%",
 
                     display:
-                      "grid",
+                      "flex",
 
-                    placeItems:
+                    alignItems:
+                      "center",
+
+                    justifyContent:
                       "center",
 
                     overflow:
@@ -2972,12 +2995,36 @@ export default function FullGameOverlay({
                 </div>
               )}
 
-              <VideoPlayer
-                game={
-                  displayGame
-                }
-                fillHeight
-              />
+              <div
+                style={{
+                  width:
+                    "100%",
+
+                  height:
+                    "100%",
+
+                  minWidth: 0,
+
+                  overflow:
+                    "hidden",
+
+                  display:
+                    "flex",
+
+                  alignItems:
+                    "center",
+
+                  justifyContent:
+                    "flex-start",
+                }}
+              >
+                <VideoPlayer
+                  game={
+                    displayGame
+                  }
+                  fillHeight
+                />
+              </div>
             </div>
 
             <div
