@@ -1021,7 +1021,6 @@ function CollapsibleText({
 /* =========================================================
    VIDEO
 ========================================================= */
-
 function VideoPlayer({
   game,
   fillHeight = false,
@@ -1118,6 +1117,82 @@ function VideoPlayer({
       safeIndex
     ];
 
+  function previousVideo() {
+    setActiveIndex(
+      (current) =>
+        (
+          current -
+          1 +
+          videos.length
+        ) %
+        videos.length
+    );
+  }
+
+  function nextVideo() {
+    setActiveIndex(
+      (current) =>
+        (
+          current +
+          1
+        ) %
+        videos.length
+    );
+  }
+
+  const arrowStyle = {
+    position:
+      "absolute",
+
+    top:
+      "50%",
+
+    transform:
+      "translateY(-50%)",
+
+    zIndex: 8,
+
+    width: 38,
+
+    height: 38,
+
+    display:
+      "grid",
+
+    placeItems:
+      "center",
+
+    padding: 0,
+
+    border:
+      "1px solid rgba(255,255,255,.32)",
+
+    borderRadius:
+      "50%",
+
+    background:
+      "rgba(0,0,0,.58)",
+
+    color:
+      "#ffffff",
+
+    fontSize: 28,
+
+    lineHeight: 1,
+
+    cursor:
+      "pointer",
+
+    touchAction:
+      "manipulation",
+
+    backdropFilter:
+      "blur(4px)",
+
+    WebkitBackdropFilter:
+      "blur(4px)",
+  };
+
   return (
     <div
       style={{
@@ -1130,12 +1205,6 @@ function VideoPlayer({
             : "auto",
 
         minWidth: 0,
-
-        display:
-          "flex",
-
-        flexDirection:
-          "column",
       }}
     >
       <div
@@ -1146,10 +1215,10 @@ function VideoPlayer({
           width:
             "100%",
 
-          flex:
+          height:
             fillHeight
-              ? 1
-              : undefined,
+              ? "100%"
+              : "auto",
 
           minHeight: 0,
 
@@ -1193,104 +1262,78 @@ function VideoPlayer({
           }}
         />
 
-        {videos.length > 1 && (
-          <div
-            style={{
-              position:
-                "absolute",
+        {videos.length >
+          1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Vídeo anterior"
+              onClick={
+                previousVideo
+              }
+              style={{
+                ...arrowStyle,
 
-              left: 10,
+                left: 10,
+              }}
+            >
+              ‹
+            </button>
 
-              bottom: 10,
+            <button
+              type="button"
+              aria-label="Vídeo siguiente"
+              onClick={
+                nextVideo
+              }
+              style={{
+                ...arrowStyle,
 
-              zIndex: 4,
+                right: 10,
+              }}
+            >
+              ›
+            </button>
 
-              padding:
-                "5px 9px",
+            <div
+              style={{
+                position:
+                  "absolute",
 
-              borderRadius:
-                999,
+                left: 10,
 
-              background:
-                "rgba(0,0,0,.72)",
+                bottom: 10,
 
-              color:
-                "#ffffff",
+                zIndex: 8,
 
-              fontSize: 9,
+                padding:
+                  "5px 9px",
 
-              fontWeight: 850,
+                borderRadius:
+                  999,
 
-              lineHeight: 1,
+                background:
+                  "rgba(0,0,0,.72)",
 
-              pointerEvents:
-                "none",
-            }}
-          >
-            {safeIndex + 1} de{" "}
-            {videos.length}
-          </div>
+                color:
+                  "#ffffff",
+
+                fontSize: 9,
+
+                fontWeight: 850,
+
+                lineHeight: 1,
+
+                pointerEvents:
+                  "none",
+              }}
+            >
+              {safeIndex + 1} de{" "}
+              {videos.length}
+            </div>
+          </>
         )}
       </div>
-
-      {videos.length >
-        1 && (
-        <div
-          style={{
-            display:
-              "flex",
-
-            justifyContent:
-              "center",
-
-            alignItems:
-              "center",
-
-            gap: 10,
-
-            marginTop: 7,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() =>
-              setActiveIndex(
-                (current) =>
-                  (
-                    current -
-                    1 +
-                    videos.length
-                  ) %
-                  videos.length
-              )
-            }
-            style={
-              navButtonStyle()
-            }
-          >
-            ‹
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setActiveIndex(
-                (current) =>
-                  (
-                    current +
-                    1
-                  ) %
-                  videos.length
-              )
-            }
-            style={
-              navButtonStyle()
-            }
-          >
-            ›
-          </button>
-        </div>
-      )}
     </div>
   );
 }
