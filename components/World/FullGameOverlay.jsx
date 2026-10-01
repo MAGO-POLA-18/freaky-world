@@ -1447,3 +1447,347 @@ function AgeRatings({ game, accent, portrait }) {
     </Section>
   );
 }
+
+/* =========================================================
+   SIMILARES
+========================================================= */
+
+function SimilarGames({ game, accent, onOpenGame }) {
+  const similar = asArray(game?.similarGames).filter(
+    (item) => item?.available && item?.id && item?.name
+  );
+
+  const scrollRef = useRef(null);
+
+  if (!similar.length) return null;
+
+  const move = (direction) => {
+    scrollRef.current?.scrollBy({
+      left:
+        direction *
+        Math.max(180, scrollRef.current.clientWidth * 0.72),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <Section title="Juegos similares">
+      <div
+        ref={scrollRef}
+        style={{
+          display: "flex",
+          gap: 10,
+          overflowX: "auto",
+          paddingBottom: 4,
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+        }}
+      >
+        {similar.map((item) => {
+          const cover = getCover(item);
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onOpenGame(item)}
+              style={{
+                flex: "0 0 138px",
+                width: 138,
+                padding: 0,
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,.08)",
+                borderRadius: 12,
+                background: "#0d1014",
+                color: "#ffffff",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  aspectRatio: "3 / 4",
+                  background: "#080a0d",
+                }}
+              >
+                {cover && (
+                  <img
+                    src={cover}
+                    alt={item.name}
+                    loading="lazy"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                )}
+              </div>
+
+              <div style={{ padding: "8px 8px 9px" }}>
+                <div
+                  style={{
+                    minHeight: 30,
+                    fontSize: 10,
+                    lineHeight: 1.35,
+                    fontWeight: 800,
+                  }}
+                >
+                  {item.name}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: accent,
+                    fontSize: 8,
+                  }}
+                >
+                  {item.year || "Ver ficha"}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {similar.length > 2 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 6,
+            marginTop: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => move(-1)}
+            style={navButtonStyle(36)}
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={() => move(1)}
+            style={navButtonStyle(36)}
+          >
+            ›
+          </button>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function LoadingBar({ accent }) {
+  return (
+    <div
+      style={{
+        height: 3,
+        background: "rgba(255,255,255,.05)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          width: "40%",
+          height: "100%",
+          background: accent,
+        }}
+      />
+    </div>
+  );
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+export default function FullGameOverlay({ game, onClose, onBack }) {
+  const overlayRef = useRef(null);
+  const viewport = useViewport();
+
+  const [activeGame, setActiveGame] = useState(game);
+  const [masterGame, setMasterGame] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [gameHistory, setGameHistory] = useState([]);
+
+  const portrait = viewport.height >= viewport.width;
+  const desktop = viewport.width >= 1100;
+
+  useEffect(() => {
+    setActiveGame(game);
+    setMasterGame(null);
+    setLoadError(null);
+    setGameHistory([]);
+  }, [game?.id]);
+
+  useEffect(() => {
+    const gameId = activeGame?.id;
+    if (!gameId) return;
+
+    const controller = new AbortController();
+    let alive = true;
+
+    async function loadGame() {
+      setLoading(true);
+      setLoadError(null);
+
+      try {
+        const response = await fetch(
+          `/api/games?id=${encodeURIComponent(gameId)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data?.ok || !data?.game) {
+          throw new Error(
+            data?.error || "No se pudo cargar la ficha completa."
+          );
+        }
+
+        if (alive) setMasterGame(data.game);
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+
+        if (alive) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "No se pudo cargar la ficha completa."
+          );
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    loadGame();
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [activeGame?.id]);
+
+  const displayGame =
+    masterGame &&
+    Number(masterGame.id) === Number(activeGame?.id)
+      ? masterGame
+      : activeGame;
+
+  const title = getTitle(displayGame);
+  const cover = getCover(displayGame);
+  const year = getYear(displayGame);
+  const official = getScore(displayGame);
+  const community = getCommunityScore(displayGame);
+
+  const accent =
+    activeGame?.accent ||
+    game?.accent ||
+    "#5fdcff";
+
+  const platforms = normalizeNamedItems(displayGame?.platforms);
+  const genres = normalizeNamedItems(displayGame?.genres);
+  const themes = normalizeNamedItems(displayGame?.themes);
+  const gameModes = normalizeNamedItems(displayGame?.gameModes);
+  const perspectives = normalizeNamedItems(
+    displayGame?.playerPerspectives
+  );
+  const engines = normalizeNamedItems(displayGame?.gameEngines);
+
+  const description =
+    displayGame?.editorialSummary ||
+    displayGame?.summary ||
+    null;
+
+  const storyline = displayGame?.storyline || null;
+
+  const alternativeNames = asArray(displayGame?.alternativeNames)
+    .map((item) => (typeof item === "string" ? item : item?.name))
+    .filter(Boolean);
+
+  const scrollTop = () => {
+    requestAnimationFrame(() => {
+      overlayRef.current?.scrollTo({
+        top: 0,
+        behavior: "auto",
+      });
+    });
+  };
+
+  const openSimilarGame = (similar) => {
+    if (!similar?.id || !similar?.available) return;
+
+    setGameHistory((current) => [...current, activeGame]);
+    setMasterGame(null);
+    setActiveGame({ ...similar, accent });
+    scrollTop();
+  };
+
+  const goBack = () => {
+    if (gameHistory.length > 0) {
+      const previous = gameHistory[gameHistory.length - 1];
+
+      setGameHistory((current) => current.slice(0, -1));
+      setMasterGame(null);
+      setActiveGame(previous);
+      scrollTop();
+      return;
+    }
+
+    onBack?.();
+  };
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      goBack();
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  });
+
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("tierra-vicio-media-end")
+      );
+    };
+  }, []);
+
+  if (!activeGame?.id) return null;
+
+  const landscapeMediaHeight = portrait
+    ? undefined
+    : Math.min(
+        desktop ? 360 : 300,
+        Math.max(220, viewport.height * 0.66)
+      );
