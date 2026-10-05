@@ -866,11 +866,16 @@ function Chip({
    SCORE
 ========================================================= */
 
+/* =========================================================
+   SCORE
+========================================================= */
+
 function ScoreBox({
   icon,
   label,
   value,
   accent,
+  subtitle,
 }) {
   return (
     <div
@@ -965,16 +970,54 @@ function ScoreBox({
         >
           {value}
         </div>
+
+        {subtitle && (
+          <div
+            style={{
+              marginTop: 4,
+
+              overflow:
+                "hidden",
+
+              textOverflow:
+                "ellipsis",
+
+              whiteSpace:
+                "nowrap",
+
+              color:
+                "#69737a",
+
+              fontSize: 7,
+
+              lineHeight:
+                1.2,
+            }}
+          >
+            {subtitle}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
 
 function ScoreStrip({
   official,
   community,
   accent,
 }) {
+  const officialVotes =
+    Number(
+      official?.votes
+    ) || 0;
+
+  const communityVotes =
+    Number(
+      community?.votes
+    ) || 0;
+
   return (
     <div
       style={{
@@ -997,6 +1040,11 @@ function ScoreStrip({
           official?.value
         )}
         accent={accent}
+        subtitle={
+          officialVotes > 0
+            ? `${officialVotes} evaluaciones`
+            : null
+        }
       />
 
       <ScoreBox
@@ -1005,6 +1053,11 @@ function ScoreStrip({
         value={formatScore(
           community?.value
         )}
+        subtitle={
+          communityVotes > 0
+            ? `${communityVotes} votos`
+            : null
+        }
       />
 
       <ScoreBox
@@ -1013,6 +1066,452 @@ function ScoreStrip({
         value="—"
         accent="#ff5b75"
       />
+    </div>
+  );
+}
+
+
+/* =========================================================
+   DETALLE DE PUNTUACIONES OFICIALES
+========================================================= */
+
+function OfficialScoresBreakdown({
+  game,
+  accent,
+}) {
+  const scores =
+    asArray(
+      game?.officialPlatformScores
+    );
+
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  if (!scores.length) {
+    return null;
+  }
+
+  const grouped =
+    scores.reduce(
+      (
+        result,
+        item
+      ) => {
+        const sourceName =
+          item?.source?.name ||
+          "Fuente oficial";
+
+        if (
+          !result[
+            sourceName
+          ]
+        ) {
+          result[
+            sourceName
+          ] = [];
+        }
+
+        result[
+          sourceName
+        ].push(
+          item
+        );
+
+        return result;
+      },
+      {}
+    );
+
+  const sourceEntries =
+    Object.entries(
+      grouped
+    );
+
+  const totalVotes =
+    scores.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        (
+          Number(
+            item?.votesCount
+          ) || 0
+        ),
+      0
+    );
+
+  return (
+    <div
+      style={{
+        marginTop: 7,
+
+        overflow:
+          "hidden",
+
+        border:
+          "1px solid rgba(255,255,255,.07)",
+
+        borderRadius:
+          12,
+
+        background:
+          "#0d1014",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() =>
+          setExpanded(
+            (
+              current
+            ) =>
+              !current
+          )
+        }
+        style={{
+          width:
+            "100%",
+
+          display:
+            "flex",
+
+          alignItems:
+            "center",
+
+          justifyContent:
+            "space-between",
+
+          gap: 10,
+
+          padding:
+            "9px 11px",
+
+          border: 0,
+
+          background:
+            "transparent",
+
+          color:
+            "#fff",
+
+          cursor:
+            "pointer",
+
+          textAlign:
+            "left",
+
+          touchAction:
+            "manipulation",
+        }}
+      >
+        <div
+          style={{
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              color:
+                "#d7dde1",
+
+              fontSize:
+                10,
+
+              lineHeight:
+                1.2,
+
+              fontWeight:
+                850,
+            }}
+          >
+            Puntuaciones oficiales
+          </div>
+
+          <div
+            style={{
+              marginTop: 3,
+
+              color:
+                "#727c83",
+
+              fontSize: 8,
+
+              lineHeight:
+                1.3,
+            }}
+          >
+            {
+              scores.length
+            }{" "}
+            puntuaciones ·{" "}
+            {
+              totalVotes
+            }{" "}
+            evaluaciones
+          </div>
+        </div>
+
+        <div
+          style={{
+            flex:
+              "0 0 auto",
+
+            color:
+              accent,
+
+            fontSize:
+              18,
+
+            lineHeight: 1,
+
+            transform:
+              expanded
+                ? "rotate(180deg)"
+                : "rotate(0deg)",
+
+            transition:
+              "transform .18s ease",
+          }}
+        >
+          ⌄
+        </div>
+      </button>
+
+      {expanded && (
+        <div
+          style={{
+            padding:
+              "0 10px 10px",
+          }}
+        >
+          {sourceEntries.map(
+            ([
+              sourceName,
+              sourceScores,
+            ]) => (
+              <div
+                key={
+                  sourceName
+                }
+                style={{
+                  marginTop:
+                    6,
+
+                  overflow:
+                    "hidden",
+
+                  border:
+                    "1px solid rgba(255,255,255,.055)",
+
+                  borderRadius:
+                    10,
+
+                  background:
+                    "rgba(255,255,255,.018)",
+                }}
+              >
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    justifyContent:
+                      "space-between",
+
+                    gap: 8,
+
+                    padding:
+                      "7px 9px",
+
+                    borderBottom:
+                      "1px solid rgba(255,255,255,.05)",
+                  }}
+                >
+                  <div
+                    style={{
+                      color:
+                        accent,
+
+                      fontSize:
+                        9,
+
+                      fontWeight:
+                        900,
+                    }}
+                  >
+                    {
+                      sourceName
+                    }
+                  </div>
+
+                  <div
+                    style={{
+                      color:
+                        "#69737a",
+
+                      fontSize:
+                        7,
+                    }}
+                  >
+                    {
+                      sourceScores.length
+                    }{" "}
+                    plataformas
+                  </div>
+                </div>
+
+                {sourceScores.map(
+                  (
+                    item,
+                    index
+                  ) => {
+                    const score =
+                      Number(
+                        item?.score
+                      );
+
+                    const displayScore =
+                      Number.isFinite(
+                        score
+                      )
+                        ? score.toFixed(
+                            2
+                          )
+                        : "—";
+
+                    const votes =
+                      Number(
+                        item?.votesCount
+                      ) || 0;
+
+                    const platform =
+                      item
+                        ?.platform
+                        ?.name ||
+                      item
+                        ?.platform
+                        ?.abbreviation ||
+                      item
+                        ?.sourcePlatform ||
+                      "Plataforma";
+
+                    return (
+                      <div
+                        key={
+                          item?.id ||
+                          `${platform}-${index}`
+                        }
+                        style={{
+                          display:
+                            "grid",
+
+                          gridTemplateColumns:
+                            "minmax(0,1fr) auto",
+
+                          alignItems:
+                            "center",
+
+                          gap: 10,
+
+                          padding:
+                            "8px 9px",
+
+                          borderBottom:
+                            index ===
+                            sourceScores.length -
+                              1
+                              ? "none"
+                              : "1px solid rgba(255,255,255,.04)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            minWidth: 0,
+                          }}
+                        >
+                          <div
+                            style={{
+                              overflow:
+                                "hidden",
+
+                              textOverflow:
+                                "ellipsis",
+
+                              whiteSpace:
+                                "nowrap",
+
+                              color:
+                                "#d3d9dd",
+
+                              fontSize:
+                                9,
+
+                              fontWeight:
+                                700,
+                            }}
+                          >
+                            {
+                              platform
+                            }
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop:
+                                3,
+
+                              color:
+                                "#6e787f",
+
+                              fontSize:
+                                7,
+                            }}
+                          >
+                            {
+                              votes
+                            }{" "}
+                            evaluaciones
+                            {item?.year
+                              ? ` · ${item.year}`
+                              : ""}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            color:
+                              accent,
+
+                            fontSize:
+                              17,
+
+                            lineHeight:
+                              1,
+
+                            fontWeight:
+                              950,
+                          }}
+                        >
+                          {
+                            displayScore
+                          }
+                        </div>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4143,6 +4642,15 @@ export default function FullGameOverlay({
               accent
             }
           />
+
+          <OfficialScoresBreakdown
+            game={
+              displayGame
+            }
+            accent={
+              accent
+            }
+          />
         </div>
 
         {platforms.length >
@@ -4216,7 +4724,7 @@ export default function FullGameOverlay({
           />
         </div>
 
-                <div
+        <div
           style={{
             marginTop:
               11,
@@ -4427,4 +4935,3 @@ export default function FullGameOverlay({
     </div>
   );
 }
-
