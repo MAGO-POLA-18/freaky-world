@@ -221,6 +221,73 @@ function formatScore(
     1
   );
 }
+
+function getYoutubeId(
+  video
+) {
+  return (
+    video?.youtubeId ||
+    video?.youtube_id ||
+    null
+  );
+}
+
+function chooseFirstVideo(
+  game
+) {
+  const manual =
+    game?.manualTrailer
+      ?.youtubeId ||
+    game?.manualTrailerYoutubeId;
+
+  if (manual) {
+    return manual;
+  }
+
+  const videos =
+    asArray(
+      game?.videos
+    );
+
+  const preferences = [
+    "launch trailer",
+    "official trailer",
+    "release trailer",
+    "gameplay trailer",
+    "trailer",
+  ];
+
+  for (
+    const preference
+    of preferences
+  ) {
+    const found =
+      videos.find(
+        (video) =>
+          String(
+            video?.name ||
+              ""
+          )
+            .toLowerCase()
+            .includes(
+              preference
+            )
+      );
+
+    const id =
+      getYoutubeId(
+        found
+      );
+
+    if (id) {
+      return id;
+    }
+  }
+
+  return getYoutubeId(
+    videos[0]
+  );
+}
 /* =========================================================
    VIEWPORT
 ========================================================= */
