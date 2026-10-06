@@ -870,57 +870,308 @@ function Section({
 }
 
 /* =========================================================
-   CHIP SOLO PARA PLATAFORMAS
+   PLATAFORMAS
 ========================================================= */
 
-function Chip({
-  children,
-  accent = "#5fdcff",
+function PlatformCards({
+  game,
+  accent,
 }) {
+  const rawPlatforms =
+    asArray(
+      game?.platforms
+    );
+
+  const officialScores =
+    asArray(
+      game?.officialPlatformScores
+    );
+
+  if (!rawPlatforms.length) {
+    return null;
+  }
+
+  const scoreMap =
+    new Map(
+      officialScores.map(
+        (item) => [
+          Number(
+            item?.platform?.id
+          ),
+          item,
+        ]
+      )
+    );
+
   return (
-    <span
+    <div
       style={{
-        display:
-          "inline-flex",
-
-        alignItems:
-          "center",
-
-        minHeight: 24,
-
-        padding:
-          "3px 8px",
-
-        border:
-          `1px solid ${accent}28`,
-
-        borderRadius:
-          9,
-
-        background:
-          "rgba(255,255,255,.03)",
-
-        color:
-          "#d4dce0",
-
-        fontSize: 10,
-
-        lineHeight:
-          1.25,
-
-        fontWeight:
-          700,
+        marginTop: 9,
       }}
     >
-      {children}
-    </span>
+      <div
+        style={{
+          marginBottom: 7,
+
+          color:
+            "#818b92",
+
+          fontSize: 8,
+
+          fontWeight:
+            850,
+
+          textTransform:
+            "uppercase",
+
+          letterSpacing:
+            ".04em",
+        }}
+      >
+        Plataformas
+      </div>
+
+      <div
+        style={{
+          display:
+            "grid",
+
+          gridTemplateColumns:
+            "repeat(auto-fit,minmax(150px,1fr))",
+
+          gap: 7,
+        }}
+      >
+        {rawPlatforms.map(
+          (
+            platform,
+            index
+          ) => {
+            const platformId =
+              Number(
+                platform?.id
+              );
+
+            const scoreItem =
+              scoreMap.get(
+                platformId
+              );
+
+            const score =
+              Number(
+                scoreItem?.score
+              );
+
+            const hasScore =
+              Number.isFinite(
+                score
+              ) &&
+              score > 0;
+
+            const votes =
+              Number(
+                scoreItem?.votesCount
+              ) || 0;
+
+            const name =
+              platform?.name ||
+              platform
+                ?.abbreviation ||
+              "Plataforma";
+
+            const abbreviation =
+              platform
+                ?.abbreviation ||
+              null;
+
+            return (
+              <div
+                key={
+                  platformId ||
+                  `${name}-${index}`
+                }
+                style={{
+                  minWidth: 0,
+
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "minmax(0,1fr) auto",
+
+                  alignItems:
+                    "center",
+
+                  gap: 10,
+
+                  padding:
+                    "10px 11px",
+
+                  border:
+                    hasScore
+                      ? `1px solid ${accent}26`
+                      : "1px solid rgba(255,255,255,.07)",
+
+                  borderRadius:
+                    12,
+
+                  background:
+                    "linear-gradient(180deg,rgba(18,22,27,.96),rgba(12,15,19,.96))",
+
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,.025)",
+                }}
+              >
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      overflow:
+                        "hidden",
+
+                      textOverflow:
+                        "ellipsis",
+
+                      whiteSpace:
+                        "nowrap",
+
+                      color:
+                        "#e0e5e8",
+
+                      fontSize:
+                        10,
+
+                      fontWeight:
+                        850,
+                    }}
+                  >
+                    {name}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 4,
+
+                      display:
+                        "flex",
+
+                      alignItems:
+                        "center",
+
+                      gap: 5,
+
+                      color:
+                        "#6f7980",
+
+                      fontSize: 7,
+                    }}
+                  >
+                    {abbreviation && (
+                      <span>
+                        {
+                          abbreviation
+                        }
+                      </span>
+                    )}
+
+                    {hasScore && (
+                      <>
+                        {abbreviation && (
+                          <span>
+                            ·
+                          </span>
+                        )}
+
+                        <span>
+                          Oficial
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 3,
+
+                      color:
+                        hasScore
+                          ? "#7a858c"
+                          : "#606a70",
+
+                      fontSize: 7,
+                    }}
+                  >
+                    {hasScore
+                      ? votes > 0
+                        ? `${votes} evaluaciones`
+                        : "Puntuación oficial"
+                      : "Sin puntuación oficial"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    minWidth:
+                      52,
+
+                    textAlign:
+                      "right",
+                  }}
+                >
+                  <div
+                    style={{
+                      color:
+                        hasScore
+                          ? accent
+                          : "#59636a",
+
+                      fontSize:
+                        hasScore
+                          ? 20
+                          : 15,
+
+                      lineHeight: 1,
+
+                      fontWeight:
+                        950,
+                    }}
+                  >
+                    {hasScore
+                      ? score.toFixed(
+                          1
+                        )
+                      : "—"}
+                  </div>
+
+                  {hasScore && (
+                    <div
+                      style={{
+                        marginTop: 3,
+
+                        color:
+                          "#626c72",
+
+                        fontSize: 6,
+
+                        fontWeight:
+                          800,
+                      }}
+                    >
+                      / 100
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+        )}
+      </div>
+    </div>
   );
 }
-
-/* =========================================================
-   SCORE
-========================================================= */
-
 /* =========================================================
    SCORE
 ========================================================= */
@@ -4708,42 +4959,14 @@ export default function FullGameOverlay({
           />
         </div>
 
-        {platforms.length >
-          0 && (
-          <div
-            style={{
-              marginTop: 8,
-
-              display:
-                "flex",
-
-              gap: 6,
-
-              overflowX:
-                "auto",
-
-              padding:
-                "2px 1px 5px",
-            }}
-          >
-            {platforms.map(
-              (
-                platform
-              ) => (
-                <Chip
-                  key={
-                    platform
-                  }
-                  accent={
-                    accent
-                  }
-                >
-                  {platform}
-                </Chip>
-              )
-            )}
-          </div>
-        )}
+        <PlatformCards
+          game={
+            displayGame
+          }
+          accent={
+            accent
+          }
+        />
 
         {description && (
           <div
