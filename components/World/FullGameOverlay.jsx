@@ -110,9 +110,7 @@ function getScore(game) {
   ) {
     return {
       value:
-        official > 10
-          ? official / 10
-          : official,
+        official,
 
       votes:
         Number(
@@ -123,6 +121,63 @@ function getScore(game) {
         "official",
     };
   }
+
+  const totalRating =
+    Number(
+      game?.totalRating
+    );
+
+  if (
+    Number.isFinite(
+      totalRating
+    ) &&
+    totalRating > 0
+  ) {
+    return {
+      value:
+        totalRating,
+
+      votes:
+        Number(
+          game?.totalRatingCount
+        ) || 0,
+
+      source:
+        "igdb",
+    };
+  }
+
+  const rating =
+    Number(
+      game?.rating
+    );
+
+  if (
+    Number.isFinite(
+      rating
+    ) &&
+    rating > 0
+  ) {
+    return {
+      value:
+        rating,
+
+      votes:
+        Number(
+          game?.ratingCount
+        ) || 0,
+
+      source:
+        "igdb",
+    };
+  }
+
+  return {
+    value: null,
+    votes: 0,
+    source: null,
+  };
+}
 
   const totalRating =
     Number(
