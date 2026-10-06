@@ -3751,9 +3751,6 @@ function SimilarGames({
         item?.name
     );
 
-  const scrollRef =
-    useRef(null);
-
   if (!similar.length) {
     return null;
   }
@@ -3761,26 +3758,31 @@ function SimilarGames({
   return (
     <Section title="Juegos similares">
       <div
-        ref={
-          scrollRef
-        }
         style={{
-          display:
-            "flex",
-
-          gap: 10,
-
-          overflowX:
-            "auto",
-
+          display: "flex",
+          gap: 9,
+          overflowX: "auto",
           scrollbarWidth:
             "none",
+          paddingBottom: 2,
+          scrollSnapType:
+            "x proximity",
         }}
       >
         {similar.map(
           (item) => {
             const cover =
               getCover(
+                item
+              );
+
+            const official =
+              getScore(
+                item
+              );
+
+            const community =
+              getCommunityScore(
                 item
               );
 
@@ -3797,37 +3799,28 @@ function SimilarGames({
                 }
                 style={{
                   flex:
-                    "0 0 138px",
-
-                  width:
-                    138,
-
+                    "0 0 145px",
+                  width: 145,
                   padding: 0,
-
                   overflow:
                     "hidden",
-
                   border:
                     "1px solid rgba(255,255,255,.08)",
-
                   borderRadius:
                     12,
-
                   background:
                     "#0d1014",
-
-                  color:
-                    "#fff",
-
+                  color: "#fff",
                   textAlign:
                     "left",
+                  scrollSnapAlign:
+                    "start",
                 }}
               >
                 <div
                   style={{
                     aspectRatio:
                       "3 / 4",
-
                     background:
                       "#080a0d",
                   }}
@@ -3843,10 +3836,8 @@ function SimilarGames({
                       style={{
                         width:
                           "100%",
-
                         height:
                           "100%",
-
                         objectFit:
                           "cover",
                       }}
@@ -3862,35 +3853,123 @@ function SimilarGames({
                 >
                   <div
                     style={{
-                      minHeight:
-                        30,
-
-                      fontSize:
-                        10,
-
-                      fontWeight:
-                        800,
+                      minHeight: 28,
+                      overflow:
+                        "hidden",
+                      display:
+                        "-webkit-box",
+                      WebkitLineClamp:
+                        2,
+                      WebkitBoxOrient:
+                        "vertical",
+                      fontSize: 10,
+                      lineHeight: 1.3,
+                      fontWeight: 800,
                     }}
                   >
-                    {
-                      item.name
-                    }
+                    {item.name}
                   </div>
 
                   <div
                     style={{
-                      marginTop:
-                        4,
-
+                      marginTop: 5,
                       color:
-                        accent,
-
-                      fontSize:
-                        8,
+                        "#808a91",
+                      fontSize: 8,
                     }}
                   >
                     {item.year ||
-                      "Ver ficha"}
+                      "—"}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "1fr 1fr",
+                      gap: 4,
+                      marginTop: 7,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding:
+                          "5px 3px",
+                        borderRadius:
+                          8,
+                        background:
+                          "rgba(255,255,255,.04)",
+                        textAlign:
+                          "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color:
+                            "#818b92",
+                          fontSize: 6,
+                          fontWeight: 850,
+                          textTransform:
+                            "uppercase",
+                        }}
+                      >
+                        🏅 Oficial
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 2,
+                          color:
+                            accent,
+                          fontSize: 13,
+                          fontWeight: 950,
+                        }}
+                      >
+                        {formatScore(
+                          official?.value
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        padding:
+                          "5px 3px",
+                        borderRadius:
+                          8,
+                        background:
+                          "rgba(255,255,255,.04)",
+                        textAlign:
+                          "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color:
+                            "#818b92",
+                          fontSize: 6,
+                          fontWeight: 850,
+                          textTransform:
+                            "uppercase",
+                        }}
+                      >
+                        ⭐ Comunidad
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 2,
+                          color:
+                            "#d8dde0",
+                          fontSize: 13,
+                          fontWeight: 950,
+                        }}
+                      >
+                        {formatScore(
+                          community?.value
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </button>
@@ -3899,34 +3978,6 @@ function SimilarGames({
         )}
       </div>
     </Section>
-  );
-}
-
-function LoadingBar({
-  accent,
-}) {
-  return (
-    <div
-      style={{
-        height: 3,
-
-        background:
-          "rgba(255,255,255,.05)",
-      }}
-    >
-      <div
-        style={{
-          width:
-            "40%",
-
-          height:
-            "100%",
-
-          background:
-            accent,
-        }}
-      />
-    </div>
   );
 }
 
@@ -4030,10 +4081,8 @@ export default function FullGameOverlay({
             {
               method:
                 "GET",
-
               cache:
                 "no-store",
-
               signal:
                 controller.signal,
             }
@@ -4088,9 +4137,7 @@ export default function FullGameOverlay({
     loadGame();
 
     return () => {
-      alive =
-        false;
-
+      alive = false;
       controller.abort();
     };
   }, [
@@ -4137,11 +4184,6 @@ export default function FullGameOverlay({
     activeGame?.accent ||
     game?.accent ||
     "#5fdcff";
-
-  const platforms =
-    normalizeNamedItems(
-      displayGame?.platforms
-    );
 
   const genres =
     normalizeNamedItems(
@@ -4205,6 +4247,90 @@ export default function FullGameOverlay({
         displayGame
           ?.franchiseName;
 
+  const quickFacts = [
+    {
+      label: "Año",
+      value: year,
+    },
+    {
+      label:
+        "Desarrollador",
+      value:
+        displayGame
+          ?.developer,
+    },
+    {
+      label: "Saga",
+      value: collection,
+    },
+    {
+      label:
+        "Distribuidor",
+      value:
+        displayGame
+          ?.publisher,
+    },
+  ].filter(
+    (item) =>
+      item.value
+  );
+
+  const technicalRows = [
+    {
+      label: "Tipo",
+      value:
+        displayGame
+          ?.releaseType,
+    },
+    {
+      label:
+        "Franquicia",
+      value:
+        franchise &&
+        franchise !==
+          collection
+          ? franchise
+          : null,
+    },
+    {
+      label: "Géneros",
+      value:
+        genres.join(
+          " · "
+        ),
+    },
+    {
+      label: "Temas",
+      value:
+        themes.join(
+          " · "
+        ),
+    },
+    {
+      label:
+        "Modos de juego",
+      value:
+        gameModes.join(
+          " · "
+        ),
+    },
+    {
+      label:
+        "Perspectiva",
+      value:
+        perspectives.join(
+          " · "
+        ),
+    },
+    {
+      label: "Motor",
+      value:
+        engines.join(
+          " · "
+        ),
+    },
+  ];
+
   const scrollTop =
     () => {
       requestAnimationFrame(
@@ -4212,7 +4338,6 @@ export default function FullGameOverlay({
           overlayRef.current
             ?.scrollTo({
               top: 0,
-
               behavior:
                 "auto",
             });
@@ -4309,7 +4434,6 @@ export default function FullGameOverlay({
         }
 
         event.preventDefault();
-
         goBack();
       };
 
@@ -4338,9 +4462,7 @@ export default function FullGameOverlay({
     };
   }, []);
 
-  if (
-    !activeGame?.id
-  ) {
+  if (!activeGame?.id) {
     return null;
   }
 
@@ -4351,7 +4473,6 @@ export default function FullGameOverlay({
           desktop
             ? 360
             : 300,
-
           Math.max(
             220,
             viewport.height *
@@ -4365,32 +4486,19 @@ export default function FullGameOverlay({
         overlayRef
       }
       style={{
-        position:
-          "fixed",
-
+        position: "fixed",
         inset: 0,
-
-        zIndex:
-          300000,
-
-        width:
-          "100%",
-
+        zIndex: 300000,
+        width: "100%",
         height:
           viewport.height,
-
         overflowY:
           "auto",
-
         overflowX:
           "hidden",
-
         background:
           "#080a0d",
-
-        color:
-          "#fff",
-
+        color: "#fff",
         fontFamily:
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       }}
@@ -4399,32 +4507,22 @@ export default function FullGameOverlay({
         style={{
           position:
             "sticky",
-
           top: 0,
-
           zIndex: 40,
-
-          display:
-            "flex",
-
+          display: "flex",
           alignItems:
             "center",
-
           gap: 9,
-
           minHeight:
             portrait
               ? 58
               : 48,
-
           padding:
             portrait
               ? "8px 10px"
               : "4px 10px",
-
           borderBottom:
             `1px solid ${accent}33`,
-
           background:
             "rgba(5,7,9,.98)",
         }}
@@ -4443,18 +4541,13 @@ export default function FullGameOverlay({
 
         {cover && (
           <img
-            src={
-              cover
-            }
+            src={cover}
             alt=""
             style={{
               width: 38,
-
               height: 50,
-
               objectFit:
                 "cover",
-
               borderRadius:
                 6,
             }}
@@ -4464,7 +4557,6 @@ export default function FullGameOverlay({
         <div
           style={{
             minWidth: 0,
-
             flex: 1,
           }}
         >
@@ -4472,18 +4564,12 @@ export default function FullGameOverlay({
             style={{
               overflow:
                 "hidden",
-
               textOverflow:
                 "ellipsis",
-
               whiteSpace:
                 "nowrap",
-
-              fontSize:
-                15,
-
-              fontWeight:
-                850,
+              fontSize: 15,
+              fontWeight: 850,
             }}
           >
             {title}
@@ -4492,19 +4578,13 @@ export default function FullGameOverlay({
           <div
             style={{
               marginTop: 2,
-
               color:
                 "#858f95",
-
-              fontSize:
-                9,
-
+              fontSize: 9,
               whiteSpace:
                 "nowrap",
-
               overflow:
                 "hidden",
-
               textOverflow:
                 "ellipsis",
             }}
@@ -4542,22 +4622,17 @@ export default function FullGameOverlay({
 
       <main
         style={{
-          width:
-            "100%",
-
+          width: "100%",
           maxWidth:
             portrait
               ? 1280
               : 1500,
-
           margin:
             "0 auto",
-
           padding:
             portrait
-              ? "12px 10px 44px"
-              : "8px 10px 30px",
-
+              ? "8px 10px 40px"
+              : "7px 10px 30px",
           boxSizing:
             "border-box",
         }}
@@ -4566,22 +4641,15 @@ export default function FullGameOverlay({
           <div
             style={{
               marginBottom:
-                10,
-
-              padding:
-                10,
-
+                8,
+              padding: 9,
               borderRadius:
                 10,
-
               background:
                 "rgba(120,20,20,.13)",
-
               color:
                 "#d9a1a1",
-
-              fontSize:
-                10,
+              fontSize: 10,
             }}
           >
             No se pudo cargar toda la información de esta ficha.
@@ -4594,16 +4662,13 @@ export default function FullGameOverlay({
               style={{
                 display:
                   "grid",
-
                 gridTemplateColumns:
                   cover
                     ? "145px minmax(0,1fr)"
                     : "1fr",
-
                 gap: 11,
-
                 alignItems:
-                  "start",
+                  "stretch",
               }}
             >
               {cover && (
@@ -4611,31 +4676,24 @@ export default function FullGameOverlay({
                   style={{
                     overflow:
                       "hidden",
-
                     borderRadius:
-                      14,
-
+                      13,
                     background:
                       "#101318",
                   }}
                 >
                   <img
-                    src={
-                      cover
-                    }
-                    alt={
-                      title
-                    }
+                    src={cover}
+                    alt={title}
                     style={{
                       width:
                         "100%",
-
-                      aspectRatio:
-                        "3 / 4",
-
+                      height:
+                        "100%",
+                      minHeight:
+                        190,
                       objectFit:
                         "cover",
-
                       display:
                         "block",
                     }}
@@ -4643,45 +4701,102 @@ export default function FullGameOverlay({
                 </div>
               )}
 
-              <div>
-                <DataRow
-                  label="Año"
-                  value={
-                    year
-                  }
-                />
+              <div
+                style={{
+                  display:
+                    "grid",
+                  alignContent:
+                    "start",
+                  border:
+                    "1px solid rgba(255,255,255,.06)",
+                  borderRadius:
+                    13,
+                  background:
+                    "#0d1014",
+                  padding:
+                    "5px 10px",
+                }}
+              >
+                {quickFacts.map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <div
+                      key={
+                        item.label
+                      }
+                      style={{
+                        padding:
+                          "8px 0",
+                        borderBottom:
+                          index ===
+                          quickFacts.length -
+                            1
+                            ? "none"
+                            : "1px solid rgba(255,255,255,.055)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color:
+                            "#778188",
+                          fontSize:
+                            8,
+                          fontWeight:
+                            850,
+                          textTransform:
+                            "uppercase",
+                        }}
+                      >
+                        {
+                          item.label
+                        }
+                      </div>
 
-                <DataRow
-                  label="Desarrollador"
-                  value={
-                    displayGame
-                      ?.developer
-                  }
-                />
-
-                <DataRow
-                  label="Distribuidor"
-                  value={
-                    displayGame
-                      ?.publisher
-                  }
-                />
+                      <div
+                        style={{
+                          marginTop:
+                            3,
+                          color:
+                            "#d8dde0",
+                          fontSize:
+                            10,
+                          lineHeight:
+                            1.3,
+                          fontWeight:
+                            650,
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {
+                          item.value
+                        }
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             </div>
 
             <div
               style={{
-                marginTop:
-                  11,
+                marginTop: 8,
+                padding: 2,
+                border:
+                  "1px solid rgba(255,255,255,.055)",
+                borderRadius:
+                  14,
+                background:
+                  "#090b0e",
               }}
             >
-              <Section title="Vídeo">
-                <VideoPlayer
-                  game={
-                    displayGame
-                  }
-                />
-              </Section>
+              <VideoPlayer
+                game={
+                  displayGame
+                }
+              />
             </div>
           </>
         ) : (
@@ -4690,20 +4805,15 @@ export default function FullGameOverlay({
               style={{
                 display:
                   "grid",
-
                 gridTemplateColumns:
                   cover
                     ? "minmax(170px,24%) minmax(0,1fr)"
                     : "1fr",
-
-                gap: 10,
-
+                gap: 8,
                 height:
                   mediaHeight,
-
                 minHeight:
                   220,
-
                 maxHeight:
                   desktop
                     ? 360
@@ -4715,28 +4825,20 @@ export default function FullGameOverlay({
                   style={{
                     height:
                       "100%",
-
                     overflow:
                       "hidden",
-
                     borderRadius:
-                      14,
+                      13,
                   }}
                 >
                   <img
-                    src={
-                      cover
-                    }
-                    alt={
-                      title
-                    }
+                    src={cover}
+                    alt={title}
                     style={{
                       width:
                         "100%",
-
                       height:
                         "100%",
-
                       objectFit:
                         "cover",
                     }}
@@ -4744,59 +4846,61 @@ export default function FullGameOverlay({
                 </div>
               )}
 
-              <VideoPlayer
-                game={
-                  displayGame
-                }
-                fillHeight
-              />
+              <div
+                style={{
+                  height:
+                    "100%",
+                  padding: 2,
+                  border:
+                    "1px solid rgba(255,255,255,.055)",
+                  borderRadius:
+                    14,
+                  background:
+                    "#090b0e",
+                  boxSizing:
+                    "border-box",
+                }}
+              >
+                <VideoPlayer
+                  game={
+                    displayGame
+                  }
+                  fillHeight
+                />
+              </div>
             </div>
 
             <div
               style={{
                 display:
                   "grid",
-
                 gridTemplateColumns:
-                  "repeat(3,minmax(0,1fr))",
-
+                  "repeat(4,minmax(0,1fr))",
                 gap: 6,
-
-                marginTop:
-                  8,
-
+                marginTop: 7,
                 padding:
                   "7px 9px",
-
                 borderRadius:
-                  12,
-
+                  11,
                 background:
                   "#101318",
               }}
             >
-              <HeroData
-                label="Año"
-                value={
-                  year
-                }
-              />
-
-              <HeroData
-                label="Desarrollador"
-                value={
-                  displayGame
-                    ?.developer
-                }
-              />
-
-              <HeroData
-                label="Distribuidor"
-                value={
-                  displayGame
-                    ?.publisher
-                }
-              />
+              {quickFacts.map(
+                (item) => (
+                  <HeroData
+                    key={
+                      item.label
+                    }
+                    label={
+                      item.label
+                    }
+                    value={
+                      item.value
+                    }
+                  />
+                )
+              )}
             </div>
           </>
         )}
@@ -4817,15 +4921,6 @@ export default function FullGameOverlay({
               accent
             }
           />
-
-          <OfficialScoresBreakdown
-            game={
-              displayGame
-            }
-            accent={
-              accent
-            }
-          />
         </div>
 
         <PlatformCards
@@ -4840,8 +4935,7 @@ export default function FullGameOverlay({
         {description && (
           <div
             style={{
-              marginTop:
-                11,
+              marginTop: 10,
             }}
           >
             <Section title="Descripción">
@@ -4851,9 +4945,7 @@ export default function FullGameOverlay({
                   accent
                 }
               >
-                {
-                  description
-                }
+                {description}
               </CollapsibleText>
             </Section>
           </div>
@@ -4861,7 +4953,7 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop: 11,
+            marginTop: 10,
           }}
         >
           <Gallery
@@ -4873,124 +4965,25 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 10,
           }}
         >
-          <Section
-            title="Ficha técnica"
-            compact
-            style={{
-              padding:
-                "12px 14px",
-            }}
-          >
-            <DataRow
-              label="Año"
-              value={
-                year
-              }
-            />
-
-            <DataRow
-              label="Desarrollador"
-              value={
-                displayGame
-                  ?.developer
-              }
-            />
-
-            <DataRow
-              label="Distribuidor"
-              value={
-                displayGame
-                  ?.publisher
-              }
-            />
-
-            <DataRow
-              label="Saga"
-              value={
-                collection
-              }
-            />
-
-            <DataRow
-              label="Franquicia"
-              value={
-                franchise
-              }
-            />
-
-            <DataRow
-              label="Tipo"
-              value={
-                displayGame
-                  ?.releaseType
-              }
-            />
-
-            <DataRow
-              label="Plataformas"
-              value={
-                platforms.join(
-                  " · "
-                )
-              }
-            />
-
-            <DataRow
-              label="Géneros"
-              value={
-                genres.join(
-                  " · "
-                )
-              }
-            />
-
-            <DataRow
-              label="Temas"
-              value={
-                themes.join(
-                  " · "
-                )
-              }
-            />
-
-            <DataRow
-              label="Modos de juego"
-              value={
-                gameModes.join(
-                  " · "
-                )
-              }
-            />
-
-            <DataRow
-              label="Perspectiva"
-              value={
-                perspectives.join(
-                  " · "
-                )
-              }
-            />
-
-            <DataRow
-              label="Motor"
-              value={
-                engines.join(
-                  " · "
-                )
-              }
-              last
-            />
-          </Section>
+          <TechnicalSheet
+            rows={
+              technicalRows
+            }
+            accent={
+              accent
+            }
+            portrait={
+              portrait
+            }
+          />
         </div>
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 10,
           }}
         >
           <Titles
@@ -5008,8 +5001,7 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 10,
           }}
         >
           <Languages
@@ -5024,8 +5016,7 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 10,
           }}
         >
           <AgeRatings
@@ -5041,8 +5032,7 @@ export default function FullGameOverlay({
         {storyline && (
           <div
             style={{
-              marginTop:
-                11,
+              marginTop: 10,
             }}
           >
             <Section title="Historia">
@@ -5052,9 +5042,7 @@ export default function FullGameOverlay({
                   accent
                 }
               >
-                {
-                  storyline
-                }
+                {storyline}
               </CollapsibleText>
             </Section>
           </div>
@@ -5062,8 +5050,7 @@ export default function FullGameOverlay({
 
         <div
           style={{
-            marginTop:
-              11,
+            marginTop: 10,
           }}
         >
           <SimilarGames
