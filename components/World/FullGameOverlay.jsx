@@ -3981,6 +3981,29 @@ function SimilarGames({
   );
 }
 
+function LoadingBar({
+  accent,
+}) {
+  return (
+    <div
+      style={{
+        height: 3,
+        background:
+          "rgba(255,255,255,.05)",
+      }}
+    >
+      <div
+        style={{
+          width: "40%",
+          height: "100%",
+          background:
+            accent,
+        }}
+      />
+    </div>
+  );
+}
+
 /* =========================================================
    MAIN
 ========================================================= */
