@@ -3380,9 +3380,7 @@ function AgeRatingBadge({
         }
         style={{
           width: size,
-
           height: size,
-
           objectFit:
             "contain",
         }}
@@ -3394,24 +3392,15 @@ function AgeRatingBadge({
     <div
       style={{
         width: size,
-
         height: size,
-
-        display:
-          "grid",
-
+        display: "grid",
         placeItems:
           "center",
-
         border:
           "1px solid rgba(255,255,255,.13)",
-
-        borderRadius:
-          9,
-
+        borderRadius: 9,
         background:
           "#090b0e",
-
         textAlign:
           "center",
       }}
@@ -3421,7 +3410,6 @@ function AgeRatingBadge({
           style={{
             color:
               "#8a949a",
-
             fontSize: 7,
           }}
         >
@@ -3431,17 +3419,10 @@ function AgeRatingBadge({
 
         <div
           style={{
-            marginTop:
-              4,
-
-            color:
-              "#fff",
-
-            fontSize:
-              16,
-
-            fontWeight:
-              950,
+            marginTop: 4,
+            color: "#fff",
+            fontSize: 16,
+            fontWeight: 950,
           }}
         >
           {rating?.rating ||
@@ -3466,11 +3447,17 @@ function AgeRatings({
     setActiveIndex,
   ] = useState(null);
 
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
   const rootRef =
     useRef(null);
 
   useEffect(() => {
     setActiveIndex(null);
+    setExpanded(false);
   }, [
     game?.id,
   ]);
@@ -3490,21 +3477,9 @@ function AgeRatings({
         }
       };
 
-    const scroll =
-      () =>
-        setActiveIndex(
-          null
-        );
-
     document.addEventListener(
       "pointerdown",
       outside,
-      true
-    );
-
-    document.addEventListener(
-      "scroll",
-      scroll,
       true
     );
 
@@ -3514,18 +3489,22 @@ function AgeRatings({
         outside,
         true
       );
-
-      document.removeEventListener(
-        "scroll",
-        scroll,
-        true
-      );
     };
   }, []);
 
   if (!ratings.length) {
     return null;
   }
+
+  const limit = 4;
+
+  const visibleRatings =
+    expanded
+      ? ratings
+      : ratings.slice(
+          0,
+          limit
+        );
 
   const activeRating =
     activeIndex === null
@@ -3554,102 +3533,136 @@ function AgeRatings({
       >
         <div
           style={{
-            display:
-              "grid",
-
-            gridTemplateColumns:
-              "repeat(auto-fit,minmax(62px,72px))",
-
+            display: "flex",
+            flexWrap:
+              expanded
+                ? "wrap"
+                : "nowrap",
             gap: 8,
-
-            justifyContent:
-              "start",
+            overflow:
+              "hidden",
+            alignItems:
+              "center",
           }}
         >
-          {ratings.map(
+          {visibleRatings.map(
             (
               rating,
-              index
-            ) => (
-              <button
-                key={
-                  rating?.id ||
-                  index
-                }
-                type="button"
-                onClick={(
-                  event
-                ) => {
-                  event.stopPropagation();
+              visibleIndex
+            ) => {
+              const realIndex =
+                expanded
+                  ? visibleIndex
+                  : visibleIndex;
 
-                  setActiveIndex(
-                    (
-                      current
-                    ) =>
-                      current ===
-                      index
-                        ? null
-                        : index
-                  );
-                }}
-                style={{
-                  width:
-                    "100%",
-
-                  padding: 4,
-
-                  display:
-                    "grid",
-
-                  placeItems:
-                    "center",
-
-                  border:
-                    activeIndex ===
-                    index
-                      ? `1px solid ${accent}88`
-                      : "1px solid transparent",
-
-                  borderRadius:
-                    11,
-
-                  background:
-                    activeIndex ===
-                    index
-                      ? `${accent}0D`
-                      : "transparent",
-                }}
-              >
-                <AgeRatingBadge
-                  rating={
-                    rating
+              return (
+                <button
+                  key={
+                    rating?.id ||
+                    visibleIndex
                   }
-                />
-              </button>
-            )
+                  type="button"
+                  onClick={(
+                    event
+                  ) => {
+                    event.stopPropagation();
+
+                    setActiveIndex(
+                      (
+                        current
+                      ) =>
+                        current ===
+                        realIndex
+                          ? null
+                          : realIndex
+                    );
+                  }}
+                  style={{
+                    flex:
+                      "0 0 68px",
+                    width: 68,
+                    padding: 3,
+                    display:
+                      "grid",
+                    placeItems:
+                      "center",
+                    border:
+                      activeIndex ===
+                      realIndex
+                        ? `1px solid ${accent}88`
+                        : "1px solid transparent",
+                    borderRadius:
+                      10,
+                    background:
+                      activeIndex ===
+                      realIndex
+                        ? `${accent}0D`
+                        : "transparent",
+                  }}
+                >
+                  <AgeRatingBadge
+                    rating={
+                      rating
+                    }
+                    size={58}
+                  />
+                </button>
+              );
+            }
           )}
         </div>
+
+        {ratings.length >
+          limit && (
+          <button
+            type="button"
+            onClick={() => {
+              setExpanded(
+                (
+                  current
+                ) =>
+                  !current
+              );
+
+              setActiveIndex(
+                null
+              );
+            }}
+            style={{
+              ...expandButtonStyle(
+                accent
+              ),
+              width:
+                "100%",
+              textAlign:
+                "center",
+            }}
+          >
+            {expanded
+              ? "VER MENOS"
+              : `VER MÁS (${ratings.length - limit})`}
+          </button>
+        )}
 
         {activeRating && (
           <div
             style={{
-              marginTop:
-                10,
-
+              marginTop: 9,
               padding:
-                "10px 11px",
-
+                "9px 10px",
               border:
                 `1px solid ${accent}2A`,
-
               borderRadius:
-                12,
-
+                11,
               background:
                 "#0e1216",
             }}
           >
-            <strong>
+            <strong
+              style={{
+                fontSize: 10,
+              }}
+            >
               {activeRating
                 ?.organization ||
                 "Clasificación"}
@@ -3657,14 +3670,10 @@ function AgeRatings({
 
             <span
               style={{
-                marginLeft:
-                  8,
-
-                color:
-                  accent,
-
-                fontWeight:
-                  900,
+                marginLeft: 7,
+                color: accent,
+                fontSize: 10,
+                fontWeight: 900,
               }}
             >
               {activeRating
@@ -3678,14 +3687,10 @@ function AgeRatings({
                 style={{
                   display:
                     "flex",
-
                   flexWrap:
                     "wrap",
-
                   gap: 5,
-
-                  marginTop:
-                    8,
+                  marginTop: 7,
                 }}
               >
                 {descriptors.map(
@@ -3700,18 +3705,13 @@ function AgeRatings({
                       style={{
                         padding:
                           "3px 6px",
-
                         borderRadius:
                           8,
-
                         background:
                           "rgba(255,255,255,.055)",
-
                         color:
                           "#b7c0c5",
-
-                        fontSize:
-                          8,
+                        fontSize: 8,
                       }}
                     >
                       {typeof descriptor ===
@@ -3725,33 +3725,6 @@ function AgeRatings({
                 )}
               </div>
             )}
-
-            {activeRating
-              ?.synopsis &&
-              activeRating
-                .synopsis !==
-                "No Rating Summary" && (
-                <div
-                  style={{
-                    marginTop:
-                      8,
-
-                    color:
-                      "#c0c7cc",
-
-                    fontSize:
-                      10,
-
-                    lineHeight:
-                      1.45,
-                  }}
-                >
-                  {
-                    activeRating
-                      .synopsis
-                  }
-                </div>
-              )}
           </div>
         )}
       </div>
