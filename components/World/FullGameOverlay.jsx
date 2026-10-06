@@ -1037,127 +1037,93 @@ function ScoreBox({
     <div
       style={{
         minWidth: 0,
-
-        display:
-          "grid",
-
-        gridTemplateColumns:
-          "auto minmax(0,1fr)",
-
+        minHeight: 88,
+        display: "flex",
+        flexDirection:
+          "column",
         alignItems:
           "center",
-
-        gap: 8,
-
+        justifyContent:
+          "center",
         padding:
-          "9px 10px",
-
+          "8px 5px",
         border:
           "1px solid rgba(255,255,255,.075)",
-
-        borderRadius:
-          12,
-
+        borderRadius: 12,
         background:
           "#0d1014",
+        textAlign:
+          "center",
+        boxSizing:
+          "border-box",
       }}
     >
       <div
         style={{
-          width: 30,
-
-          height: 30,
-
-          display:
-            "grid",
-
-          placeItems:
-            "center",
-
-          borderRadius:
-            "50%",
-
-          background:
-            "rgba(255,255,255,.055)",
-
-          fontSize: 17,
+          color: "#8a949a",
+          fontSize: 9,
+          lineHeight: 1.1,
+          fontWeight: 850,
+          textTransform:
+            "uppercase",
+          whiteSpace:
+            "nowrap",
         }}
       >
-        {icon}
+        {label}
       </div>
 
       <div
         style={{
-          minWidth: 0,
+          marginTop: 7,
+          display: "flex",
+          alignItems:
+            "center",
+          justifyContent:
+            "center",
+          gap: 5,
         }}
       >
-        <div
+        <span
           style={{
-            color:
-              "#7d878e",
-
-            fontSize: 7,
-
-            fontWeight:
-              850,
-
-            textTransform:
-              "uppercase",
+            fontSize: 17,
+            lineHeight: 1,
           }}
         >
-          {label}
-        </div>
+          {icon}
+        </span>
 
-        <div
+        <span
           style={{
-            marginTop: 3,
-
             color:
               accent ||
               "#fff",
-
-            fontSize: 19,
-
+            fontSize: 21,
             lineHeight: 1,
-
-            fontWeight:
-              950,
+            fontWeight: 950,
           }}
         >
           {value}
-        </div>
+        </span>
+      </div>
 
-        {subtitle && (
-          <div
-            style={{
-              marginTop: 4,
-
-              overflow:
-                "hidden",
-
-              textOverflow:
-                "ellipsis",
-
-              whiteSpace:
-                "nowrap",
-
-              color:
-                "#69737a",
-
-              fontSize: 7,
-
-              lineHeight:
-                1.2,
-            }}
-          >
-            {subtitle}
-          </div>
-        )}
+      <div
+        style={{
+          minHeight: 12,
+          marginTop: 7,
+          color: "#929ca2",
+          fontSize: 9,
+          lineHeight: 1.2,
+          fontWeight: 600,
+          whiteSpace:
+            "nowrap",
+        }}
+      >
+        {subtitle || " "}
       </div>
     </div>
   );
 }
-
 
 function ScoreStrip({
   official,
@@ -1177,16 +1143,11 @@ function ScoreStrip({
   return (
     <div
       style={{
-        display:
-          "grid",
-
+        display: "grid",
         gridTemplateColumns:
           "repeat(3,minmax(0,1fr))",
-
         gap: 6,
-
-        width:
-          "100%",
+        width: "100%",
       }}
     >
       <ScoreBox
@@ -1198,8 +1159,8 @@ function ScoreStrip({
         accent={accent}
         subtitle={
           officialVotes > 0
-            ? `${officialVotes} evaluaciones`
-            : null
+            ? `${officialVotes} votos`
+            : "Sin votos"
         }
       />
 
@@ -1212,7 +1173,7 @@ function ScoreStrip({
         subtitle={
           communityVotes > 0
             ? `${communityVotes} votos`
-            : null
+            : "Sin votos"
         }
       />
 
@@ -1221,6 +1182,7 @@ function ScoreStrip({
         label="Mi valoración"
         value="—"
         accent="#ff5b75"
+        subtitle="Sin valorar"
       />
     </div>
   );
@@ -1747,20 +1709,14 @@ function DataRow({
   return (
     <div
       style={{
-        display:
-          "grid",
-
+        display: "grid",
         gridTemplateColumns:
           "minmax(100px,34%) minmax(0,1fr)",
-
         alignItems:
           "start",
-
         gap: 12,
-
         padding:
-          "10px 2px",
-
+          "9px 2px",
         borderBottom:
           last
             ? "none"
@@ -1769,16 +1725,10 @@ function DataRow({
     >
       <div
         style={{
-          color:
-            "#737b82",
-
+          color: "#7d878e",
           fontSize: 11,
-
-          lineHeight:
-            1.4,
-
-          fontWeight:
-            600,
+          lineHeight: 1.4,
+          fontWeight: 650,
         }}
       >
         {label}
@@ -1787,18 +1737,10 @@ function DataRow({
       <div
         style={{
           minWidth: 0,
-
-          color:
-            "#cbd0d4",
-
+          color: "#d0d6da",
           fontSize: 11,
-
-          lineHeight:
-            1.45,
-
-          fontWeight:
-            500,
-
+          lineHeight: 1.45,
+          fontWeight: 550,
           overflowWrap:
             "anywhere",
         }}
@@ -1806,6 +1748,110 @@ function DataRow({
         {value}
       </div>
     </div>
+  );
+}
+
+function TechnicalSheet({
+  rows,
+  accent,
+  portrait,
+}) {
+  const [
+    expanded,
+    setExpanded,
+  ] = useState(false);
+
+  const cleanRows =
+    rows.filter(
+      (row) =>
+        row?.value !==
+          null &&
+        row?.value !==
+          undefined &&
+        row?.value !== ""
+    );
+
+  if (!cleanRows.length) {
+    return null;
+  }
+
+  const limit =
+    portrait
+      ? 4
+      : cleanRows.length;
+
+  const visibleRows =
+    expanded
+      ? cleanRows
+      : cleanRows.slice(
+          0,
+          limit
+        );
+
+  const canExpand =
+    portrait &&
+    cleanRows.length >
+      limit;
+
+  return (
+    <Section
+      title="Ficha técnica"
+      compact
+      style={{
+        padding:
+          "12px 14px",
+      }}
+    >
+      {visibleRows.map(
+        (
+          row,
+          index
+        ) => (
+          <DataRow
+            key={
+              row.label
+            }
+            label={
+              row.label
+            }
+            value={
+              row.value
+            }
+            last={
+              index ===
+                visibleRows.length -
+                  1 &&
+              !canExpand
+            }
+          />
+        )
+      )}
+
+      {canExpand && (
+        <button
+          type="button"
+          onClick={() =>
+            setExpanded(
+              (current) =>
+                !current
+            )
+          }
+          style={{
+            ...expandButtonStyle(
+              accent
+            ),
+            width: "100%",
+            marginTop: 8,
+            textAlign:
+              "center",
+          }}
+        >
+          {expanded
+            ? "VER MENOS"
+            : `VER MÁS (${cleanRows.length - limit})`}
+        </button>
+      )}
+    </Section>
   );
 }
 
