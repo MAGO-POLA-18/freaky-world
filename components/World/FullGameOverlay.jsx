@@ -179,67 +179,6 @@ function getScore(game) {
   };
 }
 
-  const totalRating =
-    Number(
-      game?.totalRating
-    );
-
-  if (
-    Number.isFinite(
-      totalRating
-    ) &&
-    totalRating > 0
-  ) {
-    return {
-      value:
-        totalRating > 10
-          ? totalRating / 10
-          : totalRating,
-
-      votes:
-        Number(
-          game?.totalRatingCount
-        ) || 0,
-
-      source:
-        "igdb",
-    };
-  }
-
-  const rating =
-    Number(
-      game?.rating
-    );
-
-  if (
-    Number.isFinite(
-      rating
-    ) &&
-    rating > 0
-  ) {
-    return {
-      value:
-        rating > 10
-          ? rating / 10
-          : rating,
-
-      votes:
-        Number(
-          game?.ratingCount
-        ) || 0,
-
-      source:
-        "igdb",
-    };
-  }
-
-  return {
-    value: null,
-    votes: 0,
-    source: null,
-  };
-}
-
 function getCommunityScore(
   game
 ) {
@@ -254,9 +193,7 @@ function getCommunityScore(
         value
       ) &&
       value > 0
-        ? value > 10
-          ? value / 10
-          : value
+        ? value
         : null,
 
     votes:
@@ -266,87 +203,24 @@ function getCommunityScore(
   };
 }
 
-function formatScore(value) {
+function formatScore(
+  value
+) {
+  const number =
+    Number(value);
+
   if (
-    value === null ||
-    value === undefined ||
     !Number.isFinite(
-      Number(value)
+      number
     )
   ) {
     return "—";
   }
 
-  return Number(
-    value
-  ).toFixed(1);
-}
-
-function getYoutubeId(
-  video
-) {
-  return (
-    video?.youtubeId ||
-    video?.youtube_id ||
-    null
+  return number.toFixed(
+    1
   );
 }
-
-function chooseFirstVideo(
-  game
-) {
-  const manual =
-    game?.manualTrailer
-      ?.youtubeId ||
-    game?.manualTrailerYoutubeId;
-
-  if (manual) {
-    return manual;
-  }
-
-  const videos =
-    asArray(game?.videos);
-
-  const preferences = [
-    "launch trailer",
-    "official trailer",
-    "release trailer",
-    "gameplay trailer",
-    "trailer",
-  ];
-
-  for (
-    const preference
-    of preferences
-  ) {
-    const found =
-      videos.find(
-        (video) =>
-          String(
-            video?.name ||
-              ""
-          )
-            .toLowerCase()
-            .includes(
-              preference
-            )
-      );
-
-    const id =
-      getYoutubeId(
-        found
-      );
-
-    if (id) {
-      return id;
-    }
-  }
-
-  return getYoutubeId(
-    videos[0]
-  );
-}
-
 /* =========================================================
    VIEWPORT
 ========================================================= */
