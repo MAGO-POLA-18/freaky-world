@@ -26,7 +26,7 @@ function getCover(game) {
   );
 }
 
-function getScore(game) {
+function getOfficialScore(game) {
   const freaky =
     Number(
       game?.freakyOfficialScore
@@ -36,9 +36,7 @@ function getScore(game) {
     Number.isFinite(freaky) &&
     freaky > 0
   ) {
-    return freaky > 10
-      ? freaky / 10
-      : freaky;
+    return freaky;
   }
 
   const total =
@@ -50,7 +48,7 @@ function getScore(game) {
     Number.isFinite(total) &&
     total > 0
   ) {
-    return total / 10;
+    return total;
   }
 
   const rating =
@@ -62,7 +60,25 @@ function getScore(game) {
     Number.isFinite(rating) &&
     rating > 0
   ) {
-    return rating / 10;
+    return rating;
+  }
+
+  return null;
+}
+
+function getCommunityScore(game) {
+  const community =
+    Number(
+      game?.communityScore
+    );
+
+  if (
+    Number.isFinite(community) &&
+    community > 0
+  ) {
+    return community > 10
+      ? community
+      : community * 10;
   }
 
   return null;
@@ -76,11 +92,342 @@ function formatScore(value) {
       Number(value)
     )
   ) {
-    return null;
+    return "—";
   }
 
   return Number(value)
-    .toFixed(1);
+    .toFixed(0);
+}
+
+/* =========================================================
+   RESULTADO
+========================================================= */
+
+function SearchResult({
+  game,
+  onSelect,
+}) {
+  const cover =
+    getCover(game);
+
+  const officialScore =
+    getOfficialScore(game);
+
+  const communityScore =
+    getCommunityScore(game);
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        onSelect(game)
+      }
+      style={{
+        width:
+          "100%",
+
+        minHeight:
+          86,
+
+        display:
+          "grid",
+
+        gridTemplateColumns:
+          "58px minmax(0,1fr) auto",
+
+        alignItems:
+          "center",
+
+        gap:
+          12,
+
+        padding:
+          10,
+
+        border:
+          "1px solid rgba(255,255,255,.08)",
+
+        borderRadius:
+          14,
+
+        background:
+          "rgba(17,21,26,.92)",
+
+        color:
+          "#ffffff",
+
+        textAlign:
+          "left",
+
+        cursor:
+          "pointer",
+
+        touchAction:
+          "manipulation",
+      }}
+    >
+      <div
+        style={{
+          width:
+            58,
+
+          height:
+            70,
+
+          overflow:
+            "hidden",
+
+          borderRadius:
+            9,
+
+          background:
+            "#090c0f",
+
+          border:
+            "1px solid rgba(255,255,255,.08)",
+        }}
+      >
+        {cover ? (
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            style={{
+              width:
+                "100%",
+
+              height:
+                "100%",
+
+              objectFit:
+                "cover",
+
+              display:
+                "block",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width:
+                "100%",
+
+              height:
+                "100%",
+
+              display:
+                "grid",
+
+              placeItems:
+                "center",
+
+              color:
+                "#667078",
+
+              fontSize:
+                18,
+
+              fontWeight:
+                900,
+            }}
+          >
+            ?
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          minWidth:
+            0,
+        }}
+      >
+        <div
+          style={{
+            overflow:
+              "hidden",
+
+            color:
+              "#f6f8f9",
+
+            fontSize:
+              14,
+
+            lineHeight:
+              1.25,
+
+            fontWeight:
+              850,
+
+            textOverflow:
+              "ellipsis",
+
+            whiteSpace:
+              "nowrap",
+          }}
+        >
+          {game.name}
+        </div>
+
+        <div
+          style={{
+            display:
+              "flex",
+
+            flexWrap:
+              "wrap",
+
+            gap:
+              "4px 8px",
+
+            marginTop:
+              6,
+
+            color:
+              "#8d989f",
+
+            fontSize:
+              11,
+
+            lineHeight:
+              1.35,
+          }}
+        >
+          {game.year && (
+            <span>
+              {game.year}
+            </span>
+          )}
+
+          {game.developer && (
+            <span>
+              {game.developer}
+            </span>
+          )}
+        </div>
+
+        <div
+          style={{
+            marginTop:
+              5,
+
+            color:
+              "#606a71",
+
+            fontSize:
+              9,
+
+            fontWeight:
+              700,
+          }}
+        >
+          ID {game.id}
+        </div>
+      </div>
+
+      <div
+        style={{
+          minWidth:
+            62,
+
+          display:
+            "grid",
+
+          gap:
+            7,
+
+          textAlign:
+            "right",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color:
+                "#68737a",
+
+              fontSize:
+                7,
+
+              fontWeight:
+                850,
+
+              textTransform:
+                "uppercase",
+            }}
+          >
+            Oficial
+          </div>
+
+          <div
+            style={{
+              marginTop:
+                2,
+
+              color:
+                "#ffffff",
+
+              fontSize:
+                18,
+
+              lineHeight:
+                1,
+
+              fontWeight:
+                950,
+            }}
+          >
+            {formatScore(
+              officialScore
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div
+            style={{
+              color:
+                "#68737a",
+
+              fontSize:
+                7,
+
+              fontWeight:
+                850,
+
+              textTransform:
+                "uppercase",
+            }}
+          >
+            Comunidad
+          </div>
+
+          <div
+            style={{
+              marginTop:
+                2,
+
+              color:
+                "#aab2b7",
+
+              fontSize:
+                14,
+
+              lineHeight:
+                1,
+
+              fontWeight:
+                850,
+            }}
+          >
+            {formatScore(
+              communityScore
+            )}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
 }
 
 /* =========================================================
