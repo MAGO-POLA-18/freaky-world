@@ -499,173 +499,185 @@ async function loadOfficialPlatformScores(
   environment,
   gameId
 ) {
-  const rows =
-    await supabaseGet(
-      environment,
-      [
-        "official_platform_scores",
-        "?select=",
+  try {
+    const rows =
+      await supabaseGet(
+        environment,
         [
-          "id",
-          "platform_id",
-          "source_id",
-          "score",
-          "votes_count",
-          "source_title",
-          "source_platform",
-          "source_year",
-          "source_url",
-          "external_reference",
-          "active",
-        ].join(","),
-        `&game_id=eq.${gameId}`,
-        "&active=eq.true",
-        "&order=source_year.asc",
-      ].join("")
+          "official_platform_scores",
+          "?select=",
+          [
+            "id",
+            "platform_id",
+            "source_id",
+            "score",
+            "votes_count",
+            "source_title",
+            "source_platform",
+            "source_year",
+            "source_url",
+            "external_reference",
+            "active",
+          ].join(","),
+          `&game_id=eq.${gameId}`,
+          "&active=eq.true",
+        ].join("")
+      );
+
+    if (
+      !rows ||
+      rows.length === 0
+    ) {
+      return [];
+    }
+
+    const platformIds =
+      uniqueNumbers(
+        rows.map(
+          (item) =>
+            item.platform_id
+        )
+      );
+
+    const sourceIds =
+      uniqueNumbers(
+        rows.map(
+          (item) =>
+            item.source_id
+        )
+      );
+
+    const [
+      platforms,
+      sources,
+    ] =
+      await Promise.all([
+        platformIds.length
+          ? supabaseGet(
+              environment,
+              `platforms?select=id,name,abbreviation&id=in.(${platformIds.join(
+                ","
+              )})`
+            )
+          : Promise.resolve([]),
+
+        sourceIds.length
+          ? supabaseGet(
+              environment,
+              `official_score_sources?select=id,name,slug,active&id=in.(${sourceIds.join(
+                ","
+              )})`
+            )
+          : Promise.resolve([]),
+      ]);
+
+    const platformMap =
+      new Map(
+        platforms.map(
+          (item) => [
+            Number(
+              item.id
+            ),
+            item,
+          ]
+        )
+      );
+
+    const sourceMap =
+      new Map(
+        sources.map(
+          (item) => [
+            Number(
+              item.id
+            ),
+            item,
+          ]
+        )
+      );
+
+    return rows
+      .map(
+        (item) => {
+          const platform =
+            platformMap.get(
+              Number(
+                item.platform_id
+              )
+            );
+
+          const source =
+            sourceMap.get(
+              Number(
+                item.source_id
+              )
+            );
+
+          if (
+            !platform ||
+            !source ||
+            source.active === false
+          ) {
+            return null;
+          }
+
+          return {
+            id:
+              item.id,
+
+            score:
+              item.score,
+
+            votesCount:
+              item.votes_count,
+
+            year:
+              item.source_year,
+
+            sourceTitle:
+              item.source_title,
+
+            sourcePlatform:
+              item.source_platform,
+
+            sourceUrl:
+              item.source_url,
+
+            externalReference:
+              item.external_reference,
+
+            platform: {
+              id:
+                platform.id,
+
+              name:
+                platform.name,
+
+              abbreviation:
+                platform.abbreviation,
+            },
+
+            source: {
+              id:
+                source.id,
+
+              name:
+                source.name,
+
+              slug:
+                source.slug,
+            },
+          };
+        }
+      )
+      .filter(Boolean);
+  } catch (error) {
+    console.error(
+      "No se pudieron cargar las puntuaciones oficiales por plataforma:",
+      error
     );
 
-  if (
-    !rows ||
-    rows.length === 0
-  ) {
     return [];
   }
-
-  const platformIds =
-    uniqueNumbers(
-      rows.map(
-        (item) =>
-          item.platform_id
-      )
-    );
-
-  const sourceIds =
-    uniqueNumbers(
-      rows.map(
-        (item) =>
-          item.source_id
-      )
-    );
-
-  const [
-    platforms,
-    sources,
-  ] =
-    await Promise.all([
-      platformIds.length
-        ? supabaseGet(
-            environment,
-            `platforms?select=id,name,abbreviation&id=in.(${platformIds.join(
-              ","
-            )})`
-          )
-        : Promise.resolve([]),
-
-      sourceIds.length
-        ? supabaseGet(
-            environment,
-            `official_score_sources?select=id,name,slug,active&id=in.(${sourceIds.join(
-              ","
-            )})`
-          )
-        : Promise.resolve([]),
-    ]);
-
-  const platformMap =
-    new Map(
-      platforms.map(
-        (item) => [
-          Number(item.id),
-          item,
-        ]
-      )
-    );
-
-  const sourceMap =
-    new Map(
-      sources.map(
-        (item) => [
-          Number(item.id),
-          item,
-        ]
-      )
-    );
-
-  return rows
-    .map(
-      (item) => {
-        const platform =
-          platformMap.get(
-            Number(
-              item.platform_id
-            )
-          );
-
-        const source =
-          sourceMap.get(
-            Number(
-              item.source_id
-            )
-          );
-
-        if (
-          !platform ||
-          !source ||
-          source.active === false
-        ) {
-          return null;
-        }
-
-        return {
-          id:
-            item.id,
-
-          score:
-            item.score,
-
-          votesCount:
-            item.votes_count,
-
-          year:
-            item.source_year,
-
-          sourceTitle:
-            item.source_title,
-
-          sourcePlatform:
-            item.source_platform,
-
-          sourceUrl:
-            item.source_url,
-
-          externalReference:
-            item.external_reference,
-
-          platform: {
-            id:
-              platform.id,
-
-            name:
-              platform.name,
-
-            abbreviation:
-              platform.abbreviation,
-          },
-
-          source: {
-            id:
-              source.id,
-
-            name:
-              source.name,
-
-            slug:
-              source.slug,
-          },
-        };
-      }
-    )
-    .filter(Boolean);
 }
 
 /* =========================================================
