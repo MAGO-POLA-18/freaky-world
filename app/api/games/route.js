@@ -547,29 +547,47 @@ async function loadOfficialPlatformScores(
         )
       );
 
-    const [
-      platforms,
-      sources,
-    ] =
-      await Promise.all([
-        platformIds.length
-          ? supabaseGet(
-              environment,
-              `platforms?select=id,name,abbreviation&id=in.(${platformIds.join(
-                ","
-              )})`
-            )
-          : Promise.resolve([]),
+    let platforms = [];
 
+    try {
+      if (
+        platformIds.length
+      ) {
+        platforms =
+          await supabaseGet(
+            environment,
+            `platforms?select=id,name,abbreviation&id=in.(${platformIds.join(
+              ","
+            )})`
+          );
+      }
+    } catch (error) {
+      console.error(
+        "No se pudieron cargar las plataformas de las puntuaciones:",
+        error
+      );
+    }
+
+    let sources = [];
+
+    try {
+      if (
         sourceIds.length
-          ? supabaseGet(
-              environment,
-              `official_score_sources?select=id,name,slug,active&id=in.(${sourceIds.join(
-                ","
-              )})`
-            )
-          : Promise.resolve([]),
-      ]);
+      ) {
+        sources =
+          await supabaseGet(
+            environment,
+            `official_score_sources?select=id,name,slug&id=in.(${sourceIds.join(
+              ","
+            )})`
+          );
+      }
+    } catch (error) {
+      console.error(
+        "No se pudieron cargar las fuentes de puntuación:",
+        error
+      );
+    }
 
     const platformMap =
       new Map(
@@ -595,81 +613,85 @@ async function loadOfficialPlatformScores(
         )
       );
 
-    return rows
-      .map(
-        (item) => {
-          const platform =
-            platformMap.get(
+    return rows.map(
+      (item) => {
+        const platform =
+          platformMap.get(
+            Number(
+              item.platform_id
+            )
+          );
+
+        const source =
+          sourceMap.get(
+            Number(
+              item.source_id
+            )
+          );
+
+        return {
+          id:
+            item.id,
+
+          score:
+            Number(
+              item.score
+            ),
+
+          votesCount:
+            Number(
+              item.votes_count
+            ) || 0,
+
+          year:
+            item.source_year,
+
+          sourceTitle:
+            item.source_title,
+
+          sourcePlatform:
+            item.source_platform,
+
+          sourceUrl:
+            item.source_url,
+
+          externalReference:
+            item.external_reference,
+
+          platform: {
+            id:
               Number(
                 item.platform_id
-              )
-            );
+              ),
 
-          const source =
-            sourceMap.get(
+            name:
+              platform?.name ||
+              item.source_platform ||
+              "Plataforma",
+
+            abbreviation:
+              platform?.abbreviation ||
+              item.source_platform ||
+              null,
+          },
+
+          source: {
+            id:
               Number(
                 item.source_id
-              )
-            );
+              ),
 
-          if (
-            !platform ||
-            !source ||
-            source.active === false
-          ) {
-            return null;
-          }
+            name:
+              source?.name ||
+              "GameRankings",
 
-          return {
-            id:
-              item.id,
-
-            score:
-              item.score,
-
-            votesCount:
-              item.votes_count,
-
-            year:
-              item.source_year,
-
-            sourceTitle:
-              item.source_title,
-
-            sourcePlatform:
-              item.source_platform,
-
-            sourceUrl:
-              item.source_url,
-
-            externalReference:
-              item.external_reference,
-
-            platform: {
-              id:
-                platform.id,
-
-              name:
-                platform.name,
-
-              abbreviation:
-                platform.abbreviation,
-            },
-
-            source: {
-              id:
-                source.id,
-
-              name:
-                source.name,
-
-              slug:
-                source.slug,
-            },
-          };
-        }
-      )
-      .filter(Boolean);
+            slug:
+              source?.slug ||
+              "gamerankings",
+          },
+        };
+      }
+    );
   } catch (error) {
     console.error(
       "No se pudieron cargar las puntuaciones oficiales por plataforma:",
@@ -679,7 +701,6 @@ async function loadOfficialPlatformScores(
     return [];
   }
 }
-
 /* =========================================================
    SIMILARES
 ========================================================= */
