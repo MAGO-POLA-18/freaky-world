@@ -847,26 +847,17 @@ function PlatformCards({
   return (
     <div
       style={{
-        marginTop: 9,
+        marginTop: 10,
       }}
     >
       <div
         style={{
-          marginBottom: 7,
-
-          color:
-            "#818b92",
-
-          fontSize: 8,
-
-          fontWeight:
-            850,
-
-          textTransform:
-            "uppercase",
-
-          letterSpacing:
-            ".04em",
+          marginBottom: 6,
+          color: "#89939a",
+          fontSize: 9,
+          fontWeight: 850,
+          textTransform: "uppercase",
+          letterSpacing: ".05em",
         }}
       >
         Plataformas
@@ -874,13 +865,16 @@ function PlatformCards({
 
       <div
         style={{
-          display:
-            "grid",
-
-          gridTemplateColumns:
-            "repeat(auto-fit,minmax(150px,1fr))",
-
+          display: "flex",
           gap: 7,
+          overflowX: "auto",
+          overflowY: "hidden",
+          padding: "1px 1px 5px",
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling:
+            "touch",
+          scrollSnapType:
+            "x proximity",
         }}
       >
         {rawPlatforms.map(
@@ -920,11 +914,6 @@ function PlatformCards({
                 ?.abbreviation ||
               "Plataforma";
 
-            const abbreviation =
-              platform
-                ?.abbreviation ||
-              null;
-
             return (
               <div
                 key={
@@ -932,152 +921,71 @@ function PlatformCards({
                   `${name}-${index}`
                 }
                 style={{
-                  minWidth: 0,
-
-                  display:
-                    "grid",
-
-                  gridTemplateColumns:
-                    "minmax(0,1fr) auto",
-
-                  alignItems:
-                    "center",
-
-                  gap: 10,
-
+                  flex: "0 0 auto",
+                  width:
+                    "clamp(155px,55vw,190px)",
+                  scrollSnapAlign:
+                    "start",
                   padding:
-                    "10px 11px",
-
+                    "9px 11px",
                   border:
                     hasScore
-                      ? `1px solid ${accent}26`
-                      : "1px solid rgba(255,255,255,.07)",
-
-                  borderRadius:
-                    12,
-
+                      ? `1px solid ${accent}35`
+                      : "1px solid rgba(255,255,255,.08)",
+                  borderRadius: 12,
                   background:
-                    "linear-gradient(180deg,rgba(18,22,27,.96),rgba(12,15,19,.96))",
-
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,.025)",
+                    "linear-gradient(180deg,rgba(18,22,27,.98),rgba(12,15,19,.98))",
+                  boxSizing:
+                    "border-box",
                 }}
               >
                 <div
                   style={{
-                    minWidth: 0,
+                    overflow:
+                      "hidden",
+                    textOverflow:
+                      "ellipsis",
+                    whiteSpace:
+                      "nowrap",
+                    color:
+                      "#e3e8eb",
+                    fontSize: 11,
+                    fontWeight: 850,
                   }}
                 >
-                  <div
-                    style={{
-                      overflow:
-                        "hidden",
-
-                      textOverflow:
-                        "ellipsis",
-
-                      whiteSpace:
-                        "nowrap",
-
-                      color:
-                        "#e0e5e8",
-
-                      fontSize:
-                        10,
-
-                      fontWeight:
-                        850,
-                    }}
-                  >
-                    {name}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 4,
-
-                      display:
-                        "flex",
-
-                      alignItems:
-                        "center",
-
-                      gap: 5,
-
-                      color:
-                        "#6f7980",
-
-                      fontSize: 7,
-                    }}
-                  >
-                    {abbreviation && (
-                      <span>
-                        {
-                          abbreviation
-                        }
-                      </span>
-                    )}
-
-                    {hasScore && (
-                      <>
-                        {abbreviation && (
-                          <span>
-                            ·
-                          </span>
-                        )}
-
-                        <span>
-                          Oficial
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 3,
-
-                      color:
-                        hasScore
-                          ? "#7a858c"
-                          : "#606a70",
-
-                      fontSize: 7,
-                    }}
-                  >
-                    {hasScore
-                      ? votes > 0
-                        ? `${votes} evaluaciones`
-                        : "Puntuación oficial"
-                      : "Sin puntuación oficial"}
-                  </div>
+                  {name}
                 </div>
 
                 <div
                   style={{
-                    minWidth:
-                      52,
-
-                    textAlign:
-                      "right",
+                    marginTop: 6,
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: 5,
                   }}
                 >
-                  <div
+                  <span
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1,
+                    }}
+                  >
+                    🏅
+                  </span>
+
+                  <span
                     style={{
                       color:
                         hasScore
                           ? accent
-                          : "#59636a",
-
+                          : "#69747b",
                       fontSize:
                         hasScore
-                          ? 20
+                          ? 18
                           : 15,
-
                       lineHeight: 1,
-
-                      fontWeight:
-                        950,
+                      fontWeight: 950,
                     }}
                   >
                     {hasScore
@@ -1085,25 +993,25 @@ function PlatformCards({
                           1
                         )
                       : "—"}
-                  </div>
+                  </span>
 
-                  {hasScore && (
-                    <div
-                      style={{
-                        marginTop: 3,
-
-                        color:
-                          "#626c72",
-
-                        fontSize: 6,
-
-                        fontWeight:
-                          800,
-                      }}
-                    >
-                      / 100
-                    </div>
-                  )}
+                  <span
+                    style={{
+                      color:
+                        "#8a949a",
+                      fontSize: 9,
+                      fontWeight: 600,
+                      whiteSpace:
+                        "nowrap",
+                    }}
+                  >
+                    ·{" "}
+                    {hasScore
+                      ? votes > 0
+                        ? `${votes} votos`
+                        : "sin votos"
+                      : "sin puntuación"}
+                  </span>
                 </div>
               </div>
             );
@@ -1113,6 +1021,7 @@ function PlatformCards({
     </div>
   );
 }
+
 /* =========================================================
    SCORE
 ========================================================= */
