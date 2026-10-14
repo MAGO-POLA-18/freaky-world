@@ -27,16 +27,22 @@ import {
    TIERRA VICIO
    RANKING — BRAZO NORTE DE LA CRUCETA
 
-   DISTRIBUCIÓN:
+   NUEVA DISTRIBUCIÓN:
 
    FONDO
    2.º   1.º   3.º
 
    PARED IZQUIERDA
-   4.º 5.º 6.º 7.º
+   4.º 5.º 6.º 7.º 8.º
 
    PARED DERECHA
-   8.º 9.º 10.º 11.º
+   9.º 10.º 11.º 12.º 13.º
+
+   CAMBIO PEDIDO:
+   - eliminar los podios/bases anteriores
+   - cada Top 3 es una sola pieza:
+     pantalla arriba + base integrada abajo
+   - laterales: 5 por pared y más grandes
 ========================================================= */
 
 const NORTH_END_Z =
@@ -49,34 +55,33 @@ const RIGHT_WALL_X =
   13.7;
 
 /* =========================================================
-   LATERALES
-
-   Más grandes para cubrir una parte importante
-   de cada pared.
+   LATERALES — 5 POR PARED
 ========================================================= */
 
 const LEFT_Z_POSITIONS = [
-  -46,
-  -38.4,
-  -30.8,
-  -23.2,
+  -46.6,
+  -40.5,
+  -34.4,
+  -28.3,
+  -22.2,
 ];
 
 const RIGHT_Z_POSITIONS = [
-  -23.2,
-  -30.8,
-  -38.4,
-  -46,
+  -22.2,
+  -28.3,
+  -34.4,
+  -40.5,
+  -46.6,
 ];
 
 const SIDE_CARD_Y =
-  3.75;
+  4.05;
 
 const SIDE_CARD_WIDTH =
-  4.15;
+  4.35;
 
 const SIDE_CARD_COVER_HEIGHT =
-  5.6;
+  5.85;
 
 /* =========================================================
    COLORES
@@ -241,7 +246,7 @@ function GameCover({
 }
 
 /* =========================================================
-   TARJETA / PANTALLA
+   TARJETA LATERAL
 ========================================================= */
 
 function RankingCard({
@@ -493,211 +498,64 @@ function RankingCard({
 }
 
 /* =========================================================
-   PODIO FÍSICO
+   TOP 3 — PIEZA INTEGRADA
+
+   Una sola pieza:
+   - rectángulo grande
+   - pantalla arriba
+   - base abajo con color + número
 ========================================================= */
 
-function PodiumBlock({
-  rank,
-  position,
-  size,
-}) {
-  return (
-    <group
-      position={position}
-    >
-      <RoundedBox
-        args={size}
-        radius={0.18}
-        smoothness={4}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial
-          color={
-            getRankDarkColor(
-              rank
-            )
-          }
-          roughness={0.38}
-          metalness={0.32}
-        />
-      </RoundedBox>
-
-      {/* SUPERFICIE */}
-
-      <mesh
-        position={[
-          0,
-          size[1] / 2 +
-            0.015,
-
-          0,
-        ]}
-      >
-        <boxGeometry
-          args={[
-            size[0] -
-              0.12,
-
-            0.03,
-
-            size[2] -
-              0.12,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={
-            getRankColor(
-              rank
-            )
-          }
-          emissive={
-            getRankDarkColor(
-              rank
-            )
-          }
-          emissiveIntensity={
-            0.18
-          }
-          roughness={0.32}
-          metalness={0.45}
-        />
-      </mesh>
-
-      {/* NÚMERO FRONTAL */}
-
-      <Text
-        position={[
-          0,
-          0,
-          size[2] / 2 +
-            0.025,
-        ]}
-        fontSize={
-          rank === 1
-            ? 0.95
-            : 0.78
-        }
-        color={
-          getRankColor(
-            rank
-          )
-        }
-        anchorX="center"
-        anchorY="middle"
-      >
-        {rank}
-      </Text>
-    </group>
-  );
-}
-
-/* =========================================================
-   PANTALLA CON BASE
-========================================================= */
-
-function PodiumDisplay({
+function PodiumMonolith({
   game,
   position,
-  width = 3.45,
-  coverHeight = 4.05,
-  supportHeight = 1.6,
-  featured = false,
+  width = 3.9,
+  coverHeight = 4.45,
+  baseHeight = 1.55,
 }) {
   if (!game) {
     return null;
   }
-
-  const frameHeight =
-    coverHeight +
-    1.1;
 
   const rank =
     Number(
       game.rank
     );
 
+  const totalHeight =
+    coverHeight +
+    baseHeight +
+    0.7;
+
+  const topSectionHeight =
+    coverHeight + 0.45;
+
+  const baseY =
+    -totalHeight / 2 +
+    baseHeight / 2 +
+    0.12;
+
+  const screenCenterY =
+    baseHeight / 2 +
+    0.22;
+
   return (
     <group
       position={position}
+      userData={{
+        game,
+      }}
     >
-      {/* BASE INFERIOR */}
+      {/* CUERPO GENERAL */}
 
       <RoundedBox
-        position={[
-          0,
-          -(frameHeight / 2) -
-            supportHeight +
-            0.34,
-          -0.08,
-        ]}
         args={[
-          width * 0.78,
-          0.28,
-          0.95,
+          width,
+          totalHeight,
+          0.24,
         ]}
-        radius={0.08}
-        smoothness={3}
-        castShadow
-      >
-        <meshStandardMaterial
-          color={
-            getRankDarkColor(
-              rank
-            )
-          }
-          roughness={0.42}
-          metalness={0.25}
-        />
-      </RoundedBox>
-
-      {/* COLUMNA */}
-
-      <RoundedBox
-        position={[
-          0,
-          -(frameHeight / 2) -
-            supportHeight / 2 +
-            0.18,
-          -0.09,
-        ]}
-        args={[
-          0.42,
-          supportHeight,
-          0.34,
-        ]}
-        radius={0.07}
-        smoothness={3}
-        castShadow
-      >
-        <meshStandardMaterial
-          color={
-            getRankColor(
-              rank
-            )
-          }
-          roughness={0.35}
-          metalness={0.4}
-        />
-      </RoundedBox>
-
-      {/* TRAVESAÑO */}
-
-      <RoundedBox
-        position={[
-          0,
-          -(frameHeight / 2) +
-            0.12,
-          -0.08,
-        ]}
-        args={[
-          width * 0.72,
-          0.22,
-          0.28,
-        ]}
-        radius={0.06}
-        smoothness={3}
+        radius={0.18}
+        smoothness={4}
         castShadow
       >
         <meshStandardMaterial
@@ -711,19 +569,184 @@ function PodiumDisplay({
         />
       </RoundedBox>
 
-      {/* PANTALLA */}
+      {/* MARCO SUPERIOR */}
 
-      <RankingCard
-        game={game}
+      <RoundedBox
         position={[
           0,
-          0,
-          0,
+          screenCenterY,
+          0.11,
         ]}
-        width={width}
-        coverHeight={coverHeight}
-        featured={featured}
-      />
+        args={[
+          width - 0.16,
+          topSectionHeight,
+          0.07,
+        ]}
+        radius={0.12}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color={
+            getRankColor(
+              rank
+            )
+          }
+          roughness={0.32}
+          metalness={0.46}
+        />
+      </RoundedBox>
+
+      {/* INTERIOR PANTALLA */}
+
+      <RoundedBox
+        position={[
+          0,
+          screenCenterY,
+          0.148,
+        ]}
+        args={[
+          width - 0.34,
+          topSectionHeight - 0.2,
+          0.03,
+        ]}
+        radius={0.08}
+        smoothness={2}
+      >
+        <meshStandardMaterial
+          color={
+            COLORS.panelInner
+          }
+          roughness={0.82}
+        />
+      </RoundedBox>
+
+      {/* PORTADA */}
+
+      <group
+        position={[
+          0,
+          screenCenterY +
+            0.05,
+          0.185,
+        ]}
+      >
+        <GameCover
+          game={game}
+          width={
+            width - 0.56
+          }
+          height={
+            coverHeight
+          }
+        />
+      </group>
+
+      {/* SCORE */}
+
+      <Text
+        position={[
+          width / 2 -
+            0.5,
+          totalHeight / 2 -
+            0.48,
+          0.205,
+        ]}
+        fontSize={0.22}
+        color={
+          COLORS.score
+        }
+        anchorX="center"
+        anchorY="middle"
+      >
+        {getScore(
+          game
+        )}
+      </Text>
+
+      {/* NOMBRE */}
+
+      <Text
+        position={[
+          0,
+          -0.36,
+          0.205,
+        ]}
+        fontSize={0.22}
+        maxWidth={
+          width - 0.48
+        }
+        color={
+          COLORS.text
+        }
+        textAlign="center"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {
+          game.name ||
+          game.title ||
+          ""
+        }
+      </Text>
+
+      {/* BASE INTEGRADA */}
+
+      <RoundedBox
+        position={[
+          0,
+          baseY,
+          0.135,
+        ]}
+        args={[
+          width - 0.22,
+          baseHeight,
+          0.08,
+        ]}
+        radius={0.08}
+        smoothness={3}
+      >
+        <meshStandardMaterial
+          color={
+            getRankColor(
+              rank
+            )
+          }
+          emissive={
+            getRankDarkColor(
+              rank
+            )
+          }
+          emissiveIntensity={
+            0.12
+          }
+          roughness={0.32}
+          metalness={0.42}
+        />
+      </RoundedBox>
+
+      {/* NÚMERO GRANDE */}
+
+      <Text
+        position={[
+          0,
+          baseY,
+          0.19,
+        ]}
+        fontSize={
+          rank === 1
+            ? 0.95
+            : 0.82
+        }
+        color={
+          rank === 2
+            ? "#ffffff"
+            : "#fff6d8"
+        }
+        anchorX="center"
+        anchorY="middle"
+      >
+        {rank}
+      </Text>
     </group>
   );
 }
@@ -746,103 +769,43 @@ function TopThree({
 
   return (
     <group>
-      {/* PODIO 2 */}
-
-      <PodiumBlock
-        rank={2}
-        position={[
-          -4.2,
-          0.85,
-          NORTH_END_Z +
-            4.4,
-        ]}
-        size={[
-          3.6,
-          1.7,
-          3.3,
-        ]}
-      />
-
-      {/* PODIO 1 */}
-
-      <PodiumBlock
-        rank={1}
-        position={[
-          0,
-          1.35,
-          NORTH_END_Z +
-            4.15,
-        ]}
-        size={[
-          4,
-          2.7,
-          3.6,
-        ]}
-      />
-
-      {/* PODIO 3 */}
-
-      <PodiumBlock
-        rank={3}
-        position={[
-          4.2,
-          0.65,
-          NORTH_END_Z +
-            4.4,
-        ]}
-        size={[
-          3.6,
-          1.3,
-          3.3,
-        ]}
-      />
-
-      {/* PANTALLA 2 */}
-
-      <PodiumDisplay
+      <PodiumMonolith
         game={second}
         position={[
-          -4.2,
-          5.0,
+          -4.35,
+          4.38,
           NORTH_END_Z +
-            1.7,
+            1.95,
         ]}
-        width={3.45}
-        coverHeight={4.05}
-        supportHeight={1.45}
-        featured
+        width={3.75}
+        coverHeight={4.2}
+        baseHeight={1.45}
       />
 
-      {/* PANTALLA 1 */}
-
-      <PodiumDisplay
+      <PodiumMonolith
         game={first}
         position={[
           0,
-          5.25,
+          4.8,
           NORTH_END_Z +
-            1.55,
+            1.75,
         ]}
-        width={3.8}
-        coverHeight={4.45}
-        supportHeight={1.6}
-        featured
+        width={4.1}
+        coverHeight={4.55}
+        baseHeight={1.65}
       />
 
-      {/* PANTALLA 3 */}
-
-      <PodiumDisplay
+      <PodiumMonolith
         game={third}
         position={[
-          4.2,
-          4.88,
+          4.35,
+          4.25,
           NORTH_END_Z +
-            1.7,
+            1.95,
         ]}
-        width={3.45}
-        coverHeight={4.05}
-        supportHeight={1.35}
-        featured
+        width={3.75}
+        coverHeight={4.2}
+        baseHeight={1.4}
       />
     </group>
   );
@@ -860,7 +823,7 @@ function LeftRankingWall({
       {games
         .slice(
           3,
-          7
+          8
         )
         .map(
           (
@@ -909,8 +872,8 @@ function RightRankingWall({
     <group>
       {games
         .slice(
-          7,
-          11
+          8,
+          13
         )
         .map(
           (
@@ -958,7 +921,7 @@ function RankingHeader() {
       <Text
         position={[
           0,
-          7.9,
+          8.15,
           NORTH_END_Z +
             0.38,
         ]}
@@ -974,7 +937,7 @@ function RankingHeader() {
       <mesh
         position={[
           0,
-          7.35,
+          7.58,
           NORTH_END_Z +
             0.36,
         ]}
@@ -1016,27 +979,27 @@ function getGameLocalPosition(
   if (index === 0) {
     return [
       0,
-      5.25,
+      4.8,
       NORTH_END_Z +
-        1.55,
+        1.75,
     ];
   }
 
   if (index === 1) {
     return [
-      -4.2,
-      5.0,
+      -4.35,
+      4.38,
       NORTH_END_Z +
-        1.7,
+        1.95,
     ];
   }
 
   if (index === 2) {
     return [
-      4.2,
-      4.88,
+      4.35,
+      4.25,
       NORTH_END_Z +
-        1.7,
+        1.95,
     ];
   }
 
@@ -1044,14 +1007,12 @@ function getGameLocalPosition(
 
   if (
     index >= 3 &&
-    index <= 6
+    index <= 7
   ) {
     return [
       LEFT_WALL_X +
         0.42,
-
       SIDE_CARD_Y,
-
       LEFT_Z_POSITIONS[
         index - 3
       ],
@@ -1061,17 +1022,15 @@ function getGameLocalPosition(
   /* DERECHA */
 
   if (
-    index >= 7 &&
-    index <= 10
+    index >= 8 &&
+    index <= 12
   ) {
     return [
       RIGHT_WALL_X -
         0.42,
-
       SIDE_CARD_Y,
-
       RIGHT_Z_POSITIONS[
-        index - 7
+        index - 8
       ],
     ];
   }
@@ -1178,7 +1137,7 @@ export default function TopTenExhibition({
             ? data.games
                 .slice(
                   0,
-                  11
+                  13
                 )
                 .map(
                   (
@@ -1257,8 +1216,6 @@ export default function TopTenExhibition({
         .body
         .translation();
 
-    /* CENTRO DE LA ZONA */
-
     zoneWorld
       .current
       .set(
@@ -1267,10 +1224,9 @@ export default function TopTenExhibition({
         -35
       );
 
-    group.current
-      .localToWorld(
-        zoneWorld.current
-      );
+    group.current.localToWorld(
+      zoneWorld.current
+    );
 
     const dx =
       zoneWorld.current.x -
@@ -1315,7 +1271,6 @@ export default function TopTenExhibition({
 
     let selected =
       null;
-
     let bestScore =
       Infinity;
 
@@ -1329,52 +1284,36 @@ export default function TopTenExhibition({
             index
           );
 
-        gameWorld
-          .current
-          .set(
-            localPosition[0],
-            localPosition[1],
-            localPosition[2]
-          );
+        gameWorld.current.set(
+          localPosition[0],
+          localPosition[1],
+          localPosition[2]
+        );
 
-        group.current
-          .localToWorld(
-            gameWorld.current
-          );
+        group.current.localToWorld(
+          gameWorld.current
+        );
 
-        projected
-          .current
+        projected.current
           .copy(
             gameWorld.current
           )
-          .project(
-            camera
-          );
-
-        /* DETRÁS DE CÁMARA */
+          .project(camera);
 
         if (
-          projected
-            .current.z <
+          projected.current.z <
             -1 ||
-          projected
-            .current.z >
-            1
+          projected.current.z > 1
         ) {
           return;
         }
 
         const screenDistance =
           Math.sqrt(
-            projected
-              .current.x *
-              projected
-                .current.x +
-
-            projected
-              .current.y *
-              projected
-                .current.y
+            projected.current.x *
+              projected.current.x +
+              projected.current.y *
+                projected.current.y
           );
 
         if (
@@ -1383,8 +1322,6 @@ export default function TopTenExhibition({
         ) {
           return;
         }
-
-        /* DISTANCIA FÍSICA */
 
         const gameDx =
           gameWorld.current.x -
@@ -1398,13 +1335,13 @@ export default function TopTenExhibition({
           Math.sqrt(
             gameDx *
               gameDx +
-            gameDz *
-              gameDz
+              gameDz *
+                gameDz
           );
 
         if (
           physicalDistance >
-          12
+          13
         ) {
           return;
         }
@@ -1420,9 +1357,7 @@ export default function TopTenExhibition({
         ) {
           bestScore =
             score;
-
-          selected =
-            game;
+          selected = game;
         }
       }
     );
@@ -1450,7 +1385,6 @@ export default function TopTenExhibition({
               Boolean(
                 selected
               ),
-
             game:
               selected ||
               null,
@@ -1472,8 +1406,6 @@ export default function TopTenExhibition({
     >
       <RankingHeader />
 
-      {/* CARGANDO */}
-
       {status ===
         "loading" && (
         <Text
@@ -1493,8 +1425,6 @@ export default function TopTenExhibition({
         </Text>
       )}
 
-      {/* ERROR */}
-
       {status ===
         "error" && (
         <Text
@@ -1511,8 +1441,6 @@ export default function TopTenExhibition({
           No se pudo cargar el ranking
         </Text>
       )}
-
-      {/* CONTENIDO */}
 
       {status ===
         "ready" && (
@@ -1536,11 +1464,11 @@ export default function TopTenExhibition({
       <pointLight
         position={[
           0,
-          6.5,
+          6.8,
           -43,
         ]}
-        intensity={90}
-        distance={23}
+        intensity={95}
+        distance={24}
         decay={2}
         color="#fff4dc"
       />
@@ -1548,10 +1476,10 @@ export default function TopTenExhibition({
       <pointLight
         position={[
           0,
-          6,
+          6.2,
           -32,
         ]}
-        intensity={55}
+        intensity={58}
         distance={20}
         decay={2}
         color="#dceeff"
