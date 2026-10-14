@@ -37,12 +37,29 @@ canvas {
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
+
   padding: 8px 14px;
+
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.82);
-  background: rgba(0, 0, 0, 0.42);
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.82
+  );
+
+  background: rgba(
+    0,
+    0,
+    0,
+    0.42
+  );
+
   backdrop-filter: blur(8px);
+
   font-size: 12px;
+
   pointer-events: none;
 }
 
@@ -54,37 +71,104 @@ canvas {
   display: none;
 }
 
-@media (max-width: 768px), (pointer: coarse) {
+@media (max-width: 768px),
+  (pointer: coarse) {
+
+  /* =======================================================
+     CONTENEDOR
+
+     CLAVE:
+     pointer-events:none
+
+     La capa completa NO captura la pantalla.
+
+     Solamente reciben toque:
+     - .mobile-joystick
+     - botones A/B
+
+     Todo lo demás llega al Canvas y puede
+     controlar cámara / zoom.
+  ======================================================= */
+
   .mobile-controls {
     display: block;
+
     position: fixed;
     inset: 0;
+
     z-index: 20;
-    pointer-events: auto;
+
+    pointer-events: none;
+
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
+    -webkit-touch-callout: none;
   }
 
   /* =======================================================
-     ÁREA TÁCTIL DE LA CRUCETA
+     ÁREA CIRCULAR TÁCTIL DE LA CRUCETA
 
-     Sigue siendo grande para que el control analógico
-     sea cómodo, pero ya no se dibuja ningún círculo.
+     La cruceta visible sigue midiendo 112px,
+     pero el área analógica mide 170px.
   ======================================================= */
 
   .mobile-joystick {
     position: absolute;
-    left: 18px;
-    bottom: 20px;
-    width: 150px;
-    height: 150px;
-    background: transparent;
+
+    left: max(
+      8px,
+      env(
+        safe-area-inset-left
+      )
+    );
+
+    bottom: max(
+      5px,
+      env(
+        safe-area-inset-bottom
+      )
+    );
+
+    width: 170px;
+    height: 170px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+      circle,
+      rgba(
+        255,
+        255,
+        255,
+        0.025
+      ) 0%,
+      rgba(
+        255,
+        255,
+        255,
+        0.01
+      ) 48%,
+      rgba(
+        255,
+        255,
+        255,
+        0
+      ) 72%
+    );
+
     border: none;
     box-shadow: none;
-    border-radius: 0;
+
     pointer-events: auto;
+
     touch-action: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+
+    -webkit-tap-highlight-color:
+      transparent;
   }
 
   /* =======================================================
@@ -98,32 +182,99 @@ canvas {
     --press-right: 0;
 
     position: absolute;
+
     left: 50%;
     top: 50%;
+
     width: 112px;
     height: 112px;
-    transform: translate(-50%, -50%);
+
+    transform:
+      translate(
+        -50%,
+        -50%
+      );
+
     pointer-events: none;
-    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.28));
+
+    filter:
+      drop-shadow(
+        0
+        5px
+        10px
+        rgba(
+          0,
+          0,
+          0,
+          0.28
+        )
+      );
   }
 
   /* =======================================================
-     BRAZOS
+     BRAZOS CRUCETA
   ======================================================= */
 
   .mobile-dpad-arm {
     position: absolute;
-    background: linear-gradient(
-      145deg,
-      rgba(58, 64, 70, 0.42) 0%,
-      rgba(18, 21, 24, 0.72) 42%,
-      rgba(5, 6, 8, 0.9) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    background:
+      linear-gradient(
+        145deg,
+        rgba(
+          58,
+          64,
+          70,
+          0.42
+        ) 0%,
+        rgba(
+          18,
+          21,
+          24,
+          0.72
+        ) 42%,
+        rgba(
+          5,
+          6,
+          8,
+          0.9
+        ) 100%
+      );
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.08
+      );
+
     box-shadow:
-      inset 1px 1px 2px rgba(255, 255, 255, 0.07),
-      inset -3px -3px 5px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+      inset
+        1px
+        1px
+        2px
+        rgba(
+          255,
+          255,
+          255,
+          0.07
+        ),
+      inset
+        -3px
+        -3px
+        5px
+        rgba(
+          0,
+          0,
+          0,
+          0.5
+        );
+
+    backdrop-filter:
+      blur(2px);
+
     transition:
       transform 45ms linear,
       filter 45ms linear,
@@ -134,116 +285,293 @@ canvas {
   .mobile-dpad-up {
     left: 38px;
     top: 0;
+
     width: 36px;
     height: 58px;
-    border-radius: 10px 10px 4px 4px;
+
+    border-radius:
+      10px 10px 4px 4px;
+
     transform:
-      translateY(calc(var(--press-up) * 2.6px))
-      scale(calc(1 - var(--press-up) * 0.035));
-    filter: brightness(calc(1 - var(--press-up) * 0.22));
+      translateY(
+        calc(
+          var(
+              --press-up
+            ) *
+            2.6px
+        )
+      )
+      scale(
+        calc(
+          1 -
+          var(
+              --press-up
+            ) *
+          0.035
+        )
+      );
+
+    filter:
+      brightness(
+        calc(
+          1 -
+          var(
+              --press-up
+            ) *
+          0.22
+        )
+      );
   }
 
   .mobile-dpad-down {
     left: 38px;
     bottom: 0;
+
     width: 36px;
     height: 58px;
-    border-radius: 4px 4px 10px 10px;
+
+    border-radius:
+      4px 4px 10px 10px;
+
     transform:
-      translateY(calc(var(--press-down) * -2.6px))
-      scale(calc(1 - var(--press-down) * 0.035));
-    filter: brightness(calc(1 - var(--press-down) * 0.22));
+      translateY(
+        calc(
+          var(
+              --press-down
+            ) *
+            -2.6px
+        )
+      )
+      scale(
+        calc(
+          1 -
+          var(
+              --press-down
+            ) *
+          0.035
+        )
+      );
+
+    filter:
+      brightness(
+        calc(
+          1 -
+          var(
+              --press-down
+            ) *
+          0.22
+        )
+      );
   }
 
   .mobile-dpad-left {
     left: 0;
     top: 38px;
+
     width: 58px;
     height: 36px;
-    border-radius: 10px 4px 4px 10px;
+
+    border-radius:
+      10px 4px 4px 10px;
+
     transform:
-      translateX(calc(var(--press-left) * 2.6px))
-      scale(calc(1 - var(--press-left) * 0.035));
-    filter: brightness(calc(1 - var(--press-left) * 0.22));
+      translateX(
+        calc(
+          var(
+              --press-left
+            ) *
+            2.6px
+        )
+      )
+      scale(
+        calc(
+          1 -
+          var(
+              --press-left
+            ) *
+          0.035
+        )
+      );
+
+    filter:
+      brightness(
+        calc(
+          1 -
+          var(
+              --press-left
+            ) *
+          0.22
+        )
+      );
   }
 
   .mobile-dpad-right {
     right: 0;
     top: 38px;
+
     width: 58px;
     height: 36px;
-    border-radius: 4px 10px 10px 4px;
+
+    border-radius:
+      4px 10px 10px 4px;
+
     transform:
-      translateX(calc(var(--press-right) * -2.6px))
-      scale(calc(1 - var(--press-right) * 0.035));
-    filter: brightness(calc(1 - var(--press-right) * 0.22));
+      translateX(
+        calc(
+          var(
+              --press-right
+            ) *
+            -2.6px
+        )
+      )
+      scale(
+        calc(
+          1 -
+          var(
+              --press-right
+            ) *
+          0.035
+        )
+      );
+
+    filter:
+      brightness(
+        calc(
+          1 -
+          var(
+              --press-right
+            ) *
+          0.22
+        )
+      );
   }
 
   /* =======================================================
-     FLECHAS MÁS PARECIDAS A LA CRUCETA DEL MONUMENTO
-     (no triángulos simples)
+     FLECHAS
   ======================================================= */
 
   .mobile-dpad-arm span {
     position: absolute;
+
     width: 18px;
     height: 22px;
+
     opacity: 0.75;
-    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.05));
-    background: rgba(10, 12, 14, 0.9);
-    clip-path: polygon(
-      50% 0%,
-      100% 38%,
-      74% 38%,
-      74% 100%,
-      26% 100%,
-      26% 38%,
-      0% 38%
-    );
+
+    filter:
+      drop-shadow(
+        0
+        1px
+        0
+        rgba(
+          255,
+          255,
+          255,
+          0.05
+        )
+      );
+
+    background:
+      rgba(
+        10,
+        12,
+        14,
+        0.9
+      );
+
+    clip-path:
+      polygon(
+        50% 0%,
+        100% 38%,
+        74% 38%,
+        74% 100%,
+        26% 100%,
+        26% 38%,
+        0% 38%
+      );
   }
 
-  .mobile-dpad-arm span::after {
+  .mobile-dpad-arm
+    span::after {
     content: "";
+
     position: absolute;
+
     left: 3px;
     top: 4px;
+
     width: 12px;
     height: 14px;
-    background: rgba(34, 39, 44, 0.65);
-    clip-path: polygon(
-      50% 0%,
-      100% 38%,
-      74% 38%,
-      74% 100%,
-      26% 100%,
-      26% 38%,
-      0% 38%
-    );
+
+    background:
+      rgba(
+        34,
+        39,
+        44,
+        0.65
+      );
+
+    clip-path:
+      polygon(
+        50% 0%,
+        100% 38%,
+        74% 38%,
+        74% 100%,
+        26% 100%,
+        26% 38%,
+        0% 38%
+      );
+
     opacity: 0.55;
   }
 
   .mobile-dpad-up span {
     left: 50%;
     top: 10px;
-    transform: translateX(-50%);
+
+    transform:
+      translateX(
+        -50%
+      );
   }
 
   .mobile-dpad-down span {
     left: 50%;
     bottom: 10px;
-    transform: translateX(-50%) rotate(180deg);
+
+    transform:
+      translateX(
+        -50%
+      )
+      rotate(
+        180deg
+      );
   }
 
   .mobile-dpad-left span {
     left: 10px;
     top: 50%;
-    transform: translateY(-50%) rotate(-90deg);
+
+    transform:
+      translateY(
+        -50%
+      )
+      rotate(
+        -90deg
+      );
   }
 
   .mobile-dpad-right span {
     right: 10px;
     top: 50%;
-    transform: translateY(-50%) rotate(90deg);
+
+    transform:
+      translateY(
+        -50%
+      )
+      rotate(
+        90deg
+      );
   }
 
   /* =======================================================
@@ -252,52 +580,364 @@ canvas {
 
   .mobile-dpad-center {
     position: absolute;
+
     left: 38px;
     top: 38px;
+
     width: 36px;
     height: 36px;
+
     border-radius: 50%;
+
     z-index: 6;
-    background: radial-gradient(
-      circle at 50% 62%,
-      rgba(6, 7, 9, 0.98) 0%,
-      rgba(10, 12, 14, 0.95) 32%,
-      rgba(30, 36, 42, 0.82) 70%,
-      rgba(6, 8, 10, 0.98) 100%
-    );
+
+    background:
+      radial-gradient(
+        circle at
+          50%
+          62%,
+
+        rgba(
+          6,
+          7,
+          9,
+          0.98
+        ) 0%,
+
+        rgba(
+          10,
+          12,
+          14,
+          0.95
+        ) 32%,
+
+        rgba(
+          30,
+          36,
+          42,
+          0.82
+        ) 70%,
+
+        rgba(
+          6,
+          8,
+          10,
+          0.98
+        ) 100%
+      );
+
     box-shadow:
-      inset 0 6px 8px rgba(0, 0, 0, 0.78),
-      inset 0 -2px 2px rgba(255, 255, 255, 0.05),
-      0 0 0 1px rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(2px);
+      inset
+        0
+        6px
+        8px
+        rgba(
+          0,
+          0,
+          0,
+          0.78
+        ),
+
+      inset
+        0
+        -2px
+        2px
+        rgba(
+          255,
+          255,
+          255,
+          0.05
+        ),
+
+      0
+        0
+        0
+        1px
+        rgba(
+          255,
+          255,
+          255,
+          0.03
+        );
+
+    backdrop-filter:
+      blur(2px);
+
     pointer-events: none;
   }
 
   .mobile-dpad-center::before {
     content: "";
+
     position: absolute;
+
     inset: 7px;
+
     border-radius: 50%;
-    background: radial-gradient(
-      circle at 50% 58%,
-      rgba(2, 3, 4, 0.92) 0%,
-      rgba(9, 10, 12, 0.9) 45%,
-      rgba(20, 24, 28, 0.45) 100%
-    );
+
+    background:
+      radial-gradient(
+        circle at
+          50%
+          58%,
+
+        rgba(
+          2,
+          3,
+          4,
+          0.92
+        ) 0%,
+
+        rgba(
+          9,
+          10,
+          12,
+          0.9
+        ) 45%,
+
+        rgba(
+          20,
+          24,
+          28,
+          0.45
+        ) 100%
+      );
+
     opacity: 0.95;
   }
 
   /* =======================================================
-     TEXTO CÁMARA
+     BOTONES A / B
   ======================================================= */
 
-  .mobile-look {
+  .mobile-action-buttons {
     position: absolute;
-    right: 20px;
-    bottom: 35px;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.55);
+
+    right: max(
+      12px,
+      env(
+        safe-area-inset-right
+      )
+    );
+
+    bottom: max(
+      12px,
+      env(
+        safe-area-inset-bottom
+      )
+    );
+
+    width: 154px;
+    height: 140px;
+
     pointer-events: none;
+  }
+
+  .mobile-game-button {
+    position: absolute;
+
+    width: 64px;
+    height: 64px;
+
+    display: grid;
+    place-items: center;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    border:
+      1px solid
+      rgba(
+        255,
+        255,
+        255,
+        0.16
+      );
+
+    background:
+      linear-gradient(
+        145deg,
+        rgba(
+          54,
+          59,
+          65,
+          0.84
+        ),
+        rgba(
+          7,
+          9,
+          12,
+          0.94
+        )
+      );
+
+    box-shadow:
+      inset
+        2px
+        2px
+        4px
+        rgba(
+          255,
+          255,
+          255,
+          0.08
+        ),
+
+      inset
+        -4px
+        -4px
+        8px
+        rgba(
+          0,
+          0,
+          0,
+          0.5
+        ),
+
+      0
+        5px
+        14px
+        rgba(
+          0,
+          0,
+          0,
+          0.28
+        );
+
+    color: #fff;
+
+    font-size: 23px;
+    font-weight: 900;
+
+    pointer-events: auto;
+
+    touch-action: none;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+
+    -webkit-tap-highlight-color:
+      transparent;
+
+    transition:
+      transform 60ms linear,
+      filter 60ms linear,
+      opacity 120ms linear,
+      box-shadow 120ms linear;
+  }
+
+  /* B ARRIBA / IZQUIERDA */
+
+  .mobile-game-button-b {
+    right: 62px;
+    bottom: 60px;
+  }
+
+  /* A ABAJO / DERECHA */
+
+  .mobile-game-button-a {
+    right: 0;
+    bottom: 0;
+  }
+
+  /* B PULSADO */
+
+  .mobile-game-button.is-pressed,
+  .mobile-game-button-b:active {
+    transform:
+      translateY(
+        3px
+      )
+      scale(
+        0.95
+      );
+
+    filter:
+      brightness(
+        0.75
+      );
+  }
+
+  /* A NO DISPONIBLE */
+
+  .mobile-game-button-a.is-disabled {
+    opacity: 0.34;
+  }
+
+  /* A DISPONIBLE */
+
+  .mobile-game-button-a.is-active {
+    opacity: 1;
+
+    border-color:
+      rgba(
+        143,
+        70,
+        255,
+        0.75
+      );
+
+    box-shadow:
+      inset
+        2px
+        2px
+        4px
+        rgba(
+          255,
+          255,
+          255,
+          0.1
+        ),
+
+      inset
+        -4px
+        -4px
+        8px
+        rgba(
+          0,
+          0,
+          0,
+          0.42
+        ),
+
+      0
+        0
+        0
+        2px
+        rgba(
+          143,
+          70,
+          255,
+          0.23
+        ),
+
+      0
+        0
+        22px
+        rgba(
+          143,
+          70,
+          255,
+          0.38
+        );
+  }
+
+  .mobile-game-button-a.is-active:active {
+    transform:
+      translateY(
+        3px
+      )
+      scale(
+        0.95
+      );
+  }
+
+  /* Ya no necesitamos texto "desliza..." abajo */
+
+  .mobile-look {
+    display: none;
   }
 
   .instructions {
@@ -306,47 +946,109 @@ canvas {
 }
 
 /* =========================================================
-   INTERACCIÓN 3D → 2D
+   INTERACCIÓN 3D → 2D — DESKTOP
 ========================================================= */
 
 .world-interaction-button {
   position: fixed;
+
   left: 50%;
   bottom: 34px;
-  transform: translateX(-50%);
+
+  transform:
+    translateX(
+      -50%
+    );
+
   z-index: 45;
+
   display: flex;
+
   align-items: center;
+
   gap: 10px;
+
   min-height: 50px;
-  padding: 8px 14px 8px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+
+  padding:
+    8px
+    14px
+    8px
+    9px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.22
+    );
+
   border-radius: 16px;
-  background: rgba(10, 14, 18, 0.86);
+
+  background:
+    rgba(
+      10,
+      14,
+      18,
+      0.86
+    );
+
   color: white;
-  backdrop-filter: blur(14px);
+
+  backdrop-filter:
+    blur(14px);
+
   font-size: 14px;
   font-weight: 700;
+
   cursor: pointer;
 }
 
 .world-interaction-icon {
   display: grid;
+
   width: 34px;
   height: 34px;
+
   place-items: center;
+
   border-radius: 10px;
-  background: #68d9ff;
-  color: #071014;
+
+  background:
+    #68d9ff;
+
+  color:
+    #071014;
+
   font-size: 15px;
   font-weight: 900;
 }
 
 .world-interaction-button small {
-  padding: 4px 7px;
+  padding:
+    4px
+    7px;
+
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+
   font-size: 10px;
 }
 
@@ -356,166 +1058,402 @@ canvas {
 
 .ranking-overlay {
   position: fixed;
+
   inset: 0;
+
   z-index: 100;
+
   overflow-y: auto;
-  background: rgba(8, 10, 13, 0.96);
+
+  background:
+    rgba(
+      8,
+      10,
+      13,
+      0.96
+    );
+
   color: white;
-  backdrop-filter: blur(20px);
+
+  backdrop-filter:
+    blur(20px);
 }
 
 .ranking-overlay-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+
+  align-items:
+    flex-start;
+
+  justify-content:
+    space-between;
+
   gap: 24px;
+
   max-width: 920px;
-  margin: 0 auto;
-  padding: 34px 24px 20px;
+
+  margin:
+    0 auto;
+
+  padding:
+    34px
+    24px
+    20px;
 }
 
 .ranking-overlay-kicker {
   margin-bottom: 5px;
-  color: #68d9ff;
+
+  color:
+    #68d9ff;
+
   font-size: 11px;
+
   font-weight: 900;
-  letter-spacing: 0.16em;
+
+  letter-spacing:
+    0.16em;
 }
 
 .ranking-overlay-header h1 {
   margin: 0;
-  font-size: clamp(30px, 6vw, 54px);
+
+  font-size:
+    clamp(
+      30px,
+      6vw,
+      54px
+    );
+
   line-height: 1;
 }
 
 .ranking-overlay-header p {
-  margin: 8px 0 0;
-  color: rgba(255, 255, 255, 0.48);
+  margin:
+    8px
+    0
+    0;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.48
+    );
+
   font-size: 14px;
 }
 
 .ranking-overlay-close {
   display: grid;
-  flex: 0 0 auto;
+
+  flex:
+    0 0 auto;
+
   width: 46px;
   height: 46px;
+
   place-items: center;
+
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.16
+    );
+
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.07
+    );
+
   color: white;
+
   font-size: 30px;
+
   line-height: 1;
+
   cursor: pointer;
 }
 
 .ranking-overlay-content {
   max-width: 920px;
-  margin: 0 auto;
-  padding: 14px 24px 60px;
+
+  margin:
+    0 auto;
+
+  padding:
+    14px
+    24px
+    60px;
 }
 
 .ranking-overlay-intro {
-  margin-bottom: 28px;
+  margin-bottom:
+    28px;
 }
 
 .ranking-demo-badge {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: rgba(104, 217, 255, 0.12);
-  color: #68d9ff;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  display:
+    inline-block;
+
+  margin-bottom:
+    10px;
+
+  padding:
+    5px
+    8px;
+
+  border-radius:
+    6px;
+
+  background:
+    rgba(
+      104,
+      217,
+      255,
+      0.12
+    );
+
+  color:
+    #68d9ff;
+
+  font-size:
+    10px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    0.1em;
 }
 
 .ranking-overlay-intro h2 {
-  margin: 0 0 7px;
-  font-size: clamp(22px, 4vw, 32px);
+  margin:
+    0
+    0
+    7px;
+
+  font-size:
+    clamp(
+      22px,
+      4vw,
+      32px
+    );
 }
 
 .ranking-overlay-intro p {
-  max-width: 580px;
+  max-width:
+    580px;
+
   margin: 0;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 14px;
-  line-height: 1.5;
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.58
+    );
+
+  font-size:
+    14px;
+
+  line-height:
+    1.5;
 }
 
 .ranking-demo-list {
   display: grid;
+
   gap: 8px;
 }
 
 .ranking-demo-row {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
-  align-items: center;
+
+  grid-template-columns:
+    48px
+    1fr
+    auto;
+
+  align-items:
+    center;
+
   gap: 12px;
-  min-height: 70px;
-  padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.035);
+
+  min-height:
+    70px;
+
+  padding:
+    10px
+    14px;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  border-radius:
+    14px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.035
+    );
 }
 
 .ranking-demo-position {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 18px;
-  font-weight: 900;
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.4
+    );
+
+  font-size:
+    18px;
+
+  font-weight:
+    900;
 }
 
 .ranking-demo-game {
   display: flex;
+
   min-width: 0;
-  flex-direction: column;
+
+  flex-direction:
+    column;
+
   gap: 4px;
 }
 
 .ranking-demo-game strong {
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
+
+  font-size:
+    14px;
 }
 
 .ranking-demo-game span {
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 11px;
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.38
+    );
+
+  font-size:
+    11px;
 }
 
 .ranking-demo-score {
-  min-width: 52px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(104, 217, 255, 0.11);
-  color: #91e6ff;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 900;
+  min-width:
+    52px;
+
+  padding:
+    8px
+    10px;
+
+  border-radius:
+    10px;
+
+  background:
+    rgba(
+      104,
+      217,
+      255,
+      0.11
+    );
+
+  color:
+    #91e6ff;
+
+  text-align:
+    center;
+
+  font-size:
+    16px;
+
+  font-weight:
+    900;
 }
 
 .ranking-overlay-future {
-  margin-top: 26px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.44);
-  font-size: 12px;
-  line-height: 1.5;
+  margin-top:
+    26px;
+
+  padding-top:
+    20px;
+
+  border-top:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
+
+  color:
+    rgba(
+      255,
+      255,
+      255,
+      0.44
+    );
+
+  font-size:
+    12px;
+
+  line-height:
+    1.5;
 }
 
 /* =========================================================
    MÓVIL — OVERLAY
 ========================================================= */
 
-@media (max-width: 768px), (pointer: coarse) {
+@media (max-width: 768px),
+  (pointer: coarse) {
+
   .world-interaction-button {
     bottom: 24px;
-    min-height: 54px;
-    max-width: calc(100vw - 190px);
+
+    min-height:
+      54px;
+
+    max-width:
+      calc(
+        100vw -
+        190px
+      );
   }
 
   .world-interaction-button small {
@@ -523,40 +1461,71 @@ canvas {
   }
 
   .ranking-overlay-header {
-    padding: 24px 18px 16px;
+    padding:
+      24px
+      18px
+      16px;
   }
 
   .ranking-overlay-content {
-    padding: 10px 18px 50px;
+    padding:
+      10px
+      18px
+      50px;
   }
 
   .ranking-demo-row {
-    grid-template-columns: 34px 1fr auto;
+    grid-template-columns:
+      34px
+      1fr
+      auto;
+
     gap: 8px;
-    padding: 9px 10px;
+
+    padding:
+      9px
+      10px;
   }
 
   .ranking-demo-game strong {
-    font-size: 13px;
+    font-size:
+      13px;
   }
 
   .ranking-demo-score {
-    min-width: 47px;
-    padding: 7px 8px;
-    font-size: 14px;
+    min-width:
+      47px;
+
+    padding:
+      7px
+      8px;
+
+    font-size:
+      14px;
   }
 }
 
 /* =========================================================
-   FICHA 2D REAL SOBRE FREAKY WORLD
+   FICHA 2D REAL SOBRE TIERRA VICIO
 ========================================================= */
 
 .ranking-overlay-live {
   display: flex;
-  flex-direction: column;
+
+  flex-direction:
+    column;
+
   overflow: hidden;
+
   padding: 0;
-  background: rgba(5, 7, 10, 0.94);
+
+  background:
+    rgba(
+      5,
+      7,
+      10,
+      0.94
+    );
 }
 
 /* =========================================================
@@ -565,16 +1534,45 @@ canvas {
 
 .ranking-overlay-live-bar {
   position: relative;
+
   z-index: 2;
+
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+
+  align-items:
+    center;
+
+  justify-content:
+    space-between;
+
   gap: 18px;
-  min-height: 72px;
-  padding: 12px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(8, 10, 13, 0.9);
-  backdrop-filter: blur(18px);
+
+  min-height:
+    72px;
+
+  padding:
+    12px
+    18px;
+
+  border-bottom:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  background:
+    rgba(
+      8,
+      10,
+      13,
+      0.9
+    );
+
+  backdrop-filter:
+    blur(18px);
 }
 
 /* =========================================================
@@ -583,28 +1581,44 @@ canvas {
 
 .ranking-overlay-live-title {
   display: flex;
+
   min-width: 0;
-  flex-direction: column;
+
+  flex-direction:
+    column;
+
   gap: 3px;
 }
 
 .ranking-overlay-live-title strong {
   overflow: hidden;
-  color: #ffffff;
-  font-size: 15px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+  color:
+    #ffffff;
+
+  font-size:
+    15px;
+
+  text-overflow:
+    ellipsis;
+
+  white-space:
+    nowrap;
 }
 
 /* =========================================================
-   CONTENEDOR DE LA FICHA
+   CONTENEDOR FICHA
 ========================================================= */
 
 .ranking-overlay-frame-wrap {
   position: relative;
+
   flex: 1;
+
   min-height: 0;
-  background: #0b0d10;
+
+  background:
+    #0b0d10;
 }
 
 /* =========================================================
@@ -613,32 +1627,49 @@ canvas {
 
 .ranking-overlay-frame {
   display: block;
+
   width: 100%;
   height: 100%;
+
   border: 0;
-  background: #ffffff;
+
+  background:
+    #ffffff;
 }
 
 /* =========================================================
-   MÓVIL
+   FICHA MÓVIL
 ========================================================= */
 
-@media (max-width: 768px), (pointer: coarse) {
+@media (max-width: 768px),
+  (pointer: coarse) {
+
   .ranking-overlay-live-bar {
-    min-height: 62px;
+    min-height:
+      62px;
+
     padding:
-      max(8px, env(safe-area-inset-top))
+      max(
+        8px,
+        env(
+          safe-area-inset-top
+        )
+      )
       12px
       8px;
   }
 
-  .ranking-overlay-live .ranking-overlay-close {
+  .ranking-overlay-live
+    .ranking-overlay-close {
     width: 42px;
     height: 42px;
-    font-size: 28px;
+
+    font-size:
+      28px;
   }
 
   .ranking-overlay-live-title strong {
-    font-size: 14px;
+    font-size:
+      14px;
   }
 }
