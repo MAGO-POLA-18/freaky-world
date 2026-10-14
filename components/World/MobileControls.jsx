@@ -3,6 +3,7 @@
 import {
   useEffect,
   useRef,
+  useState,
 } from "react";
 
 import {
@@ -12,49 +13,35 @@ import {
 /* =========================================================
    MOBILE CONTROLS
 
-   IZQUIERDA
-   - cruceta fija
-   - comportamiento analógico 360°
-   - cada brazo se hunde según la dirección
-
-   DERECHA
-   - arrastrar = cámara
-   - doble toque = dash
-
-   WEB / IOS
-   - sin selección azul
-   - sin callout de mantener pulsado
-   - sin drag accidental
-   - resetea touches al girar pantalla
+   - Cruceta visual, comportamiento analógico 360°
+   - Solo el círculo invisible de la cruceta captura movimiento
+   - A = interactuar
+   - B mantenido = sprint
+   - Todo el resto de pantalla queda libre para cámara/zoom
 ========================================================= */
 
-const DOUBLE_TAP_TIME = 280;
-const TAP_MOVE_LIMIT = 18;
-
-export default function MobileControls() {
-  const controlsRef =
-    useRef(null);
-
+export default function MobileControls({
+  interactionAvailable = false,
+}) {
   const joystick =
     useRef(null);
 
   const dpad =
     useRef(null);
 
-  const joystickTouch =
+  const joystickPointer =
     useRef(null);
 
-  const lookTouch =
+  const sprintPointer =
     useRef(null);
 
-  const lastRightTap =
-    useRef(0);
-
-  const rightTouchStart =
-    useRef(null);
+  const [
+    sprintPressed,
+    setSprintPressed,
+  ] = useState(false);
 
   /* =======================================================
-     EFECTO VISUAL DE PRESIÓN
+     EFECTO VISUAL CRUCETA
   ======================================================= */
 
   const setDpadPressure = (
@@ -115,11 +102,10 @@ export default function MobileControls() {
   ======================================================= */
 
   const updateJoystick = (
-    touch
+    clientX,
+    clientY
   ) => {
-    if (
-      !joystick.current
-    ) {
+    if (!joystick.current) {
       return;
     }
 
@@ -136,11 +122,11 @@ export default function MobileControls() {
       rect.height / 2;
 
     let dx =
-      touch.clientX -
+      clientX -
       centerX;
 
     let dy =
-      touch.clientY -
+      clientY -
       centerY;
 
     const maxDistance =
@@ -174,15 +160,11 @@ export default function MobileControls() {
       dy /
       maxDistance;
 
-    /* MOVIMIENTO */
-
     playerInput.x =
       normalizedX;
 
     playerInput.y =
       -normalizedY;
-
-    /* PRESIÓN VISUAL */
 
     setDpadPressure(
       normalizedX,
@@ -199,415 +181,224 @@ export default function MobileControls() {
       playerInput.x = 0;
       playerInput.y = 0;
 
+      joystickPointer.current =
+        null;
+
       setDpadPressure(
         0,
         0
       );
-
-      joystickTouch.current =
-        null;
     };
 
   /* =======================================================
-     RESET COMPLETO DE TOUCH
-
-     Útil al:
-     - girar dispositivo
-     - cancelar gesto
-     - perder foco
+     JOYSTICK POINTER
   ======================================================= */
 
-  const resetTouches =
-    () => {
-      resetJoystick();
+  const handleJoystickDown = (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
 
-      lookTouch.current =
-        null;
-
-      rightTouchStart.current =
-        null;
-
-      lastRightTap.current =
-        0;
-
-      playerInput.dashRequested =
-        false;
-    };
-
-  /* =======================================================
-     ORIENTACIÓN / FOCUS
-
-     Evita que un dedo quede "enganchado"
-     después de vertical ↔ horizontal.
-  ======================================================= */
-
-  useEffect(() => {
-    function resetAfterViewportChange() {
-      resetTouches();
-    }
-
-    function handleBlur() {
-      resetTouches();
-    }
-
-    window.addEventListener(
-      "orientationchange",
-      resetAfterViewportChange
-    );
-
-    window.addEventListener(
-      "blur",
-      handleBlur
-    );
-
-    return () => {
-      window.removeEventListener(
-        "orientationchange",
-        resetAfterViewportChange
-      );
-
-      window.removeEventListener(
-        "blur",
-        handleBlur
-      );
-    };
-  }, []);
-
-  /* =======================================================
-     EVITAR SELECCIÓN / CALLOUT IOS
-
-     Solo dentro de los controles del mundo.
-     No afecta fichas, buscadores ni overlays.
-  ======================================================= */
-
-  useEffect(() => {
-    const element =
-      controlsRef.current;
-
-    if (!element) {
+    if (
+      joystickPointer.current !==
+      null
+    ) {
       return;
     }
 
-    function preventContextMenu(
-      event
+    joystickPointer.current =
+      event.pointerId;
+
+    event.currentTarget
+      .setPointerCapture?.(
+        event.pointerId
+      );
+
+    updateJoystick(
+      event.clientX,
+      event.clientY
+    );
+  };
+
+  const handleJoystickMove = (
+    event
+  ) => {
+    if (
+      event.pointerId !==
+      joystickPointer.current
     ) {
-      event.preventDefault();
+      return;
     }
 
-    function preventSelect(
-      event
+    event.preventDefault();
+    event.stopPropagation();
+
+    updateJoystick(
+      event.clientX,
+      event.clientY
+    );
+  };
+
+  const handleJoystickUp = (
+    event
+  ) => {
+    if (
+      event.pointerId !==
+      joystickPointer.current
     ) {
-      event.preventDefault();
+      return;
     }
 
-    function preventDrag(
-      event
+    event.preventDefault();
+    event.stopPropagation();
+
+    event.currentTarget
+      .releasePointerCapture?.(
+        event.pointerId
+      );
+
+    resetJoystick();
+  };
+
+  /* =======================================================
+     BOTÓN B — SPRINT MANTENIDO
+  ======================================================= */
+
+  const startSprint = (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    sprintPointer.current =
+      event.pointerId;
+
+    event.currentTarget
+      .setPointerCapture?.(
+        event.pointerId
+      );
+
+    playerInput.sprint =
+      true;
+
+    setSprintPressed(
+      true
+    );
+  };
+
+  const stopSprint = (
+    event
+  ) => {
+    if (
+      sprintPointer.current !==
+      event.pointerId
     ) {
-      event.preventDefault();
+      return;
     }
 
-    element.addEventListener(
-      "contextmenu",
-      preventContextMenu
+    event.preventDefault();
+    event.stopPropagation();
+
+    event.currentTarget
+      .releasePointerCapture?.(
+        event.pointerId
+      );
+
+    sprintPointer.current =
+      null;
+
+    playerInput.sprint =
+      false;
+
+    setSprintPressed(
+      false
+    );
+  };
+
+  /* =======================================================
+     BOTÓN A — INTERACTUAR
+  ======================================================= */
+
+  const interact = (
+    event
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (
+      !interactionAvailable
+    ) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "freaky:interact"
+      )
+    );
+  };
+
+  /* =======================================================
+     RESET GENERAL
+  ======================================================= */
+
+  useEffect(() => {
+    const reset =
+      () => {
+        resetJoystick();
+
+        playerInput.sprint =
+          false;
+
+        sprintPointer.current =
+          null;
+
+        setSprintPressed(
+          false
+        );
+      };
+
+    window.addEventListener(
+      "blur",
+      reset
     );
 
-    element.addEventListener(
-      "selectstart",
-      preventSelect
-    );
-
-    element.addEventListener(
-      "dragstart",
-      preventDrag
+    window.addEventListener(
+      "orientationchange",
+      reset
     );
 
     return () => {
-      element.removeEventListener(
-        "contextmenu",
-        preventContextMenu
+      window.removeEventListener(
+        "blur",
+        reset
       );
 
-      element.removeEventListener(
-        "selectstart",
-        preventSelect
+      window.removeEventListener(
+        "orientationchange",
+        reset
       );
 
-      element.removeEventListener(
-        "dragstart",
-        preventDrag
-      );
+      reset();
     };
   }, []);
 
-  /* =======================================================
-     TOUCH START
-  ======================================================= */
-
-  const handleTouchStart = (
-    event
-  ) => {
-    event.preventDefault();
-
-    for (
-      const touch
-      of event.changedTouches
-    ) {
-      /* IZQUIERDA */
-
-      if (
-        touch.clientX <
-        window.innerWidth *
-          0.45
-      ) {
-        if (
-          joystickTouch.current ===
-          null
-        ) {
-          joystickTouch.current =
-            touch.identifier;
-
-          updateJoystick(
-            touch
-          );
-        }
-      }
-
-      /* DERECHA */
-
-      else {
-        if (
-          lookTouch.current ===
-          null
-        ) {
-          lookTouch.current = {
-            id:
-              touch.identifier,
-
-            x:
-              touch.clientX,
-
-            y:
-              touch.clientY,
-          };
-
-          rightTouchStart.current = {
-            id:
-              touch.identifier,
-
-            x:
-              touch.clientX,
-
-            y:
-              touch.clientY,
-
-            moved:
-              false,
-          };
-        }
-      }
-    }
-  };
-
-  /* =======================================================
-     TOUCH MOVE
-  ======================================================= */
-
-  const handleTouchMove = (
-    event
-  ) => {
-    event.preventDefault();
-
-    for (
-      const touch
-      of event.changedTouches
-    ) {
-      /* CRUCETA */
-
-      if (
-        touch.identifier ===
-        joystickTouch.current
-      ) {
-        updateJoystick(
-          touch
-        );
-      }
-
-      /* CÁMARA */
-
-      if (
-        lookTouch.current &&
-        touch.identifier ===
-          lookTouch.current.id
-      ) {
-        const dx =
-          touch.clientX -
-          lookTouch.current.x;
-
-        const dy =
-          touch.clientY -
-          lookTouch.current.y;
-
-        playerInput.lookX +=
-          dx *
-          0.0035;
-
-        playerInput.lookY +=
-          dy *
-          0.0028;
-
-        lookTouch.current.x =
-          touch.clientX;
-
-        lookTouch.current.y =
-          touch.clientY;
-
-        if (
-          rightTouchStart.current &&
-          touch.identifier ===
-            rightTouchStart.current.id
-        ) {
-          const totalDX =
-            touch.clientX -
-            rightTouchStart.current.x;
-
-          const totalDY =
-            touch.clientY -
-            rightTouchStart.current.y;
-
-          const totalDistance =
-            Math.sqrt(
-              totalDX *
-                totalDX +
-              totalDY *
-                totalDY
-            );
-
-          if (
-            totalDistance >
-            TAP_MOVE_LIMIT
-          ) {
-            rightTouchStart.current.moved =
-              true;
-          }
-        }
-      }
-    }
-  };
-
-  /* =======================================================
-     TOUCH END
-  ======================================================= */
-
-  const handleTouchEnd = (
-    event
-  ) => {
-    event.preventDefault();
-
-    for (
-      const touch
-      of event.changedTouches
-    ) {
-      /* CRUCETA */
-
-      if (
-        touch.identifier ===
-        joystickTouch.current
-      ) {
-        resetJoystick();
-      }
-
-      /* DERECHA */
-
-      if (
-        lookTouch.current &&
-        touch.identifier ===
-          lookTouch.current.id
-      ) {
-        const touchStart =
-          rightTouchStart.current;
-
-        if (
-          touchStart &&
-          touchStart.id ===
-            touch.identifier &&
-          !touchStart.moved
-        ) {
-          const now =
-            performance.now();
-
-          const elapsed =
-            now -
-            lastRightTap.current;
-
-          if (
-            elapsed > 0 &&
-            elapsed <
-              DOUBLE_TAP_TIME
-          ) {
-            playerInput.dashRequested =
-              true;
-
-            lastRightTap.current =
-              0;
-          } else {
-            lastRightTap.current =
-              now;
-          }
-        }
-
-        lookTouch.current =
-          null;
-
-        rightTouchStart.current =
-          null;
-      }
-    }
-  };
-
-  /* =======================================================
-     TOUCH CANCEL
-  ======================================================= */
-
-  const handleTouchCancel =
-    (event) => {
-      event.preventDefault();
-
-      resetTouches();
-    };
-
-  /* =======================================================
-     UI
-  ======================================================= */
-
   return (
     <div
-      ref={
-        controlsRef
-      }
       className="mobile-controls"
-
-      onTouchStart={
-        handleTouchStart
-      }
-
-      onTouchMove={
-        handleTouchMove
-      }
-
-      onTouchEnd={
-        handleTouchEnd
-      }
-
-      onTouchCancel={
-        handleTouchCancel
-      }
-
       style={{
-        /*
-          Hace que la zona jugable se comporte
-          como una superficie de control y no
-          como una página web seleccionable.
-        */
+        position:
+          "fixed",
+
+        inset:
+          0,
+
+        zIndex:
+          90,
+
+        pointerEvents:
+          "none",
 
         userSelect:
           "none",
@@ -617,113 +408,146 @@ export default function MobileControls() {
 
         WebkitTouchCallout:
           "none",
-
-        touchAction:
-          "none",
-
-        WebkitTapHighlightColor:
-          "transparent",
       }}
     >
       {/* =================================================
-          CRUCETA ANALÓGICA FIJA
+          ZONA CIRCULAR INVISIBLE DE MOVIMIENTO
+
+          Solo esta zona captura el dedo izquierdo.
       ================================================= */}
 
       <div
-        ref={
-          joystick
-        }
+        ref={joystick}
         className="mobile-joystick"
 
+        onPointerDown={
+          handleJoystickDown
+        }
+
+        onPointerMove={
+          handleJoystickMove
+        }
+
+        onPointerUp={
+          handleJoystickUp
+        }
+
+        onPointerCancel={
+          handleJoystickUp
+        }
+
         style={{
-          userSelect:
-            "none",
-
-          WebkitUserSelect:
-            "none",
-
-          WebkitTouchCallout:
-            "none",
+          pointerEvents:
+            "auto",
 
           touchAction:
             "none",
         }}
       >
         <div
-          ref={
-            dpad
-          }
+          ref={dpad}
           className="mobile-dpad"
-
-          style={{
-            userSelect:
-              "none",
-
-            WebkitUserSelect:
-              "none",
-
-            WebkitTouchCallout:
-              "none",
-
-            touchAction:
-              "none",
-          }}
         >
-          {/* ARRIBA */}
-
           <div className="mobile-dpad-arm mobile-dpad-up">
             <span />
           </div>
-
-          {/* ABAJO */}
 
           <div className="mobile-dpad-arm mobile-dpad-down">
             <span />
           </div>
 
-          {/* IZQUIERDA */}
-
           <div className="mobile-dpad-arm mobile-dpad-left">
             <span />
           </div>
 
-          {/* DERECHA */}
-
           <div className="mobile-dpad-arm mobile-dpad-right">
             <span />
           </div>
-
-          {/* CENTRO */}
 
           <div className="mobile-dpad-center" />
         </div>
       </div>
 
       {/* =================================================
-          DERECHA
+          BOTONES A / B
       ================================================= */}
 
       <div
-        className="mobile-look"
-
+        className="mobile-action-buttons"
         style={{
-          userSelect:
-            "none",
-
-          WebkitUserSelect:
-            "none",
-
-          WebkitTouchCallout:
-            "none",
-
-          touchAction:
-            "none",
-
           pointerEvents:
             "none",
         }}
       >
-        Desliza para mirar
+        {/* B */}
+
+        <button
+          type="button"
+          className={[
+            "mobile-game-button",
+            "mobile-game-button-b",
+            sprintPressed
+              ? "is-pressed"
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+
+          aria-label="Sprint"
+
+          onPointerDown={
+            startSprint
+          }
+
+          onPointerUp={
+            stopSprint
+          }
+
+          onPointerCancel={
+            stopSprint
+          }
+
+          style={{
+            pointerEvents:
+              "auto",
+
+            touchAction:
+              "none",
+          }}
+        >
+          B
+        </button>
+
+        {/* A */}
+
+        <button
+          type="button"
+          className={[
+            "mobile-game-button",
+            "mobile-game-button-a",
+            interactionAvailable
+              ? "is-active"
+              : "is-disabled",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+
+          aria-label="Interactuar"
+
+          onPointerDown={
+            interact
+          }
+
+          style={{
+            pointerEvents:
+              "auto",
+
+            touchAction:
+              "none",
+          }}
+        >
+          A
+        </button>
       </div>
     </div>
   );
