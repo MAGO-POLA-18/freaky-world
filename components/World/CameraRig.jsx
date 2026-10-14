@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import { useRapier } from "@react-three/rapier";
+import {
+  useEffect,
+  useRef,
+} from "react";
+
+import {
+  useFrame,
+  useThree,
+} from "@react-three/fiber";
+
+import {
+  useRapier,
+} from "@react-three/rapier";
+
 import * as THREE from "three";
 
 import {
@@ -10,118 +21,362 @@ import {
   playerRuntime,
 } from "./PlayerController";
 
-const CAMERA_DISTANCE = 8.5;
-const CAMERA_HEIGHT = 3.4;
-const CAMERA_SENSITIVITY = 0.0045;
+const DEFAULT_CAMERA_DISTANCE =
+  8.5;
 
-/*
-  Mucho más rango vertical.
+const MIN_ZOOM_DISTANCE =
+  4.2;
 
-  -1.38 rad ≈ mirar casi verticalmente hacia arriba.
-   1.20 rad ≈ mirar bastante hacia abajo.
+const MAX_ZOOM_DISTANCE =
+  14;
 
-  No llegamos a ±90° para evitar invertir la cámara.
-*/
-const MIN_PITCH = -1.38;
-const MAX_PITCH = 1.20;
+const CAMERA_HEIGHT =
+  3.4;
 
-const CAMERA_WALL_MARGIN = 0.45;
-const MIN_CAMERA_DISTANCE = 1.4;
+const CAMERA_SENSITIVITY =
+  0.0045;
+
+const ZOOM_SENSITIVITY =
+  0.012;
+
+const MIN_PITCH =
+  -1.38;
+
+const MAX_PITCH =
+  1.20;
+
+const CAMERA_WALL_MARGIN =
+  0.45;
+
+const MIN_CAMERA_DISTANCE =
+  1.4;
 
 export default function CameraRig() {
-  const { gl } = useThree();
-  const { world, rapier } = useRapier();
+  const {
+    gl,
+  } = useThree();
 
-  const dragging = useRef(false);
-  const initialized = useRef(false);
-  const cameraInitialized = useRef(false);
+  const {
+    world,
+    rapier,
+  } = useRapier();
 
-  const lastPointer = useRef({
-    x: 0,
-    y: 0,
-  });
+  const pointers =
+    useRef(
+      new Map()
+    );
 
-  const smoothTarget = useRef(
-    new THREE.Vector3()
-  );
+  const primaryPointer =
+    useRef(null);
 
-  const desiredPosition = useRef(
-    new THREE.Vector3()
-  );
+  const lastPointer =
+    useRef({
+      x: 0,
+      y: 0,
+    });
 
-  const safePosition = useRef(
-    new THREE.Vector3()
-  );
+  const pinchDistance =
+    useRef(null);
 
-  const lookAtTarget = useRef(
-    new THREE.Vector3()
-  );
+  const cameraDistance =
+    useRef(
+      DEFAULT_CAMERA_DISTANCE
+    );
 
-  const rayDirection = useRef(
-    new THREE.Vector3()
-  );
+  const initialized =
+    useRef(false);
 
-  const targetPosition = useRef(
-    new THREE.Vector3()
-  );
+  const cameraInitialized =
+    useRef(false);
 
-  useEffect(() => {
-    const canvas = gl.domElement;
+  const smoothTarget =
+    useRef(
+      new THREE.Vector3()
+    );
 
-    const onPointerDown = (event) => {
-      if (event.button !== 0) return;
+  const desiredPosition =
+    useRef(
+      new THREE.Vector3()
+    );
 
-      dragging.current = true;
+  const safePosition =
+    useRef(
+      new THREE.Vector3()
+    );
 
-      lastPointer.current.x =
-        event.clientX;
+  const lookAtTarget =
+    useRef(
+      new THREE.Vector3()
+    );
 
-      lastPointer.current.y =
-        event.clientY;
+  const rayDirection =
+    useRef(
+      new THREE.Vector3()
+    );
 
-      canvas.setPointerCapture?.(
-        event.pointerId
-      );
-    };
+  const targetPosition =
+    useRef(
+      new THREE.Vector3()
+    );
 
-    const onPointerMove = (event) => {
-      if (!dragging.current) return;
+  /* =======================================================
+     HELPERS PINCH
+  ======================================================= */
 
-      const dx =
-        event.clientX -
-        lastPointer.current.x;
-
-      const dy =
-        event.clientY -
-        lastPointer.current.y;
-
-      playerRuntime.yaw -=
-        dx *
-        CAMERA_SENSITIVITY;
-
-      playerRuntime.pitch =
-        THREE.MathUtils.clamp(
-          playerRuntime.pitch +
-            dy *
-              CAMERA_SENSITIVITY,
-          MIN_PITCH,
-          MAX_PITCH
+  const getPinchDistance =
+    () => {
+      const values =
+        Array.from(
+          pointers.current.values()
         );
 
-      lastPointer.current.x =
-        event.clientX;
+      if (
+        values.length < 2
+      ) {
+        return null;
+      }
 
-      lastPointer.current.y =
-        event.clientY;
-    };
+      const first =
+        values[0];
 
-    const stopDragging = (event) => {
-      dragging.current = false;
+      const second =
+        values[1];
 
-      canvas.releasePointerCapture?.(
-        event.pointerId
+      const dx =
+        second.x -
+        first.x;
+
+      const dy =
+        second.y -
+        first.y;
+
+      return Math.sqrt(
+        dx * dx +
+        dy * dy
       );
     };
+
+  /* =======================================================
+     INPUT SOBRE CANVAS
+
+     Los controles A/B/cruceta están por encima
+     y capturan sus propios pointers.
+
+     Por eso al canvas solo llegan los dedos libres.
+  ======================================================= */
+
+  useEffect(() => {
+    const canvas =
+      gl.domElement;
+
+    const previousTouchAction =
+      canvas.style.touchAction;
+
+    canvas.style.touchAction =
+      "none";
+
+    const onPointerDown =
+      (event) => {
+        if (
+          event.pointerType ===
+            "mouse" &&
+          event.button !== 0
+        ) {
+          return;
+        }
+
+        pointers.current.set(
+          event.pointerId,
+          {
+            x:
+              event.clientX,
+
+            y:
+              event.clientY,
+          }
+        );
+
+        canvas.setPointerCapture?.(
+          event.pointerId
+        );
+
+        if (
+          pointers.current.size ===
+          1
+        ) {
+          primaryPointer.current =
+            event.pointerId;
+
+          lastPointer.current.x =
+            event.clientX;
+
+          lastPointer.current.y =
+            event.clientY;
+
+          pinchDistance.current =
+            null;
+
+          return;
+        }
+
+        if (
+          pointers.current.size >=
+          2
+        ) {
+          primaryPointer.current =
+            null;
+
+          pinchDistance.current =
+            getPinchDistance();
+        }
+      };
+
+    const onPointerMove =
+      (event) => {
+        if (
+          !pointers.current.has(
+            event.pointerId
+          )
+        ) {
+          return;
+        }
+
+        pointers.current.set(
+          event.pointerId,
+          {
+            x:
+              event.clientX,
+
+            y:
+              event.clientY,
+          }
+        );
+
+        /* PINCH */
+
+        if (
+          pointers.current.size >=
+          2
+        ) {
+          const currentDistance =
+            getPinchDistance();
+
+          if (
+            currentDistance &&
+            pinchDistance.current
+          ) {
+            const difference =
+              currentDistance -
+              pinchDistance.current;
+
+            cameraDistance.current =
+              THREE.MathUtils.clamp(
+                cameraDistance.current -
+                  difference *
+                    ZOOM_SENSITIVITY,
+
+                MIN_ZOOM_DISTANCE,
+                MAX_ZOOM_DISTANCE
+              );
+          }
+
+          pinchDistance.current =
+            currentDistance;
+
+          return;
+        }
+
+        /* CÁMARA */
+
+        if (
+          event.pointerId !==
+          primaryPointer.current
+        ) {
+          return;
+        }
+
+        const dx =
+          event.clientX -
+          lastPointer.current.x;
+
+        const dy =
+          event.clientY -
+          lastPointer.current.y;
+
+        playerRuntime.yaw -=
+          dx *
+          CAMERA_SENSITIVITY;
+
+        playerRuntime.pitch =
+          THREE.MathUtils.clamp(
+            playerRuntime.pitch +
+              dy *
+                CAMERA_SENSITIVITY,
+
+            MIN_PITCH,
+            MAX_PITCH
+          );
+
+        lastPointer.current.x =
+          event.clientX;
+
+        lastPointer.current.y =
+          event.clientY;
+      };
+
+    const stopPointer =
+      (event) => {
+        pointers.current.delete(
+          event.pointerId
+        );
+
+        canvas.releasePointerCapture?.(
+          event.pointerId
+        );
+
+        if (
+          pointers.current.size ===
+          0
+        ) {
+          primaryPointer.current =
+            null;
+
+          pinchDistance.current =
+            null;
+
+          return;
+        }
+
+        if (
+          pointers.current.size ===
+          1
+        ) {
+          const [
+            id,
+            pointer,
+          ] =
+            Array.from(
+              pointers.current.entries()
+            )[0];
+
+          primaryPointer.current =
+            id;
+
+          lastPointer.current.x =
+            pointer.x;
+
+          lastPointer.current.y =
+            pointer.y;
+
+          pinchDistance.current =
+            null;
+
+          return;
+        }
+
+        pinchDistance.current =
+          getPinchDistance();
+      };
 
     canvas.addEventListener(
       "pointerdown",
@@ -135,20 +390,18 @@ export default function CameraRig() {
 
     canvas.addEventListener(
       "pointerup",
-      stopDragging
+      stopPointer
     );
 
     canvas.addEventListener(
       "pointercancel",
-      stopDragging
-    );
-
-    canvas.addEventListener(
-      "pointerleave",
-      stopDragging
+      stopPointer
     );
 
     return () => {
+      canvas.style.touchAction =
+        previousTouchAction;
+
       canvas.removeEventListener(
         "pointerdown",
         onPointerDown
@@ -161,191 +414,255 @@ export default function CameraRig() {
 
       canvas.removeEventListener(
         "pointerup",
-        stopDragging
+        stopPointer
       );
 
       canvas.removeEventListener(
         "pointercancel",
-        stopDragging
-      );
-
-      canvas.removeEventListener(
-        "pointerleave",
-        stopDragging
+        stopPointer
       );
     };
-  }, [gl]);
+  }, [
+    gl,
+  ]);
 
-  useFrame(({ camera }, delta) => {
-    const body =
-      playerRuntime.body;
+  /* =======================================================
+     CÁMARA
+  ======================================================= */
 
-    if (!body) return;
+  useFrame(
+    (
+      {
+        camera,
+      },
+      delta
+    ) => {
+      const body =
+        playerRuntime.body;
 
-    const playerPosition =
-      body.translation();
+      if (!body) {
+        return;
+      }
 
-    targetPosition.current.set(
-      playerPosition.x,
-      playerPosition.y + 0.7,
-      playerPosition.z
-    );
+      const playerPosition =
+        body.translation();
 
-    if (!initialized.current) {
-      initialized.current = true;
-
-      smoothTarget.current.copy(
-        targetPosition.current
+      targetPosition.current.set(
+        playerPosition.x,
+        playerPosition.y +
+          0.7,
+        playerPosition.z
       );
-    } else {
-      smoothTarget.current.lerp(
-        targetPosition.current,
-        1 -
-          Math.exp(
-            -12 * delta
-          )
-      );
-    }
 
-    /* MÓVIL */
+      if (
+        !initialized.current
+      ) {
+        initialized.current =
+          true;
 
-    if (playerInput.lookX !== 0) {
-      playerRuntime.yaw -=
-        playerInput.lookX;
-
-      playerInput.lookX = 0;
-    }
-
-    if (playerInput.lookY !== 0) {
-      playerRuntime.pitch =
-        THREE.MathUtils.clamp(
-          playerRuntime.pitch +
-            playerInput.lookY,
-          MIN_PITCH,
-          MAX_PITCH
+        smoothTarget.current.copy(
+          targetPosition.current
         );
-
-      playerInput.lookY = 0;
-    }
-
-    const yaw =
-      playerRuntime.yaw;
-
-    const pitch =
-      playerRuntime.pitch;
-
-    const horizontalDistance =
-      CAMERA_DISTANCE *
-      Math.cos(pitch);
-
-    desiredPosition.current.set(
-      smoothTarget.current.x +
-        Math.sin(yaw) *
-          horizontalDistance,
-
-      smoothTarget.current.y +
-        CAMERA_HEIGHT +
-        Math.sin(pitch) *
-          CAMERA_DISTANCE,
-
-      smoothTarget.current.z +
-        Math.cos(yaw) *
-          horizontalDistance
-    );
-
-    lookAtTarget.current.set(
-      smoothTarget.current.x,
-      smoothTarget.current.y + 0.9,
-      smoothTarget.current.z
-    );
-
-    rayDirection.current
-      .copy(desiredPosition.current)
-      .sub(lookAtTarget.current);
-
-    const desiredDistance =
-      rayDirection.current.length();
-
-    if (desiredDistance > 0.001) {
-      rayDirection.current.normalize();
-
-      const ray =
-        new rapier.Ray(
-          {
-            x: lookAtTarget.current.x,
-            y: lookAtTarget.current.y,
-            z: lookAtTarget.current.z,
-          },
-          {
-            x: rayDirection.current.x,
-            y: rayDirection.current.y,
-            z: rayDirection.current.z,
-          }
+      } else {
+        smoothTarget.current.lerp(
+          targetPosition.current,
+          1 -
+            Math.exp(
+              -12 *
+                delta
+            )
         );
+      }
 
-      const hit =
-        world.castRay(
-          ray,
-          desiredDistance,
-          true,
-          undefined,
-          undefined,
-          undefined,
-          body
-        );
+      if (
+        playerInput.lookX !==
+        0
+      ) {
+        playerRuntime.yaw -=
+          playerInput.lookX;
 
-      if (hit) {
-        const safeDistance =
-          Math.max(
-            MIN_CAMERA_DISTANCE,
+        playerInput.lookX =
+          0;
+      }
 
-            hit.timeOfImpact -
-              CAMERA_WALL_MARGIN
+      if (
+        playerInput.lookY !==
+        0
+      ) {
+        playerRuntime.pitch =
+          THREE.MathUtils.clamp(
+            playerRuntime.pitch +
+              playerInput.lookY,
+
+            MIN_PITCH,
+            MAX_PITCH
           );
 
-        safePosition.current
-          .copy(lookAtTarget.current)
-          .addScaledVector(
-            rayDirection.current,
-            safeDistance
+        playerInput.lookY =
+          0;
+      }
+
+      const yaw =
+        playerRuntime.yaw;
+
+      const pitch =
+        playerRuntime.pitch;
+
+      const distance =
+        cameraDistance.current;
+
+      const horizontalDistance =
+        distance *
+        Math.cos(
+          pitch
+        );
+
+      desiredPosition.current.set(
+        smoothTarget.current.x +
+          Math.sin(
+            yaw
+          ) *
+            horizontalDistance,
+
+        smoothTarget.current.y +
+          CAMERA_HEIGHT +
+          Math.sin(
+            pitch
+          ) *
+            distance,
+
+        smoothTarget.current.z +
+          Math.cos(
+            yaw
+          ) *
+            horizontalDistance
+      );
+
+      lookAtTarget.current.set(
+        smoothTarget.current.x,
+        smoothTarget.current.y +
+          0.9,
+        smoothTarget.current.z
+      );
+
+      rayDirection.current
+        .copy(
+          desiredPosition.current
+        )
+        .sub(
+          lookAtTarget.current
+        );
+
+      const desiredDistance =
+        rayDirection.current
+          .length();
+
+      if (
+        desiredDistance >
+        0.001
+      ) {
+        rayDirection.current.normalize();
+
+        const ray =
+          new rapier.Ray(
+            {
+              x:
+                lookAtTarget
+                  .current.x,
+
+              y:
+                lookAtTarget
+                  .current.y,
+
+              z:
+                lookAtTarget
+                  .current.z,
+            },
+            {
+              x:
+                rayDirection
+                  .current.x,
+
+              y:
+                rayDirection
+                  .current.y,
+
+              z:
+                rayDirection
+                  .current.z,
+            }
           );
+
+        const hit =
+          world.castRay(
+            ray,
+            desiredDistance,
+            true,
+            undefined,
+            undefined,
+            undefined,
+            body
+          );
+
+        if (hit) {
+          const safeDistance =
+            Math.max(
+              MIN_CAMERA_DISTANCE,
+
+              hit.timeOfImpact -
+                CAMERA_WALL_MARGIN
+            );
+
+          safePosition.current
+            .copy(
+              lookAtTarget.current
+            )
+            .addScaledVector(
+              rayDirection.current,
+              safeDistance
+            );
+        } else {
+          safePosition.current.copy(
+            desiredPosition.current
+          );
+        }
       } else {
         safePosition.current.copy(
           desiredPosition.current
         );
       }
-    } else {
-      safePosition.current.copy(
-        desiredPosition.current
+
+      if (
+        !cameraInitialized.current
+      ) {
+        cameraInitialized.current =
+          true;
+
+        camera.position.copy(
+          safePosition.current
+        );
+      } else {
+        camera.position.lerp(
+          safePosition.current,
+          1 -
+            Math.exp(
+              -12 *
+                delta
+            )
+        );
+      }
+
+      camera.up.set(
+        0,
+        1,
+        0
+      );
+
+      camera.lookAt(
+        lookAtTarget.current
       );
     }
-
-    if (!cameraInitialized.current) {
-      cameraInitialized.current = true;
-
-      camera.position.copy(
-        safePosition.current
-      );
-    } else {
-      camera.position.lerp(
-        safePosition.current,
-        1 -
-          Math.exp(
-            -12 * delta
-          )
-      );
-    }
-
-    camera.up.set(
-      0,
-      1,
-      0
-    );
-
-    camera.lookAt(
-      lookAtTarget.current
-    );
-  });
+  );
 
   return null;
 }
