@@ -98,7 +98,7 @@ export async function GET() {
 
           "&order=freaky_official_score.desc.nullslast,freaky_official_votes.desc.nullslast,id.asc",
 
-          "&limit=11",
+          "&limit=13",
         ].join("")
       );
 
