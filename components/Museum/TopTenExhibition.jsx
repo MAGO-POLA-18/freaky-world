@@ -27,15 +27,7 @@ import {
    TIERRA VICIO
    RANKING — BRAZO NORTE DE LA CRUCETA
 
-   MAIN HALL ACTUAL:
-
-   CENTER_SIZE = 34
-   ARM_WIDTH   = 28
-   ARM_LENGTH  = 34
-
-   El extremo NORTE está en Z = -51.
-
-   Distribución:
+   DISTRIBUCIÓN:
 
    FONDO
    2.º   1.º   3.º
@@ -55,6 +47,36 @@ const LEFT_WALL_X =
 
 const RIGHT_WALL_X =
   13.7;
+
+/* =========================================================
+   LATERALES
+
+   Más grandes para cubrir una parte importante
+   de cada pared.
+========================================================= */
+
+const LEFT_Z_POSITIONS = [
+  -46,
+  -38.4,
+  -30.8,
+  -23.2,
+];
+
+const RIGHT_Z_POSITIONS = [
+  -23.2,
+  -30.8,
+  -38.4,
+  -46,
+];
+
+const SIDE_CARD_Y =
+  3.75;
+
+const SIDE_CARD_WIDTH =
+  4.15;
+
+const SIDE_CARD_COVER_HEIGHT =
+  5.6;
 
 /* =========================================================
    COLORES
@@ -185,8 +207,7 @@ function GameCover({
   const cover =
     game?.cover ||
     game?.cover_image ||
-    game
-      ?.cover_image_url ||
+    game?.cover_image_url ||
     null;
 
   if (!cover) {
@@ -220,7 +241,7 @@ function GameCover({
 }
 
 /* =========================================================
-   TARJETA
+   TARJETA / PANTALLA
 ========================================================= */
 
 function RankingCard({
@@ -257,7 +278,7 @@ function RankingCard({
         game,
       }}
     >
-      {/* ESTRUCTURA */}
+      {/* CUERPO EXTERIOR */}
 
       <RoundedBox
         args={[
@@ -449,7 +470,7 @@ function RankingCard({
         fontSize={
           featured
             ? 0.21
-            : 0.18
+            : 0.19
         }
         maxWidth={
           width - 0.45
@@ -472,7 +493,7 @@ function RankingCard({
 }
 
 /* =========================================================
-   PODIO
+   PODIO FÍSICO
 ========================================================= */
 
 function PodiumBlock({
@@ -573,6 +594,141 @@ function PodiumBlock({
 }
 
 /* =========================================================
+   PANTALLA CON BASE
+========================================================= */
+
+function PodiumDisplay({
+  game,
+  position,
+  width = 3.45,
+  coverHeight = 4.05,
+  supportHeight = 1.6,
+  featured = false,
+}) {
+  if (!game) {
+    return null;
+  }
+
+  const frameHeight =
+    coverHeight +
+    1.1;
+
+  const rank =
+    Number(
+      game.rank
+    );
+
+  return (
+    <group
+      position={position}
+    >
+      {/* BASE INFERIOR */}
+
+      <RoundedBox
+        position={[
+          0,
+          -(frameHeight / 2) -
+            supportHeight +
+            0.34,
+          -0.08,
+        ]}
+        args={[
+          width * 0.78,
+          0.28,
+          0.95,
+        ]}
+        radius={0.08}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={
+            getRankDarkColor(
+              rank
+            )
+          }
+          roughness={0.42}
+          metalness={0.25}
+        />
+      </RoundedBox>
+
+      {/* COLUMNA */}
+
+      <RoundedBox
+        position={[
+          0,
+          -(frameHeight / 2) -
+            supportHeight / 2 +
+            0.18,
+          -0.09,
+        ]}
+        args={[
+          0.42,
+          supportHeight,
+          0.34,
+        ]}
+        radius={0.07}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={
+            getRankColor(
+              rank
+            )
+          }
+          roughness={0.35}
+          metalness={0.4}
+        />
+      </RoundedBox>
+
+      {/* TRAVESAÑO */}
+
+      <RoundedBox
+        position={[
+          0,
+          -(frameHeight / 2) +
+            0.12,
+          -0.08,
+        ]}
+        args={[
+          width * 0.72,
+          0.22,
+          0.28,
+        ]}
+        radius={0.06}
+        smoothness={3}
+        castShadow
+      >
+        <meshStandardMaterial
+          color={
+            getRankDarkColor(
+              rank
+            )
+          }
+          roughness={0.4}
+          metalness={0.24}
+        />
+      </RoundedBox>
+
+      {/* PANTALLA */}
+
+      <RankingCard
+        game={game}
+        position={[
+          0,
+          0,
+          0,
+        ]}
+        width={width}
+        coverHeight={coverHeight}
+        featured={featured}
+      />
+    </group>
+  );
+}
+
+/* =========================================================
    TOP 3
 ========================================================= */
 
@@ -595,15 +751,15 @@ function TopThree({
       <PodiumBlock
         rank={2}
         position={[
-          -4.15,
+          -4.2,
           0.85,
           NORTH_END_Z +
-            4.3,
+            4.4,
         ]}
         size={[
           3.6,
           1.7,
-          3.4,
+          3.3,
         ]}
       />
 
@@ -620,7 +776,7 @@ function TopThree({
         size={[
           4,
           2.7,
-          3.7,
+          3.6,
         ]}
       />
 
@@ -629,60 +785,63 @@ function TopThree({
       <PodiumBlock
         rank={3}
         position={[
-          4.15,
+          4.2,
           0.65,
           NORTH_END_Z +
-            4.3,
+            4.4,
         ]}
         size={[
           3.6,
           1.3,
-          3.4,
+          3.3,
         ]}
       />
 
-      {/* SEGUNDO */}
+      {/* PANTALLA 2 */}
 
-      <RankingCard
+      <PodiumDisplay
         game={second}
         position={[
-          -4.15,
-          5.05,
+          -4.2,
+          5.0,
           NORTH_END_Z +
-            0.38,
+            1.7,
         ]}
-        width={3.3}
-        coverHeight={3.65}
+        width={3.45}
+        coverHeight={4.05}
+        supportHeight={1.45}
         featured
       />
 
-      {/* PRIMERO */}
+      {/* PANTALLA 1 */}
 
-      <RankingCard
+      <PodiumDisplay
         game={first}
         position={[
           0,
-          5.28,
+          5.25,
           NORTH_END_Z +
-            0.38,
+            1.55,
         ]}
-        width={3.65}
-        coverHeight={3.95}
+        width={3.8}
+        coverHeight={4.45}
+        supportHeight={1.6}
         featured
       />
 
-      {/* TERCERO */}
+      {/* PANTALLA 3 */}
 
-      <RankingCard
+      <PodiumDisplay
         game={third}
         position={[
-          4.15,
-          4.9,
+          4.2,
+          4.88,
           NORTH_END_Z +
-            0.38,
+            1.7,
         ]}
-        width={3.3}
-        coverHeight={3.65}
+        width={3.45}
+        coverHeight={4.05}
+        supportHeight={1.35}
         featured
       />
     </group>
@@ -692,13 +851,6 @@ function TopThree({
 /* =========================================================
    PARED IZQUIERDA
 ========================================================= */
-
-const LEFT_Z_POSITIONS = [
-  -45,
-  -38.8,
-  -32.6,
-  -26.4,
-];
 
 function LeftRankingWall({
   games,
@@ -720,9 +872,9 @@ function LeftRankingWall({
               game={game}
               position={[
                 LEFT_WALL_X +
-                  0.38,
+                  0.42,
 
-                4.15,
+                SIDE_CARD_Y,
 
                 LEFT_Z_POSITIONS[
                   index
@@ -730,12 +882,15 @@ function LeftRankingWall({
               ]}
               rotation={[
                 0,
-                Math.PI /
-                  2,
+                Math.PI / 2,
                 0,
               ]}
-              width={3.1}
-              coverHeight={3.4}
+              width={
+                SIDE_CARD_WIDTH
+              }
+              coverHeight={
+                SIDE_CARD_COVER_HEIGHT
+              }
             />
           )
         )}
@@ -746,13 +901,6 @@ function LeftRankingWall({
 /* =========================================================
    PARED DERECHA
 ========================================================= */
-
-const RIGHT_Z_POSITIONS = [
-  -26.4,
-  -32.6,
-  -38.8,
-  -45,
-];
 
 function RightRankingWall({
   games,
@@ -774,9 +922,9 @@ function RightRankingWall({
               game={game}
               position={[
                 RIGHT_WALL_X -
-                  0.38,
+                  0.42,
 
-                4.15,
+                SIDE_CARD_Y,
 
                 RIGHT_Z_POSITIONS[
                   index
@@ -784,12 +932,15 @@ function RightRankingWall({
               ]}
               rotation={[
                 0,
-                -Math.PI /
-                  2,
+                -Math.PI / 2,
                 0,
               ]}
-              width={3.1}
-              coverHeight={3.4}
+              width={
+                SIDE_CARD_WIDTH
+              }
+              coverHeight={
+                SIDE_CARD_COVER_HEIGHT
+              }
             />
           )
         )}
@@ -807,7 +958,7 @@ function RankingHeader() {
       <Text
         position={[
           0,
-          7.45,
+          7.9,
           NORTH_END_Z +
             0.38,
         ]}
@@ -823,7 +974,7 @@ function RankingHeader() {
       <mesh
         position={[
           0,
-          6.92,
+          7.35,
           NORTH_END_Z +
             0.36,
         ]}
@@ -854,10 +1005,7 @@ function RankingHeader() {
 }
 
 /* =========================================================
-   POSICIÓN APROXIMADA DE CADA JUEGO
-
-   Se usa para saber cuál está mirando
-   el jugador.
+   POSICIÓN LÓGICA DE CADA JUEGO
 ========================================================= */
 
 function getGameLocalPosition(
@@ -868,27 +1016,27 @@ function getGameLocalPosition(
   if (index === 0) {
     return [
       0,
-      5.28,
+      5.25,
       NORTH_END_Z +
-        0.38,
+        1.55,
     ];
   }
 
   if (index === 1) {
     return [
-      -4.15,
-      5.05,
+      -4.2,
+      5.0,
       NORTH_END_Z +
-        0.38,
+        1.7,
     ];
   }
 
   if (index === 2) {
     return [
-      4.15,
-      4.9,
+      4.2,
+      4.88,
       NORTH_END_Z +
-        0.38,
+        1.7,
     ];
   }
 
@@ -900,9 +1048,9 @@ function getGameLocalPosition(
   ) {
     return [
       LEFT_WALL_X +
-        0.38,
+        0.42,
 
-      4.15,
+      SIDE_CARD_Y,
 
       LEFT_Z_POSITIONS[
         index - 3
@@ -918,9 +1066,9 @@ function getGameLocalPosition(
   ) {
     return [
       RIGHT_WALL_X -
-        0.38,
+        0.42,
 
-      4.15,
+      SIDE_CARD_Y,
 
       RIGHT_Z_POSITIONS[
         index - 7
@@ -936,7 +1084,7 @@ function getGameLocalPosition(
 }
 
 /* =========================================================
-   COMPONENTE
+   COMPONENTE PRINCIPAL
 ========================================================= */
 
 export default function TopTenExhibition({
@@ -1043,8 +1191,7 @@ export default function TopTenExhibition({
                       Number(
                         game.rank
                       ) ||
-                      index +
-                        1,
+                      index + 1,
                   })
                 )
             : [];
@@ -1094,11 +1241,6 @@ export default function TopTenExhibition({
 
   /* =======================================================
      INTERACCIÓN
-
-     El jugador tiene que estar en el brazo norte.
-
-     Luego elegimos el juego que esté más cerca
-     del centro de la cámara.
   ======================================================= */
 
   useFrame(() => {
@@ -1115,7 +1257,7 @@ export default function TopTenExhibition({
         .body
         .translation();
 
-    /* CENTRO DEL SECTOR */
+    /* CENTRO DE LA ZONA */
 
     zoneWorld
       .current
@@ -1143,12 +1285,6 @@ export default function TopTenExhibition({
         dx * dx +
         dz * dz
       );
-
-    /*
-      El brazo mide 34 de largo.
-      24 da margen suficiente para
-      interactuar solo dentro de esta zona.
-    */
 
     if (
       horizontalDistance >
@@ -1196,17 +1332,9 @@ export default function TopTenExhibition({
         gameWorld
           .current
           .set(
-            localPosition[
-              0
-            ],
-
-            localPosition[
-              1
-            ],
-
-            localPosition[
-              2
-            ]
+            localPosition[0],
+            localPosition[1],
+            localPosition[2]
           );
 
         group.current
@@ -1223,9 +1351,7 @@ export default function TopTenExhibition({
             camera
           );
 
-        /*
-          Detrás de la cámara.
-        */
+        /* DETRÁS DE CÁMARA */
 
         if (
           projected
@@ -1258,13 +1384,7 @@ export default function TopTenExhibition({
           return;
         }
 
-        /*
-          También comprobamos distancia
-          física hasta el juego.
-
-          Evita seleccionar portadas
-          lejanas de otra pared.
-        */
+        /* DISTANCIA FÍSICA */
 
         const gameDx =
           gameWorld.current.x -
@@ -1411,7 +1531,7 @@ export default function TopTenExhibition({
         </>
       )}
 
-      {/* LUZ LOCAL SUAVE */}
+      {/* ILUMINACIÓN LOCAL */}
 
       <pointLight
         position={[
