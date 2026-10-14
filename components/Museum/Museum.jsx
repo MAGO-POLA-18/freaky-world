@@ -1,22 +1,8 @@
 import MainHall from "./MainHall";
+import TopTenExhibition from "./TopTenExhibition";
 
 /* =========================================================
-   FREAKY WORLD — CRUCETA / MAIN HALL
-
-   El mando mide:
-   340 x 150
-
-   La cruceta/hall mide aproximadamente:
-   102 x 102
-
-   Por lo tanto conserva una proporción lógica
-   respecto a un mando real.
-
-   Está:
-   - a la izquierda
-   - centrada verticalmente
-   - ligeramente metida desde el borde
-   - con la entrada mirando hacia el centro del mando
+   TIERRA VICIO — CRUCETA / MAIN HALL
 ========================================================= */
 
 export default function Museum() {
@@ -33,7 +19,9 @@ export default function Museum() {
         0,
       ]}
     >
-      <MainHall />
+      <MainHall>
+        <TopTenExhibition />
+      </MainHall>
     </group>
   );
 }
