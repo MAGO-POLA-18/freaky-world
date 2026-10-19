@@ -50,6 +50,17 @@ const CAMERA_WALL_MARGIN =
 
 const MIN_CAMERA_DISTANCE =
   1.4;
+const MANUAL_CAMERA_HOLD_MS =
+  800;
+
+const MOVEMENT_FOLLOW_THRESHOLD =
+  0.35;
+
+const WALK_FOLLOW_SPEED =
+  4.5;
+
+const SPRINT_FOLLOW_SPEED =
+  7;
 
 export default function CameraRig() {
   const {
@@ -113,6 +124,8 @@ export default function CameraRig() {
     useRef(
       new THREE.Vector3()
     );
+    const manualCameraUntil =
+    useRef(0);
 
   const targetPosition =
     useRef(
@@ -295,13 +308,25 @@ export default function CameraRig() {
           return;
         }
 
-        const dx =
+                const dx =
           event.clientX -
           lastPointer.current.x;
 
         const dy =
           event.clientY -
           lastPointer.current.y;
+
+        /*
+          El usuario está controlando
+          la cámara manualmente.
+
+          Mientras siga tocándola,
+          el auto-follow queda suspendido.
+        */
+
+        manualCameraUntil.current =
+          performance.now() +
+          MANUAL_CAMERA_HOLD_MS;
 
         playerRuntime.yaw -=
           dx *
@@ -485,10 +510,33 @@ export default function CameraRig() {
           0;
       }
 
+      /* ===================================================
+         CÁMARA MANUAL
+      =================================================== */
+
+      if (
+        playerInput.lookX !==
+        0
+      ) {
+        manualCameraUntil.current =
+          performance.now() +
+          MANUAL_CAMERA_HOLD_MS;
+
+        playerRuntime.yaw -=
+          playerInput.lookX;
+
+        playerInput.lookX =
+          0;
+      }
+
       if (
         playerInput.lookY !==
         0
       ) {
+        manualCameraUntil.current =
+          performance.now() +
+          MANUAL_CAMERA_HOLD_MS;
+
         playerRuntime.pitch =
           THREE.MathUtils.clamp(
             playerRuntime.pitch +
@@ -500,6 +548,70 @@ export default function CameraRig() {
 
         playerInput.lookY =
           0;
+      }
+
+      /* ===================================================
+         SEGUIMIENTO AUTOMÁTICO
+      =================================================== */
+
+      const velocity =
+        body.linvel();
+
+      const horizontalSpeed =
+        Math.sqrt(
+          velocity.x *
+            velocity.x +
+          velocity.z *
+            velocity.z
+        );
+
+      const moving =
+        horizontalSpeed >
+        MOVEMENT_FOLLOW_THRESHOLD;
+
+      const manualCameraActive =
+        performance.now() <
+        manualCameraUntil.current;
+
+      if (
+        moving &&
+        !manualCameraActive
+      ) {
+        const targetYaw =
+          Math.atan2(
+            -velocity.x,
+            -velocity.z
+          );
+
+        let yawDifference =
+          targetYaw -
+          playerRuntime.yaw;
+
+        yawDifference =
+          Math.atan2(
+            Math.sin(
+              yawDifference
+            ),
+            Math.cos(
+              yawDifference
+            )
+          );
+
+        const followSpeed =
+          playerInput.sprint
+            ? SPRINT_FOLLOW_SPEED
+            : WALK_FOLLOW_SPEED;
+
+        const followAmount =
+          1 -
+          Math.exp(
+            -followSpeed *
+              delta
+          );
+
+        playerRuntime.yaw +=
+          yawDifference *
+          followAmount;
       }
 
       const yaw =
