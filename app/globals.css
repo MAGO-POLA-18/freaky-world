@@ -1673,3 +1673,49 @@ canvas {
       14px;
   }
 }
+
+/* =========================================================
+   MUNDO 3D — EVITAR SELECCIÓN ACCIDENTAL
+
+   IMPORTANTE:
+   Esto NO se aplica a las interfaces 2D de contenido.
+   Solo a elementos marcados explícitamente como
+   world-no-select y al canvas 3D.
+========================================================= */
+
+canvas,
+.world-no-select,
+.world-no-select *,
+.mobile-controls,
+.mobile-controls * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+
+  -webkit-touch-callout: none !important;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+canvas,
+.world-no-select img,
+.world-no-select svg,
+.mobile-controls img,
+.mobile-controls svg {
+  -webkit-user-drag: none;
+}
+
+/*
+  Evita que botones del HUD queden con selección azul
+  al hacer doble toque rápido.
+*/
+
+.world-no-select button,
+.mobile-controls button {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+
+  -webkit-touch-callout: none !important;
+  -webkit-tap-highlight-color: transparent;
+
+  touch-action: manipulation;
+}
