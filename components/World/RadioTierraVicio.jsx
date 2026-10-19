@@ -1780,6 +1780,7 @@ export default function RadioTierraVicio() {
 
       <div
         ref={rootRef}
+        className="world-no-select"
         style={{
           position:
             "fixed",
@@ -1798,12 +1799,24 @@ export default function RadioTierraVicio() {
 
           pointerEvents:
             "auto",
+
+          userSelect:
+            "none",
+
+          WebkitUserSelect:
+            "none",
+
+          WebkitTouchCallout:
+            "none",
+
+          WebkitTapHighlightColor:
+            "transparent",
         }}
         onPointerDown={(
           event
-        ) =>
-          event.stopPropagation()
-        }
+        ) => {
+          event.stopPropagation();
+        }}
       >
         <button
           type="button"
