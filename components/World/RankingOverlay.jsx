@@ -7,137 +7,29 @@ import {
 } from "react";
 
 /* =========================================================
-   FREAKY WORLD
-   FICHA RÁPIDA RESPONSIVE
-
-   3 MODOS:
-
-   1. VERTICAL
-      vídeo arriba + información debajo
-
-   2. MÓVIL / TABLET HORIZONTAL
-      vídeo izquierda + información derecha
-
-   3. DESKTOP
-      vídeo contenido y centrado
-      información derecha
-      nunca supera la altura útil
+   HELPERS
 ========================================================= */
 
-/* =========================================================
-   YOUTUBE
-========================================================= */
-
-function getYoutubeId(game) {
-  const videos =
-    Array.isArray(game?.videos)
-      ? game.videos
-      : [];
-
-  if (!videos.length) {
-    return null;
-  }
-
-  const preferredWords = [
-    "launch trailer",
-    "official trailer",
-    "release trailer",
-    "gameplay trailer",
-    "trailer",
-  ];
-
-  let selected = null;
-
-  for (const word of preferredWords) {
-    selected = videos.find(
-      (video) =>
-        String(video?.name || "")
-          .toLowerCase()
-          .includes(word)
-    );
-
-    if (selected) {
-      break;
-    }
-  }
-
-  if (!selected) {
-    selected = videos[0];
-  }
-
-  return (
-    selected?.youtubeId ||
-    selected?.youtube_id ||
-    null
-  );
+function asArray(value) {
+  return Array.isArray(value)
+    ? value
+    : [];
 }
-
-/* =========================================================
-   PLATAFORMAS
-========================================================= */
-
-function getPlatforms(game) {
-  const platforms =
-    Array.isArray(game?.platforms)
-      ? game.platforms
-      : [];
-
-  return platforms
-    .map(
-      (platform) =>
-        platform?.abbreviation ||
-        platform?.name
-    )
-    .filter(Boolean)
-    .join(" · ");
-}
-
-/* =========================================================
-   PUNTUACIÓN
-========================================================= */
-
-function getScore(game) {
-  const value =
-    typeof game?.totalRating === "number"
-      ? game.totalRating
-      : typeof game?.rating === "number"
-        ? game.rating
-        : null;
-
-  if (value === null) {
-    return null;
-  }
-
-  return (value / 10).toFixed(1);
-}
-
-/* =========================================================
-   PORTADA
-========================================================= */
-
-function getCover(game) {
-  return (
-    game?.cover?.large ||
-    game?.cover?.medium ||
-    game?.cover?.small ||
-    null
-  );
-}
-
-/* =========================================================
-   MEDIA QUERY
-========================================================= */
 
 function useMediaQuery(query) {
-  const [matches, setMatches] =
-    useState(false);
+  const [
+    matches,
+    setMatches,
+  ] = useState(false);
 
   useEffect(() => {
     const media =
       window.matchMedia(query);
 
     const update = () => {
-      setMatches(media.matches);
+      setMatches(
+        media.matches
+      );
     };
 
     update();
@@ -153,13 +45,308 @@ function useMediaQuery(query) {
         update
       );
     };
-  }, [query]);
+  }, [
+    query,
+  ]);
 
   return matches;
 }
 
 /* =========================================================
-   BOTÓN
+   PORTADA
+========================================================= */
+
+function getCover(game) {
+  if (
+    typeof game?.cover ===
+      "string" &&
+    game.cover.trim()
+  ) {
+    return game.cover;
+  }
+
+  return (
+    game?.cover?.large ||
+    game?.cover?.medium ||
+    game?.cover?.small ||
+
+    game?.coverLargeUrl ||
+    game?.coverMediumUrl ||
+    game?.coverSmallUrl ||
+
+    game?.cover_large_url ||
+    game?.cover_medium_url ||
+    game?.cover_small_url ||
+
+    game?.cover_image ||
+    game?.cover_image_url ||
+    game?.coverUrl ||
+
+    null
+  );
+}
+
+/* =========================================================
+   VIDEO
+========================================================= */
+
+function getYoutubeId(video) {
+  if (!video) {
+    return null;
+  }
+
+  if (
+    typeof video ===
+    "string"
+  ) {
+    return video;
+  }
+
+  return (
+    video?.youtubeId ||
+    video?.youtube_id ||
+    null
+  );
+}
+
+function chooseFirstVideo(game) {
+  const manual =
+    game?.manualTrailer
+      ?.youtubeId ||
+    game
+      ?.manualTrailerYoutubeId ||
+    game
+      ?.manual_trailer_youtube_id;
+
+  if (manual) {
+    return manual;
+  }
+
+  const videos =
+    asArray(
+      game?.videos
+    );
+
+  const preferences = [
+    "launch trailer",
+    "official trailer",
+    "release trailer",
+    "gameplay trailer",
+    "trailer",
+  ];
+
+  for (
+    const preference
+    of preferences
+  ) {
+    const found =
+      videos.find(
+        (video) =>
+          String(
+            video?.name ||
+              ""
+          )
+            .toLowerCase()
+            .includes(
+              preference
+            )
+      );
+
+    const id =
+      getYoutubeId(
+        found
+      );
+
+    if (id) {
+      return id;
+    }
+  }
+
+  return getYoutubeId(
+    videos[0]
+  );
+}
+
+/* =========================================================
+   DATOS
+========================================================= */
+
+function getYear(game) {
+  if (game?.year) {
+    return game.year;
+  }
+
+  if (
+    game?.releaseYear
+  ) {
+    return game.releaseYear;
+  }
+
+  if (
+    game?.releaseDate
+  ) {
+    const date =
+      new Date(
+        game.releaseDate
+      );
+
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return date.getFullYear();
+    }
+  }
+
+  return "";
+}
+
+function getDeveloper(game) {
+  if (
+    typeof game?.developer ===
+    "string"
+  ) {
+    return game.developer;
+  }
+
+  return (
+    game?.developer?.name ||
+    game?.publisher?.name ||
+    (
+      typeof game?.publisher ===
+      "string"
+        ? game.publisher
+        : ""
+    ) ||
+    ""
+  );
+}
+
+function getPlatforms(game) {
+  return asArray(
+    game?.platforms
+  )
+    .map(
+      (platform) =>
+        typeof platform ===
+        "string"
+          ? platform
+          : platform
+              ?.abbreviation ||
+            platform?.name
+    )
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function getGenres(game) {
+  return asArray(
+    game?.genres
+  )
+    .map(
+      (genre) =>
+        typeof genre ===
+        "string"
+          ? genre
+          : genre?.name
+    )
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/* =========================================================
+   DATO TÉCNICO
+========================================================= */
+
+function DataItem({
+  label,
+  value,
+  compact = false,
+}) {
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          color:
+            "#65727a",
+
+          fontSize:
+            compact
+              ? 7
+              : 8,
+
+          lineHeight:
+            1.1,
+
+          fontWeight:
+            900,
+
+          letterSpacing:
+            ".08em",
+
+          textTransform:
+            "uppercase",
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          marginTop:
+            compact
+              ? 2
+              : 3,
+
+          overflow:
+            "hidden",
+
+          color:
+            "#e8ecef",
+
+          fontSize:
+            compact
+              ? 9
+              : 11,
+
+          lineHeight:
+            1.25,
+
+          fontWeight:
+            750,
+
+          textOverflow:
+            "ellipsis",
+
+          display:
+            "-webkit-box",
+
+          WebkitLineClamp:
+            compact
+              ? 1
+              : 2,
+
+          WebkitBoxOrient:
+            "vertical",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   BOTÓN PRINCIPAL
 ========================================================= */
 
 function ActionButton({
@@ -174,24 +361,36 @@ function ActionButton({
       type="button"
       onClick={onClick}
       style={{
-        width: "100%",
+        width:
+          "100%",
 
-        minHeight:
+        minWidth: 0,
+
+        height:
           compact
             ? 42
             : 48,
 
+        display:
+          "grid",
+
+        placeItems:
+          "center",
+
         padding:
           compact
-            ? "9px 12px"
-            : "11px 16px",
+            ? "0 12px"
+            : "0 16px",
 
         border:
           primary
             ? `1px solid ${accent}`
             : "1px solid rgba(255,255,255,.18)",
 
-        borderRadius: 13,
+        borderRadius:
+          compact
+            ? 11
+            : 13,
 
         background:
           primary
@@ -205,15 +404,31 @@ function ActionButton({
 
         fontSize:
           compact
-            ? 11
-            : 13,
+            ? 10
+            : 12,
 
-        fontWeight: 900,
+        lineHeight: 1,
+
+        fontWeight:
+          950,
 
         letterSpacing:
-          ".035em",
+          ".025em",
 
-        cursor: "pointer",
+        whiteSpace:
+          "nowrap",
+
+        cursor:
+          "pointer",
+
+        touchAction:
+          "manipulation",
+
+        userSelect:
+          "none",
+
+        WebkitUserSelect:
+          "none",
       }}
     >
       {children}
@@ -222,7 +437,239 @@ function ActionButton({
 }
 
 /* =========================================================
-   OVERLAY
+   PORTADA
+========================================================= */
+
+function CoverCard({
+  cover,
+  title,
+  compact,
+}) {
+  return (
+    <div
+      style={{
+        position:
+          "relative",
+
+        width:
+          "100%",
+
+        height:
+          "100%",
+
+        minHeight: 0,
+
+        overflow:
+          "hidden",
+
+        border:
+          "1px solid rgba(255,255,255,.12)",
+
+        borderRadius:
+          compact
+            ? 11
+            : 14,
+
+        background:
+          "#0b0e11",
+      }}
+    >
+      {cover ? (
+        <img
+          src={cover}
+          alt={`Portada de ${title}`}
+          style={{
+            width:
+              "100%",
+
+            height:
+              "100%",
+
+            display:
+              "block",
+
+            objectFit:
+              "contain",
+
+            background:
+              "#080a0d",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width:
+              "100%",
+
+            height:
+              "100%",
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            padding:
+              10,
+
+            color:
+              "#5e6970",
+
+            fontSize:
+              10,
+
+            textAlign:
+              "center",
+          }}
+        >
+          Portada no disponible
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   VIDEO
+========================================================= */
+
+function Trailer({
+  youtubeId,
+  cover,
+  title,
+  compact,
+}) {
+  return (
+    <div
+      style={{
+        position:
+          "relative",
+
+        width:
+          "100%",
+
+        height:
+          "100%",
+
+        minHeight: 0,
+
+        overflow:
+          "hidden",
+
+        border:
+          "1px solid rgba(255,255,255,.12)",
+
+        borderRadius:
+          compact
+            ? 11
+            : 14,
+
+        background:
+          "#000",
+      }}
+    >
+      {youtubeId ? (
+        <iframe
+          key={youtubeId}
+          src={
+            `https://www.youtube.com/embed/${youtubeId}` +
+            "?autoplay=1" +
+            "&mute=1" +
+            "&playsinline=1" +
+            "&rel=0" +
+            "&controls=1"
+          }
+          title={
+            `Tráiler de ${title}`
+          }
+          allow="
+            accelerometer;
+            autoplay;
+            clipboard-write;
+            encrypted-media;
+            gyroscope;
+            picture-in-picture;
+            web-share
+          "
+          allowFullScreen
+          style={{
+            position:
+              "absolute",
+
+            inset: 0,
+
+            width:
+              "100%",
+
+            height:
+              "100%",
+
+            display:
+              "block",
+
+            border: 0,
+          }}
+        />
+      ) : cover ? (
+        <img
+          src={cover}
+          alt=""
+          style={{
+            position:
+              "absolute",
+
+            inset: 0,
+
+            width:
+              "100%",
+
+            height:
+              "100%",
+
+            display:
+              "block",
+
+            objectFit:
+              "contain",
+
+            background:
+              "#000",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            position:
+              "absolute",
+
+            inset: 0,
+
+            display:
+              "grid",
+
+            placeItems:
+              "center",
+
+            color:
+              "#657078",
+
+            fontSize:
+              11,
+
+            fontWeight:
+              750,
+          }}
+        >
+          Tráiler no disponible
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================
+   PREFICHA
 ========================================================= */
 
 export default function RankingOverlay({
@@ -234,14 +681,6 @@ export default function RankingOverlay({
       "(orientation: landscape)"
     );
 
-  /*
-    Desktop real.
-
-    Lo separamos de orientación porque un ordenador
-    normalmente también es landscape, pero necesita
-    un tratamiento distinto al móvil horizontal.
-  */
-
   const desktop =
     useMediaQuery(
       "(min-width: 1100px)"
@@ -249,38 +688,166 @@ export default function RankingOverlay({
 
   const lowHeight =
     useMediaQuery(
-      "(max-height: 700px)"
+      "(max-height: 520px)"
     );
 
+  const compact =
+    horizontal ||
+    desktop ||
+    lowHeight;
+
+  const [
+    completeGame,
+    setCompleteGame,
+  ] = useState(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
   /* =======================================================
-     BLOQUEAR SCROLL EXTERIOR
+     CARGAR FICHA COMPLETA PARA LA PREFICHA
+
+     El ranking y el buscador pueden mandar
+     objetos ligeros.
+
+     Acá recuperamos:
+     - portada real
+     - vídeo
+     - plataformas
+     - género
+     - desarrollador
+     - año
   ======================================================= */
 
   useEffect(() => {
-    const previous =
-      document.body.style.overflow;
+    if (!game?.id) {
+      setCompleteGame(
+        null
+      );
 
-    document.body.style.overflow =
+      return;
+    }
+
+    let active =
+      true;
+
+    const controller =
+      new AbortController();
+
+    async function load() {
+      setLoading(
+        true
+      );
+
+      try {
+        const response =
+          await fetch(
+            `/api/games?id=${encodeURIComponent(
+              game.id
+            )}`,
+            {
+              method:
+                "GET",
+
+              cache:
+                "no-store",
+
+              signal:
+                controller.signal,
+            }
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            `HTTP ${response.status}`
+          );
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          !active
+        ) {
+          return;
+        }
+
+        if (
+          data?.game
+        ) {
+          setCompleteGame(
+            data.game
+          );
+        }
+      } catch (error) {
+        if (
+          error?.name !==
+          "AbortError"
+        ) {
+          console.error(
+            "PREFICHA ERROR:",
+            error
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(
+            false
+          );
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      active =
+        false;
+
+      controller.abort();
+    };
+  }, [
+    game?.id,
+  ]);
+
+  /* =======================================================
+     BLOQUEAR SCROLL
+  ======================================================= */
+
+  useEffect(() => {
+    const previousOverflow =
+      document.body.style
+        .overflow;
+
+    document.body.style
+      .overflow =
       "hidden";
 
     return () => {
-      document.body.style.overflow =
-        previous;
+      document.body.style
+        .overflow =
+        previousOverflow;
     };
   }, []);
 
   /* =======================================================
-     ESCAPE
+     ESC
   ======================================================= */
 
   useEffect(() => {
-    function handleKeyDown(event) {
-      if (
-        event.key === "Escape"
-      ) {
-        onClose?.();
-      }
-    }
+    const handleKeyDown =
+      (event) => {
+        if (
+          event.code ===
+          "Escape"
+        ) {
+          event.preventDefault();
+
+          onClose?.();
+        }
+      };
 
     window.addEventListener(
       "keydown",
@@ -293,53 +860,68 @@ export default function RankingOverlay({
         handleKeyDown
       );
     };
-  }, [onClose]);
-
-  const youtubeId =
-    useMemo(
-      () => getYoutubeId(game),
-      [game]
-    );
-
-  const platforms =
-    useMemo(
-      () => getPlatforms(game),
-      [game]
-    );
-
-  const score =
-    useMemo(
-      () => getScore(game),
-      [game]
-    );
-
-  const cover =
-    useMemo(
-      () => getCover(game),
-      [game]
-    );
+  }, [
+    onClose,
+  ]);
 
   if (!game?.id) {
     return null;
   }
 
-  const title =
-    game.title ||
-    game.name ||
-    "Ficha del juego";
+  const resolvedGame =
+    completeGame ||
+    game;
 
-  const developer =
-    game.developer ||
-    game.subtitle ||
-    game.publisher ||
-    "";
+  const title =
+    resolvedGame?.title ||
+    resolvedGame?.name ||
+    game?.title ||
+    game?.name ||
+    "Juego";
+
+  const cover =
+    getCover(
+      resolvedGame
+    ) ||
+    getCover(
+      game
+    );
+
+  const youtubeId =
+    chooseFirstVideo(
+      resolvedGame
+    );
 
   const year =
-    game.year || "";
+    getYear(
+      resolvedGame
+    );
+
+  const developer =
+    getDeveloper(
+      resolvedGame
+    );
+
+  const platforms =
+    getPlatforms(
+      resolvedGame
+    );
+
+  const genres =
+    getGenres(
+      resolvedGame
+    );
 
   const accent =
-    game.accent ||
+    resolvedGame?.accent ||
+    game?.accent ||
     "#5fdcff";
+
+  /* =======================================================
+     ABRIR FICHA COMPLETA
+
+     Mandamos la versión completa si ya está cargada.
+  ======================================================= */
 
   function openFullGameCard() {
     window.dispatchEvent(
@@ -347,7 +929,9 @@ export default function RankingOverlay({
         "freaky:open-full-game",
         {
           detail: {
-            game,
+            game:
+              completeGame ||
+              game,
           },
         }
       )
@@ -355,54 +939,52 @@ export default function RankingOverlay({
   }
 
   /* =======================================================
-     TAMAÑOS
+     MEDIDAS
   ======================================================= */
 
   const headerHeight =
-    desktop
-      ? 64
-      : horizontal
-        ? lowHeight
-          ? 58
-          : 68
-        : 82;
+    horizontal
+      ? lowHeight
+        ? 52
+        : 58
+      : 76;
 
-  const horizontalLayout =
-    horizontal || desktop;
-
-  const compact =
-    lowHeight || desktop;
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div
+      className="world-no-select"
       style={{
-        position: "fixed",
+        position:
+          "fixed",
 
         inset: 0,
 
-        zIndex: 99999,
+        zIndex:
+          99999,
 
-        width: "100%",
+        width:
+          "100%",
 
-        height: "100dvh",
+        height:
+          "100dvh",
 
-        boxSizing: "border-box",
+        overflow:
+          "hidden",
+
+        boxSizing:
+          "border-box",
 
         background:
           "#080a0d",
 
-        color: "#ffffff",
+        color:
+          "#ffffff",
 
         fontFamily:
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-
-        overflow:
-          horizontalLayout
-            ? "hidden"
-            : "auto",
-
-        WebkitOverflowScrolling:
-          "touch",
       }}
     >
       {/* ===================================================
@@ -414,63 +996,56 @@ export default function RankingOverlay({
           height:
             headerHeight,
 
-          boxSizing:
-            "border-box",
+          display:
+            "flex",
 
-          padding:
-            desktop
-              ? "9px 22px"
-              : horizontal
-                ? lowHeight
-                  ? "8px 14px"
-                  : "10px 18px"
-                : "14px 18px",
-
-          display: "flex",
-
-          alignItems: "center",
+          alignItems:
+            "center",
 
           justifyContent:
             "space-between",
 
-          gap: 14,
+          gap:
+            12,
 
-          background:
-            "rgba(5,7,9,.97)",
+          boxSizing:
+            "border-box",
+
+          padding:
+            horizontal
+              ? lowHeight
+                ? "7px 12px"
+                : "8px 14px"
+              : "11px 14px",
 
           borderBottom:
             `1px solid ${accent}55`,
 
-          backdropFilter:
-            "blur(18px)",
-
-          WebkitBackdropFilter:
-            "blur(18px)",
+          background:
+            "#050709",
         }}
       >
         <div
           style={{
             minWidth: 0,
+
             flex: 1,
           }}
         >
           <div
             style={{
-              marginBottom:
-                compact
-                  ? 3
-                  : 5,
-
-              color: accent,
+              color:
+                accent,
 
               fontSize:
-                compact
-                  ? 9
-                  : 11,
+                horizontal
+                  ? 8
+                  : 9,
 
               lineHeight: 1,
 
-              fontWeight: 900,
+              fontWeight:
+                950,
 
               letterSpacing:
                 ".18em",
@@ -481,25 +1056,38 @@ export default function RankingOverlay({
 
           <div
             style={{
+              marginTop:
+                horizontal
+                  ? 4
+                  : 6,
+
               overflow:
                 "hidden",
 
-              textOverflow:
-                "ellipsis",
+              color:
+                "#fff",
+
+              fontSize:
+                horizontal
+                  ? lowHeight
+                    ? 17
+                    : 19
+                  : "clamp(20px,5.8vw,30px)",
+
+              lineHeight:
+                1.05,
+
+              fontWeight:
+                950,
+
+              letterSpacing:
+                "-.025em",
 
               whiteSpace:
                 "nowrap",
 
-              fontSize:
-                desktop
-                  ? 20
-                  : horizontal
-                    ? lowHeight
-                      ? 17
-                      : 21
-                    : "clamp(18px,5vw,27px)",
-
-              fontWeight: 850,
+              textOverflow:
+                "ellipsis",
             }}
           >
             {title}
@@ -508,45 +1096,56 @@ export default function RankingOverlay({
 
         <button
           type="button"
-          aria-label="Cerrar ficha"
-          onClick={onClose}
+          aria-label="Cerrar preficha"
+          onClick={
+            onClose
+          }
           style={{
-            flex: "0 0 auto",
+            flex:
+              "0 0 auto",
 
             width:
-              compact
-                ? 42
-                : 54,
+              horizontal
+                ? 40
+                : 46,
 
             height:
-              compact
-                ? 42
-                : 54,
+              horizontal
+                ? 40
+                : 46,
 
-            display: "grid",
+            display:
+              "grid",
 
             placeItems:
               "center",
 
+            padding: 0,
+
+            border:
+              "1px solid rgba(255,255,255,.2)",
+
             borderRadius:
               "50%",
 
-            border:
-              "1px solid rgba(255,255,255,.22)",
-
             background:
-              "#20252a",
+              "#1c2227",
 
-            color: "#ffffff",
+            color:
+              "#fff",
 
             fontSize:
-              compact
-                ? 29
-                : 36,
+              horizontal
+                ? 27
+                : 31,
 
             lineHeight: 1,
 
-            cursor: "pointer",
+            fontWeight:
+              500,
+
+            cursor:
+              "pointer",
           }}
         >
           ×
@@ -554,592 +1153,400 @@ export default function RankingOverlay({
       </header>
 
       {/* ===================================================
-          CONTENIDO
+          VERTICAL
       =================================================== */}
 
-      <main
-        style={{
-          boxSizing:
-            "border-box",
-
-          width: "100%",
-
-          maxWidth:
-            desktop
-              ? 1380
-              : horizontal
-                ? 1500
-                : 1100,
-
-          height:
-            horizontalLayout
-              ? `calc(100dvh - ${headerHeight}px)`
-              : "auto",
-
-          margin: "0 auto",
-
-          padding:
-            desktop
-              ? "18px 24px"
-              : horizontal
-                ? lowHeight
-                  ? 12
-                  : 18
-                : "clamp(18px,4vw,38px)",
-
-          overflow:
-            horizontalLayout
-              ? "hidden"
-              : "visible",
-        }}
-      >
-        <div
+      {!horizontal && (
+        <main
           style={{
-            width: "100%",
+            width:
+              "100%",
 
             height:
-              horizontalLayout
-                ? "100%"
-                : "auto",
+              `calc(100dvh - ${headerHeight}px)`,
 
-            display: "grid",
+            maxWidth:
+              700,
 
-            /*
-              PC:
-              vídeo contenido + ficha lateral.
+            margin:
+              "0 auto",
 
-              Móvil horizontal:
-              conservamos la proporción que ya funciona.
-            */
+            display:
+              "grid",
 
-            gridTemplateColumns:
-              desktop
-                ? "minmax(0, 1.45fr) minmax(320px, .75fr)"
-                : horizontal
-                  ? "minmax(0, 1.65fr) minmax(280px, .85fr)"
-                  : "1fr",
+            gridTemplateRows:
+              "minmax(0, .92fr) minmax(0, 1.08fr) auto",
 
             gap:
-              desktop
-                ? 28
-                : horizontal
-                  ? lowHeight
-                    ? 14
-                    : 22
-                  : 0,
+              10,
 
-            alignItems:
-              horizontalLayout
-                ? "center"
-                : "stretch",
+            boxSizing:
+              "border-box",
+
+            padding:
+              "12px 14px max(12px, env(safe-area-inset-bottom))",
           }}
         >
-          {/* =================================================
-              VÍDEO
-          ================================================= */}
+          {/* PORTADA + DATOS */}
 
           <section
             style={{
-              width: "100%",
+              minHeight: 0,
 
-              height:
-                horizontalLayout
-                  ? "100%"
-                  : "auto",
+              display:
+                "grid",
 
+              gridTemplateColumns:
+                "minmax(105px, 35%) minmax(0,1fr)",
+
+              gap:
+                12,
+            }}
+          >
+            <CoverCard
+              cover={
+                cover
+              }
+              title={
+                title
+              }
+              compact={
+                compact
+              }
+            />
+
+            <div
+              style={{
+                minWidth: 0,
+
+                minHeight: 0,
+
+                display:
+                  "grid",
+
+                gridTemplateRows:
+                  "repeat(4,minmax(0,auto))",
+
+                alignContent:
+                  "center",
+
+                gap:
+                  9,
+
+                padding:
+                  "4px 0",
+              }}
+            >
+              {loading && (
+                <div
+                  style={{
+                    color:
+                      "#59656c",
+
+                    fontSize:
+                      9,
+
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Cargando datos…
+                </div>
+              )}
+
+              <DataItem
+                label="Año"
+                value={
+                  year
+                }
+              />
+
+              <DataItem
+                label="Desarrollador"
+                value={
+                  developer
+                }
+              />
+
+              <DataItem
+                label="Plataformas"
+                value={
+                  platforms
+                }
+              />
+
+              <DataItem
+                label="Género"
+                value={
+                  genres
+                }
+              />
+            </div>
+          </section>
+
+          {/* VIDEO */}
+
+          <section
+            style={{
+              minHeight: 0,
+            }}
+          >
+            <Trailer
+              youtubeId={
+                youtubeId
+              }
+              cover={
+                cover
+              }
+              title={
+                title
+              }
+              compact={
+                compact
+              }
+            />
+          </section>
+
+          {/* BOTONES */}
+
+          <section
+            style={{
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                "1fr 1fr",
+
+              gap:
+                9,
+            }}
+          >
+            <ActionButton
+              onClick={
+                onClose
+              }
+              accent={
+                accent
+              }
+            >
+              VOLVER AL MUNDO
+            </ActionButton>
+
+            <ActionButton
+              onClick={
+                openFullGameCard
+              }
+              primary
+              accent={
+                accent
+              }
+            >
+              VER FICHA COMPLETA
+            </ActionButton>
+          </section>
+        </main>
+      )}
+
+      {/* ===================================================
+          HORIZONTAL / TABLET / DESKTOP
+      =================================================== */}
+
+      {horizontal && (
+        <main
+          style={{
+            width:
+              "100%",
+
+            height:
+              `calc(100dvh - ${headerHeight}px)`,
+
+            maxWidth:
+              1500,
+
+            margin:
+              "0 auto",
+
+            display:
+              "grid",
+
+            gridTemplateRows:
+              "minmax(0,1fr) auto auto",
+
+            gap:
+              lowHeight
+                ? 7
+                : 10,
+
+            boxSizing:
+              "border-box",
+
+            padding:
+              lowHeight
+                ? "8px 12px"
+                : "12px 16px",
+          }}
+        >
+          {/* PORTADA + VIDEO */}
+
+          <section
+            style={{
+              minHeight: 0,
+
+              display:
+                "grid",
+
+              gridTemplateColumns:
+                desktop
+                  ? "minmax(150px,.42fr) minmax(0,1.58fr)"
+                  : "minmax(115px,.42fr) minmax(0,1.58fr)",
+
+              gap:
+                lowHeight
+                  ? 9
+                  : 13,
+
+              alignItems:
+                "stretch",
+            }}
+          >
+            <CoverCard
+              cover={
+                cover
+              }
+              title={
+                title
+              }
+              compact
+            />
+
+            <Trailer
+              youtubeId={
+                youtubeId
+              }
+              cover={
+                cover
+              }
+              title={
+                title
+              }
+              compact
+            />
+          </section>
+
+          {/* DATOS EN UNA FILA */}
+
+          <section
+            style={{
               minWidth: 0,
 
               display:
-                horizontalLayout
-                  ? "flex"
-                  : "block",
+                "grid",
+
+              gridTemplateColumns:
+                "minmax(55px,.4fr) minmax(110px,1fr) minmax(130px,1.4fr) minmax(100px,1fr)",
 
               alignItems:
                 "center",
 
-              justifyContent:
-                "center",
+              gap:
+                lowHeight
+                  ? 8
+                  : 14,
+
+              padding:
+                lowHeight
+                  ? "6px 9px"
+                  : "8px 11px",
+
+              overflow:
+                "hidden",
+
+              border:
+                "1px solid rgba(255,255,255,.08)",
+
+              borderRadius:
+                10,
+
+              background:
+                "#0e1216",
             }}
           >
-            <div
-              style={{
-                position:
-                  "relative",
+            <DataItem
+              compact
+              label="Año"
+              value={
+                year
+              }
+            />
 
-                /*
-                  DESKTOP:
+            <DataItem
+              compact
+              label="Desarrollador"
+              value={
+                developer
+              }
+            />
 
-                  El tamaño se calcula primero por ALTURA.
+            <DataItem
+              compact
+              label="Plataformas"
+              value={
+                platforms
+              }
+            />
 
-                  max-height impide que el reproductor
-                  pueda salir del viewport.
-
-                  aspect-ratio mantiene 16:9.
-
-                  width:auto permite que Three/Browser
-                  calcule el ancho correspondiente.
-                */
-
-                width:
-                  desktop
-                    ? "min(100%, calc((100dvh - 120px) * 16 / 9))"
-                    : horizontal
-                      ? "min(100%, calc((100dvh - 110px) * 16 / 9))"
-                      : "100%",
-
-                maxWidth:
-                  desktop
-                    ? "900px"
-                    : "100%",
-
-                aspectRatio:
-                  "16 / 9",
-
-                maxHeight:
-                  desktop
-                    ? `calc(100dvh - ${headerHeight + 60}px)`
-                    : horizontal
-                      ? lowHeight
-                        ? `calc(100dvh - ${headerHeight + 24}px)`
-                        : `calc(100dvh - ${headerHeight + 40}px)`
-                      : "none",
-
-                overflow:
-                  "hidden",
-
-                border:
-                  "1px solid rgba(255,255,255,.12)",
-
-                borderRadius:
-                  compact
-                    ? 12
-                    : 18,
-
-                background:
-                  "#000000",
-
-                boxShadow:
-                  "0 20px 60px rgba(0,0,0,.4)",
-              }}
-            >
-              {youtubeId ? (
-                <iframe
-                  src={
-                    `https://www.youtube.com/embed/${youtubeId}?playsinline=1&rel=0`
-                  }
-                  title={
-                    `Tráiler de ${title}`
-                  }
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  style={{
-                    position:
-                      "absolute",
-
-                    inset: 0,
-
-                    width: "100%",
-
-                    height: "100%",
-
-                    display:
-                      "block",
-
-                    border: 0,
-                  }}
-                />
-              ) : cover ? (
-                <img
-                  src={cover}
-                  alt={title}
-                  style={{
-                    position:
-                      "absolute",
-
-                    inset: 0,
-
-                    width: "100%",
-
-                    height: "100%",
-
-                    objectFit:
-                      "contain",
-
-                    display:
-                      "block",
-
-                    background:
-                      "#000000",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    position:
-                      "absolute",
-
-                    inset: 0,
-
-                    display:
-                      "grid",
-
-                    placeItems:
-                      "center",
-
-                    color:
-                      "#8c969e",
-
-                    fontSize: 14,
-
-                    fontWeight: 700,
-                  }}
-                >
-                  Tráiler no disponible
-                </div>
-              )}
-            </div>
+            <DataItem
+              compact
+              label="Género"
+              value={
+                genres
+              }
+            />
           </section>
 
-          {/* =================================================
-              INFORMACIÓN
-          ================================================= */}
+          {/* BOTONES */}
 
           <section
             style={{
-              minWidth: 0,
+              display:
+                "grid",
 
-              height:
-                horizontalLayout
-                  ? "100%"
-                  : "auto",
+              gridTemplateColumns:
+                "1fr 1fr",
 
-              display: "flex",
-
-              flexDirection:
-                "column",
-
-              justifyContent:
-                horizontalLayout
-                  ? "center"
-                  : "flex-start",
-
-              overflowY:
-                horizontalLayout
-                  ? "auto"
-                  : "visible",
-
-              paddingRight:
-                horizontalLayout
-                  ? 4
-                  : 0,
-
-              scrollbarWidth:
-                "thin",
+              gap:
+                lowHeight
+                  ? 8
+                  : 10,
             }}
           >
-            {/* TÍTULO */}
-
-            <div
-              style={{
-                display: "flex",
-
-                alignItems:
-                  "flex-start",
-
-                justifyContent:
-                  "space-between",
-
-                gap:
-                  compact
-                    ? 12
-                    : 18,
-
-                marginTop:
-                  horizontalLayout
-                    ? 0
-                    : 26,
-              }}
+            <ActionButton
+              compact
+              onClick={
+                onClose
+              }
+              accent={
+                accent
+              }
             >
-              <div
-                style={{
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    color: accent,
+              VOLVER AL MUNDO
+            </ActionButton>
 
-                    fontSize:
-                      compact
-                        ? 9
-                        : 11,
-
-                    fontWeight: 900,
-
-                    letterSpacing:
-                      ".14em",
-                  }}
-                >
-                  {game.rank
-                    ? `TOP 10 · #${game.rank}`
-                    : "FREAKY WORLD"}
-                </div>
-
-                <h1
-                  style={{
-                    margin:
-                      compact
-                        ? "5px 0 3px"
-                        : "7px 0 5px",
-
-                    fontSize:
-                      desktop
-                        ? "clamp(24px,2.4vw,38px)"
-                        : horizontal
-                          ? lowHeight
-                            ? "clamp(19px,3.3vw,30px)"
-                            : "clamp(24px,3vw,42px)"
-                          : "clamp(29px,7vw,55px)",
-
-                    lineHeight: 1.03,
-
-                    letterSpacing:
-                      "-.035em",
-                  }}
-                >
-                  {title}
-                </h1>
-
-                {developer && (
-                  <div
-                    style={{
-                      color:
-                        "#9da6ad",
-
-                      fontSize:
-                        compact
-                          ? 12
-                          : 14,
-                    }}
-                  >
-                    {developer}
-                  </div>
-                )}
-              </div>
-
-              {score && (
-                <div
-                  style={{
-                    flex:
-                      "0 0 auto",
-
-                    minWidth:
-                      compact
-                        ? 56
-                        : 66,
-
-                    padding:
-                      compact
-                        ? "8px 9px"
-                        : "10px 11px",
-
-                    border:
-                      `1px solid ${accent}66`,
-
-                    borderRadius:
-                      14,
-
-                    background:
-                      `${accent}18`,
-
-                    textAlign:
-                      "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize:
-                        compact
-                          ? 21
-                          : 26,
-
-                      lineHeight: 1,
-
-                      fontWeight: 950,
-                    }}
-                  >
-                    {score}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 3,
-
-                      color:
-                        "#89939a",
-
-                      fontSize: 9,
-
-                      fontWeight: 800,
-                    }}
-                  >
-                    / 10
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* DATOS */}
-
-            <div
-              style={{
-                marginTop:
-                  compact
-                    ? 10
-                    : 18,
-
-                padding:
-                  compact
-                    ? "10px 12px"
-                    : "14px 15px",
-
-                border:
-                  "1px solid rgba(255,255,255,.09)",
-
-                borderRadius:
-                  14,
-
-                background:
-                  "#11151a",
-              }}
+            <ActionButton
+              compact
+              onClick={
+                openFullGameCard
+              }
+              primary
+              accent={
+                accent
+              }
             >
-              <div
-                style={{
-                  display: "flex",
-
-                  flexWrap: "wrap",
-
-                  gap:
-                    compact
-                      ? "5px 13px"
-                      : "8px 18px",
-
-                  color:
-                    "#c7cdd1",
-
-                  fontSize:
-                    compact
-                      ? 11
-                      : 13,
-
-                  lineHeight: 1.45,
-                }}
-              >
-                {year && (
-                  <span>
-                    <strong
-                      style={{
-                        color:
-                          "#ffffff",
-                      }}
-                    >
-                      Año:
-                    </strong>{" "}
-                    {year}
-                  </span>
-                )}
-
-                {developer && (
-                  <span>
-                    <strong
-                      style={{
-                        color:
-                          "#ffffff",
-                      }}
-                    >
-                      Desarrollo:
-                    </strong>{" "}
-                    {developer}
-                  </span>
-                )}
-              </div>
-
-              {platforms && (
-                <div
-                  style={{
-                    marginTop:
-                      compact
-                        ? 6
-                        : 9,
-
-                    color:
-                      "#939da4",
-
-                    fontSize:
-                      compact
-                        ? 10
-                        : 12,
-
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {platforms}
-                </div>
-              )}
-            </div>
-
-            {/* BOTONES */}
-
-            <div
-              style={{
-                display: "grid",
-
-                gridTemplateColumns:
-                  desktop
-                    ? "1fr"
-                    : horizontal &&
-                        !lowHeight
-                      ? "1fr 1fr"
-                      : "1fr",
-
-                gap:
-                  compact
-                    ? 7
-                    : 10,
-
-                marginTop:
-                  compact
-                    ? 10
-                    : 18,
-
-                paddingBottom:
-                  horizontalLayout
-                    ? 0
-                    : "max(30px, env(safe-area-inset-bottom))",
-              }}
-            >
-              <ActionButton
-                onClick={onClose}
-                accent={accent}
-                compact={compact}
-              >
-                VOLVER AL MUNDO
-              </ActionButton>
-
-              <ActionButton
-                onClick={
-                  openFullGameCard
-                }
-                primary
-                accent={accent}
-                compact={compact}
-              >
-                VER FICHA COMPLETA
-              </ActionButton>
-            </div>
+              VER FICHA COMPLETA
+            </ActionButton>
           </section>
-        </div>
-      </main>
+        </main>
+      )}
     </div>
   );
 }
