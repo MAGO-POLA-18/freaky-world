@@ -17,8 +17,15 @@ import {
    - Solo el círculo invisible de la cruceta captura movimiento
    - A = interactuar
    - B mantenido = sprint
+   - Mientras B está presionado, arrastrar también mueve cámara
    - Todo el resto de pantalla queda libre para cámara/zoom
 ========================================================= */
+
+const SPRINT_CAMERA_SENSITIVITY =
+  0.0045;
+
+const SPRINT_CAMERA_DEADZONE =
+  1.5;
 
 export default function MobileControls({
   interactionAvailable = false,
@@ -34,6 +41,12 @@ export default function MobileControls({
 
   const sprintPointer =
     useRef(null);
+
+  const sprintLastPointer =
+    useRef({
+      x: 0,
+      y: 0,
+    });
 
   const [
     sprintPressed,
@@ -262,7 +275,11 @@ export default function MobileControls({
   };
 
   /* =======================================================
-     BOTÓN B — SPRINT MANTENIDO
+     BOTÓN B — SPRINT + CÁMARA
+
+     - Pulsar y mantener = sprint
+     - Mover el mismo dedo = cámara
+     - Soltar = termina sprint
   ======================================================= */
 
   const startSprint = (
@@ -271,8 +288,21 @@ export default function MobileControls({
     event.preventDefault();
     event.stopPropagation();
 
+    if (
+      sprintPointer.current !==
+      null
+    ) {
+      return;
+    }
+
     sprintPointer.current =
       event.pointerId;
+
+    sprintLastPointer.current.x =
+      event.clientX;
+
+    sprintLastPointer.current.y =
+      event.clientY;
 
     event.currentTarget
       .setPointerCapture?.(
@@ -285,6 +315,64 @@ export default function MobileControls({
     setSprintPressed(
       true
     );
+  };
+
+  const moveSprintCamera = (
+    event
+  ) => {
+    if (
+      sprintPointer.current !==
+      event.pointerId
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const dx =
+      event.clientX -
+      sprintLastPointer.current.x;
+
+    const dy =
+      event.clientY -
+      sprintLastPointer.current.y;
+
+    sprintLastPointer.current.x =
+      event.clientX;
+
+    sprintLastPointer.current.y =
+      event.clientY;
+
+    /*
+      Evita pequeños movimientos involuntarios
+      del dedo mientras simplemente sostenemos B.
+    */
+
+    if (
+      Math.abs(dx) <
+        SPRINT_CAMERA_DEADZONE &&
+      Math.abs(dy) <
+        SPRINT_CAMERA_DEADZONE
+    ) {
+      return;
+    }
+
+    /*
+      CameraRig consume lookX/lookY
+      en cada frame.
+
+      Usamos la misma sensibilidad
+      que actualmente usa la cámara normal.
+    */
+
+    playerInput.lookX +=
+      dx *
+      SPRINT_CAMERA_SENSITIVITY;
+
+    playerInput.lookY +=
+      dy *
+      SPRINT_CAMERA_SENSITIVITY;
   };
 
   const stopSprint = (
@@ -307,6 +395,12 @@ export default function MobileControls({
 
     sprintPointer.current =
       null;
+
+    sprintLastPointer.current.x =
+      0;
+
+    sprintLastPointer.current.y =
+      0;
 
     playerInput.sprint =
       false;
@@ -351,8 +445,20 @@ export default function MobileControls({
         playerInput.sprint =
           false;
 
+        playerInput.lookX =
+          0;
+
+        playerInput.lookY =
+          0;
+
         sprintPointer.current =
           null;
+
+        sprintLastPointer.current.x =
+          0;
+
+        sprintLastPointer.current.y =
+          0;
 
         setSprintPressed(
           false
@@ -386,7 +492,7 @@ export default function MobileControls({
 
   return (
     <div
-      className="mobile-controls"
+      className="mobile-controls world-no-select"
       style={{
         position:
           "fixed",
@@ -408,12 +514,13 @@ export default function MobileControls({
 
         WebkitTouchCallout:
           "none",
+
+        WebkitTapHighlightColor:
+          "transparent",
       }}
     >
       {/* =================================================
           ZONA CIRCULAR INVISIBLE DE MOVIMIENTO
-
-          Solo esta zona captura el dedo izquierdo.
       ================================================= */}
 
       <div
@@ -442,6 +549,18 @@ export default function MobileControls({
 
           touchAction:
             "none",
+
+          userSelect:
+            "none",
+
+          WebkitUserSelect:
+            "none",
+
+          WebkitTouchCallout:
+            "none",
+
+          WebkitTapHighlightColor:
+            "transparent",
         }}
       >
         <div
@@ -499,6 +618,10 @@ export default function MobileControls({
             startSprint
           }
 
+          onPointerMove={
+            moveSprintCamera
+          }
+
           onPointerUp={
             stopSprint
           }
@@ -513,6 +636,18 @@ export default function MobileControls({
 
             touchAction:
               "none",
+
+            userSelect:
+              "none",
+
+            WebkitUserSelect:
+              "none",
+
+            WebkitTouchCallout:
+              "none",
+
+            WebkitTapHighlightColor:
+              "transparent",
           }}
         >
           B
@@ -544,6 +679,18 @@ export default function MobileControls({
 
             touchAction:
               "none",
+
+            userSelect:
+              "none",
+
+            WebkitUserSelect:
+              "none",
+
+            WebkitTouchCallout:
+              "none",
+
+            WebkitTapHighlightColor:
+              "transparent",
           }}
         >
           A
