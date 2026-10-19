@@ -1933,7 +1933,6 @@ function CollapsibleText({
 /* =========================================================
    VIDEO
 ========================================================= */
-
 function VideoPlayer({
   game,
   fillHeight = false,
@@ -1973,8 +1972,15 @@ function VideoPlayer({
   const mediaActiveRef =
     useRef(false);
 
+  /* =======================================================
+     AL CAMBIAR DE JUEGO:
+     SIEMPRE EMPEZAMOS EN EL PRIMER TRÁILER
+  ======================================================= */
+
   useEffect(() => {
-    setActiveIndex(0);
+    setActiveIndex(
+      0
+    );
   }, [
     game?.id,
   ]);
@@ -1990,7 +1996,9 @@ function VideoPlayer({
     );
 
   const videoId =
-    videos[safeIndex];
+    videos[
+      safeIndex
+    ];
 
   function notifyMediaStart() {
     if (
@@ -2026,6 +2034,16 @@ function VideoPlayer({
     );
   }
 
+  /* =======================================================
+     YOUTUBE
+
+     AUTOPLAY:
+     - abre ficha
+     - carga primer tráiler
+     - arranca automáticamente
+     - muted para respetar políticas de iPhone/Safari
+  ======================================================= */
+
   useEffect(() => {
     if (
       !videoId ||
@@ -2040,61 +2058,103 @@ function VideoPlayer({
     notifyMediaEnd();
 
     loadYouTubeApi()
-      .then((YT) => {
-        if (
-          cancelled ||
-          !playerHostRef.current
-        ) {
-          return;
+      .then(
+        (YT) => {
+          if (
+            cancelled ||
+            !playerHostRef.current
+          ) {
+            return;
+          }
+
+          try {
+            playerRef.current
+              ?.destroy?.();
+          } catch {}
+
+          playerHostRef.current
+            .innerHTML =
+            "";
+
+          playerRef.current =
+            new YT.Player(
+              playerHostRef.current,
+              {
+                videoId,
+
+                playerVars: {
+                  playsinline:
+                    1,
+
+                  rel:
+                    0,
+
+                  controls:
+                    1,
+
+                  autoplay:
+                    1,
+
+                  mute:
+                    1,
+                },
+
+                events: {
+                  /* =========================================
+                     CUANDO YOUTUBE ESTÁ LISTO
+
+                     Forzamos mute + play.
+                     Es la combinación más fiable
+                     para autoplay en móvil.
+                  ========================================= */
+
+                  onReady:
+                    (
+                      event
+                    ) => {
+                      try {
+                        event.target
+                          .mute();
+
+                        event.target
+                          .playVideo();
+                      } catch {}
+                    },
+
+                  onStateChange:
+                    (
+                      event
+                    ) => {
+                      if (
+                        event.data ===
+                        YT
+                          .PlayerState
+                          .PLAYING
+                      ) {
+                        notifyMediaStart();
+                      }
+
+                      if (
+                        event.data ===
+                          YT
+                            .PlayerState
+                            .PAUSED ||
+                        event.data ===
+                          YT
+                            .PlayerState
+                            .ENDED
+                      ) {
+                        notifyMediaEnd();
+                      }
+                    },
+                },
+              }
+            );
         }
-
-        try {
-          playerRef.current
-            ?.destroy?.();
-        } catch {}
-
-        playerHostRef.current.innerHTML =
-          "";
-
-        playerRef.current =
-          new YT.Player(
-            playerHostRef.current,
-            {
-              videoId,
-
-              playerVars: {
-                playsinline: 1,
-                rel: 0,
-                controls: 1,
-              },
-
-              events: {
-                onStateChange:
-                  (event) => {
-                    if (
-                      event.data ===
-                      YT.PlayerState
-                        .PLAYING
-                    ) {
-                      notifyMediaStart();
-                    }
-
-                    if (
-                      event.data ===
-                        YT.PlayerState
-                          .PAUSED ||
-                      event.data ===
-                        YT.PlayerState
-                          .ENDED
-                    ) {
-                      notifyMediaEnd();
-                    }
-                  },
-              },
-            }
-          );
-      })
-      .catch(() => {});
+      )
+      .catch(
+        () => {}
+      );
 
     return () => {
       cancelled =
@@ -2114,10 +2174,24 @@ function VideoPlayer({
     videoId,
   ]);
 
-  if (!videos.length) {
+  /* =======================================================
+     SIN VÍDEOS
+  ======================================================= */
+
+  if (
+    !videos.length
+  ) {
+    const cover =
+      getCover(
+        game
+      );
+
     return (
       <div
         style={{
+          position:
+            "relative",
+
           width:
             "100%",
 
@@ -2136,6 +2210,9 @@ function VideoPlayer({
               ? undefined
               : "16 / 9",
 
+          overflow:
+            "hidden",
+
           display:
             "grid",
 
@@ -2147,18 +2224,49 @@ function VideoPlayer({
 
           background:
             "#0c0f13",
-
-          color:
-            "#68727a",
-
-          fontSize:
-            10,
         }}
       >
-        Sin vídeo disponible
+        {cover ? (
+          <img
+            src={cover}
+            alt=""
+            style={{
+              width:
+                "100%",
+
+              height:
+                "100%",
+
+              display:
+                "block",
+
+              objectFit:
+                "contain",
+
+              background:
+                "#000",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              color:
+                "#68727a",
+
+              fontSize:
+                10,
+            }}
+          >
+            Sin vídeo disponible
+          </div>
+        )}
       </div>
     );
   }
+
+  /* =======================================================
+     FLECHAS
+  ======================================================= */
 
   const arrowStyle = {
     position:
@@ -2207,7 +2315,9 @@ function VideoPlayer({
       notifyMediaEnd();
 
       setActiveIndex(
-        (current) =>
+        (
+          current
+        ) =>
           (
             current -
             1 +
@@ -2222,7 +2332,9 @@ function VideoPlayer({
       notifyMediaEnd();
 
       setActiveIndex(
-        (current) =>
+        (
+          current
+        ) =>
           (
             current +
             1
@@ -2230,6 +2342,10 @@ function VideoPlayer({
           videos.length
       );
     };
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div
@@ -2296,6 +2412,7 @@ function VideoPlayer({
           <>
             <button
               type="button"
+              aria-label="Vídeo anterior"
               onClick={
                 previousVideo
               }
@@ -2309,6 +2426,7 @@ function VideoPlayer({
 
             <button
               type="button"
+              aria-label="Vídeo siguiente"
               onClick={
                 nextVideo
               }
@@ -2340,11 +2458,17 @@ function VideoPlayer({
                 background:
                   "rgba(0,0,0,.72)",
 
+                color:
+                  "#fff",
+
                 fontSize:
                   9,
 
                 fontWeight:
                   850,
+
+                pointerEvents:
+                  "none",
               }}
             >
               {safeIndex +
@@ -2360,6 +2484,7 @@ function VideoPlayer({
     </div>
   );
 }
+
 
 /* =========================================================
    GALERÍA
