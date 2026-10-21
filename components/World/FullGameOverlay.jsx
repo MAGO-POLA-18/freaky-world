@@ -4292,7 +4292,8 @@ export default function FullGameOverlay({
     activeGame?.id,
   ]);
 
-  const displayGame =
+const masterReady =
+  Boolean(
     masterGame &&
     Number(
       masterGame.id
@@ -4300,8 +4301,12 @@ export default function FullGameOverlay({
       Number(
         activeGame?.id
       )
-      ? masterGame
-      : activeGame;
+  );
+
+const displayGame =
+  masterReady
+    ? masterGame
+    : activeGame;
 
   const title =
     getTitle(
@@ -4613,6 +4618,121 @@ export default function FullGameOverlay({
   if (!activeGame?.id) {
     return null;
   }
+
+  if (
+  loading &&
+  !masterReady
+) {
+  return (
+    <div
+      style={{
+        position:
+          "fixed",
+
+        inset: 0,
+
+        zIndex:
+          300000,
+
+        display:
+          "grid",
+
+        placeItems:
+          "center",
+
+        width:
+          "100%",
+
+        height:
+          "100dvh",
+
+        background:
+          "#080a0d",
+
+        color:
+          "#fff",
+
+        fontFamily:
+          "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      }}
+    >
+      <div
+        style={{
+          width:
+            "min(88vw,360px)",
+
+          textAlign:
+            "center",
+        }}
+      >
+        <div
+          style={{
+            width: 34,
+            height: 34,
+
+            margin:
+              "0 auto 14px",
+
+            border:
+              "3px solid rgba(255,255,255,.12)",
+
+            borderTopColor:
+              accent,
+
+            borderRadius:
+              "50%",
+
+            animation:
+              "freakyGameLoadSpin .75s linear infinite",
+          }}
+        />
+
+        <div
+          style={{
+            fontSize:
+              13,
+
+            fontWeight:
+              850,
+          }}
+        >
+          Cargando ficha…
+        </div>
+
+        <div
+          style={{
+            marginTop:
+              5,
+
+            color:
+              "#707b82",
+
+            fontSize:
+              10,
+          }}
+        >
+          {getTitle(
+            activeGame
+          )}
+        </div>
+
+        <style>
+          {`
+            @keyframes freakyGameLoadSpin {
+              from {
+                transform: rotate(0deg);
+              }
+
+              to {
+                transform: rotate(360deg);
+              }
+            }
+          `}
+        </style>
+      </div>
+    </div>
+  );
+}
 
   const mediaHeight =
     portrait
