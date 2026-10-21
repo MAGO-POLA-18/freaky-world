@@ -18,19 +18,17 @@ import * as THREE from "three";
 
 /* =========================================================
    FREAKY WORLD
-   D-PAD WING — VISUAL PASS 01
+   D-PAD WING
 
-   Objetivo:
-   - semi-realismo estilizado
-   - arquitectura más sólida
-   - materiales con más presencia
-   - sin texturas pesadas
-   - sin luces adicionales
-   - conservar rendimiento móvil
+   IMPORTANTE:
+   - esquinas visuales limpias a 90º
+   - sin pilares/mochetas exteriores
+   - colisiones actuales conservadas
+   - no afecta CameraRig
 ========================================================= */
 
 /* =========================================================
-   MEDIDAS MAESTRAS
+   MEDIDAS
 ========================================================= */
 
 const WING_WIDTH = 60;
@@ -61,16 +59,7 @@ const SIDE_FRONT_WIDTH =
   ) / 2;
 
 /* =========================================================
-   PALETA VISUAL
-
-   Base:
-   grafito / acero / cemento oscuro.
-
-   Acentos:
-   violeta Tierra Vicio + vidrio frío.
-
-   No buscamos negro absoluto.
-   Necesitamos que la luz pueda revelar volúmenes.
+   COLORES
 ========================================================= */
 
 const COLORS = {
@@ -82,9 +71,6 @@ const COLORS = {
 
   wallLower:
     "#171a1d",
-
-  wallUpper:
-    "#30353a",
 
   roof:
     "#14171a",
@@ -124,7 +110,7 @@ const COLORS = {
 };
 
 /* =========================================================
-   FLECHA DEL TECHO
+   FLECHA
 ========================================================= */
 
 function createArrowPath() {
@@ -177,7 +163,7 @@ function createArrowPath() {
 }
 
 /* =========================================================
-   MATERIAL DE PARED
+   MATERIAL
 ========================================================= */
 
 function WallMaterial({
@@ -195,7 +181,7 @@ function WallMaterial({
 }
 
 /* =========================================================
-   PARED REDONDEADA
+   PARED
 ========================================================= */
 
 function RoundedWall({
@@ -235,7 +221,7 @@ function RoundedWall({
 }
 
 /* =========================================================
-   TECHO CON FLECHA
+   TECHO
 ========================================================= */
 
 function ArrowRoof() {
@@ -339,24 +325,23 @@ function ArrowRoof() {
 
   return (
     <group>
-      {/* ===================================================
-          TECHO PRINCIPAL
-      =================================================== */}
-
       <mesh
         geometry={
           roofGeometry
         }
+
         position={[
           0,
           WING_HEIGHT,
           0,
         ]}
+
         rotation={[
           -Math.PI / 2,
           0,
           0,
         ]}
+
         castShadow
         receiveShadow
       >
@@ -364,25 +349,24 @@ function ArrowRoof() {
           color={
             COLORS.roof
           }
+
           roughness={0.68}
           metalness={0.12}
         />
       </mesh>
 
-      {/* ===================================================
-          VIDRIO DE FLECHA
-      =================================================== */}
-
       <mesh
         geometry={
           glassGeometry
         }
+
         position={[
           0,
           WING_HEIGHT +
             0.055,
           0,
         ]}
+
         rotation={[
           -Math.PI / 2,
           0,
@@ -393,15 +377,18 @@ function ArrowRoof() {
           color={
             COLORS.glass
           }
+
           transparent
           opacity={0.48}
           transmission={0.34}
           roughness={0.18}
           metalness={0.03}
           clearcoat={0.2}
+
           clearcoatRoughness={
             0.25
           }
+
           side={
             THREE.DoubleSide
           }
@@ -410,6 +397,7 @@ function ArrowRoof() {
         <Edges
           threshold={15}
           scale={1.004}
+
           color={
             COLORS.glassEdge
           }
@@ -420,12 +408,9 @@ function ArrowRoof() {
 }
 
 /* =========================================================
-   CORNISA SUPERIOR
+   CORNISA
 
-   Muy simple:
-   añade una línea arquitectónica alrededor del edificio.
-
-   No utiliza luces ni shaders adicionales.
+   Ahora llega limpia hasta las esquinas.
 ========================================================= */
 
 function RoofTrim({
@@ -442,8 +427,6 @@ function RoofTrim({
 
   return (
     <group>
-      {/* IZQUIERDA */}
-
       <RoundedWall
         position={[
           -HALF_WIDTH +
@@ -451,21 +434,21 @@ function RoofTrim({
           y,
           0,
         ]}
+
         args={[
           0.22,
           trimHeight,
-          WING_DEPTH -
-            1,
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.roofTrim
         }
+
         radius={0.08}
         roughness={0.56}
         metalness={0.18}
       />
-
-      {/* DERECHA */}
 
       <RoundedWall
         position={[
@@ -474,21 +457,21 @@ function RoofTrim({
           y,
           0,
         ]}
+
         args={[
           0.22,
           trimHeight,
-          WING_DEPTH -
-            1,
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.roofTrim
         }
+
         radius={0.08}
         roughness={0.56}
         metalness={0.18}
       />
-
-      {/* FONDO */}
 
       <RoundedWall
         position={[
@@ -497,21 +480,21 @@ function RoofTrim({
           -HALF_DEPTH +
             0.27,
         ]}
+
         args={[
-          WING_WIDTH -
-            1,
+          WING_WIDTH,
           trimHeight,
           0.22,
         ]}
+
         color={
           COLORS.roofTrim
         }
+
         radius={0.08}
         roughness={0.56}
         metalness={0.18}
       />
-
-      {/* FRENTE IZQUIERDO */}
 
       <RoundedWall
         position={[
@@ -520,21 +503,21 @@ function RoofTrim({
           frontZ +
             0.03,
         ]}
+
         args={[
-          SIDE_FRONT_WIDTH -
-            0.45,
+          SIDE_FRONT_WIDTH,
           trimHeight,
           0.22,
         ]}
+
         color={
           COLORS.roofTrim
         }
+
         radius={0.08}
         roughness={0.56}
         metalness={0.18}
       />
-
-      {/* FRENTE DERECHO */}
 
       <RoundedWall
         position={[
@@ -543,15 +526,17 @@ function RoofTrim({
           frontZ +
             0.03,
         ]}
+
         args={[
-          SIDE_FRONT_WIDTH -
-            0.45,
+          SIDE_FRONT_WIDTH,
           trimHeight,
           0.22,
         ]}
+
         color={
           COLORS.roofTrim
         }
+
         radius={0.08}
         roughness={0.56}
         metalness={0.18}
@@ -563,23 +548,21 @@ function RoofTrim({
 /* =========================================================
    ZÓCALO
 
-   El zócalo oscuro ayuda muchísimo a dar peso al edificio.
-
-   Es un recurso barato:
-   geometría simple + material mate.
+   También cierra directamente contra la pared contigua.
 ========================================================= */
 
 function LowerTrim({
   frontZ,
   sideFrontX,
 }) {
-  const height = 0.82;
-  const y = height / 2;
+  const height =
+    0.82;
+
+  const y =
+    height / 2;
 
   return (
     <group>
-      {/* LATERAL IZQUIERDO */}
-
       <RoundedWall
         position={[
           -HALF_WIDTH +
@@ -587,21 +570,21 @@ function LowerTrim({
           y,
           0,
         ]}
+
         args={[
           0.28,
           height,
-          WING_DEPTH -
-            1.2,
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.wallLower
         }
+
         radius={0.09}
         roughness={0.9}
         metalness={0.02}
       />
-
-      {/* LATERAL DERECHO */}
 
       <RoundedWall
         position={[
@@ -610,21 +593,21 @@ function LowerTrim({
           y,
           0,
         ]}
+
         args={[
           0.28,
           height,
-          WING_DEPTH -
-            1.2,
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.wallLower
         }
+
         radius={0.09}
         roughness={0.9}
         metalness={0.02}
       />
-
-      {/* FONDO */}
 
       <RoundedWall
         position={[
@@ -633,21 +616,21 @@ function LowerTrim({
           -HALF_DEPTH +
             0.22,
         ]}
+
         args={[
-          WING_WIDTH -
-            1.2,
+          WING_WIDTH,
           height,
           0.28,
         ]}
+
         color={
           COLORS.wallLower
         }
+
         radius={0.09}
         roughness={0.9}
         metalness={0.02}
       />
-
-      {/* FACHADA IZQUIERDA */}
 
       <RoundedWall
         position={[
@@ -656,21 +639,21 @@ function LowerTrim({
           frontZ +
             0.04,
         ]}
+
         args={[
-          SIDE_FRONT_WIDTH -
-            0.5,
+          SIDE_FRONT_WIDTH,
           height,
           0.28,
         ]}
+
         color={
           COLORS.wallLower
         }
+
         radius={0.09}
         roughness={0.9}
         metalness={0.02}
       />
-
-      {/* FACHADA DERECHA */}
 
       <RoundedWall
         position={[
@@ -679,15 +662,17 @@ function LowerTrim({
           frontZ +
             0.04,
         ]}
+
         args={[
-          SIDE_FRONT_WIDTH -
-            0.5,
+          SIDE_FRONT_WIDTH,
           height,
           0.28,
         ]}
+
         color={
           COLORS.wallLower
         }
+
         radius={0.09}
         roughness={0.9}
         metalness={0.02}
@@ -697,7 +682,7 @@ function LowerTrim({
 }
 
 /* =========================================================
-   ENTRADA ESTILIZADA
+   ENTRADA
 ========================================================= */
 
 function Entrance({
@@ -705,17 +690,10 @@ function Entrance({
 }) {
   return (
     <group>
-      {/* ===================================================
-          RECESO OSCURO
-
-          Da profundidad visual sin modificar la colisión.
-      =================================================== */}
-
       <mesh
         position={[
           0,
-          DOOR_HEIGHT /
-            2,
+          DOOR_HEIGHT / 2,
           frontZ -
             0.16,
         ]}
@@ -724,8 +702,10 @@ function Entrance({
           args={[
             DOOR_WIDTH -
               0.4,
+
             DOOR_HEIGHT -
               0.15,
+
             0.09,
           ]}
         />
@@ -734,31 +714,32 @@ function Entrance({
           color={
             COLORS.entranceInner
           }
+
           roughness={0.95}
           metalness={0}
         />
       </mesh>
 
-      {/* ===================================================
-          PILAR IZQUIERDO
-      =================================================== */}
-
       <RoundedBox
         position={[
-          -DOOR_WIDTH /
-            2 -
+          -DOOR_WIDTH / 2 -
             0.22,
-          DOOR_HEIGHT /
-            2,
+
+          DOOR_HEIGHT / 2,
+
           frontZ +
             0.22,
         ]}
+
         args={[
           0.45,
+
           DOOR_HEIGHT +
             0.18,
+
           0.45,
         ]}
+
         radius={0.14}
         smoothness={3}
         castShadow
@@ -767,31 +748,32 @@ function Entrance({
           color={
             COLORS.entranceFrame
           }
+
           roughness={0.48}
           metalness={0.28}
         />
       </RoundedBox>
 
-      {/* ===================================================
-          PILAR DERECHO
-      =================================================== */}
-
       <RoundedBox
         position={[
-          DOOR_WIDTH /
-            2 +
+          DOOR_WIDTH / 2 +
             0.22,
-          DOOR_HEIGHT /
-            2,
+
+          DOOR_HEIGHT / 2,
+
           frontZ +
             0.22,
         ]}
+
         args={[
           0.45,
+
           DOOR_HEIGHT +
             0.18,
+
           0.45,
         ]}
+
         radius={0.14}
         smoothness={3}
         castShadow
@@ -800,29 +782,32 @@ function Entrance({
           color={
             COLORS.entranceFrame
           }
+
           roughness={0.48}
           metalness={0.28}
         />
       </RoundedBox>
-
-      {/* ===================================================
-          TRAVESAÑO
-      =================================================== */}
 
       <RoundedBox
         position={[
           0,
+
           DOOR_HEIGHT +
             0.26,
+
           frontZ +
             0.22,
         ]}
+
         args={[
           DOOR_WIDTH +
             0.9,
+
           0.48,
+
           0.45,
         ]}
+
         radius={0.14}
         smoothness={3}
         castShadow
@@ -831,29 +816,32 @@ function Entrance({
           color={
             COLORS.entranceFrame
           }
+
           roughness={0.48}
           metalness={0.28}
         />
       </RoundedBox>
 
-      {/* ===================================================
-          MARQUESINA
-      =================================================== */}
-
       <RoundedBox
         position={[
           0,
+
           DOOR_HEIGHT +
             0.7,
+
           frontZ +
             0.78,
         ]}
+
         args={[
           DOOR_WIDTH +
             2.8,
+
           0.22,
+
           1.65,
         ]}
+
         radius={0.1}
         smoothness={2}
         castShadow
@@ -862,24 +850,19 @@ function Entrance({
           color={
             COLORS.metalDark
           }
+
           roughness={0.5}
           metalness={0.3}
         />
       </RoundedBox>
 
-      {/* ===================================================
-          LÍNEA VIOLETA
-
-          No es una luz.
-          Es simplemente material con un poco de emisividad.
-          Coste muy bajo.
-      =================================================== */}
-
       <mesh
         position={[
           0,
+
           DOOR_HEIGHT +
             0.55,
+
           frontZ +
             1.61,
         ]}
@@ -888,7 +871,9 @@ function Entrance({
           args={[
             DOOR_WIDTH +
               1.6,
+
             0.07,
+
             0.035,
           ]}
         />
@@ -897,12 +882,15 @@ function Entrance({
           color={
             COLORS.accent
           }
+
           emissive={
             COLORS.accentDark
           }
+
           emissiveIntensity={
             0.55
           }
+
           roughness={0.45}
           metalness={0.06}
         />
@@ -930,20 +918,13 @@ export default function DpadWing({
 
   children = null,
 }) {
-  /* =======================================================
-     ENTRADA
-  ======================================================= */
-
   const frontZ =
     HALF_DEPTH -
-    WALL_THICKNESS /
-      2;
+    WALL_THICKNESS / 2;
 
   const sideFrontX =
-    DOOR_WIDTH /
-      2 +
-    SIDE_FRONT_WIDTH /
-      2;
+    DOOR_WIDTH / 2 +
+    SIDE_FRONT_WIDTH / 2;
 
   const lintelHeight =
     WING_HEIGHT -
@@ -951,94 +932,37 @@ export default function DpadWing({
 
   const lintelY =
     DOOR_HEIGHT +
-    lintelHeight /
-      2;
-
-  /* =======================================================
-     ESQUINAS
-  ======================================================= */
-
-  const corners = [
-    [
-      -HALF_WIDTH +
-        0.35,
-
-      WING_HEIGHT /
-        2,
-
-      -HALF_DEPTH +
-        0.35,
-    ],
-
-    [
-      HALF_WIDTH -
-        0.35,
-
-      WING_HEIGHT /
-        2,
-
-      -HALF_DEPTH +
-        0.35,
-    ],
-
-    [
-      -HALF_WIDTH +
-        0.35,
-
-      WING_HEIGHT /
-        2,
-
-      HALF_DEPTH -
-        0.35,
-    ],
-
-    [
-      HALF_WIDTH -
-        0.35,
-
-      WING_HEIGHT /
-        2,
-
-      HALF_DEPTH -
-        0.35,
-    ],
-  ];
+    lintelHeight / 2;
 
   return (
     <group
       position={position}
       rotation={rotation}
     >
-      {/* ===================================================
-          CONTENIDO
-      =================================================== */}
-
       {children}
 
       {/* ===================================================
-          SUELO BASE
+          SUELO
       =================================================== */}
 
       <mesh
         position={[
           0,
-          FLOOR_THICKNESS /
-            2,
+          FLOOR_THICKNESS / 2,
           0,
         ]}
+
         receiveShadow
       >
         <boxGeometry
           args={[
             WING_WIDTH -
-              WALL_THICKNESS *
-                2,
+              WALL_THICKNESS * 2,
 
             FLOOR_THICKNESS,
 
             WING_DEPTH -
-              WALL_THICKNESS *
-                2,
+              WALL_THICKNESS * 2,
           ]}
         />
 
@@ -1046,31 +970,31 @@ export default function DpadWing({
           color={
             COLORS.floorBorder
           }
+
           roughness={0.93}
           metalness={0.01}
         />
       </mesh>
 
-      {/* ===================================================
-          SUPERFICIE INTERIOR DEL SUELO
-
-          Levantada apenas para evitar z-fighting.
-      =================================================== */}
-
       <mesh
         position={[
           0,
+
           FLOOR_THICKNESS +
             0.018,
+
           0,
         ]}
+
         receiveShadow
       >
         <boxGeometry
           args={[
             WING_WIDTH -
               2.1,
+
             0.035,
+
             WING_DEPTH -
               2.1,
           ]}
@@ -1080,31 +1004,30 @@ export default function DpadWing({
           color={
             COLORS.floor
           }
+
           roughness={0.76}
           metalness={0.06}
         />
       </mesh>
 
-      {/* ===================================================
-          CAMINO INTERIOR
-
-          Una franja casi imperceptible rompe la gran
-          superficie plana sin usar ninguna textura.
-      =================================================== */}
-
       <mesh
         position={[
           0,
+
           FLOOR_THICKNESS +
             0.041,
+
           0,
         ]}
+
         receiveShadow
       >
         <boxGeometry
           args={[
             11,
+
             0.018,
+
             WING_DEPTH -
               3.4,
           ]}
@@ -1114,174 +1037,179 @@ export default function DpadWing({
           color={
             COLORS.floorInset
           }
+
           roughness={0.67}
           metalness={0.08}
         />
       </mesh>
 
       {/* ===================================================
-          PARED IZQUIERDA
+          PAREDES VISUALES
+
+          CAMBIO:
+          llegan hasta la esquina exacta.
       =================================================== */}
 
       <RoundedWall
         position={[
           -HALF_WIDTH +
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
 
-          WING_HEIGHT /
-            2,
+          WING_HEIGHT / 2,
 
           0,
         ]}
+
         args={[
           WALL_THICKNESS,
+
           WING_HEIGHT,
-          WING_DEPTH -
-            0.7,
+
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.sideWall
         }
       />
-
-      {/* ===================================================
-          PARED DERECHA
-      =================================================== */}
 
       <RoundedWall
         position={[
           HALF_WIDTH -
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
 
-          WING_HEIGHT /
-            2,
+          WING_HEIGHT / 2,
 
           0,
         ]}
+
         args={[
           WALL_THICKNESS,
+
           WING_HEIGHT,
-          WING_DEPTH -
-            0.7,
+
+          WING_DEPTH,
         ]}
+
         color={
           COLORS.sideWall
         }
       />
 
-      {/* ===================================================
-          FONDO
-      =================================================== */}
-
       <RoundedWall
         position={[
           0,
-          WING_HEIGHT /
-            2,
+
+          WING_HEIGHT / 2,
+
           -HALF_DEPTH +
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
         ]}
+
         args={[
-          WING_WIDTH -
-            0.7,
+          WING_WIDTH,
+
           WING_HEIGHT,
+
           WALL_THICKNESS,
         ]}
+
         color={
           COLORS.wall
         }
       />
 
-      {/* ===================================================
-          FACHADA IZQUIERDA
-      =================================================== */}
+      {/* FACHADA IZQUIERDA */}
 
       <RoundedWall
         position={[
           -sideFrontX,
-          WING_HEIGHT /
-            2,
+
+          WING_HEIGHT / 2,
+
           frontZ,
         ]}
+
         args={[
           SIDE_FRONT_WIDTH,
+
           WING_HEIGHT,
+
           WALL_THICKNESS,
         ]}
+
         color={
           COLORS.wall
         }
       />
 
-      {/* ===================================================
-          FACHADA DERECHA
-      =================================================== */}
+      {/* FACHADA DERECHA */}
 
       <RoundedWall
         position={[
           sideFrontX,
-          WING_HEIGHT /
-            2,
+
+          WING_HEIGHT / 2,
+
           frontZ,
         ]}
+
         args={[
           SIDE_FRONT_WIDTH,
+
           WING_HEIGHT,
+
           WALL_THICKNESS,
         ]}
+
         color={
           COLORS.wall
         }
       />
 
-      {/* ===================================================
-          DINTEL
-      =================================================== */}
+      {/* DINTEL */}
 
       <RoundedWall
         position={[
           0,
+
           lintelY,
+
           frontZ,
         ]}
+
         args={[
           DOOR_WIDTH,
+
           lintelHeight,
+
           WALL_THICKNESS,
         ]}
+
         color={
           COLORS.wall
         }
       />
 
-      {/* ===================================================
-          ZÓCALOS
-      =================================================== */}
-
       <LowerTrim
-        frontZ={frontZ}
+        frontZ={
+          frontZ
+        }
+
         sideFrontX={
           sideFrontX
         }
       />
-
-      {/* ===================================================
-          CORNISAS
-      =================================================== */}
 
       <RoofTrim
-        frontZ={frontZ}
+        frontZ={
+          frontZ
+        }
+
         sideFrontX={
           sideFrontX
         }
       />
-
-      {/* ===================================================
-          ENTRADA
-      =================================================== */}
 
       <Entrance
         frontZ={
@@ -1289,65 +1217,27 @@ export default function DpadWing({
         }
       />
 
-      {/* ===================================================
-          ESQUINAS ESTRUCTURALES
-      =================================================== */}
+      {/*
+        IMPORTANTE:
 
-      {corners.map(
-        (
-          corner,
-          index
-        ) => (
-          <mesh
-            key={
-              `corner-${index}`
-            }
-            position={
-              corner
-            }
-            castShadow
-            receiveShadow
-          >
-            <cylinderGeometry
-              args={[
-                0.72,
-                0.72,
-                WING_HEIGHT,
-                14,
-              ]}
-            />
+        Antes había aquí cuatro cilindros llamados
+        "ESQUINAS ESTRUCTURALES".
 
-            <meshStandardMaterial
-              color={
-                COLORS.wallUpper
-              }
-              roughness={0.66}
-              metalness={0.08}
-            />
-          </mesh>
-        )
-      )}
+        Esos cilindros eran la mocheta exterior.
 
-      {/* ===================================================
-          TECHO
-      =================================================== */}
+        Se eliminaron completamente.
+
+        Ahora la pared lateral y la pared frontal/fondo
+        se encuentran directamente a 90º.
+      */}
 
       <ArrowRoof />
 
       {/* ===================================================
           COLISIONES
 
-          Se mantienen esencialmente iguales.
-
-          Todo lo nuevo:
-          - zócalos
-          - cornisas
-          - marquesina
-          - detalles
-
-          es VISUAL.
-
-          No agregamos pequeños colliders innecesarios.
+          NO CAMBIAR.
+          Son las que ya funcionan correctamente.
       =================================================== */}
 
       <RigidBody
@@ -1360,26 +1250,21 @@ export default function DpadWing({
           args={[
             (
               WING_WIDTH -
-              WALL_THICKNESS *
-                2
-            ) /
-              2,
+              WALL_THICKNESS * 2
+            ) / 2,
 
-            FLOOR_THICKNESS /
-              2,
+            FLOOR_THICKNESS / 2,
 
             (
               WING_DEPTH -
-              WALL_THICKNESS *
-                2
-            ) /
-              2,
+              WALL_THICKNESS * 2
+            ) / 2,
           ]}
+
           position={[
             0,
 
-            FLOOR_THICKNESS /
-              2,
+            FLOOR_THICKNESS / 2,
 
             0,
           ]}
@@ -1389,25 +1274,21 @@ export default function DpadWing({
 
         <CuboidCollider
           args={[
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             (
               WING_DEPTH -
               0.7
-            ) /
-              2,
+            ) / 2,
           ]}
+
           position={[
             -HALF_WIDTH +
-              WALL_THICKNESS /
-                2,
+              WALL_THICKNESS / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             0,
           ]}
@@ -1417,25 +1298,21 @@ export default function DpadWing({
 
         <CuboidCollider
           args={[
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             (
               WING_DEPTH -
               0.7
-            ) /
-              2,
+            ) / 2,
           ]}
+
           position={[
             HALF_WIDTH -
-              WALL_THICKNESS /
-                2,
+              WALL_THICKNESS / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             0,
           ]}
@@ -1448,24 +1325,20 @@ export default function DpadWing({
             (
               WING_WIDTH -
               0.7
-            ) /
-              2,
+            ) / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
           ]}
+
           position={[
             0,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             -HALF_DEPTH +
-              WALL_THICKNESS /
-                2,
+              WALL_THICKNESS / 2,
           ]}
         />
 
@@ -1473,20 +1346,17 @@ export default function DpadWing({
 
         <CuboidCollider
           args={[
-            SIDE_FRONT_WIDTH /
-              2,
+            SIDE_FRONT_WIDTH / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
           ]}
+
           position={[
             -sideFrontX,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             frontZ,
           ]}
@@ -1496,20 +1366,17 @@ export default function DpadWing({
 
         <CuboidCollider
           args={[
-            SIDE_FRONT_WIDTH /
-              2,
+            SIDE_FRONT_WIDTH / 2,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
           ]}
+
           position={[
             sideFrontX,
 
-            WING_HEIGHT /
-              2,
+            WING_HEIGHT / 2,
 
             frontZ,
           ]}
@@ -1519,15 +1386,13 @@ export default function DpadWing({
 
         <CuboidCollider
           args={[
-            DOOR_WIDTH /
-              2,
+            DOOR_WIDTH / 2,
 
-            lintelHeight /
-              2,
+            lintelHeight / 2,
 
-            WALL_THICKNESS /
-              2,
+            WALL_THICKNESS / 2,
           ]}
+
           position={[
             0,
             lintelY,
@@ -1535,25 +1400,22 @@ export default function DpadWing({
           ]}
         />
 
-        {/* TECHO FÍSICO */}
+        {/* TECHO */}
 
         <CuboidCollider
           args={[
-            WING_WIDTH /
-              2,
+            WING_WIDTH / 2,
 
-            ROOF_THICKNESS /
-              2,
+            ROOF_THICKNESS / 2,
 
-            WING_DEPTH /
-              2,
+            WING_DEPTH / 2,
           ]}
+
           position={[
             0,
 
             WING_HEIGHT +
-              ROOF_THICKNESS /
-                2,
+              ROOF_THICKNESS / 2,
 
             0,
           ]}
