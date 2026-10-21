@@ -602,8 +602,8 @@ function CenterControls() {
       {/* ZONA CENTRAL */}
 
       <FlatVisualBox
-        position={[5, 0, 35]}
-        width={82}
+        position={[1, 0, 35]}
+        width={74}
         depth={26}
         color={COLORS.shellEdge}
         roughness={0.52}
