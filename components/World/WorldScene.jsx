@@ -178,6 +178,31 @@ export default function WorldScene() {
       consoleGames
     );
 
+  /* =======================================================
+   BLOQUEAR MUNDO CUANDO HAY UI ABIERTA
+======================================================= */
+
+useEffect(() => {
+  playerInput.uiLocked =
+    overlayOpen;
+
+  if (overlayOpen) {
+    playerInput.x = 0;
+    playerInput.y = 0;
+    playerInput.sprint = false;
+    playerInput.dashRequested = false;
+    playerInput.lookX = 0;
+    playerInput.lookY = 0;
+  }
+
+  return () => {
+    playerInput.uiLocked =
+      false;
+  };
+}, [
+  overlayOpen,
+]);
+
   const isVideoWall =
     nearbyGame?.id ===
     "featured-video-screen";
