@@ -16,10 +16,10 @@ export default function Museum() {
   return (
     <group
       position={[
-        -105,
-        VISUAL_FLOOR_Y,
-        0,
-      ]}
+  -145,
+  VISUAL_FLOOR_Y,
+  0,
+]}
       rotation={[
         0,
         Math.PI / 2,
