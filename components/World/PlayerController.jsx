@@ -1561,23 +1561,45 @@ export default function PlayerController() {
       }
     }
 
-    function onKeyDown(
-      event
-    ) {
-      setKey(
-        event.code,
-        true
-      );
-    }
+function resetKeyboard() {
+  keyboard.current.forward = false;
+  keyboard.current.backward = false;
+  keyboard.current.left = false;
+  keyboard.current.right = false;
+  keyboard.current.sprint = false;
+}
 
-    function onKeyUp(
-      event
-    ) {
-      setKey(
-        event.code,
-        false
-      );
-    }
+function onKeyDown(
+  event
+) {
+  if (
+    playerInput.uiLocked
+  ) {
+    resetKeyboard();
+    return;
+  }
+
+  setKey(
+    event.code,
+    true
+  );
+}
+
+function onKeyUp(
+  event
+) {
+  if (
+    playerInput.uiLocked
+  ) {
+    resetKeyboard();
+    return;
+  }
+
+  setKey(
+    event.code,
+    false
+  );
+}
 
     window.addEventListener(
       "keydown",
