@@ -150,7 +150,7 @@ export default function WorldScene() {
   const [
     skyTestHour,
     setSkyTestHour,
-  ] = useState(13);
+  ] = useState(null);
 
   /* =======================================================
      CONTEXTOS
