@@ -4619,9 +4619,9 @@ const displayGame =
     return null;
   }
 
-  if (
-  loading &&
-  !masterReady
+if (
+  !masterReady &&
+  !loadError
 ) {
   return (
     <div
