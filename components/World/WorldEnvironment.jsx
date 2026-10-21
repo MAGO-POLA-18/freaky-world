@@ -10,13 +10,11 @@ import Museum from "../Museum/Museum";
 /* =========================================================
    FREAKY WORLD — FAMILY CONTROLLER
 
-   PASADA VISUAL:
-   - plástico más creíble
-   - proporciones reajustadas
-   - A/B más grandes
-   - Select/Start más grandes
-   - todo continúa siendo plano y caminable
-   - botones todavía NO tienen volumen físico
+   SUELO UNIFICADO:
+   - una única altura física caminable
+   - capas visuales por debajo de esa altura
+   - sin escalones físicos entre colores
+   - el avatar nunca pisa las capas decorativas
 ========================================================= */
 
 /* =========================================================
@@ -27,6 +25,26 @@ const CONTROLLER_WIDTH = 340;
 const CONTROLLER_DEPTH = 150;
 const CONTROLLER_HEIGHT = 2;
 
+/*
+  ALTURA MAESTRA DEL MUNDO.
+
+  Esta es la superficie REAL sobre la que camina el avatar.
+
+  Todo elemento decorativo del piso debe terminar
+  como máximo en esta altura.
+*/
+
+const WALK_SURFACE_Y = 0.024;
+
+/*
+  Lámina física superior.
+
+  Se superpone ligeramente con la carcasa para que
+  no exista ningún hueco entre colliders.
+*/
+
+const WALK_COLLIDER_THICKNESS = 0.04;
+
 /* =========================================================
    SEGURIDAD
 ========================================================= */
@@ -36,9 +54,6 @@ const SAFETY_THICKNESS = 1;
 
 /* =========================================================
    PALETA
-
-   Inspiración:
-   plástico gris cálido + grafito + bordó oscuro.
 ========================================================= */
 
 const COLORS = {
@@ -98,8 +113,6 @@ function DarkPlasticMaterial({
 
 /* =========================================================
    MATERIAL BOTÓN
-
-   Algo más satinado que la carcasa.
 ========================================================= */
 
 function ButtonPlasticMaterial({
@@ -129,7 +142,9 @@ function ControllerBase() {
       {/* ===================================================
           CARCASA
 
-          Superficie caminable en Y = 0.
+          La carcasa continúa terminando en Y = 0.
+
+          Encima colocamos una única lámina física continua.
       =================================================== */}
 
       <mesh
@@ -153,7 +168,7 @@ function ControllerBase() {
       </mesh>
 
       {/* ===================================================
-          COLISIÓN TOTAL
+          COLISIÓN BASE
       =================================================== */}
 
       <CuboidCollider
@@ -165,6 +180,31 @@ function ControllerBase() {
         args={[
           CONTROLLER_WIDTH / 2,
           CONTROLLER_HEIGHT / 2,
+          CONTROLLER_DEPTH / 2,
+        ]}
+      />
+
+      {/* ===================================================
+          LÁMINA FÍSICA CAMINABLE
+
+          Esta es ahora la única referencia para los pies.
+
+          Superficie superior:
+          Y = WALK_SURFACE_Y
+
+          Las zonas de colores NO necesitan collider.
+      =================================================== */}
+
+      <CuboidCollider
+        position={[
+          0,
+          WALK_SURFACE_Y -
+            WALK_COLLIDER_THICKNESS / 2,
+          0,
+        ]}
+        args={[
+          CONTROLLER_WIDTH / 2,
+          WALK_COLLIDER_THICKNESS / 2,
           CONTROLLER_DEPTH / 2,
         ]}
       />
@@ -243,16 +283,20 @@ function ControllerBase() {
 /* =========================================================
    PANEL PRINCIPAL OSCURO
 
-   Muy fino.
-   No modifica el nivel físico del suelo.
+   Todas las capas terminan prácticamente en WALK_SURFACE_Y.
+   El color cambia, la altura caminable NO.
 ========================================================= */
 
 function MainPanel() {
+  const thickness = 0.018;
+
   return (
     <mesh
       position={[
         12,
-        0.011,
+        WALK_SURFACE_Y -
+          thickness / 2 -
+          0.0005,
         0,
       ]}
       receiveShadow
@@ -260,15 +304,13 @@ function MainPanel() {
       <boxGeometry
         args={[
           242,
-          0.018,
+          thickness,
           116,
         ]}
       />
 
       <DarkPlasticMaterial
-        color={
-          COLORS.panel
-        }
+        color={COLORS.panel}
         roughness={0.48}
       />
     </mesh>
@@ -277,19 +319,20 @@ function MainPanel() {
 
 /* =========================================================
    ZONA D-PAD
-
-   El verdadero D-pad es MainHall.
-
-   Esto es únicamente el área de plástico donde se integra.
 ========================================================= */
 
 function DpadZone() {
+  const zoneThickness = 0.025;
+  const detailThickness = 0.018;
+
   return (
     <group>
       <mesh
         position={[
           -105,
-          0.025,
+          WALK_SURFACE_Y -
+            zoneThickness / 2 -
+            0.0006,
           0,
         ]}
         receiveShadow
@@ -297,15 +340,13 @@ function DpadZone() {
         <boxGeometry
           args={[
             112,
-            0.025,
+            zoneThickness,
             122,
           ]}
         />
 
         <DarkPlasticMaterial
-          color={
-            COLORS.panelLight
-          }
+          color={COLORS.panelLight}
           roughness={0.5}
         />
       </mesh>
@@ -315,22 +356,22 @@ function DpadZone() {
       <mesh
         position={[
           -105,
-          0.041,
+          WALK_SURFACE_Y -
+            detailThickness / 2 -
+            0.0002,
           -57,
         ]}
       >
         <boxGeometry
           args={[
             102,
-            0.018,
+            detailThickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundy
-          }
+          color={COLORS.burgundy}
         />
       </mesh>
 
@@ -339,22 +380,22 @@ function DpadZone() {
       <mesh
         position={[
           -105,
-          0.042,
+          WALK_SURFACE_Y -
+            detailThickness / 2 -
+            0.0002,
           57,
         ]}
       >
         <boxGeometry
           args={[
             102,
-            0.018,
+            detailThickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundy
-          }
+          color={COLORS.burgundy}
         />
       </mesh>
     </group>
@@ -364,27 +405,35 @@ function DpadZone() {
 /* =========================================================
    A / B
 
-   AHORA:
-   - diámetro 52
-   - suficientemente grandes para convertirse
-     después en salas circulares / arenas
-
-   Todavía son superficies planas.
+   Visualmente siguen diferenciados,
+   físicamente pertenecen al mismo piso.
 ========================================================= */
 
 const ACTION_RADIUS = 26;
 
 function ActionButtons() {
+  const baseThickness = 0.026;
+
+  /*
+    Los círculos no tienen volumen físico.
+    Los dejamos unas décimas por debajo de la superficie
+    caminable para que jamás atraviesen los zapatos.
+  */
+
+  const circleY =
+    WALK_SURFACE_Y -
+    0.00015;
+
   return (
     <group>
-      {/* ===================================================
-          BASE DERECHA
-      =================================================== */}
+      {/* BASE DERECHA */}
 
       <mesh
         position={[
           94,
-          0.026,
+          WALK_SURFACE_Y -
+            baseThickness / 2 -
+            0.0005,
           0,
         ]}
         receiveShadow
@@ -392,27 +441,23 @@ function ActionButtons() {
         <boxGeometry
           args={[
             112,
-            0.026,
+            baseThickness,
             112,
           ]}
         />
 
         <DarkPlasticMaterial
-          color={
-            COLORS.panelLight
-          }
+          color={COLORS.panelLight}
           roughness={0.48}
         />
       </mesh>
 
-      {/* ===================================================
-          BOTÓN B
-      =================================================== */}
+      {/* BOTÓN B — BORDE */}
 
       <mesh
         position={[
           70,
-          0.048,
+          circleY - 0.00015,
           21,
         ]}
         rotation={[
@@ -424,23 +469,22 @@ function ActionButtons() {
       >
         <circleGeometry
           args={[
-            ACTION_RADIUS +
-              3,
+            ACTION_RADIUS + 3,
             48,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundyDark
-          }
+          color={COLORS.burgundyDark}
         />
       </mesh>
+
+      {/* BOTÓN B */}
 
       <mesh
         position={[
           70,
-          0.052,
+          circleY,
           21,
         ]}
         rotation={[
@@ -458,20 +502,16 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundy
-          }
+          color={COLORS.burgundy}
         />
       </mesh>
 
-      {/* ===================================================
-          BOTÓN A
-      =================================================== */}
+      {/* BOTÓN A — BORDE */}
 
       <mesh
         position={[
           116,
-          0.048,
+          circleY - 0.00015,
           -21,
         ]}
         rotation={[
@@ -483,23 +523,22 @@ function ActionButtons() {
       >
         <circleGeometry
           args={[
-            ACTION_RADIUS +
-              3,
+            ACTION_RADIUS + 3,
             48,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundyDark
-          }
+          color={COLORS.burgundyDark}
         />
       </mesh>
+
+      {/* BOTÓN A */}
 
       <mesh
         position={[
           116,
-          0.052,
+          circleY,
           -21,
         ]}
         rotation={[
@@ -517,9 +556,7 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundyBright
-          }
+          color={COLORS.burgundyBright}
         />
       </mesh>
     </group>
@@ -528,13 +565,12 @@ function ActionButtons() {
 
 /* =========================================================
    SELECT / START
-
-   Agrandados ligeramente.
-
-   31 × 11 cada uno.
 ========================================================= */
 
 function CenterControls() {
+  const zoneThickness = 0.026;
+  const buttonThickness = 0.022;
+
   return (
     <group>
       {/* zona central */}
@@ -542,7 +578,9 @@ function CenterControls() {
       <mesh
         position={[
           5,
-          0.026,
+          WALK_SURFACE_Y -
+            zoneThickness / 2 -
+            0.0006,
           35,
         ]}
         receiveShadow
@@ -550,15 +588,13 @@ function CenterControls() {
         <boxGeometry
           args={[
             82,
-            0.026,
+            zoneThickness,
             26,
           ]}
         />
 
         <DarkPlasticMaterial
-          color={
-            COLORS.shellEdge
-          }
+          color={COLORS.shellEdge}
           roughness={0.52}
         />
       </mesh>
@@ -568,7 +604,9 @@ function CenterControls() {
       <mesh
         position={[
           -15,
-          0.05,
+          WALK_SURFACE_Y -
+            buttonThickness / 2 -
+            0.00015,
           35,
         ]}
         receiveShadow
@@ -576,7 +614,7 @@ function CenterControls() {
         <boxGeometry
           args={[
             31,
-            0.022,
+            buttonThickness,
             11,
           ]}
         />
@@ -594,7 +632,9 @@ function CenterControls() {
       <mesh
         position={[
           24,
-          0.051,
+          WALK_SURFACE_Y -
+            buttonThickness / 2 -
+            0.00015,
           35,
         ]}
         receiveShadow
@@ -602,7 +642,7 @@ function CenterControls() {
         <boxGeometry
           args={[
             31,
-            0.022,
+            buttonThickness,
             11,
           ]}
         />
@@ -623,6 +663,8 @@ function CenterControls() {
 ========================================================= */
 
 function ControllerTrim() {
+  const thickness = 0.018;
+
   return (
     <group>
       {/* superior */}
@@ -630,22 +672,22 @@ function ControllerTrim() {
       <mesh
         position={[
           0,
-          0.04,
+          WALK_SURFACE_Y -
+            thickness / 2 -
+            0.00015,
           -67,
         ]}
       >
         <boxGeometry
           args={[
             308,
-            0.018,
+            thickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundy
-          }
+          color={COLORS.burgundy}
         />
       </mesh>
 
@@ -654,22 +696,22 @@ function ControllerTrim() {
       <mesh
         position={[
           0,
-          0.041,
+          WALK_SURFACE_Y -
+            thickness / 2 -
+            0.00015,
           67,
         ]}
       >
         <boxGeometry
           args={[
             308,
-            0.018,
+            thickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
-          color={
-            COLORS.burgundy
-          }
+          color={COLORS.burgundy}
         />
       </mesh>
     </group>
@@ -697,6 +739,12 @@ export default function WorldEnvironment() {
 
       {/* ===================================================
           CRUCETA / HALL PRINCIPAL
+
+          MainHall tiene su propio suelo prácticamente
+          enrasado con esta nueva superficie.
+
+          Sus líneas decorativas alcanzan aproximadamente
+          la misma cota, por lo que no generan escalón.
       =================================================== */}
 
       <Museum />
