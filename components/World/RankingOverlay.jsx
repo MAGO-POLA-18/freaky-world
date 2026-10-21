@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -346,7 +345,7 @@ function DataItem({
 }
 
 /* =========================================================
-   BOTÓN PRINCIPAL
+   BOTÓN
 ========================================================= */
 
 function ActionButton({
@@ -407,7 +406,8 @@ function ActionButton({
             ? 10
             : 12,
 
-        lineHeight: 1,
+        lineHeight:
+          1,
 
         fontWeight:
           950,
@@ -532,13 +532,23 @@ function CoverCard({
 
 /* =========================================================
    VIDEO
+
+   IMPORTANTE:
+   Nunca usamos la portada como placeholder.
+
+   Si todavía no llegó el ID:
+   - queda negro mientras carga;
+   - cuando aparece el ID monta directamente YouTube.
+
+   Esto elimina el efecto:
+   portada + portada -> vídeo.
 ========================================================= */
 
 function Trailer({
   youtubeId,
-  cover,
   title,
   compact,
+  loading,
 }) {
   return (
     <div
@@ -572,17 +582,23 @@ function Trailer({
       {youtubeId ? (
         <iframe
           key={youtubeId}
+
           src={
             `https://www.youtube.com/embed/${youtubeId}` +
             "?autoplay=1" +
             "&mute=1" +
             "&playsinline=1" +
             "&rel=0" +
-            "&controls=1"
+            "&controls=1" +
+            "&modestbranding=1"
           }
+
           title={
             `Tráiler de ${title}`
           }
+
+          loading="eager"
+
           allow="
             accelerometer;
             autoplay;
@@ -592,7 +608,9 @@ function Trailer({
             picture-in-picture;
             web-share
           "
+
           allowFullScreen
+
           style={{
             position:
               "absolute",
@@ -609,29 +627,6 @@ function Trailer({
               "block",
 
             border: 0,
-          }}
-        />
-      ) : cover ? (
-        <img
-          src={cover}
-          alt=""
-          style={{
-            position:
-              "absolute",
-
-            inset: 0,
-
-            width:
-              "100%",
-
-            height:
-              "100%",
-
-            display:
-              "block",
-
-            objectFit:
-              "contain",
 
             background:
               "#000",
@@ -651,17 +646,27 @@ function Trailer({
             placeItems:
               "center",
 
+            background:
+              "#000",
+
             color:
-              "#657078",
+              loading
+                ? "#4d575d"
+                : "#657078",
 
             fontSize:
-              11,
+              10,
 
             fontWeight:
               750,
+
+            letterSpacing:
+              ".02em",
           }}
         >
-          Tráiler no disponible
+          {loading
+            ? "Cargando tráiler…"
+            : "Tráiler no disponible"}
         </div>
       )}
     </div>
@@ -707,26 +712,70 @@ export default function RankingOverlay({
   ] = useState(false);
 
   /* =======================================================
-     CARGAR FICHA COMPLETA PARA LA PREFICHA
-
-     El ranking y el buscador pueden mandar
-     objetos ligeros.
-
-     Acá recuperamos:
-     - portada real
-     - vídeo
-     - plataformas
-     - género
-     - desarrollador
-     - año
+     PRECONNECT YOUTUBE
   ======================================================= */
 
   useEffect(() => {
-    if (!game?.id) {
-      setCompleteGame(
-        null
-      );
+    const origins = [
+      "https://www.youtube.com",
+      "https://i.ytimg.com",
+    ];
 
+    const created = [];
+
+    origins.forEach(
+      (href) => {
+        if (
+          document.querySelector(
+            `link[rel="preconnect"][href="${href}"]`
+          )
+        ) {
+          return;
+        }
+
+        const link =
+          document.createElement(
+            "link"
+          );
+
+        link.rel =
+          "preconnect";
+
+        link.href =
+          href;
+
+        document.head.appendChild(
+          link
+        );
+
+        created.push(
+          link
+        );
+      }
+    );
+
+    return () => {
+      created.forEach(
+        (link) => {
+          link.remove();
+        }
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     CARGAR FICHA COMPLETA
+
+     Primero usamos inmediatamente lo que ya trae game.
+     En paralelo pedimos la ficha completa.
+  ======================================================= */
+
+  useEffect(() => {
+    setCompleteGame(
+      null
+    );
+
+    if (!game?.id) {
       return;
     }
 
@@ -768,9 +817,7 @@ export default function RankingOverlay({
         const data =
           await response.json();
 
-        if (
-          !active
-        ) {
+        if (!active) {
           return;
         }
 
@@ -887,9 +934,18 @@ export default function RankingOverlay({
       game
     );
 
+  /*
+    Intentamos primero el juego completo.
+    Si el objeto ligero ya tenía vídeo,
+    no esperamos el fetch.
+  */
+
   const youtubeId =
     chooseFirstVideo(
-      resolvedGame
+      completeGame
+    ) ||
+    chooseFirstVideo(
+      game
     );
 
   const year =
@@ -919,8 +975,6 @@ export default function RankingOverlay({
 
   /* =======================================================
      ABRIR FICHA COMPLETA
-
-     Mandamos la versión completa si ya está cargada.
   ======================================================= */
 
   function openFullGameCard() {
@@ -956,6 +1010,7 @@ export default function RankingOverlay({
   return (
     <div
       className="world-no-select"
+
       style={{
         position:
           "fixed",
@@ -987,9 +1042,7 @@ export default function RankingOverlay({
           "system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       }}
     >
-      {/* ===================================================
-          CABECERA
-      =================================================== */}
+      {/* CABECERA */}
 
       <header
         style={{
@@ -1028,7 +1081,6 @@ export default function RankingOverlay({
         <div
           style={{
             minWidth: 0,
-
             flex: 1,
           }}
         >
@@ -1042,7 +1094,8 @@ export default function RankingOverlay({
                   ? 8
                   : 9,
 
-              lineHeight: 1,
+              lineHeight:
+                1,
 
               fontWeight:
                 950,
@@ -1097,9 +1150,11 @@ export default function RankingOverlay({
         <button
           type="button"
           aria-label="Cerrar preficha"
+
           onClick={
             onClose
           }
+
           style={{
             flex:
               "0 0 auto",
@@ -1139,7 +1194,8 @@ export default function RankingOverlay({
                 ? 27
                 : 31,
 
-            lineHeight: 1,
+            lineHeight:
+              1,
 
             fontWeight:
               500,
@@ -1207,9 +1263,11 @@ export default function RankingOverlay({
               cover={
                 cover
               }
+
               title={
                 title
               }
+
               compact={
                 compact
               }
@@ -1295,14 +1353,17 @@ export default function RankingOverlay({
               youtubeId={
                 youtubeId
               }
-              cover={
-                cover
-              }
+
               title={
                 title
               }
+
               compact={
                 compact
+              }
+
+              loading={
+                loading
               }
             />
           </section>
@@ -1325,6 +1386,7 @@ export default function RankingOverlay({
               onClick={
                 onClose
               }
+
               accent={
                 accent
               }
@@ -1336,7 +1398,9 @@ export default function RankingOverlay({
               onClick={
                 openFullGameCard
               }
+
               primary
+
               accent={
                 accent
               }
@@ -1413,9 +1477,11 @@ export default function RankingOverlay({
               cover={
                 cover
               }
+
               title={
                 title
               }
+
               compact
             />
 
@@ -1423,17 +1489,20 @@ export default function RankingOverlay({
               youtubeId={
                 youtubeId
               }
-              cover={
-                cover
-              }
+
               title={
                 title
               }
+
               compact
+
+              loading={
+                loading
+              }
             />
           </section>
 
-          {/* DATOS EN UNA FILA */}
+          {/* DATOS */}
 
           <section
             style={{
@@ -1522,9 +1591,11 @@ export default function RankingOverlay({
           >
             <ActionButton
               compact
+
               onClick={
                 onClose
               }
+
               accent={
                 accent
               }
@@ -1534,10 +1605,13 @@ export default function RankingOverlay({
 
             <ActionButton
               compact
+
               onClick={
                 openFullGameCard
               }
+
               primary
+
               accent={
                 accent
               }
