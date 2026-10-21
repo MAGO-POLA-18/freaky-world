@@ -65,7 +65,7 @@ const WALK_SPEED = 5.2;
   La idea es recorrer rápidamente
   distancias grandes del mundo.
 */
-const SPRINT_SPEED = 50;
+const SPRINT_SPEED = 40;
 
 /*
   Dash antiguo.
