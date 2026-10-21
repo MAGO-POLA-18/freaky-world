@@ -598,104 +598,101 @@ export default function MobileControls({
             "none",
         }}
       >
-        {/* B */}
 
-        <button
-          type="button"
-          className={[
-            "mobile-game-button",
-            "mobile-game-button-b",
-            sprintPressed
-              ? "is-pressed"
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
+        {/* B — INTERACTUAR */}
 
-          aria-label="Sprint"
+<button
+  type="button"
+  className={[
+    "mobile-game-button",
+    "mobile-game-button-b",
+    interactionAvailable
+      ? "is-active"
+      : "is-disabled",
+  ]
+    .filter(Boolean)
+    .join(" ")}
 
-          onPointerDown={
-            startSprint
-          }
+  aria-label="Interactuar"
 
-          onPointerMove={
-            moveSprintCamera
-          }
+  onPointerDown={
+    interact
+  }
 
-          onPointerUp={
-            stopSprint
-          }
+  style={{
+    pointerEvents:
+      "auto",
 
-          onPointerCancel={
-            stopSprint
-          }
+    touchAction:
+      "none",
 
-          style={{
-            pointerEvents:
-              "auto",
+    userSelect:
+      "none",
 
-            touchAction:
-              "none",
+    WebkitUserSelect:
+      "none",
 
-            userSelect:
-              "none",
+    WebkitTouchCallout:
+      "none",
 
-            WebkitUserSelect:
-              "none",
+    WebkitTapHighlightColor:
+      "transparent",
+  }}
+>
+  B
+</button>
 
-            WebkitTouchCallout:
-              "none",
+{/* A — SPRINT + CÁMARA */}
 
-            WebkitTapHighlightColor:
-              "transparent",
-          }}
-        >
-          B
-        </button>
+<button
+  type="button"
+  className={[
+    "mobile-game-button",
+    "mobile-game-button-a",
+    sprintPressed
+      ? "is-pressed"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ")}
 
-        {/* A */}
+  aria-label="Sprint"
 
-        <button
-          type="button"
-          className={[
-            "mobile-game-button",
-            "mobile-game-button-a",
-            interactionAvailable
-              ? "is-active"
-              : "is-disabled",
-          ]
-            .filter(Boolean)
-            .join(" ")}
+  onPointerDown={
+    startSprint
+  }
 
-          aria-label="Interactuar"
+  onPointerMove={
+    moveSprintCamera
+  }
 
-          onPointerDown={
-            interact
-          }
+  onPointerUp={
+    stopSprint
+  }
 
-          style={{
-            pointerEvents:
-              "auto",
+  onPointerCancel={
+    stopSprint
+  }
 
-            touchAction:
-              "none",
+  style={{
+    pointerEvents:
+      "auto",
 
-            userSelect:
-              "none",
+    touchAction:
+      "none",
 
-            WebkitUserSelect:
-              "none",
+    userSelect:
+      "none",
 
-            WebkitTouchCallout:
-              "none",
+    WebkitUserSelect:
+      "none",
 
-            WebkitTapHighlightColor:
-              "transparent",
-          }}
-        >
-          A
-        </button>
-      </div>
-    </div>
-  );
-}
+    WebkitTouchCallout:
+      "none",
+
+    WebkitTapHighlightColor:
+      "transparent",
+  }}
+>
+  A
+</button>
