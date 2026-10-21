@@ -4160,6 +4160,11 @@ export default function FullGameOverlay({
   ] = useState(false);
 
   const [
+  visualReady,
+  setVisualReady,
+] = useState(false);
+
+  const [
     loadError,
     setLoadError,
   ] = useState(null);
@@ -4307,6 +4312,99 @@ const displayGame =
   masterReady
     ? masterGame
     : activeGame;
+
+  useEffect(() => {
+  setVisualReady(false);
+
+  if (!masterReady) {
+    return;
+  }
+
+  const coverUrl =
+    getCover(masterGame);
+
+  let cancelled = false;
+  let rafA = 0;
+  let rafB = 0;
+
+  const finish = () => {
+    rafA =
+      requestAnimationFrame(
+        () => {
+          rafB =
+            requestAnimationFrame(
+              () => {
+                if (
+                  !cancelled
+                ) {
+                  setVisualReady(
+                    true
+                  );
+                }
+              }
+            );
+        }
+      );
+  };
+
+  if (!coverUrl) {
+    finish();
+
+    return () => {
+      cancelled = true;
+
+      cancelAnimationFrame(
+        rafA
+      );
+
+      cancelAnimationFrame(
+        rafB
+      );
+    };
+  }
+
+  const image =
+    new Image();
+
+  image.src =
+    coverUrl;
+
+  const ready =
+    image.decode
+      ? image.decode()
+      : new Promise(
+          (resolve) => {
+            image.onload =
+              resolve;
+
+            image.onerror =
+              resolve;
+          }
+        );
+
+  ready
+    .catch(() => {})
+    .finally(() => {
+      if (!cancelled) {
+        finish();
+      }
+    });
+
+  return () => {
+    cancelled = true;
+
+    cancelAnimationFrame(
+      rafA
+    );
+
+    cancelAnimationFrame(
+      rafB
+    );
+  };
+}, [
+  masterReady,
+  masterGame?.id,
+]);
 
   const title =
     getTitle(
@@ -4620,9 +4718,13 @@ const displayGame =
   }
 
 if (
-  !masterReady &&
+  (
+    !masterReady ||
+    !visualReady
+  ) &&
   !loadError
 ) {
+  
   return (
     <div
       style={{
