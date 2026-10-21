@@ -10,40 +10,71 @@ import Museum from "../Museum/Museum";
 /* =========================================================
    FREAKY WORLD — FAMILY CONTROLLER
 
-   SUELO UNIFICADO:
-   - una única altura física caminable
-   - capas visuales por debajo de esa altura
+   SISTEMA DE SUELO ÚNICO
+
+   VISUAL:
+   Y = 0.024
+
+   FÍSICO:
+   Y = 0.204
+
+   La diferencia de 0.18 compensa la geometría de las
+   zapatillas, que visualmente baja ~18 cm más que
+   la cápsula física del jugador.
+
+   Resultado:
+   - collider estable
+   - zapatos apoyados visualmente
+   - sin múltiples colliders de piso
    - sin escalones físicos entre colores
-   - el avatar nunca pisa las capas decorativas
 ========================================================= */
 
 /* =========================================================
-   MANDO
+   MEDIDAS
 ========================================================= */
 
 const CONTROLLER_WIDTH = 340;
 const CONTROLLER_DEPTH = 150;
 const CONTROLLER_HEIGHT = 2;
 
-/*
-  ALTURA MAESTRA DEL MUNDO.
-
-  Esta es la superficie REAL sobre la que camina el avatar.
-
-  Todo elemento decorativo del piso debe terminar
-  como máximo en esta altura.
-*/
-
-const WALK_SURFACE_Y = 0.024;
+/* =========================================================
+   ALTURAS MAESTRAS
+========================================================= */
 
 /*
-  Lámina física superior.
-
-  Se superpone ligeramente con la carcasa para que
-  no exista ningún hueco entre colliders.
+  Todas las superficies visuales principales terminan aquí.
 */
 
-const WALK_COLLIDER_THICKNESS = 0.04;
+export const VISUAL_FLOOR_Y = 0.024;
+
+/*
+  La cápsula física termina aprox. 0.18 m antes que
+  las suelas visuales.
+
+  Por eso el collider invisible del suelo está 18 cm
+  por encima de la superficie visual.
+*/
+
+export const PHYSICAL_FLOOR_Y =
+  VISUAL_FLOOR_Y + 0.18;
+
+/*
+  El collider físico es UN ÚNICO bloque.
+
+  Parte desde el fondo de la carcasa y termina exactamente
+  en PHYSICAL_FLOOR_Y.
+*/
+
+const PHYSICAL_FLOOR_BOTTOM =
+  -CONTROLLER_HEIGHT;
+
+const PHYSICAL_FLOOR_HEIGHT =
+  PHYSICAL_FLOOR_Y -
+  PHYSICAL_FLOOR_BOTTOM;
+
+const PHYSICAL_FLOOR_CENTER_Y =
+  PHYSICAL_FLOOR_BOTTOM +
+  PHYSICAL_FLOOR_HEIGHT / 2;
 
 /* =========================================================
    SEGURIDAD
@@ -77,7 +108,7 @@ const COLORS = {
 };
 
 /* =========================================================
-   MATERIAL PLÁSTICO CLARO
+   MATERIALES
 ========================================================= */
 
 function ShellMaterial() {
@@ -92,13 +123,10 @@ function ShellMaterial() {
   );
 }
 
-/* =========================================================
-   MATERIAL PLÁSTICO OSCURO
-========================================================= */
-
 function DarkPlasticMaterial({
   color = COLORS.panel,
   roughness = 0.42,
+  polygonOffsetFactor = -1,
 }) {
   return (
     <meshPhysicalMaterial
@@ -107,16 +135,20 @@ function DarkPlasticMaterial({
       metalness={0}
       clearcoat={0.2}
       clearcoatRoughness={0.38}
+      polygonOffset
+      polygonOffsetFactor={
+        polygonOffsetFactor
+      }
+      polygonOffsetUnits={
+        polygonOffsetFactor
+      }
     />
   );
 }
 
-/* =========================================================
-   MATERIAL BOTÓN
-========================================================= */
-
 function ButtonPlasticMaterial({
   color = COLORS.burgundy,
+  polygonOffsetFactor = -3,
 }) {
   return (
     <meshPhysicalMaterial
@@ -125,12 +157,19 @@ function ButtonPlasticMaterial({
       metalness={0}
       clearcoat={0.48}
       clearcoatRoughness={0.25}
+      polygonOffset
+      polygonOffsetFactor={
+        polygonOffsetFactor
+      }
+      polygonOffsetUnits={
+        polygonOffsetFactor
+      }
     />
   );
 }
 
 /* =========================================================
-   CUERPO PRINCIPAL
+   CUERPO PRINCIPAL + ÚNICO SUELO FÍSICO
 ========================================================= */
 
 function ControllerBase() {
@@ -140,11 +179,9 @@ function ControllerBase() {
       colliders={false}
     >
       {/* ===================================================
-          CARCASA
+          CARCASA VISUAL
 
-          La carcasa continúa terminando en Y = 0.
-
-          Encima colocamos una única lámina física continua.
+          La carcasa visible continúa terminando en Y = 0.
       =================================================== */}
 
       <mesh
@@ -168,49 +205,36 @@ function ControllerBase() {
       </mesh>
 
       {/* ===================================================
-          COLISIÓN BASE
+          ÚNICO SUELO FÍSICO GLOBAL
+
+          IMPORTANTE:
+
+          Ya NO hay:
+          - collider base + collider laminado
+          - colliders independientes de colores
+          - colliders de piso en la cruceta
+
+          Este es el único suelo que pisa el jugador.
       =================================================== */}
 
       <CuboidCollider
         position={[
           0,
-          -CONTROLLER_HEIGHT / 2,
+          PHYSICAL_FLOOR_CENTER_Y,
           0,
         ]}
         args={[
           CONTROLLER_WIDTH / 2,
-          CONTROLLER_HEIGHT / 2,
-          CONTROLLER_DEPTH / 2,
-        ]}
-      />
-
-      {/* ===================================================
-          LÁMINA FÍSICA CAMINABLE
-
-          Esta es ahora la única referencia para los pies.
-
-          Superficie superior:
-          Y = WALK_SURFACE_Y
-
-          Las zonas de colores NO necesitan collider.
-      =================================================== */}
-
-      <CuboidCollider
-        position={[
-          0,
-          WALK_SURFACE_Y -
-            WALK_COLLIDER_THICKNESS / 2,
-          0,
-        ]}
-        args={[
-          CONTROLLER_WIDTH / 2,
-          WALK_COLLIDER_THICKNESS / 2,
+          PHYSICAL_FLOOR_HEIGHT / 2,
           CONTROLLER_DEPTH / 2,
         ]}
       />
 
       {/* ===================================================
           LÍMITES INVISIBLES
+
+          Empiezan exactamente encima del suelo físico.
+          No penetran dentro del suelo.
       =================================================== */}
 
       {/* NORTE */}
@@ -218,7 +242,8 @@ function ControllerBase() {
       <CuboidCollider
         position={[
           0,
-          SAFETY_HEIGHT / 2,
+          PHYSICAL_FLOOR_Y +
+            SAFETY_HEIGHT / 2,
           -CONTROLLER_DEPTH / 2 +
             SAFETY_THICKNESS / 2,
         ]}
@@ -234,7 +259,8 @@ function ControllerBase() {
       <CuboidCollider
         position={[
           0,
-          SAFETY_HEIGHT / 2,
+          PHYSICAL_FLOOR_Y +
+            SAFETY_HEIGHT / 2,
           CONTROLLER_DEPTH / 2 -
             SAFETY_THICKNESS / 2,
         ]}
@@ -251,7 +277,8 @@ function ControllerBase() {
         position={[
           -CONTROLLER_WIDTH / 2 +
             SAFETY_THICKNESS / 2,
-          SAFETY_HEIGHT / 2,
+          PHYSICAL_FLOOR_Y +
+            SAFETY_HEIGHT / 2,
           0,
         ]}
         args={[
@@ -267,7 +294,8 @@ function ControllerBase() {
         position={[
           CONTROLLER_WIDTH / 2 -
             SAFETY_THICKNESS / 2,
-          SAFETY_HEIGHT / 2,
+          PHYSICAL_FLOOR_Y +
+            SAFETY_HEIGHT / 2,
           0,
         ]}
         args={[
@@ -281,39 +309,66 @@ function ControllerBase() {
 }
 
 /* =========================================================
-   PANEL PRINCIPAL OSCURO
+   UTILIDAD
 
-   Todas las capas terminan prácticamente en WALK_SURFACE_Y.
-   El color cambia, la altura caminable NO.
+   Todos estos bloques terminan EXACTAMENTE en
+   VISUAL_FLOOR_Y.
+
+   Cambian de color/material, NO de altura.
 ========================================================= */
 
-function MainPanel() {
-  const thickness = 0.018;
-
+function FlatVisualBox({
+  position,
+  width,
+  depth,
+  thickness = 0.02,
+  color,
+  roughness = 0.48,
+  polygonOffsetFactor = -1,
+}) {
   return (
     <mesh
       position={[
-        12,
-        WALK_SURFACE_Y -
-          thickness / 2 -
-          0.0005,
-        0,
+        position[0],
+        VISUAL_FLOOR_Y -
+          thickness / 2,
+        position[2],
       ]}
       receiveShadow
     >
       <boxGeometry
         args={[
-          242,
+          width,
           thickness,
-          116,
+          depth,
         ]}
       />
 
       <DarkPlasticMaterial
-        color={COLORS.panel}
-        roughness={0.48}
+        color={color}
+        roughness={roughness}
+        polygonOffsetFactor={
+          polygonOffsetFactor
+        }
       />
     </mesh>
+  );
+}
+
+/* =========================================================
+   PANEL PRINCIPAL
+========================================================= */
+
+function MainPanel() {
+  return (
+    <FlatVisualBox
+      position={[12, 0, 0]}
+      width={242}
+      depth={116}
+      color={COLORS.panel}
+      roughness={0.48}
+      polygonOffsetFactor={-1}
+    />
   );
 }
 
@@ -322,80 +377,68 @@ function MainPanel() {
 ========================================================= */
 
 function DpadZone() {
-  const zoneThickness = 0.025;
-  const detailThickness = 0.018;
-
   return (
     <group>
-      <mesh
-        position={[
-          -105,
-          WALK_SURFACE_Y -
-            zoneThickness / 2 -
-            0.0006,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            112,
-            zoneThickness,
-            122,
-          ]}
-        />
+      <FlatVisualBox
+        position={[-105, 0, 0]}
+        width={112}
+        depth={122}
+        color={COLORS.panelLight}
+        roughness={0.5}
+        polygonOffsetFactor={-2}
+      />
 
-        <DarkPlasticMaterial
-          color={COLORS.panelLight}
-          roughness={0.5}
-        />
-      </mesh>
-
-      {/* detalle superior */}
+      {/* borde superior */}
 
       <mesh
         position={[
           -105,
-          WALK_SURFACE_Y -
-            detailThickness / 2 -
-            0.0002,
+          VISUAL_FLOOR_Y,
           -57,
         ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             102,
-            detailThickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
           color={COLORS.burgundy}
+          polygonOffsetFactor={-4}
         />
       </mesh>
 
-      {/* detalle inferior */}
+      {/* borde inferior */}
 
       <mesh
         position={[
           -105,
-          WALK_SURFACE_Y -
-            detailThickness / 2 -
-            0.0002,
+          VISUAL_FLOOR_Y,
           57,
         ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             102,
-            detailThickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
           color={COLORS.burgundy}
+          polygonOffsetFactor={-4}
         />
       </mesh>
     </group>
@@ -403,61 +446,33 @@ function DpadZone() {
 }
 
 /* =========================================================
-   A / B
-
-   Visualmente siguen diferenciados,
-   físicamente pertenecen al mismo piso.
+   BOTONES A / B
 ========================================================= */
 
 const ACTION_RADIUS = 26;
 
 function ActionButtons() {
-  const baseThickness = 0.026;
-
-  /*
-    Los círculos no tienen volumen físico.
-    Los dejamos unas décimas por debajo de la superficie
-    caminable para que jamás atraviesen los zapatos.
-  */
-
-  const circleY =
-    WALK_SURFACE_Y -
-    0.00015;
-
   return (
     <group>
       {/* BASE DERECHA */}
 
-      <mesh
-        position={[
-          94,
-          WALK_SURFACE_Y -
-            baseThickness / 2 -
-            0.0005,
-          0,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            112,
-            baseThickness,
-            112,
-          ]}
-        />
+      <FlatVisualBox
+        position={[94, 0, 0]}
+        width={112}
+        depth={112}
+        color={COLORS.panelLight}
+        roughness={0.48}
+        polygonOffsetFactor={-2}
+      />
 
-        <DarkPlasticMaterial
-          color={COLORS.panelLight}
-          roughness={0.48}
-        />
-      </mesh>
-
-      {/* BOTÓN B — BORDE */}
+      {/* ===================================================
+          B — CONTORNO
+      =================================================== */}
 
       <mesh
         position={[
           70,
-          circleY - 0.00015,
+          VISUAL_FLOOR_Y,
           21,
         ]}
         rotation={[
@@ -475,16 +490,19 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={COLORS.burgundyDark}
+          color={
+            COLORS.burgundyDark
+          }
+          polygonOffsetFactor={-3}
         />
       </mesh>
 
-      {/* BOTÓN B */}
+      {/* B */}
 
       <mesh
         position={[
           70,
-          circleY,
+          VISUAL_FLOOR_Y,
           21,
         ]}
         rotation={[
@@ -502,16 +520,21 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={COLORS.burgundy}
+          color={
+            COLORS.burgundy
+          }
+          polygonOffsetFactor={-5}
         />
       </mesh>
 
-      {/* BOTÓN A — BORDE */}
+      {/* ===================================================
+          A — CONTORNO
+      =================================================== */}
 
       <mesh
         position={[
           116,
-          circleY - 0.00015,
+          VISUAL_FLOOR_Y,
           -21,
         ]}
         rotation={[
@@ -529,16 +552,19 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={COLORS.burgundyDark}
+          color={
+            COLORS.burgundyDark
+          }
+          polygonOffsetFactor={-3}
         />
       </mesh>
 
-      {/* BOTÓN A */}
+      {/* A */}
 
       <mesh
         position={[
           116,
-          circleY,
+          VISUAL_FLOOR_Y,
           -21,
         ]}
         rotation={[
@@ -556,7 +582,10 @@ function ActionButtons() {
         />
 
         <ButtonPlasticMaterial
-          color={COLORS.burgundyBright}
+          color={
+            COLORS.burgundyBright
+          }
+          polygonOffsetFactor={-5}
         />
       </mesh>
     </group>
@@ -568,53 +597,36 @@ function ActionButtons() {
 ========================================================= */
 
 function CenterControls() {
-  const zoneThickness = 0.026;
-  const buttonThickness = 0.022;
-
   return (
     <group>
-      {/* zona central */}
+      {/* ZONA CENTRAL */}
 
-      <mesh
-        position={[
-          5,
-          WALK_SURFACE_Y -
-            zoneThickness / 2 -
-            0.0006,
-          35,
-        ]}
-        receiveShadow
-      >
-        <boxGeometry
-          args={[
-            82,
-            zoneThickness,
-            26,
-          ]}
-        />
-
-        <DarkPlasticMaterial
-          color={COLORS.shellEdge}
-          roughness={0.52}
-        />
-      </mesh>
+      <FlatVisualBox
+        position={[5, 0, 35]}
+        width={82}
+        depth={26}
+        color={COLORS.shellEdge}
+        roughness={0.52}
+        polygonOffsetFactor={-2}
+      />
 
       {/* SELECT */}
 
       <mesh
         position={[
           -15,
-          WALK_SURFACE_Y -
-            buttonThickness / 2 -
-            0.00015,
+          VISUAL_FLOOR_Y,
           35,
         ]}
-        receiveShadow
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             31,
-            buttonThickness,
             11,
           ]}
         />
@@ -624,6 +636,7 @@ function CenterControls() {
             COLORS.blackPlasticSoft
           }
           roughness={0.4}
+          polygonOffsetFactor={-5}
         />
       </mesh>
 
@@ -632,17 +645,18 @@ function CenterControls() {
       <mesh
         position={[
           24,
-          WALK_SURFACE_Y -
-            buttonThickness / 2 -
-            0.00015,
+          VISUAL_FLOOR_Y,
           35,
         ]}
-        receiveShadow
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             31,
-            buttonThickness,
             11,
           ]}
         />
@@ -652,6 +666,7 @@ function CenterControls() {
             COLORS.blackPlastic
           }
           roughness={0.4}
+          polygonOffsetFactor={-5}
         />
       </mesh>
     </group>
@@ -663,55 +678,59 @@ function CenterControls() {
 ========================================================= */
 
 function ControllerTrim() {
-  const thickness = 0.018;
-
   return (
     <group>
-      {/* superior */}
+      {/* SUPERIOR */}
 
       <mesh
         position={[
           0,
-          WALK_SURFACE_Y -
-            thickness / 2 -
-            0.00015,
+          VISUAL_FLOOR_Y,
           -67,
         ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             308,
-            thickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
           color={COLORS.burgundy}
+          polygonOffsetFactor={-4}
         />
       </mesh>
 
-      {/* inferior */}
+      {/* INFERIOR */}
 
       <mesh
         position={[
           0,
-          WALK_SURFACE_Y -
-            thickness / 2 -
-            0.00015,
+          VISUAL_FLOOR_Y,
           67,
         ]}
+        rotation={[
+          -Math.PI / 2,
+          0,
+          0,
+        ]}
       >
-        <boxGeometry
+        <planeGeometry
           args={[
             308,
-            thickness,
             2.2,
           ]}
         />
 
         <ButtonPlasticMaterial
           color={COLORS.burgundy}
+          polygonOffsetFactor={-4}
         />
       </mesh>
     </group>
@@ -725,7 +744,15 @@ function ControllerTrim() {
 export default function WorldEnvironment() {
   return (
     <group>
+      {/* ÚNICO SISTEMA FÍSICO DE SUELO */}
+
       <ControllerBase />
+
+      {/* ===================================================
+          DECORACIÓN VISUAL
+
+          Ninguno de estos elementos tiene collider.
+      =================================================== */}
 
       <MainPanel />
 
@@ -738,13 +765,11 @@ export default function WorldEnvironment() {
       <ControllerTrim />
 
       {/* ===================================================
-          CRUCETA / HALL PRINCIPAL
+          CRUCETA / MUSEO
 
-          MainHall tiene su propio suelo prácticamente
-          enrasado con esta nueva superficie.
+          Museum se alinea con VISUAL_FLOOR_Y.
 
-          Sus líneas decorativas alcanzan aproximadamente
-          la misma cota, por lo que no generan escalón.
+          MainHall ya NO crea colisiones de suelo.
       =================================================== */}
 
       <Museum />
