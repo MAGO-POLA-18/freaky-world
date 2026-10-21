@@ -1185,10 +1185,10 @@ useEffect(() => {
                       Pellizca para zoom
                       <br />
 
-                      Mantén B para sprint
+                      Mantén A para sprint
                       <br />
 
-                      A para interactuar
+                      B para interactuar
                     </>
                   ) : (
                     <>
