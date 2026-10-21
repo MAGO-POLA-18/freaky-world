@@ -695,4 +695,9 @@ export default function MobileControls({
   }}
 >
   A
-</button>
+</button>     
+      
+      </div>
+    </div>
+  );
+}
