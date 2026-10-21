@@ -8,41 +8,93 @@ import {
 import Museum from "../Museum/Museum";
 
 /* =========================================================
-   FREAKY WORLD — FAMILY CONTROLLER
+   FREAKY WORLD — FAMILY / NES CONTROLLER
 
-   OBJETIVO:
-   - mantener el suelo físico estable
-   - mantener el piso visual sin temblores
-   - reorganizar el diseño para que, en vista cenital,
-     se lea claramente como un joystick de Family
+   ESCALA MAESTRA 1:1
+
+   Cruceta real de Freaky World:
+   102 unidades
+
+   D-pad NES real:
+   26.5 mm
+
+   ESCALA:
+   102 / 26.5 = 3.8490566 unidades/mm
+
+   NES real:
+   124 x 54 mm
+
+   Freaky World:
+   477.28 x 207.85 unidades
 
    IMPORTANTE:
-   - NO tocar Museum, CameraRig ni PlayerController
-   - este archivo redefine solo la parte visual
+   - la cruceta NO cambia de tamaño
+   - el mando se adapta a la cruceta
+   - CameraRig NO se toca
+   - PlayerController NO se toca
 ========================================================= */
 
 /* =========================================================
-   MEDIDAS GENERALES
+   ESCALA REAL
 ========================================================= */
 
-const CONTROLLER_WIDTH = 340;
-const CONTROLLER_DEPTH = 150;
+const WORLD_UNITS_PER_MM =
+  102 / 26.5;
+
+const REAL_CONTROLLER_WIDTH_MM =
+  124;
+
+const REAL_CONTROLLER_DEPTH_MM =
+  54;
+
+const CONTROLLER_WIDTH =
+  REAL_CONTROLLER_WIDTH_MM *
+  WORLD_UNITS_PER_MM;
+
+const CONTROLLER_DEPTH =
+  REAL_CONTROLLER_DEPTH_MM *
+  WORLD_UNITS_PER_MM;
+
 const CONTROLLER_HEIGHT = 2;
+
+/* =========================================================
+   ESCALA DE LA DISTRIBUCIÓN ANTERIOR
+
+   El diseño anterior era:
+   340 x 150.
+
+   Ahora conservamos la composición,
+   pero ocupando el tamaño correcto.
+========================================================= */
+
+const OLD_CONTROLLER_WIDTH = 340;
+const OLD_CONTROLLER_DEPTH = 150;
+
+const SCALE_X =
+  CONTROLLER_WIDTH /
+  OLD_CONTROLLER_WIDTH;
+
+const SCALE_Z =
+  CONTROLLER_DEPTH /
+  OLD_CONTROLLER_DEPTH;
+
+/* =========================================================
+   HELPERS DE ESCALA
+========================================================= */
+
+const sx = (value) =>
+  value * SCALE_X;
+
+const sz = (value) =>
+  value * SCALE_Z;
 
 /* =========================================================
    ALTURAS
 ========================================================= */
 
-/*
-  Cota visual del piso.
-*/
-export const VISUAL_FLOOR_Y = 0.024;
+export const VISUAL_FLOOR_Y =
+  0.024;
 
-/*
-  Cota física del piso.
-  Ya está calibrada para que el avatar no entierre
-  las zapatillas.
-*/
 export const PHYSICAL_FLOOR_Y =
   VISUAL_FLOOR_Y + 0.18;
 
@@ -58,14 +110,14 @@ const PHYSICAL_FLOOR_CENTER_Y =
   PHYSICAL_FLOOR_HEIGHT / 2;
 
 /* =========================================================
-   SEGURIDAD / BARRERAS
+   SEGURIDAD
 ========================================================= */
 
 const SAFETY_HEIGHT = 12;
 const SAFETY_THICKNESS = 1;
 
 /* =========================================================
-   PALETA — inspirada en mando Family / NES
+   COLORES
 ========================================================= */
 
 const COLORS = {
@@ -149,7 +201,7 @@ function ButtonPlasticMaterial({
 }
 
 /* =========================================================
-   BASE FÍSICA DEL MANDO
+   BASE DEL MANDO
 ========================================================= */
 
 function ControllerBase() {
@@ -158,7 +210,7 @@ function ControllerBase() {
       type="fixed"
       colliders={false}
     >
-      {/* Carcasa visual */}
+      {/* CARCASA */}
 
       <mesh
         position={[
@@ -176,10 +228,11 @@ function ControllerBase() {
             CONTROLLER_DEPTH,
           ]}
         />
+
         <ShellMaterial />
       </mesh>
 
-      {/* ÚNICO suelo físico */}
+      {/* SUELO FÍSICO */}
 
       <CuboidCollider
         position={[
@@ -194,68 +247,90 @@ function ControllerBase() {
         ]}
       />
 
-      {/* Barreras invisibles */}
+      {/* ===================================================
+          BARRERAS EXTERIORES
+      =================================================== */}
 
       {/* NORTE */}
+
       <CuboidCollider
         position={[
           0,
+
           PHYSICAL_FLOOR_Y +
             SAFETY_HEIGHT / 2,
+
           -CONTROLLER_DEPTH / 2 +
             SAFETY_THICKNESS / 2,
         ]}
         args={[
           CONTROLLER_WIDTH / 2,
+
           SAFETY_HEIGHT / 2,
+
           SAFETY_THICKNESS / 2,
         ]}
       />
 
       {/* SUR */}
+
       <CuboidCollider
         position={[
           0,
+
           PHYSICAL_FLOOR_Y +
             SAFETY_HEIGHT / 2,
+
           CONTROLLER_DEPTH / 2 -
             SAFETY_THICKNESS / 2,
         ]}
         args={[
           CONTROLLER_WIDTH / 2,
+
           SAFETY_HEIGHT / 2,
+
           SAFETY_THICKNESS / 2,
         ]}
       />
 
       {/* IZQUIERDA */}
+
       <CuboidCollider
         position={[
           -CONTROLLER_WIDTH / 2 +
             SAFETY_THICKNESS / 2,
+
           PHYSICAL_FLOOR_Y +
             SAFETY_HEIGHT / 2,
+
           0,
         ]}
         args={[
           SAFETY_THICKNESS / 2,
+
           SAFETY_HEIGHT / 2,
+
           CONTROLLER_DEPTH / 2,
         ]}
       />
 
       {/* DERECHA */}
+
       <CuboidCollider
         position={[
           CONTROLLER_WIDTH / 2 -
             SAFETY_THICKNESS / 2,
+
           PHYSICAL_FLOOR_Y +
             SAFETY_HEIGHT / 2,
+
           0,
         ]}
         args={[
           SAFETY_THICKNESS / 2,
+
           SAFETY_HEIGHT / 2,
+
           CONTROLLER_DEPTH / 2,
         ]}
       />
@@ -265,9 +340,6 @@ function ControllerBase() {
 
 /* =========================================================
    BLOQUES VISUALES
-
-   yOffset = pequeño relieve visual local.
-   No afecta al suelo físico.
 ========================================================= */
 
 function FlatVisualBox({
@@ -286,9 +358,11 @@ function FlatVisualBox({
     <mesh
       position={[
         position[0],
+
         VISUAL_FLOOR_Y +
           yOffset -
           thickness / 2,
+
         position[2],
       ]}
       receiveShadow
@@ -396,21 +470,19 @@ function FlatCircle({
 }
 
 /* =========================================================
-   PANEL CENTRAL OSCURO
-
-   Gran franja central típica del joystick.
+   PANEL CENTRAL
 ========================================================= */
 
 function MainPanel() {
   return (
     <FlatVisualBox
       position={[
-        10,
+        sx(10),
         0,
         0,
       ]}
-      width={246}
-      depth={108}
+      width={sx(246)}
+      depth={sz(108)}
       thickness={0.02}
       color={COLORS.mainPanel}
       roughness={0.48}
@@ -420,38 +492,38 @@ function MainPanel() {
 }
 
 /* =========================================================
-   MARCAS ROJAS DE CARCASA
+   LÍNEAS ROJAS
 ========================================================= */
 
 function ControllerTrim() {
   return (
     <group>
-      {/* LÍNEA SUPERIOR */}
-
       <FlatPlane
         position={[
           0,
+
           VISUAL_FLOOR_Y +
             0.001,
-          -67,
+
+          sz(-67),
         ]}
-        width={308}
+        width={sx(308)}
         depth={2.3}
         color={COLORS.red}
         material="button"
         polygonOffsetFactor={-4}
       />
 
-      {/* LÍNEA INFERIOR */}
-
       <FlatPlane
         position={[
           0,
+
           VISUAL_FLOOR_Y +
             0.001,
-          67,
+
+          sz(67),
         ]}
-        width={308}
+        width={sx(308)}
         depth={2.3}
         color={COLORS.red}
         material="button"
@@ -462,42 +534,44 @@ function ControllerTrim() {
 }
 
 /* =========================================================
-   ZONA DE CRUCETA
+   BASE DE LA CRUCETA
+
+   NO dibujamos otra cruceta.
+
+   La cruceta real es Museum/MainHall.
 ========================================================= */
 
-function DpadZone() {
-  const panelYOffset = 0.0015;
-  const crossYOffset = 0.003;
+function DpadBackdrop() {
+  const panelYOffset =
+    0.0015;
 
   return (
     <group>
-      {/* Base gris izquierda */}
-
       <FlatVisualBox
         position={[
-          -96,
+          sx(-103.5),
           panelYOffset,
           0,
         ]}
-        width={108}
-        depth={112}
+        width={sx(108)}
+        depth={sz(112)}
         thickness={0.018}
         color={COLORS.midPanel}
         roughness={0.52}
         polygonOffsetFactor={-2}
       />
 
-      {/* Líneas rojas arriba y abajo */}
-
       <FlatPlane
         position={[
-          -96,
+          sx(-103.5),
+
           VISUAL_FLOOR_Y +
             panelYOffset +
             0.001,
-          -52,
+
+          sz(-52),
         ]}
-        width={98}
+        width={sx(98)}
         depth={2.2}
         color={COLORS.red}
         material="button"
@@ -506,72 +580,19 @@ function DpadZone() {
 
       <FlatPlane
         position={[
-          -96,
+          sx(-103.5),
+
           VISUAL_FLOOR_Y +
             panelYOffset +
             0.001,
-          52,
+
+          sz(52),
         ]}
-        width={98}
+        width={sx(98)}
         depth={2.2}
         color={COLORS.red}
         material="button"
         polygonOffsetFactor={-4}
-      />
-
-      {/* Cruceta horizontal */}
-
-      <FlatVisualBox
-        position={[
-          -96,
-          crossYOffset,
-          0,
-        ]}
-        width={58}
-        depth={18}
-        thickness={0.014}
-        color={
-          COLORS.blackPlastic
-        }
-        roughness={0.4}
-        polygonOffsetFactor={-4}
-      />
-
-      {/* Cruceta vertical */}
-
-      <FlatVisualBox
-        position={[
-          -96,
-          crossYOffset,
-          0,
-        ]}
-        width={18}
-        depth={58}
-        thickness={0.014}
-        color={
-          COLORS.blackPlastic
-        }
-        roughness={0.4}
-        polygonOffsetFactor={-4}
-      />
-
-      {/* Centro de cruceta */}
-
-      <FlatCircle
-        position={[
-          -96,
-          VISUAL_FLOOR_Y +
-            crossYOffset +
-            0.001,
-          0,
-        ]}
-        radius={8.5}
-        color={
-          COLORS.blackPlasticSoft
-        }
-        material="dark"
-        roughness={0.42}
-        polygonOffsetFactor={-5}
       />
     </group>
   );
@@ -579,25 +600,29 @@ function DpadZone() {
 
 /* =========================================================
    SELECT / START
+
+   También se agrandan porque estaban demasiado chicos
+   respecto de la cruceta real.
 ========================================================= */
 
 function CenterControls() {
-  const panelYOffset = 0.002;
+  const panelYOffset =
+    0.002;
+
   const buttonYOffset =
-    panelYOffset + 0.0015;
+    panelYOffset +
+    0.0015;
 
   return (
     <group>
-      {/* Base central pequeña */}
-
       <FlatVisualBox
         position={[
-          10,
+          sx(10),
           panelYOffset,
-          35,
+          sz(35),
         ]}
-        width={64}
-        depth={20}
+        width={sx(64)}
+        depth={sz(20)}
         thickness={0.016}
         color={COLORS.shellShadow}
         roughness={0.56}
@@ -608,13 +633,15 @@ function CenterControls() {
 
       <FlatPlane
         position={[
-          -7,
+          sx(-7),
+
           VISUAL_FLOOR_Y +
             buttonYOffset,
-          35,
+
+          sz(35),
         ]}
-        width={24}
-        depth={7.5}
+        width={sx(24)}
+        depth={sz(7.5)}
         color={
           COLORS.blackPlasticSoft
         }
@@ -627,13 +654,15 @@ function CenterControls() {
 
       <FlatPlane
         position={[
-          27,
+          sx(27),
+
           VISUAL_FLOOR_Y +
             buttonYOffset,
-          35,
+
+          sz(35),
         ]}
-        width={24}
-        depth={7.5}
+        width={sx(24)}
+        depth={sz(7.5)}
         color={
           COLORS.blackPlastic
         }
@@ -646,38 +675,48 @@ function CenterControls() {
 }
 
 /* =========================================================
-   ZONA A / B
+   A / B
+
+   IMPORTANTE:
+   Reubicamos los botones con el mando nuevo,
+   pero NO aumentamos el diámetro en la misma proporción.
+
+   El diámetro actual ya está mucho más cerca de
+   la proporción real respecto de una cruceta de 102.
 ========================================================= */
 
 function ActionButtons() {
-  const panelYOffset = 0.0015;
+  const panelYOffset =
+    0.0015;
 
   return (
     <group>
-      {/* Base gris derecha */}
+      {/* ZONA DERECHA */}
 
       <FlatVisualBox
         position={[
-          98,
+          sx(98),
           panelYOffset,
           0,
         ]}
-        width={104}
-        depth={112}
+        width={sx(104)}
+        depth={sz(112)}
         thickness={0.018}
         color={COLORS.midPanel}
         roughness={0.5}
         polygonOffsetFactor={-2}
       />
 
-      {/* Botón B — aro */}
+      {/* BOTÓN B — ARO */}
 
       <FlatCircle
         position={[
-          78,
+          sx(78),
+
           VISUAL_FLOOR_Y +
             0.004,
-          18,
+
+          sz(18),
         ]}
         radius={27}
         color={COLORS.redDark}
@@ -686,14 +725,16 @@ function ActionButtons() {
         polygonOffsetFactor={-4}
       />
 
-      {/* Botón B — centro */}
+      {/* BOTÓN B */}
 
       <FlatCircle
         position={[
-          78,
+          sx(78),
+
           VISUAL_FLOOR_Y +
             0.005,
-          18,
+
+          sz(18),
         ]}
         radius={22}
         color={COLORS.red}
@@ -702,14 +743,16 @@ function ActionButtons() {
         polygonOffsetFactor={-6}
       />
 
-      {/* Botón A — aro */}
+      {/* BOTÓN A — ARO */}
 
       <FlatCircle
         position={[
-          118,
+          sx(118),
+
           VISUAL_FLOOR_Y +
             0.004,
-          -18,
+
+          sz(-18),
         ]}
         radius={27}
         color={COLORS.redDark}
@@ -718,14 +761,16 @@ function ActionButtons() {
         polygonOffsetFactor={-4}
       />
 
-      {/* Botón A — centro */}
+      {/* BOTÓN A */}
 
       <FlatCircle
         position={[
-          118,
+          sx(118),
+
           VISUAL_FLOOR_Y +
             0.005,
-          -18,
+
+          sz(-18),
         ]}
         radius={22}
         color={COLORS.redBright}
@@ -744,17 +789,20 @@ function ActionButtons() {
 export default function WorldEnvironment() {
   return (
     <group>
-      {/* Física estable */}
+      {/* CUERPO FÍSICO NUEVO */}
       <ControllerBase />
 
-      {/* Visual del mando */}
+      {/* MANDO PROPORCIONADO */}
       <MainPanel />
       <ControllerTrim />
-      <DpadZone />
+      <DpadBackdrop />
       <CenterControls />
       <ActionButtons />
 
-      {/* Museo / cruceta */}
+      {/*
+        La cruceta arquitectónica mantiene
+        EXACTAMENTE su tamaño actual.
+      */}
       <Museum />
     </group>
   );
