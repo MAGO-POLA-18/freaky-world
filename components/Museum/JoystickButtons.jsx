@@ -7,108 +7,80 @@ import {
 } from "@react-three/rapier";
 
 /* =========================================================
-   MEDIDAS GENERALES
+   TIERRA VICIO — BOTONES FÍSICOS DEL JOYSTICK
 
-   La cruceta/alas actuales llegan aproximadamente
-   a 14-15 unidades de altura en sus partes altas.
+   IMPORTANTE:
+   Este archivo NO modifica Museum.jsx,
+   DpadWing.jsx ni PlayerController.jsx.
 
-   Por eso:
-   - botones grandes: 10 de altura
-   - pause/select: 4.5 de altura
+   Sólo crea:
+   - 4 botones principales
+   - SELECT
+   - PAUSE / START
 
-   Así tienen presencia sin competir con las salas.
+   Todos:
+   - tienen volumen
+   - son sólidos
+   - tienen collider
+   - no pueden atravesarse
+   - pueden ser detectados por la cámara
 ========================================================= */
 
-const MAIN_BUTTON_RADIUS = 11;
-const MAIN_BUTTON_HEIGHT = 10;
+/* =========================================================
+   ESCALA
 
-const SMALL_BUTTON_WIDTH = 14;
-const SMALL_BUTTON_DEPTH = 5;
-const SMALL_BUTTON_HEIGHT = 4.5;
+   Referencia:
+   Las alas/cruceta actuales alcanzan aprox.
+   14-15 unidades en sus zonas más altas.
+
+   Los botones quedan algo más bajos para
+   mantener proporción de mando real.
+========================================================= */
+
+const MAIN_RADIUS = 8.5;
+const MAIN_HEIGHT = 8;
+
+const SMALL_WIDTH = 11;
+const SMALL_DEPTH = 4.5;
+const SMALL_HEIGHT = 3.6;
 
 /* =========================================================
    BOTÓN PRINCIPAL
 ========================================================= */
 
 function MainButton({
-  position = [0, 0, 0],
-  color = "#8f46ff",
-  topColor = "#a96cff",
+  position,
+  bodyColor,
+  topColor,
 }) {
-  const [x, y, z] = position;
-
   return (
     <RigidBody
       type="fixed"
+      position={position}
       colliders={false}
-      position={[x, y, z]}
-      friction={0.9}
+      friction={0.95}
+      restitution={0}
     >
-      {/* COLLIDER REAL */}
+      {/* COLLIDER FÍSICO */}
+
       <CylinderCollider
         args={[
-          MAIN_BUTTON_HEIGHT / 2,
-          MAIN_BUTTON_RADIUS,
+          MAIN_HEIGHT / 2,
+          MAIN_RADIUS,
         ]}
         position={[
           0,
-          MAIN_BUTTON_HEIGHT / 2,
+          MAIN_HEIGHT / 2,
           0,
         ]}
+        friction={0.95}
+        restitution={0}
       />
 
-      {/* CUERPO */}
-      <mesh
-        position={[
-          0,
-          MAIN_BUTTON_HEIGHT / 2,
-          0,
-        ]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry
-          args={[
-            MAIN_BUTTON_RADIUS,
-            MAIN_BUTTON_RADIUS,
-            MAIN_BUTTON_HEIGHT,
-            64,
-          ]}
-        />
+      {/* =====================================================
+          BASE NEGRA
+      ===================================================== */}
 
-        <meshStandardMaterial
-          color={color}
-          roughness={0.48}
-          metalness={0.08}
-        />
-      </mesh>
-
-      {/* TAPA SUPERIOR */}
-      <mesh
-        position={[
-          0,
-          MAIN_BUTTON_HEIGHT + 0.08,
-          0,
-        ]}
-        castShadow
-      >
-        <cylinderGeometry
-          args={[
-            MAIN_BUTTON_RADIUS * 0.92,
-            MAIN_BUTTON_RADIUS * 0.97,
-            0.18,
-            64,
-          ]}
-        />
-
-        <meshStandardMaterial
-          color={topColor}
-          roughness={0.4}
-          metalness={0.05}
-        />
-      </mesh>
-
-      {/* ARO INFERIOR */}
       <mesh
         position={[
           0,
@@ -120,16 +92,78 @@ function MainButton({
       >
         <cylinderGeometry
           args={[
-            MAIN_BUTTON_RADIUS * 1.03,
-            MAIN_BUTTON_RADIUS * 1.03,
+            MAIN_RADIUS * 1.06,
+            MAIN_RADIUS * 1.08,
             0.9,
-            64,
+            48,
           ]}
         />
 
         <meshStandardMaterial
-          color="#17171b"
+          color="#17171c"
           roughness={0.72}
+          metalness={0.02}
+        />
+      </mesh>
+
+      {/* =====================================================
+          CUERPO PRINCIPAL
+      ===================================================== */}
+
+      <mesh
+        position={[
+          0,
+          MAIN_HEIGHT / 2,
+          0,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            MAIN_RADIUS,
+            MAIN_RADIUS * 1.01,
+            MAIN_HEIGHT,
+            48,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={bodyColor}
+          roughness={0.48}
+          metalness={0.04}
+        />
+      </mesh>
+
+      {/* =====================================================
+          PARTE SUPERIOR
+
+          Un poco más chica para que tenga
+          aspecto de botón físico y no de cilindro.
+      ===================================================== */}
+
+      <mesh
+        position={[
+          0,
+          MAIN_HEIGHT + 0.10,
+          0,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            MAIN_RADIUS * 0.9,
+            MAIN_RADIUS * 0.97,
+            0.22,
+            48,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color={topColor}
+          roughness={0.36}
+          metalness={0.03}
         />
       </mesh>
     </RigidBody>
@@ -137,39 +171,45 @@ function MainButton({
 }
 
 /* =========================================================
-   PAUSE / SELECT
+   SELECT / PAUSE
 ========================================================= */
 
 function SmallButton({
-  position = [0, 0, 0],
+  position,
   rotation = [0, 0, 0],
 }) {
   return (
     <RigidBody
       type="fixed"
-      colliders={false}
       position={position}
       rotation={rotation}
-      friction={0.9}
+      colliders={false}
+      friction={0.95}
+      restitution={0}
     >
+      {/* COLLIDER */}
+
       <CuboidCollider
         args={[
-          SMALL_BUTTON_WIDTH / 2,
-          SMALL_BUTTON_HEIGHT / 2,
-          SMALL_BUTTON_DEPTH / 2,
+          SMALL_WIDTH / 2,
+          SMALL_HEIGHT / 2,
+          SMALL_DEPTH / 2,
         ]}
         position={[
           0,
-          SMALL_BUTTON_HEIGHT / 2,
+          SMALL_HEIGHT / 2,
           0,
         ]}
+        friction={0.95}
+        restitution={0}
       />
 
       {/* BASE */}
+
       <mesh
         position={[
           0,
-          SMALL_BUTTON_HEIGHT / 2,
+          0.35,
           0,
         ]}
         castShadow
@@ -177,39 +217,65 @@ function SmallButton({
       >
         <boxGeometry
           args={[
-            SMALL_BUTTON_WIDTH,
-            SMALL_BUTTON_HEIGHT,
-            SMALL_BUTTON_DEPTH,
+            SMALL_WIDTH * 1.04,
+            0.7,
+            SMALL_DEPTH * 1.08,
           ]}
         />
 
         <meshStandardMaterial
-          color="#222228"
-          roughness={0.55}
-          metalness={0.06}
+          color="#18181d"
+          roughness={0.75}
         />
       </mesh>
 
-      {/* CARA SUPERIOR */}
+      {/* CUERPO */}
+
       <mesh
         position={[
           0,
-          SMALL_BUTTON_HEIGHT + 0.06,
+          SMALL_HEIGHT / 2,
+          0,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            SMALL_WIDTH,
+            SMALL_HEIGHT,
+            SMALL_DEPTH,
+          ]}
+        />
+
+        <meshStandardMaterial
+          color="#323238"
+          roughness={0.52}
+          metalness={0.04}
+        />
+      </mesh>
+
+      {/* SUPERFICIE */}
+
+      <mesh
+        position={[
+          0,
+          SMALL_HEIGHT + 0.08,
           0,
         ]}
         castShadow
       >
         <boxGeometry
           args={[
-            SMALL_BUTTON_WIDTH * 0.91,
-            0.12,
-            SMALL_BUTTON_DEPTH * 0.82,
+            SMALL_WIDTH * 0.88,
+            0.16,
+            SMALL_DEPTH * 0.76,
           ]}
         />
 
         <meshStandardMaterial
-          color="#45454d"
-          roughness={0.42}
+          color="#56565f"
+          roughness={0.4}
         />
       </mesh>
     </RigidBody>
@@ -217,50 +283,115 @@ function SmallButton({
 }
 
 /* =========================================================
-   CONJUNTO COMPLETO
+   GRUPO DE 4 BOTONES
 
-   DISTRIBUCIÓN TIPO JOYSTICK:
-                       Y
-                 X           A
-                       B
+           ARRIBA
 
-   Pause / Select en el centro.
+      IZQ         DER
+
+           ABAJO
+
+   Lo mantenemos compacto y proporcionado.
 ========================================================= */
 
-export default function JoystickButtons() {
+function MainButtons() {
+  const gap = 13;
+
   return (
     <group>
+      {/* ARRIBA */}
+
+      <MainButton
+        position={[
+          0,
+          0,
+          -gap,
+        ]}
+        bodyColor="#d6a72f"
+        topColor="#efc95c"
+      />
+
+      {/* DERECHA */}
+
+      <MainButton
+        position={[
+          gap,
+          0,
+          0,
+        ]}
+        bodyColor="#3e975c"
+        topColor="#5cbb79"
+      />
+
+      {/* ABAJO */}
+
+      <MainButton
+        position={[
+          0,
+          0,
+          gap,
+        ]}
+        bodyColor="#b5404a"
+        topColor="#d25c66"
+      />
+
+      {/* IZQUIERDA */}
+
+      <MainButton
+        position={[
+          -gap,
+          0,
+          0,
+        ]}
+        bodyColor="#356fc4"
+        topColor="#5390e4"
+      />
+    </group>
+  );
+}
+
+/* =========================================================
+   COMPONENTE FINAL
+
+   position y rotation permiten colocarlo
+   en Museum.jsx SIN rehacer Museum.jsx.
+
+   Ejemplo futuro:
+
+   <JoystickButtons
+      position={[55, 0, 15]}
+   />
+
+========================================================= */
+
+export default function JoystickButtons({
+  position = [0, 0, 0],
+  rotation = [0, 0, 0],
+  scale = 1,
+}) {
+  return (
+    <group
+      position={position}
+      rotation={rotation}
+      scale={scale}
+    >
       {/* =====================================================
-          CUATRO BOTONES PRINCIPALES
+          BOTONES PRINCIPALES
+
+          Los desplazamos dentro del componente,
+          pero NO definimos aquí su posición
+          definitiva dentro del mundo.
       ===================================================== */}
 
-      {/* IZQUIERDA / X */}
-      <MainButton
-        position={[47, 0, 1]}
-        color="#356fc5"
-        topColor="#4f8de5"
-      />
-
-      {/* ARRIBA / Y */}
-      <MainButton
-        position={[60, 0, -12]}
-        color="#d5a52f"
-        topColor="#edc454"
-      />
-
-      {/* DERECHA / A */}
-      <MainButton
-        position={[73, 0, 1]}
-        color="#40965a"
-        topColor="#58b873"
-      />
-
-      {/* ABAJO / B */}
-      <MainButton
-        position={[60, 0, 14]}
-        color="#b64048"
-        topColor="#d45b63"
-      />
+      <group
+        position={[
+          0,
+          0,
+          0,
+        ]}
+      >
+        <MainButtons />
+      </group>
 
       {/* =====================================================
           SELECT
@@ -268,13 +399,13 @@ export default function JoystickButtons() {
 
       <SmallButton
         position={[
-          -8,
+          -9,
           0,
-          7,
+          30,
         ]}
         rotation={[
           0,
-          -0.15,
+          -0.12,
           0,
         ]}
       />
@@ -285,13 +416,13 @@ export default function JoystickButtons() {
 
       <SmallButton
         position={[
-          10,
+          9,
           0,
-          7,
+          30,
         ]}
         rotation={[
           0,
-          0.15,
+          0.12,
           0,
         ]}
       />
