@@ -3,6 +3,7 @@
 import {
   RigidBody,
   CuboidCollider,
+  CylinderCollider,
 } from "@react-three/rapier";
 
 import Museum from "../Museum/Museum";
@@ -108,6 +109,22 @@ const PHYSICAL_FLOOR_HEIGHT =
 const PHYSICAL_FLOOR_CENTER_Y =
   PHYSICAL_FLOOR_BOTTOM +
   PHYSICAL_FLOOR_HEIGHT / 2;
+
+/*
+   NUEVO:
+
+   No tocamos diámetro ni ubicación de los botones.
+
+   Sólo les damos profundidad física.
+
+   Los A/B sobresalen más.
+   Select/Start quedan más bajos,
+   como en un mando real.
+*/
+
+const ACTION_BUTTON_HEIGHT = 6;
+
+const CENTER_BUTTON_HEIGHT = 3.4;
 
 /* =========================================================
    SEGURIDAD
@@ -470,6 +487,206 @@ function FlatCircle({
 }
 
 /* =========================================================
+   BOTÓN REDONDO CON VOLUMEN
+
+   Conserva exactamente:
+   - X
+   - Z
+   - radio
+
+   Sólo crece verticalmente.
+========================================================= */
+
+function RaisedCircleButton({
+  position,
+  radius,
+  height,
+  color,
+  roughness = 0.3,
+}) {
+  const baseY =
+    position[1];
+
+  const centerY =
+    baseY +
+    height / 2;
+
+  return (
+    <RigidBody
+      type="fixed"
+      colliders={false}
+      friction={0.9}
+      restitution={0}
+    >
+      <CylinderCollider
+        args={[
+          height / 2,
+          radius,
+        ]}
+        position={[
+          position[0],
+          centerY,
+          position[2],
+        ]}
+        friction={0.9}
+        restitution={0}
+      />
+
+      <mesh
+        position={[
+          position[0],
+          centerY,
+          position[2],
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <cylinderGeometry
+          args={[
+            radius,
+            radius,
+            height,
+            56,
+          ]}
+        />
+
+        <ButtonPlasticMaterial
+          color={color}
+          roughness={roughness}
+          polygonOffsetFactor={-6}
+        />
+      </mesh>
+
+      {/* TAPA MUY LEVE */}
+
+      <mesh
+        position={[
+          position[0],
+          baseY +
+            height +
+            0.035,
+          position[2],
+        ]}
+        castShadow
+      >
+        <cylinderGeometry
+          args={[
+            radius * 0.94,
+            radius * 0.98,
+            0.07,
+            56,
+          ]}
+        />
+
+        <ButtonPlasticMaterial
+          color={color}
+          roughness={0.27}
+          polygonOffsetFactor={-7}
+        />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+/* =========================================================
+   BOTÓN RECTANGULAR CON VOLUMEN
+
+   Para SELECT / START.
+
+   Conserva ancho y profundidad actuales.
+========================================================= */
+
+function RaisedRectButton({
+  position,
+  width,
+  depth,
+  height,
+  color,
+}) {
+  const baseY =
+    position[1];
+
+  const centerY =
+    baseY +
+    height / 2;
+
+  return (
+    <RigidBody
+      type="fixed"
+      colliders={false}
+      friction={0.9}
+      restitution={0}
+    >
+      <CuboidCollider
+        args={[
+          width / 2,
+          height / 2,
+          depth / 2,
+        ]}
+        position={[
+          position[0],
+          centerY,
+          position[2],
+        ]}
+        friction={0.9}
+        restitution={0}
+      />
+
+      <mesh
+        position={[
+          position[0],
+          centerY,
+          position[2],
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            width,
+            height,
+            depth,
+          ]}
+        />
+
+        <DarkPlasticMaterial
+          color={color}
+          roughness={0.4}
+          polygonOffsetFactor={-5}
+        />
+      </mesh>
+
+      {/* TAPA */}
+
+      <mesh
+        position={[
+          position[0],
+          baseY +
+            height +
+            0.025,
+          position[2],
+        ]}
+        castShadow
+      >
+        <boxGeometry
+          args={[
+            width * 0.92,
+            0.05,
+            depth * 0.82,
+          ]}
+        />
+
+        <DarkPlasticMaterial
+          color={color}
+          roughness={0.34}
+          polygonOffsetFactor={-6}
+        />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+/* =========================================================
    PANEL CENTRAL
 ========================================================= */
 
@@ -601,8 +818,12 @@ function DpadBackdrop() {
 /* =========================================================
    SELECT / START
 
-   También se agrandan porque estaban demasiado chicos
-   respecto de la cruceta real.
+   MISMA POSICIÓN Y MISMAS PROPORCIONES.
+
+   Ahora tienen:
+   - volumen
+   - collider
+   - altura menor que A/B
 ========================================================= */
 
 function CenterControls() {
@@ -612,6 +833,10 @@ function CenterControls() {
   const buttonYOffset =
     panelYOffset +
     0.0015;
+
+  const baseY =
+    VISUAL_FLOOR_Y +
+    buttonYOffset;
 
   return (
     <group>
@@ -631,44 +856,38 @@ function CenterControls() {
 
       {/* SELECT */}
 
-      <FlatPlane
+      <RaisedRectButton
         position={[
           sx(-7),
-
-          VISUAL_FLOOR_Y +
-            buttonYOffset,
-
+          baseY,
           sz(35),
         ]}
         width={sx(24)}
         depth={sz(7.5)}
+        height={
+          CENTER_BUTTON_HEIGHT
+        }
         color={
           COLORS.blackPlasticSoft
         }
-        material="dark"
-        roughness={0.42}
-        polygonOffsetFactor={-5}
       />
 
       {/* START */}
 
-      <FlatPlane
+      <RaisedRectButton
         position={[
           sx(27),
-
-          VISUAL_FLOOR_Y +
-            buttonYOffset,
-
+          baseY,
           sz(35),
         ]}
         width={sx(24)}
         depth={sz(7.5)}
+        height={
+          CENTER_BUTTON_HEIGHT
+        }
         color={
           COLORS.blackPlastic
         }
-        material="dark"
-        roughness={0.42}
-        polygonOffsetFactor={-5}
       />
     </group>
   );
@@ -678,16 +897,22 @@ function CenterControls() {
    A / B
 
    IMPORTANTE:
-   Reubicamos los botones con el mando nuevo,
-   pero NO aumentamos el diámetro en la misma proporción.
 
-   El diámetro actual ya está mucho más cerca de
-   la proporción real respecto de una cruceta de 102.
+   Las coordenadas y radios siguen siendo
+   exactamente los mismos que en el mando 1:1.
+
+   Sólo damos altura al botón interior.
+
+   Los aros mantienen su posición original.
 ========================================================= */
 
 function ActionButtons() {
   const panelYOffset =
     0.0015;
+
+  const buttonBaseY =
+    VISUAL_FLOOR_Y +
+    0.005;
 
   return (
     <group>
@@ -725,22 +950,20 @@ function ActionButtons() {
         polygonOffsetFactor={-4}
       />
 
-      {/* BOTÓN B */}
+      {/* BOTÓN B — VOLUMEN */}
 
-      <FlatCircle
+      <RaisedCircleButton
         position={[
           sx(78),
-
-          VISUAL_FLOOR_Y +
-            0.005,
-
+          buttonBaseY,
           sz(18),
         ]}
         radius={22}
+        height={
+          ACTION_BUTTON_HEIGHT
+        }
         color={COLORS.red}
-        material="button"
         roughness={0.3}
-        polygonOffsetFactor={-6}
       />
 
       {/* BOTÓN A — ARO */}
@@ -761,22 +984,22 @@ function ActionButtons() {
         polygonOffsetFactor={-4}
       />
 
-      {/* BOTÓN A */}
+      {/* BOTÓN A — VOLUMEN */}
 
-      <FlatCircle
+      <RaisedCircleButton
         position={[
           sx(118),
-
-          VISUAL_FLOOR_Y +
-            0.005,
-
+          buttonBaseY,
           sz(-18),
         ]}
         radius={22}
-        color={COLORS.redBright}
-        material="button"
+        height={
+          ACTION_BUTTON_HEIGHT
+        }
+        color={
+          COLORS.redBright
+        }
         roughness={0.3}
-        polygonOffsetFactor={-6}
       />
     </group>
   );
@@ -789,13 +1012,15 @@ function ActionButtons() {
 export default function WorldEnvironment() {
   return (
     <group>
-      {/* CUERPO FÍSICO NUEVO */}
+      {/* CUERPO FÍSICO */}
       <ControllerBase />
 
-      {/* MANDO PROPORCIONADO */}
+      {/* MANDO PROPORCIONADO 1:1 */}
       <MainPanel />
       <ControllerTrim />
       <DpadBackdrop />
+
+      {/* BOTONES CON VOLUMEN */}
       <CenterControls />
       <ActionButtons />
 
